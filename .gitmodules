@@ -1,0 +1,9 @@
+[submodule "src/proto"]
+	path = src/proto
+	url = ssh://git@www.einhornimmond.de:9103/~/_protobuf/gradido_protobuf
+[submodule "dependencies/jsonrpcpp"]
+	path = dependencies/jsonrpcpp
+	url = https://github.com/badaix/jsonrpcpp.git
+[submodule "dependencies/iroha-ed25519"]
+	path = dependencies/iroha-ed25519
+	url = ssh://git@www.einhornimmond.de:9103/~/Forks/iroha-ed25519.git
