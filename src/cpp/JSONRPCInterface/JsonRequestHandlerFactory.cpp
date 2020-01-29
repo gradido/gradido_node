@@ -1,14 +1,13 @@
 #include "JsonRequestHandlerFactory.h"
 
 #include "Poco/Net/HTTPServerRequest.h"
+#include "Poco/DateTimeFormatter.h"
+#include "Poco/DateTime.h"
 
-#include "../SingletonManager/SessionManager.h"
-
-#include "JsonGetLogin.h"
 #include "JsonUnknown.h"
-#include "JsonTransaction.h"
-#include "JsonGetRunningUserTasks.h"
-#include "JsonGetUsers.h"
+#include "PutTransaction.h"
+
+#include <sstream>
 
 JsonRequestHandlerFactory::JsonRequestHandlerFactory()	
 	: mRemoveGETParameters("^/([a-zA-Z0-9_-]*)"), mLogging(Poco::Logger::get("requestLog"))
@@ -28,17 +27,8 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 
 	mLogging.information(logStream.str());
 
-	if (url_first_part == "/login") {
-		return new JsonGetLogin;
-	}
-	else if (url_first_part == "/checkTransaction") {
-		return new JsonTransaction;
-	}
-	else if (url_first_part == "/getRunningUserTasks") {
-		return new JsonGetRunningUserTasks;
-	}
-	else if (url_first_part == "/getUsers") {
-		return new JsonGetUsers;
+	if (url_first_part == "/putTransaction") {
+		
 	}
 
 	return new JsonUnknown;

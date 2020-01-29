@@ -3,6 +3,8 @@ project(Gradido_Node C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin" )
 
 add_definitions("-std=c++11")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(
 	"dependencies" 
@@ -21,6 +23,7 @@ FILE(GLOB MODEL_FILES "src/cpp/model/files/*.h" "src/cpp/files/table/*.cpp")
 FILE(GLOB PROTO_GRADIDO "src/cpp/proto/gradido/*.cc" "src/cpp/proto/gradido/*.h")
 FILE(GLOB SINGLETON_MANAGER "src/cpp/SingletonManager/*.h" "src/cpp/SingletonManager/*.cpp")
 FILE(GLOB TASK "src/cpp/task/*.cpp" "src/cpp/task/*.h")
+FILE(GLOB TCP_SERVER "src/cpp/TCPServer/*.cpp" "src/cpp/TCPServer/*.h")
 FILE(GLOB VALIDATION "src/cpp/validation/*.h" "src/cpp/validation/*.cpp")
 FILE(GLOB MAIN "src/cpp/*.cpp" "src/cpp/*.c"  "src/cpp/*.h")
 
@@ -34,7 +37,7 @@ SET(LOCAL_SRCS
 	${MODEL} ${MODEL_FILES}
 	${PROTO_GRADIDO}
 	${SINGLETON_MANAGER}
-	${TASK}
+	${TASK} ${TCP_SERVER}
 	${VALIDATION}
 	${MAIN} ${TEST}
 )
@@ -52,6 +55,7 @@ source_group("model" FILES ${MODEL})
 source_group("proto" FILES ${PROTO_GRADIDO})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})
+source_group("tcp-server" FILES ${TCP_SERVER})
 source_group("validation" FILES ${VALIDATION})
 source_group("Test" FILES ${TEST})
 endif(MSVC)
@@ -61,7 +65,7 @@ conan_basic_setup()
 
 #add_subdirectory("dependencies/curl")
 #add_subdirectory("dependencies/mariadb-connector-c")
-
+add_subdirectory("dependencies/jsonrpcpp")
 
 add_executable(Gradido_Node ${LOCAL_SRCS})
 #SUBDIRS("src/test")

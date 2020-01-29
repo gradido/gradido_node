@@ -1,6 +1,6 @@
 #include "CPUTask.h"
 #include "CPUSheduler.h"
-#include "../ServerConfig.h"
+#include "../ServerGlobals.h"
 
 namespace UniLib {
 	namespace controller {
@@ -17,7 +17,7 @@ namespace UniLib {
 		}
 
 		CPUTask::CPUTask(size_t taskDependenceCount/* = 0*/)
-			: Task(taskDependenceCount), mScheduler(ServerConfig::g_CPUScheduler)
+			: Task(taskDependenceCount), mScheduler(ServerGlobals::g_CPUScheduler)
 		{
 			assert(mScheduler);
 		}

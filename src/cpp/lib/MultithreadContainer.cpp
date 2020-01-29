@@ -23,7 +23,6 @@ namespace UniLib {
 					errors.addError(new Error(functionName, stackDetails));
 				}
 				
-				errors.sendErrorsAsEmail();
 			}
 		}
 

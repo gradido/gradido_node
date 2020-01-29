@@ -89,7 +89,6 @@ namespace UniLib {
 			catch (Poco::TimeoutException& ex) {
 				ErrorList errors;
 				errors.addError(new ParamError("Task::lock", getResourceType(), ex.displayText()));
-				errors.sendErrorsAsEmail();
 			}
 		}
 
