@@ -8,9 +8,11 @@
 
 //#include "Poco/JSON/Parser.h"
 
-#include "jsonrpcpp.hpp"
 
+
+//#include <exception>
 #include <memory>
+
 
 void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
 {
@@ -32,22 +34,42 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 		//Poco::Dynamic::Var parsedResult = parseJsonWithErrorPrintFile(request_stream);
 		//Poco::JSON::Parser jsonParser;
 
-		//Json request_json;
-		//request_stream >> request_json;
+		Json request_json;
 
-		/*jsonrpcpp::entity_ptr entity = jsonrpcpp::Parser::do_parse_json(request_json);
-		Json result;
-		if (entity->is_request()) {
-			jsonrpcpp::request_ptr request = std::dynamic_pointer_cast<jsonrpcpp::Request>(entity);
-			handle(*request, result);
+		request_stream >> request_json;
 
-			if (!result.is_null()) {
-				jsonrpcpp::Response response(*request, result);
-				responseStream << response.to_json();
+		try {
+			jsonrpcpp::entity_ptr entity = jsonrpcpp::Parser::do_parse_json(request_json);
+			Json result;
+			if (entity->is_request()) {
+				jsonrpcpp::request_ptr request = std::dynamic_pointer_cast<jsonrpcpp::Request>(entity);
+				handle(*request, result);
+
+				if (!result.is_null()) {
+					jsonrpcpp::Response response(*request, result);
+					responseStream << response.to_json();
+					return;
+				}
 			}
-		}*/
+		}
+		catch (jsonrpcpp::InvalidRequestException& e) {
+			Poco::Logger& errorLog(Poco::Logger::get("errorLog"));
+			errorLog.error("error invalid request exception with: %s", e.what());
+			//printf("request json: %s\n", request_json);
+			responseStream << "{\"state\":\"error\", \"msg\": \"invalid request\"}";
+		}
+		catch (jsonrpcpp::RpcException& e) {
+			Poco::Logger& errorLog(Poco::Logger::get("errorLog"));
+			errorLog.error("error rpc exception with: %s", e.what());
+			//printf("request json: %s\n", request_json);
+			responseStream << "{\"state\":\"exception\"}";
+		}
 
+		responseStream << "{\"state\":\"error\", \"msg\":\"no result\"}";
+		return;
 	}
 	//if (_compressResponse) _gzipStream.close();
+
+	responseStream << "{\"state\":\"error\", \"msg\":\"no post or put request\"}";
 }
 

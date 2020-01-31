@@ -1,13 +1,16 @@
 #include "PutTransaction.h"
 
-Poco::JSON::Object* PutTransaction::handle(Poco::Dynamic::Var params)
+void PutTransaction::handle(const jsonrpcpp::Request& request, Json& response)
 {
-	Poco::JSON::Object* result = new Poco::JSON::Object;
+	if (request.method == "putTransaction") {
+		if (request.params.has("group") && request.params.has("base64")) {
 
-	result->set("state", "error");
-	result->set("msg", "unknown call");
-
-
-
-	return result;
+		}
+		else {
+			response = { {"state", "error"}, {"msg", "missing param"} };
+		}
+	}
+	else {
+		response = { {"state", "error"}, {"msg", "method not known"} };
+	}
 }

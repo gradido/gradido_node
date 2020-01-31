@@ -9,7 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include_directories(
 	"dependencies" 
 	"dependencies/iroha-ed25519/include"
-	"dependencies/jsonrpcpp/include"
+	"dependencies/jsonrpcpp/lib"
 )
 
 
@@ -17,7 +17,7 @@ FILE(GLOB CONTAINER, "src/cpp/container/*.h" "src/cpp/container/*.cpp")
 FILE(GLOB CONTROLLER "src/cpp/controller/*.cpp" "src/cpp/controller/*.h")
 FILE(GLOB HTTPInterface "src/cpp/HTTPInterface/*.h" "src/cpp/HTTPInterface/*.cpp")
 FILE(GLOB JSONRPCInterface "src/cpp/JSONRPCInterface/*.h" "src/cpp/JSONRPCInterface/*.cpp")
-FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp")
+FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp" "src/cpp/lib/*.c")
 FILE(GLOB MODEL "src/cpp/model/*.h" "src/cpp/model/*.cpp")
 FILE(GLOB MODEL_FILES "src/cpp/model/files/*.h" "src/cpp/files/table/*.cpp")
 FILE(GLOB PROTO_GRADIDO "src/cpp/proto/gradido/*.cc" "src/cpp/proto/gradido/*.h")
@@ -93,7 +93,7 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node jsonrpcpp ${CONAN_LIBS} ${IROHA_ED25519})
 if(WIN32)
 TARGET_LINK_LIBRARIES(Gradido_Node optimized Shlwapi)
 TARGET_LINK_LIBRARIES(Gradido_Node debug Shlwapi)

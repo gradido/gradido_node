@@ -1,12 +1,8 @@
 #include "JsonUnknown.h"
 
-Json JsonUnknown::handle(jsonrpcpp::request_ptr request)
+void JsonUnknown::handle(const jsonrpcpp::Request& request, Json& response)
 {
-	jsonrpcpp::response_ptr response(new jsonrpcpp::Response(*request, result));
-
-	Json result;
-	result["state"] = "error";
-	result["msg"] = "unknown call";
+	response["state"] = "error";
+	response["msg"] = "unknown call";
 	
-	return result;
 }

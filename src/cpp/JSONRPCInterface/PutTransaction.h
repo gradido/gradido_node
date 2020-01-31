@@ -6,7 +6,7 @@
 class PutTransaction : public JsonRequestHandler
 {
 public:
-	Poco::JSON::Object* handle(Poco::Dynamic::Var params);
+	void handle(const jsonrpcpp::Request& request, Json& response);
 
 protected:
 

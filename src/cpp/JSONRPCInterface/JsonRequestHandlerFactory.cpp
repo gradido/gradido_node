@@ -6,6 +6,7 @@
 
 #include "JsonUnknown.h"
 #include "PutTransaction.h"
+#include "JsonRPCHandler.h"
 
 #include <sstream>
 
@@ -16,20 +17,20 @@ JsonRequestHandlerFactory::JsonRequestHandlerFactory()
 
 Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(const Poco::Net::HTTPServerRequest& request)
 {
-	std::string uri = request.getURI();
-	std::string url_first_part;
-	std::stringstream logStream;
+	//std::string uri = request.getURI();
+	//std::string url_first_part;
+	//std::stringstream logStream;
 
-	mRemoveGETParameters.extract(uri, url_first_part);
+	//mRemoveGETParameters.extract(uri, url_first_part);
 
-	std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
-	logStream << dateTimeString << " call " << uri;
+	//std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
+	//logStream << dateTimeString << " call " << uri;
 
-	mLogging.information(logStream.str());
+	//mLogging.information(logStream.str());
 
-	if (url_first_part == "/putTransaction") {
-		
-	}
+	return new JsonRPCHandler;
 
-	return new JsonUnknown;
+	
+
+	//return new JsonUnknown;
 }

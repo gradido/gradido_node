@@ -6,7 +6,7 @@
 class JsonUnknown : public JsonRequestHandler
 {
 public:
-	Json handle(jsonrpcpp::request_ptr request) ;
+	void handle(const jsonrpcpp::Request& request, Json& response);
 
 protected:
 
