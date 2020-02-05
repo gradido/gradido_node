@@ -7,3 +7,6 @@
 [submodule "dependencies/iroha-ed25519"]
 	path = dependencies/iroha-ed25519
 	url = ssh://git@www.einhornimmond.de:9103/~/Forks/iroha-ed25519.git
+[submodule "dependencies/libbase58"]
+	path = dependencies/libbase58
+	url = https://github.com/bitcoin/libbase58.git

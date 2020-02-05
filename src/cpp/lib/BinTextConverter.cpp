@@ -5,6 +5,8 @@
 #include "sodium.h"
 #include "libbase58.h"
 
+#include "../SingletonManager/MemoryManager.h"
+
 static Poco::RegularExpression regExpIsHexString("^[a-fA-F0-9]*$");
 static Poco::RegularExpression regExpIsBase58String("^[1-9A-HJ-NP-Za-km-z]*$");
 static Poco::RegularExpression regExpIsBase64String("^[0-9A-Za-z+/]*=*$");
@@ -26,7 +28,7 @@ StringTransportType getStringTransportType(const std::string& input)
 }
 
 
-MemoryBin* convertBinTransportStringToBin(const std::string& input)
+std::string convertBinTransportStringToBin(const std::string& input)
 {
 	auto type = getStringTransportType(input);
 	switch (type) {
@@ -34,10 +36,10 @@ MemoryBin* convertBinTransportStringToBin(const std::string& input)
 	case STRING_TRANSPORT_TYPE_BASE64: return convertBase64ToBin(input);
 	case STRING_TRANSPORT_TYPE_HEX: return convertHexToBin(input);
 	}
-	return nullptr;
+	return "";
 }
 
-MemoryBin* convertHexToBin(const std::string& hexString)
+std::string convertHexToBin(const std::string& hexString)
 {
 	/*
 	int sodium_hex2bin(unsigned char * const bin, const size_t bin_maxlen,
@@ -76,19 +78,15 @@ MemoryBin* convertHexToBin(const std::string& hexString)
 
 	if (0 != sodium_hex2bin(*bin, binSize, hexString.data(), hexSize, nullptr, &resultBinSize, nullptr)) {
 		mm->releaseMemory(bin);
-		return nullptr;
+		return "";
 	}
-	if (resultBinSize != binSize) {
-		MemoryBin* repackedBin = mm->getFreeMemory(resultBinSize);
-		memcpy(*repackedBin, *bin, resultBinSize);
-		mm->releaseMemory(bin);
-		return repackedBin;
-	}
-	return bin;
+	std::string binString((const char*)*bin, resultBinSize);
+	mm->releaseMemory(bin);
+	return binString;
 
 }
 
-MemoryBin* convertBase64ToBin(const std::string& base64String)
+std::string convertBase64ToBin(const std::string& base64String)
 {
 	/*
 	int sodium_base642bin(unsigned char * const bin, const size_t bin_maxlen,
@@ -108,20 +106,15 @@ MemoryBin* convertBase64ToBin(const std::string& base64String)
 
 	if (0 != sodium_base642bin(*bin, binSize, base64String.data(), encodedSize, nullptr, &resultBinSize, nullptr, sodium_base64_VARIANT_ORIGINAL)) {
 		mm->releaseMemory(bin);
-		return nullptr;
+		return "";
 	}
 
-	if (resultBinSize != binSize) {
-		MemoryBin* repackedBin = mm->getFreeMemory(resultBinSize);
-		memcpy(*repackedBin, *bin, resultBinSize);
-		mm->releaseMemory(bin);
-		return repackedBin;
-	}
-
-	return bin;
+	std::string binString((const char*)*bin, resultBinSize);
+	mm->releaseMemory(bin);
+	return binString;
 }
 
-MemoryBin* convertBase58ToBin(const std::string& base58String)
+std::string convertBase58ToBin(const std::string& base58String)
 {
 	/*
 	Decoding Base58
@@ -135,23 +128,38 @@ MemoryBin* convertBase58ToBin(const std::string& base58String)
 
 	auto mm = MemoryManager::getInstance();
 	size_t encodedSize = base58String.size();
-	size_t binSize = (encodedSize / 4) * 3;
-	size_t calculatedBinSize = binSize;
+	size_t binSize = (size_t)ceil(((double)encodedSize / 4.0) * 3.0);
 	auto bin = mm->getFreeMemory(binSize);
 	memset(*bin, 0, binSize);
 
 	//size_t resultBinSize = 0;
 	if (!b58tobin(*bin, &binSize, base58String.data(), encodedSize)) {
 		mm->releaseMemory(bin);
-		return nullptr;
+		return "";
 	}
 
-	if (calculatedBinSize != binSize) {
-		MemoryBin* repackedBin = mm->getFreeMemory(binSize);
-		memcpy(*repackedBin, *bin, binSize);
-		mm->releaseMemory(bin);
-		return repackedBin;
-	}
+	std::string binString((const char*)*bin, binSize);
+	mm->releaseMemory(bin);
+	return binString;
 
-	return bin;
+}
+
+std::string convertBinToBase58(const std::string& binString)
+{
+	//extern bool b58enc(char *b58, size_t *b58sz, const void *bin, size_t binsz);
+
+	auto mm = MemoryManager::getInstance();
+	size_t binSize = binString.size();
+	size_t encodedSize = binSize * 138 / 100 + 1;
+	auto encoded = mm->getFreeMemory(encodedSize);
+	memset(*encoded, 0, encodedSize);
+
+	if (!b58enc(*encoded, &encodedSize, binString.data(), binSize)) {
+		mm->releaseMemory(encoded);
+		return "";
+	}
+	std::string base58String((const char*)*encoded, encodedSize-1);
+	
+	mm->releaseMemory(encoded);
+	return base58String;
 }

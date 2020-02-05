@@ -10,7 +10,7 @@ public:
 	void handle(const jsonrpcpp::Request& request, Json& response);
 
 protected:
-	void putTransaction(MemoryBin* transactionBinary, MemoryBin* groupPublicBinary, Json& response);
+	void putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary, Json& response);
 
 
 };

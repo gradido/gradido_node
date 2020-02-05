@@ -1,7 +1,7 @@
 #include "JsonRPCHandler.h"
 
 #include "../lib/BinTextConverter.h"
-
+#include "../lib/Profiler.h"
 
 void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
 {
@@ -9,7 +9,7 @@ void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
 		if (request.params.has("group") && request.params.has("transaction")) {
 			auto group = convertBinTransportStringToBin(request.params.get("group"));
 			auto transaction = convertBinTransportStringToBin(request.params.get("transaction"));
-			if (!group || !transaction) {
+			if ("" == group || "" == transaction) {
 				response = { {"state", "error"}, {"msg", "wrong parameter format"} };
 			}
 			else {
@@ -28,7 +28,9 @@ void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
 	}
 }
 
-void JsonRPCHandler::putTransaction(MemoryBin* transactionBinary, MemoryBin* groupPublicBinary, Json& response)
+void JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary, Json& response)
 {
-
+	Profiler timeUsed;
+	auto groupBase58 = convertBinToBase58(groupPublicBinary);
+	response = { { "state", "error"}, {"groupBase58", groupBase58} };
 }

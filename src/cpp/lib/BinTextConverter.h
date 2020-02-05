@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_LIB_BIN_TEXT_CONVERTER_
 #define __GRADIDO_NODE_LIB_BIN_TEXT_CONVERTER_
 
-#include "../SingletonManager/MemoryManager.h"
+#include <string>
 
 enum StringTransportType {
 	STRING_TRANSPORT_TYPE_BASE64,
@@ -10,10 +10,12 @@ enum StringTransportType {
 	STRING_TRANSPORT_TYPE_UNKNOWN
 };
 
-MemoryBin* convertBinTransportStringToBin(const std::string& input);
-MemoryBin* convertHexToBin(const std::string& hexString);
-MemoryBin* convertBase64ToBin(const std::string& base64String);
-MemoryBin* convertBase58ToBin(const std::string& base58String);
+std::string convertBinTransportStringToBin(const std::string& input);
+std::string convertHexToBin(const std::string& hexString);
+std::string convertBase64ToBin(const std::string& base64String);
+std::string convertBase58ToBin(const std::string& base58String);
+
+std::string convertBinToBase58(const std::string& binString);
 
 StringTransportType getStringTransportType(const std::string& input);
 

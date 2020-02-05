@@ -19,7 +19,8 @@ FILE(GLOB HTTPInterface "src/cpp/HTTPInterface/*.h" "src/cpp/HTTPInterface/*.cpp
 FILE(GLOB JSONRPCInterface "src/cpp/JSONRPCInterface/*.h" "src/cpp/JSONRPCInterface/*.cpp")
 FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp" "src/cpp/lib/*.c")
 FILE(GLOB MODEL "src/cpp/model/*.h" "src/cpp/model/*.cpp")
-FILE(GLOB MODEL_FILES "src/cpp/model/files/*.h" "src/cpp/files/table/*.cpp")
+FILE(GLOB MODEL_FILES "src/cpp/model/files/*.h" "src/cpp/model/files/*.cpp")
+FILE(GLOB MODEL_TRANSACTIONS "src/cpp/model/transactions/*.h" "src/cpp/model/transactions/*.cpp")
 FILE(GLOB PROTO_GRADIDO "src/cpp/proto/gradido/*.cc" "src/cpp/proto/gradido/*.h")
 FILE(GLOB SINGLETON_MANAGER "src/cpp/SingletonManager/*.h" "src/cpp/SingletonManager/*.cpp")
 FILE(GLOB TASK "src/cpp/task/*.cpp" "src/cpp/task/*.h")
@@ -34,7 +35,7 @@ SET(LOCAL_SRCS
 	${CONTAINER} ${CONTROLLER}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
-	${MODEL} ${MODEL_FILES}
+	${MODEL} ${MODEL_FILES} ${MODEL_TRANSACTIONS}
 	${PROTO_GRADIDO}
 	${SINGLETON_MANAGER}
 	${TASK} ${TCP_SERVER}
@@ -51,6 +52,7 @@ source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
 source_group("model\\files" FILES ${MODEL_FILES})
+source_group("model\\transactions" FILES ${MODEL_TRANSACTIONS})
 source_group("model" FILES ${MODEL})
 source_group("proto" FILES ${PROTO_GRADIDO})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})

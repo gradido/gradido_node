@@ -32,6 +32,7 @@ public:
 	inline operator char*() { return (char*)mData; }
 	inline operator void* () { return mData; }
 	inline operator const unsigned char*() const { return mData; }
+	inline operator const char*() const { return (const char*)mData; }
 
 	inline size_t size() const { return static_cast<size_t>(mSize); }
 	inline operator size_t() const { return static_cast<size_t>(mSize); }
