@@ -23,6 +23,7 @@
 #include <sodium.h>
 #include <google/protobuf/stubs/common.h>
 
+#include "SingletonManager/GroupManager.h"
 
 MainServer::MainServer()
 	: _helpRequested(false)
@@ -152,14 +153,8 @@ int MainServer::main(const std::vector<std::string>& args)
 		
 		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
 
-		Poco::File groupIndexFile(Poco::Path(Poco::Path(ServerGlobals::g_FilesPath), "group.index"));
+		GroupManager::getInstance()->init("group.index");
 		
-		if (!groupIndexFile.exists()) { 				
-			groupIndexFile.createFile();
-		}
-		
-		ServerGlobals::g_GroupIndex = new controller::GroupIndex(new model::files::GroupIndex("group.index"));
-		ServerGlobals::g_GroupIndex->update();
 
 		// HTTP Interface Server
 		// set-up a server socket

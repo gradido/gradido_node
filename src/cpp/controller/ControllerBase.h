@@ -3,11 +3,14 @@
 
 #include "Poco/Mutex.h"
 
-class ControllerBase 
-{
-public:
-protected:
-	Poco::Mutex mWorkingMutex;
-};
+namespace controller {
+
+	class ControllerBase
+	{
+	public:
+	protected:
+		Poco::Mutex mWorkingMutex;
+	};
+}
 
 #endif //__GRADIDO_NODE_CONTROLLER_CONTROLLER_BASE_H

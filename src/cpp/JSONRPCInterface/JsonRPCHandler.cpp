@@ -32,5 +32,6 @@ void JsonRPCHandler::putTransaction(const std::string& transactionBinary, const 
 {
 	Profiler timeUsed;
 	auto groupBase58 = convertBinToBase58(groupPublicBinary);
+
 	response = { { "state", "error"}, {"groupBase58", groupBase58} };
 }
