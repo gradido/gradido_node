@@ -12,6 +12,7 @@
 #include "Poco/Net/SSLManager.h"
 #include "Poco/Environment.h"
 #include "Poco/Logger.h"
+#include "Poco/File.h"
 #include "Poco/Path.h"
 #include "Poco/AsyncChannel.h"
 #include "Poco/SimpleFileChannel.h"
@@ -143,8 +144,22 @@ int MainServer::main(const std::vector<std::string>& args)
 		// start cpu scheduler
 		uint8_t worker_count = Poco::Environment::processorCount() * 2;
 
+		ServerGlobals::g_FilesPath = Poco::Path::home() + ".gradido";
+		Poco::File homeFolder(ServerGlobals::g_FilesPath);
+		if (!homeFolder.exists()) {
+			homeFolder.createDirectory();
+		}
+		
 		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
 
+		Poco::File groupIndexFile(Poco::Path(Poco::Path(ServerGlobals::g_FilesPath), "group.index"));
+		
+		if (!groupIndexFile.exists()) { 				
+			groupIndexFile.createFile();
+		}
+		
+		ServerGlobals::g_GroupIndex = new controller::GroupIndex(new model::files::GroupIndex("group.index"));
+		ServerGlobals::g_GroupIndex->update();
 
 		// HTTP Interface Server
 		// set-up a server socket

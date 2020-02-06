@@ -2,7 +2,10 @@
 
 #include "proto/gradido/TransactionBody.pb.h"
 #include <sodium.h>
+#include <exception>
 #include "lib/Profiler.h"
+
+#include "ServerGlobals.h"
 
 #ifndef _TEST_BUILD
 
@@ -16,8 +19,21 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-
+	
 	MainServer app;
-	return app.run(argc, argv);
+	int result = 0;
+	try {
+		result = app.run(argc, argv);
+	}
+	catch (Poco::Exception& ex) {
+		printf("Poco Exception while init: %s\n", ex.displayText().data());
+		return -1;
+	}
+	catch (std::exception& ex) {
+		printf("std exception while init: %s\n", ex.what());
+		return -2;
+	}
+	ServerGlobals::clearMemory();
+	return result;
 }
 #endif
