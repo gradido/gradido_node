@@ -2,6 +2,8 @@
 
 #include "../lib/BinTextConverter.h"
 #include "../lib/Profiler.h"
+#include "../SingletonManager/GroupManager.h"
+#include "../model/transactions/Transaction.h"
 
 void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
 {
@@ -31,7 +33,25 @@ void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
 void JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary, Json& response)
 {
 	Profiler timeUsed;
+	auto gm = GroupManager::getInstance();
 	auto groupBase58 = convertBinToBase58(groupPublicBinary);
+	auto group = gm->findGroup(groupBase58);
+	auto transaction = new model::Transaction(transactionBinary);
+	if (transaction->errorCount() > 0) {
+		Json errorJson;
+		transaction->getErrors(errorJson);
+		response["errors"] = errorJson;
+		response["state"] = "error";
+		return;
+	}
+	
+	if (transaction->getID() > 1) {
 
-	response = { { "state", "error"}, {"groupBase58", groupBase58} };
+	}
+	else {
+		// it is the genesis transaction :)
+	}
+
+	response = { { "state", "error" },{ "groupBase58", groupBase58 } };
+	
 }

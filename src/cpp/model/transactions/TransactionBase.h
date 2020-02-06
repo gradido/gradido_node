@@ -13,6 +13,8 @@ namespace model {
 	class TransactionBase : public ErrorList
 	{
 	public:
+		virtual bool validate() = 0;
+
 	protected:
 		Poco::Mutex mWorkingMutex;
 	};

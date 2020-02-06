@@ -30,6 +30,7 @@ int GroupManager::init(const char* groupIndexFileName)
 
 	mGroupIndex = new controller::GroupIndex(new model::files::GroupIndex(groupIndexFileName));
 	mGroupIndex->update();
+	mInitalized = true;
 
 	return 0;
 }
@@ -38,4 +39,21 @@ GroupManager* GroupManager::getInstance()
 {
 	static GroupManager theOne;
 	return &theOne;
+}
+
+controller::Group* GroupManager::findGroup(const std::string& base58GroupHash)
+{
+	if (!mInitalized) return nullptr;
+	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	auto it = mGroups.find(base58GroupHash);
+	if (it != mGroups.end()) {
+		return it->second;
+	}
+
+	if (!mGroupIndex) return nullptr;
+
+	auto folder = mGroupIndex->getFolder(base58GroupHash);
+	auto group = new controller::Group(base58GroupHash, folder);
+	mGroups.insert(std::pair<std::string, controller::Group*>(base58GroupHash, group));
+	return group;
 }

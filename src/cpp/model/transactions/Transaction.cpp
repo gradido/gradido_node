@@ -15,4 +15,9 @@ namespace model {
 		}
 	}
 
+	bool Transaction::validate()
+	{
+
+	}
+
 }

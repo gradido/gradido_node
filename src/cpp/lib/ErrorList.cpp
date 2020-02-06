@@ -92,3 +92,14 @@ std::string ErrorList::getErrorsHtml()
 	return res;
 }
 
+int ErrorList::getErrors(Json& send)
+{
+	int count = 0;
+	while (mErrorStack.size() > 0) {
+		auto error = mErrorStack.top();
+		mErrorStack.pop();
+		send.push_back(error->getString());
+		count++;
+	}
+	return count;
+}

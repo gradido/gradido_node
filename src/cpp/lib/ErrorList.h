@@ -19,6 +19,8 @@
 #include "Poco/Net/StringPartSource.h"
 #include "Poco/Logger.h"
 
+#include "jsonrp.hpp"
+
 class ErrorList : public IErrorCollection
 {
 public:
@@ -40,6 +42,7 @@ public:
 		return recv->getErrors(send);
 	}
 	int getErrors(ErrorList* send);
+	int getErrors(Json& send);
 
 	void printErrors();
 	std::string getErrorsHtml();

@@ -11,6 +11,8 @@ namespace model {
 		Transaction(const std::string& transactionBinString);
 
 		inline int getID() const { return mProtoTransaction.id(); }
+
+		bool validate();
 	protected:
 		model::messages::gradido::Transaction mProtoTransaction;
 	};
