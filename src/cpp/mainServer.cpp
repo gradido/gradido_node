@@ -141,9 +141,8 @@ int MainServer::main(const std::vector<std::string>& args)
 		unsigned short tcp_port = (unsigned short)config().getInt("TCPServer.port", 8341);
 
 
+		ServerGlobals::g_CacheTimeout = config().getUInt("CacheTimeout", 600);
 		
-		// start cpu scheduler
-		uint8_t worker_count = Poco::Environment::processorCount() * 2;
 
 		ServerGlobals::g_FilesPath = Poco::Path::home() + ".gradido";
 		Poco::File homeFolder(ServerGlobals::g_FilesPath);
@@ -151,10 +150,15 @@ int MainServer::main(const std::vector<std::string>& args)
 			homeFolder.createDirectory();
 		}
 		
+		// start cpu scheduler
+		uint8_t worker_count = Poco::Environment::processorCount() * 2;
+		// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
+		uint8_t io_worker_count = config().getInt("io.workerCount", 2); 
 		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
+		ServerGlobals::g_WriteFileCPUScheduler = new UniLib::controller::CPUSheduler(io_worker_count, "IO Worker");
 
 		GroupManager::getInstance()->init("group.index");
-		
+
 
 		// HTTP Interface Server
 		// set-up a server socket
@@ -174,7 +178,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		// start the json server
 		jsonrpc_srv.start();
 
-		printf("[Gradido_LoginServer::main] started in %s, jsonrpc on port: %d\n", usedTime.string().data(), jsonrpc_port);
+		printf("[Gradido_Node::main] started in %s, jsonrpc on port: %d\n", usedTime.string().data(), jsonrpc_port);
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
 

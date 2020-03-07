@@ -163,3 +163,43 @@ std::string convertBinToBase58(const std::string& binString)
 	mm->releaseMemory(encoded);
 	return base58String;
 }
+
+std::string convertBinToBase64(const std::string& binString)
+{
+	auto mm = MemoryManager::getInstance();
+	size_t binSize = binString.size();
+	size_t encodedSize = sodium_base64_encoded_len(binSize, sodium_base64_VARIANT_ORIGINAL);
+	
+	auto base64 = mm->getFreeMemory(encodedSize);
+	memset(*base64, 0, encodedSize);
+
+	size_t resultBinSize = 0;
+
+	if (0 != sodium_bin2base64(*base64, encodedSize, (const unsigned char*)binString.data(), binSize, sodium_base64_VARIANT_ORIGINAL)) {
+		mm->releaseMemory(base64);
+		return "";
+	}
+
+	std::string base64String((const char*)*base64, encodedSize);
+	mm->releaseMemory(base64);
+	return base64String;
+}
+
+std::string convertBinToHex(const std::string& binString)
+{
+	auto mm = MemoryManager::getInstance();
+	size_t hexSize = binString.size() * 2 +1;
+	size_t binSize = binString.size();
+	MemoryBin* hex = mm->getFreeMemory(hexSize);
+	memset(*hex, 0, hexSize);
+
+	size_t resultBinSize = 0;
+
+	if (0 != sodium_bin2hex(*hex, hexSize, (const unsigned char*)binString.data(), binSize)) {
+		mm->releaseMemory(hex);
+		return "";
+	}
+	std::string hexString((const char*)*hex, hexSize);
+	mm->releaseMemory(hex);
+	return hexString;
+}

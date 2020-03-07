@@ -53,6 +53,9 @@ controller::Group* GroupManager::findGroup(const std::string& base58GroupHash)
 	if (!mGroupIndex) return nullptr;
 
 	auto folder = mGroupIndex->getFolder(base58GroupHash);
+	if (folder.depth() == 0) {
+		return nullptr;
+	}
 	auto group = new controller::Group(base58GroupHash, folder);
 	mGroups.insert(std::pair<std::string, controller::Group*>(base58GroupHash, group));
 	return group;

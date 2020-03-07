@@ -19,7 +19,7 @@ namespace controller {
 
 	void GroupIndex::clear()
 	{
-		Poco::Mutex::ScopedLock lock(mWorkingMutex);
+		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		for (int i = 0; i < mHashList.getNItems(); i++) {
 			delete mHashList.findByIndex(i);
 		}
@@ -30,7 +30,7 @@ namespace controller {
 	size_t GroupIndex::update()
 	{
 		clear();
-		Poco::Mutex::ScopedLock lock(mWorkingMutex);
+		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		auto cfg = mModel->getConfig();
 		std::vector<std::string> keys;
 		cfg->keys(keys);
@@ -54,7 +54,7 @@ namespace controller {
 
 	Poco::Path GroupIndex::getFolder(const std::string& hash)
 	{
-		Poco::Mutex::ScopedLock lock(mWorkingMutex);
+		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		DHASH id = DRMakeStringHash(hash.data(), hash.size());
 		std::string folderName;
 		for (auto it = mDoublettes.begin(); it != mDoublettes.end(); it++) {
@@ -70,7 +70,8 @@ namespace controller {
 			}
 		}
 		if (folderName.size() > 0) {
-			auto folder = Poco::Path(Poco::Path(ServerGlobals::g_FilesPath), Poco::Path(folderName));
+			auto folder = Poco::Path(Poco::Path(ServerGlobals::g_FilesPath + '/'));
+			folder.pushDirectory(folderName);
 			Poco::File file(folder);
 			if (!file.exists()) {
 				file.createDirectory();

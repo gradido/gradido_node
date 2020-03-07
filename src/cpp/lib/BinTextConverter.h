@@ -16,6 +16,8 @@ std::string convertBase64ToBin(const std::string& base64String);
 std::string convertBase58ToBin(const std::string& base58String);
 
 std::string convertBinToBase58(const std::string& binString);
+std::string convertBinToBase64(const std::string& binString);
+std::string convertBinToHex(const std::string& binString);
 
 StringTransportType getStringTransportType(const std::string& input);
 

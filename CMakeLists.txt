@@ -68,6 +68,7 @@ conan_basic_setup()
 #add_subdirectory("dependencies/curl")
 #add_subdirectory("dependencies/mariadb-connector-c")
 add_subdirectory("dependencies/jsonrpcpp")
+add_subdirectory("dependencies/leveldb")
 
 add_executable(Gradido_Node ${LOCAL_SRCS})
 #SUBDIRS("src/test")
@@ -95,7 +96,7 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node jsonrpcpp ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
 if(WIN32)
 TARGET_LINK_LIBRARIES(Gradido_Node optimized Shlwapi)
 TARGET_LINK_LIBRARIES(Gradido_Node debug Shlwapi)

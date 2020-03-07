@@ -2,7 +2,7 @@
 
 
 //#include "Poco/Net/MailMessage.h"
-#include "Poco/Net/MediaType.h"
+//#include "Poco/Net/MediaType.h"
 
 
 

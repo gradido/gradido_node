@@ -10,3 +10,6 @@
 [submodule "dependencies/libbase58"]
 	path = dependencies/libbase58
 	url = https://github.com/bitcoin/libbase58.git
+[submodule "dependencies/leveldb"]
+	path = dependencies/leveldb
+	url = https://github.com/google/leveldb.git
