@@ -18,21 +18,37 @@
 
 namespace controller {
 
+	/*!
+	* @author Dario Rekowski
+	* @date 2020-02-06
+	* @brief Main entry point for adding and searching for transactions
+	*/
+
 	class Group : public ControllerBase
 	{
 	public:
+		//! \brief Load group states via model::files::GroupState.
 		Group(std::string base58Hash, Poco::Path folderPath);
 		~Group();
 
-		// put new transaction at blockchain, if valid
-		//! \return true if valid, else false
+		//! \brief Put new transaction to block chain, if valid.
+		//! \return True if valid, else false.
 		bool addTransaction(Poco::AutoPtr<model::Transaction> newTransaction);
 
-		//!  \param address = public key
+		//! \brief Find last transaction of address account in memory or block chain.
+		//! \param address Address = user account public key.
 		Poco::AutoPtr<model::Transaction> findLastTransaction(const std::string& address);
+		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
+		//!
+		//! Use with care, can need some time and return huge amount of data.
+		//! \param address Address = user account public key.
 		std::vector<Poco::AutoPtr<model::Transaction>> findTransactions(const std::string& address);
+		//! \brief Find transactions of account in memory or block chain from a specific month.
+		//! \param address User account public key.
 		std::vector<Poco::AutoPtr<model::Transaction>> findTransactions(const std::string& address, int month, int year);
 
+		//! \brief Search for creation transactions from specific month and add balances together.
+		//! \param address User account public key.
 		uint64_t calculateCreationSum(const std::string& address, int month, int year);
 
 	protected:
@@ -46,19 +62,10 @@ namespace controller {
 		int mLastKtoKey;
 		int mLastBlockNr;
 
-		struct BlockEntry 
-		{
-			BlockEntry(Poco::UInt32 blockNr);
-
-			Poco::AutoPtr<Block> block;
-			Poco::AutoPtr<BlockIndex> blockIndex;
-			Poco::UInt32 blockNr;
-		};
-
 		//std::list<BlockEntry> mBlocks;
-		Poco::AccessExpireCache<Poco::UInt32, BlockEntry> mCachedBlocks;
+		Poco::AccessExpireCache<Poco::UInt32, Block> mCachedBlocks;
 
-		Poco::SharedPtr<BlockEntry> getBlockEntry(Poco::UInt32 blockNr);
+		Poco::SharedPtr<Block> getBlock(Poco::UInt32 blockNr);
 
 	};
 }

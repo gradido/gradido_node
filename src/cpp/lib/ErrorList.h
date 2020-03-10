@@ -1,10 +1,10 @@
 /*!
 *
-* \author: einhornimmond
+* \author einhornimmond
 *
-* \date: 07.03.19
+* \date 19-03-07
 *
-* \brief: error
+* \brief base class for temporary storage from errors
 */
 
 #ifndef DR_LUA_WEB_MODULE_ERROR_ERROR_LIST_H

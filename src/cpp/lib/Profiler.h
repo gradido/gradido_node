@@ -1,10 +1,10 @@
 /*!
 *
-* \author: einhornimmond
+* \author einhornimmond
 *
-* \date: 08.03.19
+* \date 19-03-08
 *
-* \brief: easy to use time profiler
+* \brief easy to use time profiler
 */
 
 #ifndef DR_LUA_WEB_MODULE_CORE_LIB_PROFILER_H

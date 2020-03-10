@@ -6,7 +6,7 @@
 #include "../ServerGlobals.h"
 
 GroupManager::GroupManager()
-	: mInitalized(false), mGroupIndex(nullptr)
+	: mInitalized(false), mGroupIndex(nullptr), mGroupAccessExpireCache(ServerGlobals::g_CacheTimeout * 1000)
 {
 	
 }
@@ -41,13 +41,13 @@ GroupManager* GroupManager::getInstance()
 	return &theOne;
 }
 
-controller::Group* GroupManager::findGroup(const std::string& base58GroupHash)
+Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& base58GroupHash)
 {
 	if (!mInitalized) return nullptr;
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
-	auto it = mGroups.find(base58GroupHash);
-	if (it != mGroups.end()) {
-		return it->second;
+	//Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	auto skey = mGroupAccessExpireCache.get(base58GroupHash);
+	if (!skey.isNull()) {
+		return skey;
 	}
 
 	if (!mGroupIndex) return nullptr;
@@ -56,7 +56,8 @@ controller::Group* GroupManager::findGroup(const std::string& base58GroupHash)
 	if (folder.depth() == 0) {
 		return nullptr;
 	}
-	auto group = new controller::Group(base58GroupHash, folder);
-	mGroups.insert(std::pair<std::string, controller::Group*>(base58GroupHash, group));
+	Poco::SharedPtr<controller::Group> group = new controller::Group(base58GroupHash, folder);
+	mGroupAccessExpireCache.add(base58GroupHash, group);
+	//mGroups.insert(std::pair<std::string, controller::Group*>(base58GroupHash, group));
 	return group;
 }

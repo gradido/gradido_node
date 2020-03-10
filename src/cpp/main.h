@@ -22,16 +22,16 @@
 * For Gradido transactions google protobuf messages are used, inspired by hedera hashgraph message format. \n 
 * It all starting with a transaction. This will later be exchanged with hedera consensus message. \n
 * \n
-* message Transaction {\n
+* <code>message Transaction {\n
 * &nbsp;uint64 	id = 1; // unique per group, starting with 1, counting upwards\n
 * &nbsp;TimestampSeconds received = 2; // world time, received at ordering service, currently community server, later hedera hashgraph\n
 * &nbsp;SignatureMap sigMap = 3; // containing signature - pubkey pairs Byte\n
 * &nbsp;bytes txHash = 4; // hash for complete transaction\n
 * &nbsp;bytes bodyBytes = 5; // containing TransactionBody but serialized, like hedera do it\n
-* }\n
+* }</code>\n
 * \n
 * \n
-* message TransactionBody {\n 
+* <code>message TransactionBody {\n 
 * &nbsp;string memo = 1; // max 150 chars, mainly encrypted with shared keys \n 
 * &nbsp;TimestampSeconds created = 2; // world time, creation date of transaction\n 
 * // specific transactions, not yet complete. \n
@@ -41,7 +41,7 @@
 * &nbsp;&nbsp;Transfer transfer = 8;// transaction type for sending gradidos from one to another\n
 * &nbsp;&nbsp;TransactionCreation creation = 9;// transation type for the gradido creation \n
 * &nbsp;}\n
-* }\n
+* }</code>\n
 *
 * Mainly it exist two transaction types: State Changes and Gradido Transaction.\n
 * <h3>State Changes:</h3>

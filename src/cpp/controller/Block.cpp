@@ -2,8 +2,9 @@
 #include "../ServerGlobals.h"
 
 namespace controller {
-	Block::Block(uint64_t firstTransactionIndex)
-		: mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout)
+	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath)
+		: mBlockNr(blockNr), mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+		  mBlockFile(groupFolderPath, blockNr)
 	{
 
 	}
@@ -18,23 +19,27 @@ namespace controller {
 		mSerializedTransactions.clear();
 	}
 
-	void Block::pushTransaction(const std::string& serializedTransaction, uint64_t index) 
+	bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 
-		auto entry = new TransactionEntry;
-		entry->index = index;
-		entry->serializedTransaction = serializedTransaction;
+		//auto insertPair = mSerializedTransactions.insert(std::pair<uint64_t, TransactionEntry*>(transactionNr, entry));
+		auto transactionEntry = new TransactionEntry(transactionNr, serializedTransaction);
+		//transactionEntry->fileCursor = getFileCursor(transactionNr);
+		transactionEntry->fileCursor = mBlockFile.appendLine(serializedTransaction);
+		if (transactionEntry->fileCursor > 0) {
+			mSerializedTransactions.add(transactionNr, transactionEntry);
+			return true;
+		}
+		return false;
 
-
-		auto insertPair = mSerializedTransactions.insert(std::pair<uint64_t, TransactionEntry*>(index, entry));
-		if (insertPair.second) {
+		/*if (insertPair.second) {
 			auto prevEntryIt = insertPair.first--;
 			calculateFileCursor(prevEntryIt->second, entry);
-		}
+		}*/
 	}
 
-	int32_t Block::getFileCursor(uint64_t index)
+	int32_t Block::getFileCursor(uint64_t transactionNr)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 

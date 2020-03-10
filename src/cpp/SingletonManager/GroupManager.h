@@ -5,8 +5,20 @@
 #include "../controller/Group.h"
 
 #include "Poco/Mutex.h"
+#include "Poco/AccessExpireCache.h"
 
-#include <unordered_map>
+//#include <unordered_map>
+
+/*!
+ * 
+ * @author Dario Rekowski
+ * 
+ * @date 2020-02-06
+ *
+ * @brief for getting controller::Group for group public key
+ * 
+ *  TODO: function to adding group if program is running (new group not in group.index file)
+ */
 
 class GroupManager
 {
@@ -15,17 +27,22 @@ public:
 
 	static GroupManager* getInstance();
 
+	//! load group index file and fill hash list with group public key = folder name pairs
 	int init(const char* groupIndexFileName);
 
-	controller::Group* findGroup(const std::string& base58GroupHash);
+	//! \brief getting group object from Poco::AccessExpireCache or create if not in cache and put in cache
+	//!
+	//! Poco::AccessExpireCache use his own mutex
+	Poco::SharedPtr<controller::Group> findGroup(const std::string& base58GroupHash);
 
 protected:
+	// load 
 	GroupManager();
 
-	Poco::Mutex mWorkingMutex;
 	bool mInitalized;
 	controller::GroupIndex* mGroupIndex;
-	std::unordered_map<std::string, controller::Group*> mGroups;
+	//std::unordered_map<std::string, controller::Group*> mGroups;
+	Poco::AccessExpireCache<std::string, controller::Group> mGroupAccessExpireCache;
 
 };
 

@@ -4,6 +4,12 @@
 
 #include "Poco/Logger.h"
 
+/*!
+ * @author Dario Rekowski
+ * @date  2020-02-27
+ * @brief hold logger instance in memory for program-wide accesses
+ */
+
 class LoggerManager
 {
 public:

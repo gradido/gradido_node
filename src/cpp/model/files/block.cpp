@@ -11,7 +11,7 @@
 
 namespace model {
 	namespace files {
-		Block::Block(Poco::Path path, Poco::UInt32 blockNr)
+		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
 			: mBlockPath(path), mBlockNr(blockNr), mCurrentFileSize(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);

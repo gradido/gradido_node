@@ -17,16 +17,23 @@ namespace model {
 		class Block : public FileBase, public ITimeout
 		{
 		public:
-			Block(Poco::Path path, Poco::UInt32 blockNr);
+			Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 			~Block();
 
-			// called from timeout manager
+			//! \brief close block file if not used > ServerGlobals::g_CacheTimeout  
+			//!
+			//! called from timeout manager
 			void checkTimeout();
 
 			//! \return -1 error locking file for reading
 			//! \return -2 error invalid size (greater as file size)
 			//! \return 0 ok
 			int readLine(Poco::UInt32 startReading, std::string& resultString);
+
+			//! \brief call appendLines
+			//! \return file cursor pos at start from this line in file (0 at start of file)
+			//! \return -1 if block file couldn't locked
+			//! \return -2 if uint32 data type isn't enough anymore
 			Poco::Int32 appendLine(const std::string& line);
 			std::vector<Poco::UInt32> appendLines(const std::vector<std::string>& lines);
 

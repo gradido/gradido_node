@@ -107,7 +107,15 @@ namespace model {
 			Poco::FileOutputStream file(filePath);
 
 			for (auto it = mAddressesIndices.begin(); it != mAddressesIndices.end(); it++) {
-				sortedMap.insert(std::pair<int, std::string>(it->second, it->first));
+				auto inserted = sortedMap.insert(std::pair<int, std::string>(it->second, it->first));
+				if (!inserted.second) {
+					addError(new Error(__FUNCTION__, "inserting index address pair failed, index already exist!"));
+					std::string currentPair = std::to_string(it->second) + ": " + it->first;
+					addError(new ParamError(__FUNCTION__, "current pair", currentPair.data()));
+					std::string lastPair = std::to_string(inserted.first->first) + ": " + inserted.first->second;
+					addError(new ParamError(__FUNCTION__, "last pair", lastPair.data()));
+					throw new Poco::Exception("[model::files::AddressIndex] inserting index address pair failed, index already exist!");
+				}
 				file << it->first << it->second;
 			}
 			auto hash = calculateHash(sortedMap);
