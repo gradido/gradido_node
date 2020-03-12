@@ -4,7 +4,7 @@
 namespace controller {
 	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath)
 		: mBlockNr(blockNr), mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
-		  mBlockFile(groupFolderPath, blockNr)
+		  mBlockFile(new model::files::Block(groupFolderPath, blockNr))
 	{
 
 	}
@@ -26,7 +26,7 @@ namespace controller {
 		//auto insertPair = mSerializedTransactions.insert(std::pair<uint64_t, TransactionEntry*>(transactionNr, entry));
 		auto transactionEntry = new TransactionEntry(transactionNr, serializedTransaction);
 		//transactionEntry->fileCursor = getFileCursor(transactionNr);
-		transactionEntry->fileCursor = mBlockFile.appendLine(serializedTransaction);
+		transactionEntry->fileCursor = mBlockFile->appendLine(serializedTransaction);
 		if (transactionEntry->fileCursor > 0) {
 			mSerializedTransactions.add(transactionNr, transactionEntry);
 			return true;
@@ -39,44 +39,32 @@ namespace controller {
 		}*/
 	}
 
-	int32_t Block::getFileCursor(uint64_t transactionNr)
+	int Block::getTransaction(uint64_t transactionNr, std::string& serializedTransaction)
+	{
+		if (transactionNr == 0) return -1;
+		auto transactionEntry = mSerializedTransactions.get(transactionNr);
+		if (transactionEntry.isNull()) {
+			// read from file system	
+
+		} 
+		if (transactionEntry.isNull()) {
+			return -1;
+		}
+
+		serializedTransaction = transactionEntry->serializedTransaction;
+		return 0;
+	}
+
+	void Block::checkTimeout()
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 
-		auto it = mSerializedTransactions.find(index);
-		if (it == mSerializedTransactions.end()) {
-			return -1;
-		}
-		auto entry = it->second;
-		if (entry->fileCursor || it->first == mFirstTransactionIndex) {
-			return entry->fileCursor;
-		}
-		updateFileCursors();
-		if (entry->fileCursor || it->first == mFirstTransactionIndex) {
-			return entry->fileCursor;
-		}
-		return -2;
-	}
-
-	void Block::updateFileCursors()
-	{
-		TransactionEntry* prevEntry = nullptr;
-		for (auto it = mSerializedTransactions.begin(); it != mSerializedTransactions.end(); it++) {
-			if (prevEntry) {
-				if (!calculateFileCursor(prevEntry, it->second)) {
-					break;
-				}
+		if (!mTransactionWriteTask.isNull()) {			
+			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
+				mTransactionWriteTask = nullptr;
 			}
-			prevEntry = it->second;
 		}
 	}
 
-	bool Block::calculateFileCursor(TransactionEntry* previousEntry, TransactionEntry* currentEntry)
-	{
-		if (previousEntry->fileCursor || previousEntry->index == mFirstTransactionIndex) {
-			currentEntry->fileCursor = previousEntry->fileCursor + 2 + previousEntry->serializedTransaction.size();
-			return true;
-		}
-		return false;
-	}
 }

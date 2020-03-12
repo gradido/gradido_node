@@ -16,10 +16,12 @@ namespace ServerGlobals {
 	extern UniLib::controller::CPUSheduler* g_WriteFileCPUScheduler;
 	extern controller::GroupIndex*			g_GroupIndex;
 	extern std::string						g_FilesPath;
-	// cache timeout in seconds, default 10 minutes
+	//! cache timeout in seconds, default 10 minutes
 	extern Poco::UInt16						g_CacheTimeout;
-	// in which timespans the timeout manager checks timeouts in seconds, default 1 minute
+	//! in which timespan the timeout manager checks timeouts in seconds, default 1 minute
 	extern Poco::UInt16						g_TimeoutCheck;
+	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
+	extern Poco::UInt16						g_WriteToDiskTimeout;
 
 	void clearMemory();
 };

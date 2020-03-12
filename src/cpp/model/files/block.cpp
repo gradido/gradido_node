@@ -12,7 +12,7 @@
 namespace model {
 	namespace files {
 		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
-			: mBlockPath(path), mBlockNr(blockNr), mCurrentFileSize(0)
+			: mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);
 			sprintf(fileName, "blk%08d.dat", blockNr);
@@ -21,6 +21,7 @@ namespace model {
 			if (!file.exists()) {
 				file.createFile();
 			}
+
 			TimeoutManager::getInstance()->registerTimeout(this);
 		}
 

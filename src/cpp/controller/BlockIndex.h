@@ -6,6 +6,17 @@
 #include <map>
 
 namespace controller {
+
+	/*!
+	 * @author Dario Rekowski
+	 * @date 2020-02-12
+	 * @brief 
+	 *
+	 * map: uint32 file cursor, uint64 transaction nr 
+	 * map: address index, file cursors
+	 * map: year, map: month, address indices
+	 */
+
 	class BlockIndex : public ControllerBase
 	{
 	public:

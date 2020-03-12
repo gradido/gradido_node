@@ -44,12 +44,15 @@ namespace model {
 			bool validateHash();
 
 		protected:
+			//! \brief open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed
+			//! \return block file stream
 			Poco::SharedPtr<Poco::FileStream> getOpenFile();
-			// very expensive, read in whole file and calculate hash
+			//! \brief very expensive, read in whole file and calculate hash
 			MemoryBin* calculateHash();
 
 			Poco::Path   mBlockPath;
 			Poco::UInt32 mBlockNr;
+			Poco::UInt64 mLastWrittenTransactionNr;
 
 			Poco::Timestamp mLastUsed;
 			Poco::SharedPtr<Poco::FileStream>	mBlockFile;

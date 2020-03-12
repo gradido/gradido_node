@@ -10,6 +10,7 @@ include_directories(
 	"dependencies" 
 	"dependencies/iroha-ed25519/include"
 	"dependencies/jsonrpcpp/lib"
+	"dependencies/googletest/googletest/include"
 )
 
 
@@ -69,6 +70,7 @@ conan_basic_setup()
 #add_subdirectory("dependencies/mariadb-connector-c")
 add_subdirectory("dependencies/jsonrpcpp")
 add_subdirectory("dependencies/leveldb")
+#add_subdirectory("dependencies/googletest")
 
 add_executable(Gradido_Node ${LOCAL_SRCS})
 #SUBDIRS("src/test")
@@ -91,8 +93,6 @@ find_library(IROHA_ED25519 ed25519 PATHS "dependencies/iroha-ed25519/build" REQU
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
 
-
-
 endif(WIN32)
 
 
@@ -110,3 +110,16 @@ install(TARGETS Gradido_Node RUNTIME DESTINATION /usr/local/bin)
 endif(UNIX)
 
 enable_testing()
+
+#  ----------------------    Test -----------------------------------------
+
+add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST})
+target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
+
+target_link_libraries(Gradido_Node_Test ${CONAN_LIBS} ${IROHA_ED25519})
+
+if(WIN32)
+	
+else(WIN32)
+	target_link_libraries(Gradido_Node_Test PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL protoc protobuf -pthread)
+endif(WIN32)

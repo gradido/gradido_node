@@ -48,6 +48,7 @@ namespace UniLib {
 				lock();
 				while (!std::queue<ResourceType>::empty()) std::queue<ResourceType>::pop();
 				unlock();
+				
 			}
 			void push(ResourceType val) 
 			{
@@ -78,6 +79,7 @@ namespace UniLib {
 				return false;
 			}
 
+			inline size_t size() { lock(); size_t _size = std::queue<ResourceType>::size();  unlock(); return _size; }
 
 		};
 

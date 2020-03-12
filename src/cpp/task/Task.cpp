@@ -59,7 +59,7 @@ namespace UniLib {
 
 		void Task::duplicate()
 		{
-			Poco::Mutex::ScopedLock _lock(mReferenceMutex);
+			Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
 			//mReferenceMutex.lock();
 			mReferenceCount++;
 			//printf("[Task::duplicate] new value: %d\n", mReferenceCount);
@@ -69,7 +69,7 @@ namespace UniLib {
 		void Task::release()
 		{
 			//mReferenceMutex.lock();
-			Poco::Mutex::ScopedLock _lock(mReferenceMutex);
+			Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
 			mReferenceCount--;
 			//printf("[Task::release] new value: %d\n", mReferenceCount);
 			if (0 == mReferenceCount) {

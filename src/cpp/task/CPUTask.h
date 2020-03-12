@@ -22,11 +22,11 @@
 
 /*!
  *
- * \author: Dario Rekowski
+ * \author Dario Rekowski
  * 
- * \date: 27.09.15
+ * \date 2015-09-27
  *
- * \desc: One Task for the CPU, only calculation
+ * \brief One Task for the CPU, only calculation
  */
 
 #ifndef __DR_UNIVERSUM_LIB_CONTROLLER_CPU_TASK_H__

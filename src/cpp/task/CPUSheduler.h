@@ -2,7 +2,7 @@
 *                                                                         *
 * UniversumLib, collection of classes for generating and go through a     *
 * whole universe. It is for my Gameproject Spacecraft					   *
-* Copyright (C) 2014, 2015, 2016, 2017 Dario Rekowski.					   *
+* Copyright (C) Dario Rekowski.					   *
 * Email: dario.rekowski@gmx.de   Web: www.spacecrafting.de                *
 *                                                                         *
 * This program is free software: you can redistribute it and/or modify    *
@@ -22,11 +22,13 @@
 
 /*!
  *
- * \author: Dario Rekowski
+ * \author Dario Rekowski
  * 
- * \date: 27.09.15
+ * \date 2015-09-27
  *
- * \desc: Scheduler for CPU Tasks, multiple threads
+ * \brief Scheduler for CPU Tasks, multiple threads
+ *
+ * Modified to use Poco::Thread instead SDL Threads
  */
 
 #ifndef __DR_UNIVERSUM_LIB_CONTROLLER_CPU_SHEDULER_H__

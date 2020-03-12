@@ -3,11 +3,12 @@
 namespace ServerGlobals {
 
 	UniLib::controller::CPUSheduler* g_CPUScheduler = nullptr;
-	extern UniLib::controller::CPUSheduler* g_WriteFileCPUScheduler = nullptr;
+	UniLib::controller::CPUSheduler* g_WriteFileCPUScheduler = nullptr;
 	controller::GroupIndex* g_GroupIndex = nullptr;
 	std::string	g_FilesPath;
 	Poco::UInt16							g_CacheTimeout = 600;
-	extern Poco::UInt16						g_TimeoutCheck = 60;
+	Poco::UInt16						g_TimeoutCheck = 60;
+	Poco::UInt16						g_WriteToDiskTimeout = 10;
 
 	void clearMemory()
 	{

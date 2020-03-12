@@ -11,8 +11,16 @@ namespace model {
 		class FileBase : public ErrorList
 		{
 		public:
+			FileBase(): mRefCount(1) {}
+
+			//! for poco auto ptr
+			void duplicate();
+			void release();
 		protected:
 			Poco::FastMutex mFastMutex;
+			Poco::FastMutex mReferenceMutex;
+
+			int	 mRefCount;
 		};
 	}
 }
