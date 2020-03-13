@@ -1,11 +1,20 @@
 #include "BlockIndex.h"
 #include "../../SingletonManager/FileLockManager.h"
 
+#include "Poco/File.h"
+
 namespace model {
 	namespace files {
-		BlockIndex::BlockIndex(const std::string& filename)
-			: mFilename(filename)
+		BlockIndex::BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
 		{
+			char fileName[16]; memset(fileName, 0, 16);
+			sprintf(fileName, "blk%08d.index", blockNr);
+			groupFolderPath.append(fileName);
+			Poco::File file(groupFolderPath);
+			if (!file.exists()) {
+				file.createFile();
+			}
+			mFilename = groupFolderPath.toString();
 
 		}
 
@@ -35,6 +44,9 @@ namespace model {
 				file.write((const char*)block, block->size());
 				delete block;
 			}
+
+			// TODO: calculate sha256 file hash
+
 			fl->unlock(mFilename);
 			return true;
 		}

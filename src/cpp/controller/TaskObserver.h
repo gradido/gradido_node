@@ -1,0 +1,79 @@
+/*!
+*
+* \author: einhornimmond
+*
+* \date: 10.01.20
+*
+* \brief: observe tasks, for example passwort creation or transactions
+*/
+
+#ifndef DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H
+#define DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H
+
+#include "Poco/Mutex.h"
+#include "../lib/DRHashList.h"
+#include "../lib/MultithreadContainer.h"
+#include "../task/WriteTransactionsToBlockTask.h"
+
+#include <vector>
+
+enum TaskObserverType {
+	TASK_OBSERVER_WRITE_BLOCK,
+	TASK_OBSERVER_COUNT,
+	TASK_OBSERVER_INVALID
+};
+
+/*! 
+ * @author Dario Rekowski
+ * @date 2020-03-12
+ * @brief Container for keeping track of running tasks
+ *
+ * to check if a specific transaction was already insert and waiting to be written
+ */
+
+class TaskObserver : public UniLib::lib::MultithreadContainer
+{
+public:
+	TaskObserver();
+	~TaskObserver();
+	
+	//! \brief adding WriteTransactionsToBlockTask to map and read transactions
+	//! \return false if tasks already exist
+	bool addBlockWriteTask(Poco::AutoPtr<WriteTransactionsToBlockTask> blockWriteTask);
+
+	//! \brief remove WriteTransactionsToBlockTask from map and transactions
+	//! \return false if entry not found, else return true
+	bool removeBlockWriteTask(WriteTransactionsToBlockTask* blockWriteTask);
+
+	//! \brief remove Tasks
+	//! \return return false if task not found or unknown type, else true
+	bool removeTask(UniLib::controller::Task* task);
+	
+	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
+	//! \return true if transaction is pending and false if not
+	bool isTransactionPending(uint64_t transactionNr);
+
+	static const char* TaskObserverTypeToString(TaskObserverType type);
+	static TaskObserverType StringToTaskObserverType(const std::string& typeString);
+
+protected:
+	Poco::FastMutex mFastMutex;
+	typedef std::pair<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
+	std::map<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
+	typedef std::pair<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
+	std::map<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> mTransactionsForTasks;
+	
+};
+
+class TaskObserverFinishCommand : public UniLib::controller::Command
+{
+public:
+	TaskObserverFinishCommand(TaskObserver* taskObserver) : mTaskObserver(taskObserver) {}
+
+	int taskFinished(UniLib::controller::Task* task) { mTaskObserver->removeTask(task); return 0; }
+
+protected:
+	TaskObserver* mTaskObserver;
+};
+
+#endif //DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H

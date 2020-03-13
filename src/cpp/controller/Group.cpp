@@ -7,16 +7,16 @@ namespace controller {
 	Group::Group(std::string base58Hash, Poco::Path folderPath)
 		: mBase58GroupHash(base58Hash), 
 		mFolderPath(folderPath), mAddressIndex(folderPath), mGroupState(folderPath),
-		mLastKtoKey(0), mLastBlockNr(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000)
+		mLastAddressIndex(0), mLastBlockNr(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000)
 	{
-		mLastKtoKey = mGroupState.getInt32ValueForKey("lastKtoIndex", mLastKtoKey);
+		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
 
 	}
 
 	Group::~Group()
 	{
-		mGroupState.setKeyValue("lastKtoIndex", std::to_string(mLastKtoKey));
+		mGroupState.setKeyValue("lastAddressIndex", std::to_string(mLastAddressIndex));
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
 	}
 
@@ -132,7 +132,7 @@ namespace controller {
 			return block;
 		}
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
-		block = new Block(blockNr);
+		block = new Block(blockNr, &mTaskObserver);
 		
 	}
 

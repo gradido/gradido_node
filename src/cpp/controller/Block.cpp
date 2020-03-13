@@ -1,42 +1,44 @@
 #include "Block.h"
 #include "../ServerGlobals.h"
 
-namespace controller {
-	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath)
-		: mBlockNr(blockNr), mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
-		  mBlockFile(new model::files::Block(groupFolderPath, blockNr))
-	{
+#include "TaskObserver.h"
 
+
+namespace controller {
+	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver)
+		: mBlockNr(blockNr), mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
+		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver)
+	{
+		TimeoutManager::getInstance()->registerTimeout(this);
 	}
 
 	Block::~Block() 
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		TimeoutManager::getInstance()->unregisterTimeout(this);
 
 		/*for (auto it = mSerializedTransactions.begin(); it != mSerializedTransactions.end(); it++) {
 			delete it->second;
 		}*/
+		
 		mSerializedTransactions.clear();
+		
 	}
 
-	bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
+	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
+	bool Block::pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 
-		//auto insertPair = mSerializedTransactions.insert(std::pair<uint64_t, TransactionEntry*>(transactionNr, entry));
-		auto transactionEntry = new TransactionEntry(transactionNr, serializedTransaction);
-		//transactionEntry->fileCursor = getFileCursor(transactionNr);
-		transactionEntry->fileCursor = mBlockFile->appendLine(serializedTransaction);
-		if (transactionEntry->fileCursor > 0) {
-			mSerializedTransactions.add(transactionNr, transactionEntry);
-			return true;
+		if (mTransactionWriteTask.isNull()) {
+			mTransactionWriteTask = new WriteTransactionsToBlockTask(mBlockFile, mBlockIndex);
 		}
-		return false;
+		mTransactionWriteTask->addSerializedTransaction(transaction);
+		mSerializedTransactions.add(transaction->getTransactionNr(), transaction);
+		
+		return true;
 
-		/*if (insertPair.second) {
-			auto prevEntryIt = insertPair.first--;
-			calculateFileCursor(prevEntryIt->second, entry);
-		}*/
 	}
 
 	int Block::getTransaction(uint64_t transactionNr, std::string& serializedTransaction)
@@ -51,7 +53,7 @@ namespace controller {
 			return -1;
 		}
 
-		serializedTransaction = transactionEntry->serializedTransaction;
+		serializedTransaction = transactionEntry->getSerializedTransaction();
 		return 0;
 	}
 
@@ -61,7 +63,9 @@ namespace controller {
 
 		if (!mTransactionWriteTask.isNull()) {			
 			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
 				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
+				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
 				mTransactionWriteTask = nullptr;
 			}
 		}

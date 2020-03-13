@@ -25,7 +25,7 @@ namespace model {
 		class BlockIndex : public FileBase
 		{
 		public:
-			BlockIndex(const std::string& filename);
+			BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 			~BlockIndex();
 
 			inline void addMonthBlock(uint8_t month) {mDataBlocks.push(new MonthBlock(month));}

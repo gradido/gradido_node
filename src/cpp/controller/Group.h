@@ -5,6 +5,7 @@
 #include "AddressIndex.h"
 #include "Block.h"
 #include "BlockIndex.h"
+#include "TaskObserver.h"
 
 #include "../model/transactions/Transaction.h"
 
@@ -51,15 +52,18 @@ namespace controller {
 		//! \param address User account public key.
 		uint64_t calculateCreationSum(const std::string& address, int month, int year);
 
+
+
 	protected:
 
+		TaskObserver mTaskObserver;
 		std::string mBase58GroupHash;
 		Poco::Path mFolderPath;
 		AddressIndex mAddressIndex;
 		model::files::GroupState mGroupState;
 
 		Poco::AutoPtr<model::Transaction> mLastTransaction;
-		int mLastKtoKey;
+		int mLastAddressIndex;
 		int mLastBlockNr;
 
 		//std::list<BlockEntry> mBlocks;

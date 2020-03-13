@@ -6,6 +6,7 @@
 #include "BlockIndex.h"
 
 #include "../model/files/Block.h"
+#include "../model/TransactionEntry.h"
 
 #include "../task/WriteTransactionsToBlockTask.h"
 
@@ -14,50 +15,44 @@
 #include "Poco/AccessExpireCache.h"
 
 //#include "../SingletonManager/FileLockManager.h"
+class TaskObserver;
 
 namespace controller {
 
-	struct TransactionEntry
-	{
-		TransactionEntry()
-			: transactionNr(0), fileCursor(0) {}
-
-		TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction)
-			: transactionNr(_transactionNr), serializedTransaction(_serializedTransaction), fileCursor(0) {}
-
-		bool operator < (const TransactionEntry& b) { return transactionNr < b.transactionNr;}
-
-		inline void setFileCursor(uint32_t newFileCursorValue) { Poco::FastMutex::ScopedLock lock(fastMutex); fileCursor = newFileCursorValue; }
-		inline uint32_t getFileCursor() { Poco::FastMutex::ScopedLock lock(fastMutex); return fileCursor; }
-
-		uint64_t transactionNr;
-		std::string serializedTransaction;
-		uint32_t fileCursor;
-		Poco::FastMutex fastMutex;
-	};
+	/*! 
+	 * @author Dario Rekowski
+	 * @date 2020-02-06
+	 * @brief interface for adding and getting transactions from specific block
+	 */
 
 	class Block : public ControllerBase, public ITimeout
 	{
 	public:
-		Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath);
+		Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver);
 		~Block();
 
-		bool pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr);
+		//! \brief put transaction to cache and file system
+		bool pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction);
 		
+		//! \brief load transaction from cache or file system
 		int getTransaction(uint64_t transactionNr, std::string& serializedTransaction);
 
+		//! \brief called from timeout manager for scheduling WriteTransactionsToBlockTask 
 		void checkTimeout();
+
+		inline Poco::SharedPtr<BlockIndex> getBlockIndex() { return mBlockIndex; }
 			
 	protected:
-
+		
 		uint32_t mBlockNr;
 		uint64_t mFirstTransactionIndex;
 		int64_t mKtoIndexLowest;
 		int64_t mKtoIndexHighest;
 
-		Poco::AccessExpireCache<uint64_t, TransactionEntry> mSerializedTransactions;
+		TaskObserver *mTaskObserver;
+		Poco::AccessExpireCache<uint64_t, model::TransactionEntry> mSerializedTransactions;
 
-		BlockIndex mBlockIndex;
+		Poco::SharedPtr<BlockIndex> mBlockIndex;
 		Poco::AutoPtr<model::files::Block> mBlockFile;
 		Poco::AutoPtr<WriteTransactionsToBlockTask> mTransactionWriteTask;
 	};

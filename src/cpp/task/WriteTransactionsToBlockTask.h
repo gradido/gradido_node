@@ -8,9 +8,12 @@
  */
 
 #include "CPUTask.h"
-#include "../controller/Block.h"
+#include "../model/TransactionEntry.h"
+#include "../model/files/Block.h"
 #include "../lib/MultithreadQueue.h"
 #include "../lib/ErrorList.h"
+
+#include "../controller/BlockIndex.h"
 
 #include "Poco/Timestamp.h"
 
@@ -23,7 +26,7 @@
 class WriteTransactionsToBlockTask : public UniLib::controller::CPUTask, public ErrorList
 {
 public:
-	WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile);
+	WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex);
 	~WriteTransactionsToBlockTask();
 
 	const char* getResourceType() const { return "WriteTransactionsToBlockTask"; };
@@ -34,16 +37,21 @@ public:
 	//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
 	inline Poco::Timestamp getCreationDate() { return mCreationDate; }
 
-	inline void addSerializedTransaction(Poco::SharedPtr<controller::TransactionEntry> transaction) { 
+	inline void addSerializedTransaction(Poco::SharedPtr<model::TransactionEntry> transaction) { 
 		Poco::FastMutex::ScopedLock lock(mFastMutex);	 
 		mTransactions.push_back(transaction);
+		mBlockIndex->addIndicesForTransaction(transaction);
 	}
+
+	//! \brief collect all transaction nrs from transactions
+	std::vector<uint64_t> getTransactionNrs();
 
 protected:
 	Poco::AutoPtr<model::files::Block> mBlockFile;
+	Poco::SharedPtr<controller::BlockIndex> mBlockIndex;
 	Poco::Timestamp mCreationDate;
 	Poco::FastMutex mFastMutex;
-	std::list<Poco::SharedPtr<controller::TransactionEntry>> mTransactions;
+	std::list<Poco::SharedPtr<model::TransactionEntry>> mTransactions;
 };
 
 #endif 

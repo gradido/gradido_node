@@ -1,10 +1,11 @@
 #include "WriteTransactionsToBlockTask.h"
 #include "../ServerGlobals.h"
 
-WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile)
-	: UniLib::controller::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile)
+WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex)
+	: UniLib::controller::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
 {
-
+	assert(blockFile.isNull());
+	assert(blockIndex.isNull());
 }
 
 WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()
@@ -22,11 +23,11 @@ int WriteTransactionsToBlockTask::run()
 	int lastTransactionNr = 0;
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
 		auto transactionEntry = *it;
-		lines.push_back(transactionEntry->serializedTransaction);
-		if (lastTransactionNr > 0 && lastTransactionNr + 1 != transactionEntry->transactionNr) {
+		lines.push_back(transactionEntry->getSerializedTransaction());
+		if (lastTransactionNr > 0 && lastTransactionNr + 1 != transactionEntry->getTransactionNr()) {
 			addError(new Error(__FUNCTION__, "out of order transaction"));
 		}
-		lastTransactionNr = transactionEntry->transactionNr;
+		lastTransactionNr = transactionEntry->getTransactionNr();
 	}
 
 	auto result = mBlockFile->appendLines(lines);
@@ -41,13 +42,26 @@ int WriteTransactionsToBlockTask::run()
 			break;
 		}
 		
-		if (result[cursor] != (*it)->getFileCursor()) {
-			addError(new Error(__FUNCTION__, "error, calculated file cursor didn't match real file cursor"));
-			addError(new ParamError(__FUNCTION__, "transaction nr ", (*it)->transactionNr));
+		if (result[cursor] <= 0) {
+			addError(new ParamError(__FUNCTION__, "critical, error in append line, result", result[cursor]));
+		}
+		else {
 			(*it)->setFileCursor(result[cursor]);
+			mBlockIndex->addFileCursorForTransaction((*it)->getTransactionNr(), result[cursor]);
 		}
 		cursor++;
 	}
 
 	return 0;
+}
+
+std::vector<uint64_t> WriteTransactionsToBlockTask::getTransactionNrs()
+{
+	Poco::FastMutex::ScopedLock lock(mFastMutex);
+	std::vector<uint64_t> transactionNrs;
+	transactionNrs.reserve(mTransactions.size());
+	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
+		transactionNrs.push_back((*it)->getTransactionNr());
+	}
+	return transactionNrs;
 }
