@@ -2,6 +2,8 @@
 #include "Transaction.h"
 #include "../../controller/Group.h"
 
+#include "../../lib/BinTextConverter.h"
+
 namespace model {
 	TransactionCreation::TransactionCreation(
 		const model::messages::gradido::TransactionCreation& transaction,
@@ -57,5 +59,19 @@ namespace model {
 		//int zahl = 0;
 
 		return true;
+	}
+
+	std::vector<uint32_t> TransactionCreation::getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer)
+	{
+		std::vector<uint32_t> addressIndices;
+		auto index = addressIndexContainer->getIndexForAddress(getReceiverPubkey());
+		if (!index) {
+			std::string hexPubkey = convertBinToHex(getReceiverPubkey());
+			addError(new ParamError(__FUNCTION__, "cannot find address index for", hexPubkey.data()));
+		}
+		else {
+			addressIndices.push_back(index);
+		}
+		return addressIndices;
 	}
 }

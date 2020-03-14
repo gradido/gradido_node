@@ -3,12 +3,16 @@
 
 #include "TaskObserver.h"
 
+#include "../SingletonManager/GroupManager.h"
+
+
+
 
 namespace controller {
-	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver)
+	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash)
 		: mBlockNr(blockNr), mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
-		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver)
+		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupHash(groupHash)
 	{
 		TimeoutManager::getInstance()->registerTimeout(this);
 	}
@@ -39,6 +43,23 @@ namespace controller {
 		
 		return true;
 
+	}
+
+	bool Block::addTransaction(const std::string& serializedTransaction, uint32_t fileCursor)
+	{
+		auto gm = GroupManager::getInstance();
+		auto group = gm->findGroup(mGroupHash);
+		try {
+			Poco::SharedPtr<model::TransactionEntry> transactionEntry(new model::TransactionEntry(serializedTransaction, fileCursor, group->getAddressIndex()));
+			mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
+			mBlockIndex->addIndicesForTransaction(transactionEntry);
+			return true;
+		}
+		catch (Poco::Exception& e) {
+			return false;
+		}
+		
+		return false;
 	}
 
 	int Block::getTransaction(uint64_t transactionNr, std::string& serializedTransaction)

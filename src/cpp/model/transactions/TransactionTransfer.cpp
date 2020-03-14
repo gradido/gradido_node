@@ -1,6 +1,9 @@
 #include "TransactionTransfer.h"
 #include <unordered_map>
 
+#include "../../controller/AddressIndex.h"
+#include "../../lib/BinTextConverter.h"
+
 namespace model {
 	TransactionTransfer::TransactionTransfer(
 		const model::messages::gradido::Transfer& transafer,
@@ -60,5 +63,51 @@ namespace model {
 		}
 
 		return true;
+	}
+
+	std::vector<uint32_t> TransactionTransfer::getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer)
+	{
+		std::vector<uint32_t> addressIndices;
+		auto senderAmounts = mProtoTransfer.senderamounts();
+
+		for (auto it = senderAmounts.begin(); it != senderAmounts.end(); it++)
+		{
+			auto index = addressIndexContainer->getIndexForAddress((*it).ed25519_sender_pubkey());
+			if (!index) 
+			{
+				std::string hexPubkey = convertBinToHex((*it).ed25519_sender_pubkey());
+				addError(new ParamError(__FUNCTION__, "sender, cannot find address index for", hexPubkey.data()));
+			} 
+			else 
+			{
+				addressIndices.push_back(index);
+			}
+		}
+
+		auto receiverAmounts = mProtoTransfer.receiveramounts();
+		
+		for (auto it = receiverAmounts.begin(); it != receiverAmounts.end(); it++)
+		{
+			auto index = addressIndexContainer->getIndexForAddress((*it).ed25519_receiver_pubkey());
+			if (!index) 
+			{
+				std::string hexPubkey = convertBinToHex((*it).ed25519_receiver_pubkey());
+				addError(new ParamError(__FUNCTION__, "receiver, cannot find address index for", hexPubkey.data()));
+			} 
+			else
+			{
+				bool exist = false;
+				for (auto it = addressIndices.begin(); it != addressIndices.end(); it++) {
+					if (index == *it) {
+						exist = true;
+						break;
+					}
+				}
+				if (!exist) {
+					addressIndices.push_back(index);
+				}
+			}
+		}
+		return addressIndices;
 	}
 }

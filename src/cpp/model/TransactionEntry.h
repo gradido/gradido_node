@@ -5,6 +5,8 @@
 #include "Poco/Mutex.h"
 #include "Poco/DateTime.h"
 
+#include "../controller/AddressIndex.h"
+
 #include <vector>
 
 namespace model {
@@ -24,6 +26,9 @@ namespace model {
 			: mTransactionNr(0), mFileCursor(-10) {}
 
 		TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
+
+		//! \brief init entry object from transaction, deserialize transaction to get infos
+		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, controller::AddressIndex* addressIndex);
 
 		//! \brief operator for sorting by mTransactionNr in ascending order
 		bool operator < (const TransactionEntry& b) { return mTransactionNr < b.mTransactionNr; }

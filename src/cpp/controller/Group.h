@@ -52,14 +52,14 @@ namespace controller {
 		//! \param address User account public key.
 		uint64_t calculateCreationSum(const std::string& address, int month, int year);
 
-
+		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 
 	protected:
 
 		TaskObserver mTaskObserver;
 		std::string mBase58GroupHash;
 		Poco::Path mFolderPath;
-		AddressIndex mAddressIndex;
+		Poco::SharedPtr<AddressIndex> mAddressIndex;
 		model::files::GroupState mGroupState;
 
 		Poco::AutoPtr<model::Transaction> mLastTransaction;

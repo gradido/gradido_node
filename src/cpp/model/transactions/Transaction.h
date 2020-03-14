@@ -6,6 +6,8 @@
 #include "Poco/DateTime.h"
 #include "../../proto/gradido/Transaction.pb.h"
 
+
+
 namespace model {
 	class Transaction : public TransactionBase
 	{
@@ -21,6 +23,10 @@ namespace model {
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
 		bool validate(Poco::AutoPtr<Transaction> previousTransaction);
+
+		inline std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer) {
+			return mTransactionBody->getInvolvedAddressIndices(addressIndexContainer);
+		}
 	protected:
 		model::messages::gradido::Transaction mProtoTransaction;
 		TransactionBody* mTransactionBody;

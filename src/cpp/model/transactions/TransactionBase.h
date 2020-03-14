@@ -9,6 +9,7 @@
 
 namespace controller {
 	class Group;
+	class AddressIndex;
 }
 
 namespace model {
@@ -42,10 +43,12 @@ namespace model {
 		TransactionBase(Transaction* parent);
 
 		virtual bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE) = 0;
+
 		inline void addBase58GroupHash(const std::string& base58GroupHash) { mBase58GroupHashes.push_back(base58GroupHash); }
 		void addBase58GroupHashes(TransactionBase* parent);
 
 		virtual void setParent(Transaction* parent);
+		virtual std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer) = 0;
 
 		// for poco auto ptr
 		void duplicate();

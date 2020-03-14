@@ -6,7 +6,7 @@ namespace controller {
 
 	Group::Group(std::string base58Hash, Poco::Path folderPath)
 		: mBase58GroupHash(base58Hash), 
-		mFolderPath(folderPath), mAddressIndex(folderPath), mGroupState(folderPath),
+		mFolderPath(folderPath), mAddressIndex(new AddressIndex(folderPath)), mGroupState(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);

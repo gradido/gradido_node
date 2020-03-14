@@ -14,7 +14,7 @@ namespace model {
 			const model::messages::gradido::SignatureMap& sigMap);
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
-
+		std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer);
 	
 	protected:
 

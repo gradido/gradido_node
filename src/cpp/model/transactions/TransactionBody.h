@@ -27,6 +27,11 @@ namespace model {
 		inline TransactionCreation* getCreation() { return dynamic_cast<TransactionCreation*>(mTransactionSpecific); }
 		inline TransactionTransfer* getTransfer() { return dynamic_cast<TransactionTransfer*>(mTransactionSpecific); }
 
+		std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer) {
+			if (mTransactionSpecific) return mTransactionSpecific->getInvolvedAddressIndices(addressIndexContainer);
+			return std::vector<uint32_t>();
+		}
+
 	protected:
 		model::messages::gradido::TransactionBody mProtoTransactionBody;
 

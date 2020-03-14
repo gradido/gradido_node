@@ -17,7 +17,9 @@
 //#include "../SingletonManager/FileLockManager.h"
 class TaskObserver;
 
+
 namespace controller {
+	class Group;
 
 	/*! 
 	 * @author Dario Rekowski
@@ -27,11 +29,12 @@ namespace controller {
 
 	class Block : public ControllerBase, public ITimeout
 	{
+		friend model::files::Block;
 	public:
-		Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver);
+		Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
 		~Block();
 
-		//! \brief put transaction to cache and file system
+		//! \brief put new transaction to cache and file system
 		bool pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction);
 		
 		//! \brief load transaction from cache or file system
@@ -41,8 +44,11 @@ namespace controller {
 		void checkTimeout();
 
 		inline Poco::SharedPtr<BlockIndex> getBlockIndex() { return mBlockIndex; }
+
 			
 	protected:
+		//! \brief add transaction from Block File, called by Block File, adding to cache and index
+		bool addTransaction(const std::string& serializedTransaction, uint32_t fileCursor);
 		
 		uint32_t mBlockNr;
 		uint64_t mFirstTransactionIndex;
@@ -55,6 +61,7 @@ namespace controller {
 		Poco::SharedPtr<BlockIndex> mBlockIndex;
 		Poco::AutoPtr<model::files::Block> mBlockFile;
 		Poco::AutoPtr<WriteTransactionsToBlockTask> mTransactionWriteTask;
+		std::string mGroupHash;
 	};
 }
 
