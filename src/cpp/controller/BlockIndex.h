@@ -45,8 +45,13 @@ namespace controller {
 		//! \return true if transaction nr was found and fileCursor was set, else return false
 		bool getFileCursorForTransactionNr(uint64_t transactionNr, uint32_t& fileCursor);
 
+		inline uint64_t getMaxTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);  return mMaxTransactionNr; }
+		inline uint64_t getMinTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return mMinTransactionNr; }
+
 	protected:
 		model::files::BlockIndex mBlockIndexFile;
+		uint64_t				 mMaxTransactionNr;
+		uint64_t				 mMinTransactionNr;
 
 		std::map<uint64_t, uint32_t> mTransactionNrsFileCursors;
 		typedef std::pair<uint64_t, uint32_t> TransactionNrsFileCursorsPair;

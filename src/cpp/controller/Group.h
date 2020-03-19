@@ -69,6 +69,8 @@ namespace controller {
 		//std::list<BlockEntry> mBlocks;
 		Poco::AccessExpireCache<Poco::UInt32, Block> mCachedBlocks;
 
+		//! \brief get current block to write more transactions in it
+		Poco::SharedPtr<Block> getCurrentBlock();
 		Poco::SharedPtr<Block> getBlock(Poco::UInt32 blockNr);
 
 	};

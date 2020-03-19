@@ -61,7 +61,7 @@ namespace model {
 		return true;
 	}
 
-	std::vector<uint32_t> TransactionCreation::getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer)
+	std::vector<uint32_t> TransactionCreation::getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer)
 	{
 		std::vector<uint32_t> addressIndices;
 		auto index = addressIndexContainer->getIndexForAddress(getReceiverPubkey());

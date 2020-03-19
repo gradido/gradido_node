@@ -9,8 +9,8 @@
 
 
 namespace controller {
-	Block::Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash)
-		: mBlockNr(blockNr), mFirstTransactionIndex(firstTransactionIndex), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash)
+		: mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
 		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupHash(groupHash)
 	{

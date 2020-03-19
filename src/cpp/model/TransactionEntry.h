@@ -6,6 +6,7 @@
 #include "Poco/DateTime.h"
 
 #include "../controller/AddressIndex.h"
+#include "transactions/Transaction.h"
 
 #include <vector>
 
@@ -25,7 +26,8 @@ namespace model {
 		TransactionEntry()
 			: mTransactionNr(0), mFileCursor(-10) {}
 
-		TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
+		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, Poco::SharedPtr<controller::AddressIndex> addressIndex);
+		TransactionEntry(Poco::AutoPtr<Transaction> transaction, controller::AddressIndex* addressIndex);
 
 		//! \brief init entry object from transaction, deserialize transaction to get infos
 		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, controller::AddressIndex* addressIndex);

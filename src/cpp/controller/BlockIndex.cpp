@@ -7,7 +7,7 @@ namespace controller {
 
 
 	BlockIndex::BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
-		: mBlockIndexFile(groupFolderPath, blockNr)
+		: mBlockIndexFile(groupFolderPath, blockNr), mMaxTransactionNr(0), mMinTransactionNr(0)
 	{
 
 	}
@@ -22,10 +22,18 @@ namespace controller {
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		auto fileCursor = transactionEntry->getFileCursor();
-		auto transactioNr = transactionEntry->getTransactionNr();
+		auto transactionNr = transactionEntry->getTransactionNr();
+
+		if (transactionNr > mMaxTransactionNr) {
+			mMaxTransactionNr = transactionNr;
+		}
+		if (!mMinTransactionNr || transactionNr < mMinTransactionNr) {
+			mMinTransactionNr = transactionNr;
+		}
+
 		// transaction nr - file cursor map
 		if (fileCursor >= 0) {
-			addFileCursorForTransaction(transactioNr, fileCursor);
+			addFileCursorForTransaction(transactionNr, fileCursor);
 		}
 		// year
 		auto yearIt = mYearMonthAddressIndexEntrys.find(transactionEntry->getYear());
@@ -43,7 +51,7 @@ namespace controller {
 			monthIt->second.transactionNrs = new std::vector<uint64_t>;
 		}
 		auto addressIndexEntry = &monthIt->second;
-		addressIndexEntry->transactionNrs->push_back(transactioNr);
+		addressIndexEntry->transactionNrs->push_back(transactionNr);
 		uint32_t transactionNrIndex = addressIndexEntry->transactionNrs->size() - 1;
 
 		// address index - transactions nr map

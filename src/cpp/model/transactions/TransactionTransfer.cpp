@@ -65,7 +65,7 @@ namespace model {
 		return true;
 	}
 
-	std::vector<uint32_t> TransactionTransfer::getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer)
+	std::vector<uint32_t> TransactionTransfer::getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer)
 	{
 		std::vector<uint32_t> addressIndices;
 		auto senderAmounts = mProtoTransfer.senderamounts();

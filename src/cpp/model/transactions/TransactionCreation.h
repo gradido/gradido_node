@@ -17,7 +17,7 @@ namespace model {
 		inline const std::string& getReceiverPubkey() const { return mProtoCreation.receiveramount().ed25519_receiver_pubkey(); }
 		inline google::protobuf::int64 getReceiverAmount() const { return mProtoCreation.receiveramount().amount(); }
 
-		std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer);
+		std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer);
 
 
 	protected:

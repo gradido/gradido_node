@@ -20,11 +20,12 @@ namespace model {
 		inline Poco::DateTime getReceived() const { return Poco::Timestamp(mProtoTransaction.received().seconds()); }
 
 		inline TransactionBody* getTransactionBody() { return mTransactionBody; }
+		inline std::string getSerialized() { return mProtoTransaction.SerializeAsString(); }
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
 		bool validate(Poco::AutoPtr<Transaction> previousTransaction);
 
-		inline std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer) {
+		inline std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) {
 			return mTransactionBody->getInvolvedAddressIndices(addressIndexContainer);
 		}
 	protected:

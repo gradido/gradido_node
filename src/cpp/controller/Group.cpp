@@ -7,7 +7,7 @@ namespace controller {
 	Group::Group(std::string base58Hash, Poco::Path folderPath)
 		: mBase58GroupHash(base58Hash), 
 		mFolderPath(folderPath), mAddressIndex(new AddressIndex(folderPath)), mGroupState(folderPath),
-		mLastAddressIndex(0), mLastBlockNr(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000)
+		mLastAddressIndex(0), mLastBlockNr(1), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -68,11 +68,20 @@ namespace controller {
 
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		mLastTransaction = newTransaction;
+		auto block = getCurrentBlock();
+		if (block.isNull()) {
+			newTransaction->addError(new Error(__FUNCTION__, "didn't get valid block"));
+			return false;
+		}
+		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
+		Poco::SharedPtr<model::TransactionEntry> transactionEntry = new model::TransactionEntry(newTransaction, mAddressIndex);
+		return block->pushTransaction(transactionEntry);
+
 		// TODO: collect all indices for addresses in this block
 		// after writing to block file, adding to block index
 		// mAddressIndex.getOrAddIndexForAddress()
 
-		return true;
+		//return true;
 	}
 
 	uint64_t Group::calculateCreationSum(const std::string& address, int month, int year)
@@ -92,7 +101,7 @@ namespace controller {
 	Poco::AutoPtr<model::Transaction> Group::findLastTransaction(const std::string& address)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
-		auto index = mAddressIndex.getIndexForAddress(address);
+		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return Poco::AutoPtr<model::Transaction>(); }
 
 		return Poco::AutoPtr<model::Transaction>();
@@ -103,7 +112,7 @@ namespace controller {
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::Transaction>> transactions;
 
-		auto index = mAddressIndex.getIndexForAddress(address);
+		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
 
 		return transactions;
@@ -114,7 +123,7 @@ namespace controller {
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::Transaction>> transactions;
 
-		auto index = mAddressIndex.getIndexForAddress(address);
+		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
 		int zahl = 0;
 
@@ -132,10 +141,25 @@ namespace controller {
 			return block;
 		}
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
-		block = new Block(blockNr, &mTaskObserver);
-		
+		// Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
+		block = new Block(blockNr, mFolderPath, &mTaskObserver, mBase58GroupHash);
+		mCachedBlocks.add(blockNr, block);
+		return block;
 	}
 
+	Poco::SharedPtr<Block> Group::getCurrentBlock()
+	{
+		auto block = getBlock(mLastBlockNr);
+		if (!block.isNull() && block->hasSpaceLeft()) {
+			return block;
+		}
+		mLastBlockNr++;
+		block = getBlock(mLastBlockNr);
+		if (!block.isNull() && block->hasSpaceLeft()) {
+			return block;
+		}
+		return Poco::SharedPtr<Block>();
+	}
 	
 
 }

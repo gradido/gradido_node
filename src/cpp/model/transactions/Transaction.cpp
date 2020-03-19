@@ -133,9 +133,4 @@ namespace model {
 		mm->releaseMemory(hash);
 		return true;
 	}
-
-	std::vector<uint32_t> Transaction::getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer)
-	{
-		return mTransactionBody->getInvolvedAddressIndices(addressIndexContainer);
-	}
 }

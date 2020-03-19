@@ -31,7 +31,7 @@ namespace controller {
 	{
 		friend model::files::Block;
 	public:
-		Block(uint32_t blockNr, uint64_t firstTransactionIndex, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
+		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
 		~Block();
 
 		//! \brief put new transaction to cache and file system
@@ -45,13 +45,15 @@ namespace controller {
 
 		inline Poco::SharedPtr<BlockIndex> getBlockIndex() { return mBlockIndex; }
 
+
+		inline bool hasSpaceLeft() { return mBlockFile->getCurrentFileSize() + 32 < 128 * 1024 * 1024; }
+
 			
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
 		bool addTransaction(const std::string& serializedTransaction, uint32_t fileCursor);
 		
 		uint32_t mBlockNr;
-		uint64_t mFirstTransactionIndex;
 		int64_t mKtoIndexLowest;
 		int64_t mKtoIndexHighest;
 

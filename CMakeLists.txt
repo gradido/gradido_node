@@ -41,7 +41,7 @@ SET(LOCAL_SRCS
 	${SINGLETON_MANAGER}
 	${TASK} ${TCP_SERVER}
 	${VALIDATION}
-	${MAIN} ${TEST}
+	${MAIN}
 )
 aux_source_directory("src/cpp" LOCAL_SRCS)
 

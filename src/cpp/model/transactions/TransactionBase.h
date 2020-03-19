@@ -48,7 +48,7 @@ namespace model {
 		void addBase58GroupHashes(TransactionBase* parent);
 
 		virtual void setParent(Transaction* parent);
-		virtual std::vector<uint32_t> getInvolvedAddressIndices(controller::AddressIndex* addressIndexContainer) = 0;
+		virtual std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) = 0;
 
 		// for poco auto ptr
 		void duplicate();
