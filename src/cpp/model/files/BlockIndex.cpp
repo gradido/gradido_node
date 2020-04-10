@@ -7,8 +7,12 @@ namespace model {
 	namespace files {
 		BlockIndex::BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
 		{
-			char fileName[16]; memset(fileName, 0, 16);
+			char fileName[24]; memset(fileName, 0, 24);
+#ifdef _MSC_VER
+			sprintf_s(fileName, 24, "blk%08d.index", blockNr);
+#else 
 			sprintf(fileName, "blk%08d.index", blockNr);
+#endif
 			groupFolderPath.append(fileName);
 			Poco::File file(groupFolderPath);
 			if (!file.exists()) {

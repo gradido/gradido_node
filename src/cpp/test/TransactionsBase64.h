@@ -1,0 +1,9 @@
+
+#ifndef __GRADIDO_NODE_TEST_DATA_TRANSACIONS_BASE_64_H
+#define __GRADIDO_NODE_TEST_DATA_TRANSACIONS_BASE_64_H
+
+#include <string>
+
+extern std::string g_TestBlockChain[];
+
+#endif //__GRADIDO_NODE_TEST_DATA_TRANSACIONS_BASE_64_H

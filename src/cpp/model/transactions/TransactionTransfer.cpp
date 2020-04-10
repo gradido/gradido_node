@@ -72,7 +72,7 @@ namespace model {
 
 		for (auto it = senderAmounts.begin(); it != senderAmounts.end(); it++)
 		{
-			auto index = addressIndexContainer->getIndexForAddress((*it).ed25519_sender_pubkey());
+			auto index = addressIndexContainer->getOrAddIndexForAddress((*it).ed25519_sender_pubkey());
 			if (!index) 
 			{
 				std::string hexPubkey = convertBinToHex((*it).ed25519_sender_pubkey());
@@ -88,7 +88,7 @@ namespace model {
 		
 		for (auto it = receiverAmounts.begin(); it != receiverAmounts.end(); it++)
 		{
-			auto index = addressIndexContainer->getIndexForAddress((*it).ed25519_receiver_pubkey());
+			auto index = addressIndexContainer->getOrAddIndexForAddress((*it).ed25519_receiver_pubkey());
 			if (!index) 
 			{
 				std::string hexPubkey = convertBinToHex((*it).ed25519_receiver_pubkey());

@@ -10,7 +10,7 @@ include_directories(
 	"dependencies" 
 	"dependencies/iroha-ed25519/include"
 	"dependencies/jsonrpcpp/lib"
-	"dependencies/googletest/googletest/include"
+	#"dependencies/googletest/googletest/include"
 )
 
 
@@ -31,6 +31,9 @@ FILE(GLOB MAIN "src/cpp/*.cpp" "src/cpp/*.c"  "src/cpp/*.h")
 
 # used only for test project 
 FILE(GLOB TEST "src/cpp/test/*.cpp" "src/cpp/test/*.h")
+FILE(GLOB TEST_MODEL "src/cpp/test/model/*.cpp" "src/cpp/test/model/*.h")
+FILE(GLOB TEST_MODEL_FILES "src/cpp/test/model/files/*.cpp" "src/cpp/test/model/files/*.h")
+FILE(GLOB TEST_CONTROLLER "src/cpp/test/controller/*.cpp" "src/cpp/test/controller/*.h")
 
 SET(LOCAL_SRCS 
 	${CONTAINER} ${CONTROLLER}
@@ -60,7 +63,11 @@ source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})
 source_group("tcp-server" FILES ${TCP_SERVER})
 source_group("validation" FILES ${VALIDATION})
-source_group("Test" FILES ${TEST})
+source_group("test\\model\\files" FILES ${TEST_MODEL_FILES})
+source_group("test\\model" FILES ${TEST_MODEL})
+source_group("test\\controller" FILES ${TEST_CONTROLLER})
+source_group("test" FILES ${TEST})
+
 endif(MSVC)
 
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
@@ -68,6 +75,7 @@ conan_basic_setup()
 
 #add_subdirectory("dependencies/curl")
 #add_subdirectory("dependencies/mariadb-connector-c")
+
 add_subdirectory("dependencies/jsonrpcpp")
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
@@ -113,10 +121,10 @@ enable_testing()
 
 #  ----------------------    Test -----------------------------------------
 
-add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST})
+add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_MODEL} ${TEST_MODEL_FILES} ${TEST_CONTROLLER})
 target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
 
-target_link_libraries(Gradido_Node_Test ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node_Test gtest_main jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
 
 if(WIN32)
 	

@@ -27,6 +27,7 @@ namespace model {
 
 			//! \return -1 error locking file for reading
 			//! \return -2 error invalid size (greater as file size)
+			//! \return -3 error if startReading is greater than mCurrentFileSize
 			//! \return 0 ok
 			int readLine(Poco::UInt32 startReading, std::string& resultString);
 

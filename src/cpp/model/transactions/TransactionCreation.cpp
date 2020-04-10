@@ -64,7 +64,7 @@ namespace model {
 	std::vector<uint32_t> TransactionCreation::getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer)
 	{
 		std::vector<uint32_t> addressIndices;
-		auto index = addressIndexContainer->getIndexForAddress(getReceiverPubkey());
+		auto index = addressIndexContainer->getOrAddIndexForAddress(getReceiverPubkey());
 		if (!index) {
 			std::string hexPubkey = convertBinToHex(getReceiverPubkey());
 			addError(new ParamError(__FUNCTION__, "cannot find address index for", hexPubkey.data()));

@@ -19,7 +19,7 @@ namespace model {
 		mAddressIndices = transaction->getInvolvedAddressIndices(addressIndex);
 	}
 
-	TransactionEntry::TransactionEntry(Poco::AutoPtr<Transaction> transaction, controller::AddressIndex* addressIndex)
+	TransactionEntry::TransactionEntry(Poco::AutoPtr<Transaction> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex)
 		: mTransactionNr(transaction->getID()), mSerializedTransaction(transaction->getSerialized()), mFileCursor(-10)
 	{
 		auto received = transaction->getReceived();

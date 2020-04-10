@@ -4,8 +4,8 @@
 WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex)
 	: UniLib::controller::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
 {
-	assert(blockFile.isNull());
-	assert(blockIndex.isNull());
+	assert(!blockFile.isNull());
+	assert(!blockIndex.isNull());
 }
 
 WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()

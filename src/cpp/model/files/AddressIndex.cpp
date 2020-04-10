@@ -23,7 +23,7 @@ namespace model {
 			}
 		}
 
-		bool AddressIndex::addAddressIndex(const std::string& address, uint32_t index)
+		bool AddressIndex::add(const std::string& address, uint32_t index)
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 
@@ -104,6 +104,12 @@ namespace model {
 			if (!fl->tryLockTimeout(filePath, 100, this)) {
 				return;
 			}
+			// check if dir exist, if not create it
+			Poco::Path pathDir = mFilePath;
+			pathDir.makeDirectory().popDirectory();
+			Poco::File fileFolder(pathDir);
+			fileFolder.createDirectories();
+
 			Poco::FileOutputStream file(filePath);
 
 			for (auto it = mAddressesIndices.begin(); it != mAddressesIndices.end(); it++) {
@@ -176,6 +182,8 @@ namespace model {
 
 			return true;
 		}
+
+		
 	}
 
 }

@@ -3,8 +3,8 @@
 #include "../ServerGlobals.h"
 
 namespace controller {
-	AddressIndex::AddressIndex(Poco::Path path)
-		: mGroupPath(path), mAddressIndicesCache(ServerGlobals::g_CacheTimeout * 1000)
+	AddressIndex::AddressIndex(Poco::Path path, uint32_t lastIndex)
+		: mGroupPath(path), mLastIndex(lastIndex), mAddressIndicesCache(ServerGlobals::g_CacheTimeout * 1000)
 	{
 
 	}
@@ -15,7 +15,11 @@ namespace controller {
 		if (addressIndex.isNull()) {
 			return false;
 		}
-		return addressIndex->addAddressIndex(address, index);
+		mWorkingMutex.lock();
+		mLastIndex = index;
+		mWorkingMutex.unlock();
+
+		return addressIndex->add(address, index);
 	}
 
 	uint32_t AddressIndex::getIndexForAddress(const std::string &address)
@@ -29,14 +33,14 @@ namespace controller {
 		return index;
 	}
 
-	uint32_t AddressIndex::getOrAddIndexForAddress(const std::string& address, uint32_t lastIndex)
+	uint32_t AddressIndex::getOrAddIndexForAddress(const std::string& address)
 	{
 		auto addressIndex = getAddressIndex(address);
-		assert(addressIndex.isNull());
+		assert(!addressIndex.isNull());
 		auto index = addressIndex->getIndexForAddress(address);
 		if (!index) {
-			index = lastIndex + 1;
-			addressIndex->addAddressIndex(address, index);
+			index = mLastIndex + 1;
+			addressIndex->add(address, index);
 		}
 		return index;
 	}
@@ -48,18 +52,10 @@ namespace controller {
 		auto entry = mAddressIndicesCache.get(firstBytes);
 
 		if (entry.isNull()) {
+			
 			Poco::Path addressIndexPath(mGroupPath);
-			char firstBytesHex[5]; memset(firstBytesHex, 0, 5);
-			sodium_bin2hex(firstBytesHex, 5, (const unsigned char*)address.data(), 2);
-			//printf("bytes %x\n", firstBytes);
-			std::string firstBytesString = firstBytesHex;
-			addressIndexPath.pushDirectory("pubkeys_" + firstBytesString.substr(0, 2));
-			std::string file = "_" + firstBytesString.substr(2, 2);
-			file += ".index";
-			addressIndexPath.append(file);
-			//printf("index path: %s\n", addressIndexPath.toString().data());
-			// pubkeys_<first hash byte hex>
-			// _<second hash byte hex>.index
+			addressIndexPath.append(getAddressIndexFilePathForAddress(address));
+			
 			Poco::SharedPtr<model::files::AddressIndex> newAddressIndex(new model::files::AddressIndex(addressIndexPath));
 			mAddressIndicesCache.add(firstBytes, newAddressIndex);
 			return newAddressIndex;
@@ -67,4 +63,20 @@ namespace controller {
 		
 		return entry;
 	}
+
+	Poco::Path AddressIndex::getAddressIndexFilePathForAddress(const std::string& address)
+	{
+		Poco::Path addressIndexPath;
+		char firstBytesHex[5]; memset(firstBytesHex, 0, 5);
+		sodium_bin2hex(firstBytesHex, 5, (const unsigned char*)address.data(), 2);
+		//printf("bytes %x\n", firstBytes);
+		std::string firstBytesString = firstBytesHex;
+		addressIndexPath.pushDirectory("pubkeys_" + firstBytesString.substr(0, 2));
+		std::string file = "_" + firstBytesString.substr(2, 2);
+		file += ".index";
+		addressIndexPath.append(file);
+
+		return addressIndexPath;
+	}
+
 }

@@ -5,6 +5,8 @@
 #include "../../ServerGlobals.h"
 #include "../../lib/Profiler.h"
 
+#include "../../lib/BinTextConverter.h"
+
 #include "Poco/File.h"
 
 #include <sodium.h>
@@ -35,8 +37,11 @@ namespace model {
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			if (mBlockFile.isNull()) {
 				mBlockFile = new Poco::FileStream(mBlockPath.toString());
-				mBlockFile->seekg(SEEK_END);
-				mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
+				mBlockFile->seekg(0, SEEK_END);
+				auto telled = mBlockFile->tellg();
+				if (telled && telled > crypto_generichash_KEYBYTES) {
+					mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
+				}
 			}
 			mLastUsed = Poco::Timestamp();
 			return mBlockFile;
@@ -52,6 +57,9 @@ namespace model {
 
 		int Block::readLine(Poco::UInt32 startReading, std::string& resultString)
 		{
+			if (startReading > mCurrentFileSize - (sizeof(Poco::UInt16) + 25)) {
+				return -3;
+			}
 			Profiler timeUsed;
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
 			auto fl = FileLockManager::getInstance();
@@ -92,7 +100,8 @@ namespace model {
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
 			auto fl = FileLockManager::getInstance();
 			auto mm = MemoryManager::getInstance();
-			std::vector<Poco::UInt32> resultingCursorPositions(lines.size());
+			std::vector<Poco::UInt32> resultingCursorPositions;// (lines.size());
+			resultingCursorPositions.reserve(lines.size());
 
 			std::string filePath = mBlockPath.toString();
 			if (!fl->tryLockTimeout(filePath, 100)) {
@@ -103,14 +112,16 @@ namespace model {
 
 			// read current hash
 			auto hash = mm->getFreeMemory(crypto_generichash_KEYBYTES);
-			fileStream->seekg(mCurrentFileSize);
-			fileStream->read(*hash, crypto_generichash_KEYBYTES);
+			memset(*hash, 0, crypto_generichash_KEYBYTES);
+			if (mCurrentFileSize > 0) {
+				fileStream->seekg(mCurrentFileSize);
+				fileStream->read(*hash, crypto_generichash_KEYBYTES);
+			}
 			fileStream->seekp(mCurrentFileSize);
 
 			// create new hash
 			crypto_generichash_state state;
-			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-			crypto_generichash_update(&state, *hash, hash->size());
+			
 
 			for (auto itLines = lines.begin(); itLines != lines.end(); itLines++)
 			{
@@ -126,14 +137,15 @@ namespace model {
 				}
 				resultingCursorPositions.push_back(cursorPos);
 
-				fileStream->write((char*)size, sizeof(Poco::UInt16));
+				fileStream->write((char*)&size, sizeof(Poco::UInt16));
 				fileStream->write(itLines->data(), itLines->size());
 				mCurrentFileSize += sizeof(Poco::UInt16) + itLines->size();
 
+				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+				crypto_generichash_update(&state, *hash, hash->size());
 				crypto_generichash_update(&state, (const unsigned char*)itLines->data(), itLines->size());				
+				crypto_generichash_final(&state, *hash, hash->size());
 			}
-
-			crypto_generichash_final(&state, *hash, hash->size());
 
 			// write at end of file
 			fileStream->write(*hash, hash->size());
@@ -173,23 +185,25 @@ namespace model {
 
 			fl->unlock(filePath);
 
+			auto hash = mm->getFreeMemory(crypto_generichash_KEYBYTES);
+			memset(*hash, 0, hash->size());
 			size_t cursor = 0;
 			const unsigned char* vfilep = *vfile;
 			crypto_generichash_state state;
-			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+			
 
 			while (cursor < mCurrentFileSize) {
 				Poco::UInt16 size;
 				memcpy(&size, &vfilep[cursor], sizeof(Poco::UInt16));
 				cursor += sizeof(Poco::UInt16);
+				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+				crypto_generichash_update(&state, *hash, hash->size());
 				crypto_generichash_update(&state, &vfilep[cursor], size);
+				crypto_generichash_final(&state, *hash, hash->size());
 				cursor += size;
 			}
 			mm->releaseMemory(vfile);
-
-			auto hash = mm->getFreeMemory(crypto_generichash_KEYBYTES);
-
-			crypto_generichash_final(&state, *hash, hash->size());
+			
 			lm->mSpeedLogging.information("%s used for calculate hash for block: %s", timeUsed.string(), filePath);
 			return hash;
 		}
@@ -218,6 +232,7 @@ namespace model {
 			if (0 == sodium_memcmp(*hash, *hash2, crypto_generichash_KEYBYTES)) {
 				result = true;
 			}
+
 			mm->releaseMemory(hash);
 			mm->releaseMemory(hash2);
 			return result;

@@ -195,10 +195,8 @@ std::string convertBinToHex(const std::string& binString)
 
 	size_t resultBinSize = 0;
 
-	if (0 != sodium_bin2hex(*hex, hexSize, (const unsigned char*)binString.data(), binSize)) {
-		mm->releaseMemory(hex);
-		return "";
-	}
+	sodium_bin2hex(*hex, hexSize, (const unsigned char*)binString.data(), binSize);
+		
 	std::string hexString((const char*)*hex, hexSize);
 	mm->releaseMemory(hex);
 	return hexString;

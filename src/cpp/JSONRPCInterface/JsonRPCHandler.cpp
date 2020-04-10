@@ -11,7 +11,7 @@ void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
 	if (request.method == "puttransaction") {
 		if (request.params.has("group") && request.params.has("transaction")) {
 			auto group = convertBinTransportStringToBin(request.params.get<std::string>("group"));
-			//printf("transaction: %s\n", request.params.get<std::string>("transaction").data());
+			printf("transaction: %s\n", request.params.get<std::string>("transaction").data());
 			auto transaction = convertBinTransportStringToBin(request.params.get<std::string>("transaction"));
 			if ("" == group || "" == transaction) {
 				response = { {"state", "error"}, {"msg", "wrong parameter format"} };

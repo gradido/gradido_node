@@ -17,9 +17,7 @@ namespace model {
 		* @brief File for storing account address indices
 		* 
 		* Store indices for every account public key.\n
-		* File Path starting with first byte from account public key as folder and second byte as file name. \n
-		* Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n
-		* ./94/93.index
+		
 		*/
 
 		class AddressIndex : public FileBase
@@ -30,17 +28,21 @@ namespace model {
 			~AddressIndex();
 
 			//! \brief Adding new index, account address public key pair into memory, use Poco::FastMutex::ScopedLock.
+			//! \param address binary string
 			//! \return True if ok or false if address already exist.
-			bool addAddressIndex(const std::string& address, uint32_t index);
+			bool add(const std::string& address, uint32_t index);
 			//! \brief Get index for address from memory, use Poco::FastMutex::ScopedLock.
 			//! \return Index or zero if address not found.
 			uint32_t getIndexForAddress(const std::string &address);
 
 			//! \brief Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLockManager, I/O write.
 			//! 
+			//! Check if each index is unique
 			//! Could need some time, calculate also sha256 hash for putting at end of file.
 			//! Throw Poco::Exception if two addresses have the same index.
 			void safeExit();
+
+			
 
 		protected:
 			//! \brief Check if index file contains current indices (compare sizes), fileLock via FileLockManager, I/O read.

@@ -26,11 +26,13 @@ namespace model {
 		TransactionEntry()
 			: mTransactionNr(0), mFileCursor(-10) {}
 
+		//! \brief init entry object from serialized transaction, deserialize transaction to get infos
 		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, Poco::SharedPtr<controller::AddressIndex> addressIndex);
-		TransactionEntry(Poco::AutoPtr<Transaction> transaction, controller::AddressIndex* addressIndex);
 
-		//! \brief init entry object from transaction, deserialize transaction to get infos
-		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, controller::AddressIndex* addressIndex);
+		TransactionEntry(Poco::AutoPtr<Transaction> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
+
+
+		
 
 		//! \brief operator for sorting by mTransactionNr in ascending order
 		bool operator < (const TransactionEntry& b) { return mTransactionNr < b.mTransactionNr; }

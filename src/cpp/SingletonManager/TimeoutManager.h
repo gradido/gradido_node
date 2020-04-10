@@ -21,8 +21,9 @@ public:
 
 	void onTimer(Poco::Timer& timer);
 
-	bool registerTimeout(Poco::SharedPtr<ITimeout> timeoutCheckReceiver);
-	bool unregisterTimeout(Poco::SharedPtr<ITimeout> timeoutCheckReceiver);
+	bool registerTimeout(ITimeout* timeoutCheckReceiver);
+	bool unregisterTimeout(ITimeout* timeoutCheckReceiver);
+	
 
 protected:
 	TimeoutManager();
@@ -30,7 +31,7 @@ protected:
 	Poco::Timer mTimer;
 	Poco::FastMutex mFastMutex;
 	
-	std::map<ITimeout*, Poco::SharedPtr<ITimeout>> mTimeouts;
+	std::map<ITimeout*, ITimeout*> mTimeouts;
 };
 
 #endif //__GRADIDO_NODE_SINGLETON_MANAGER_TIMEOUT_MANAGER_H
