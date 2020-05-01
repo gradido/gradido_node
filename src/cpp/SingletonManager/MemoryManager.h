@@ -33,9 +33,15 @@ public:
 	inline operator void* () { return mData; }
 	inline operator const unsigned char*() const { return mData; }
 	inline operator const char*() const { return (const char*)mData; }
+	
+	inline void* operator () (size_t index) { return &mData[index]; }
+	inline const void* operator () (size_t index) const { return &mData[index]; }
 
 	inline size_t size() const { return static_cast<size_t>(mSize); }
 	inline operator size_t() const { return static_cast<size_t>(mSize); }
+
+	unsigned char* data() { return mData; }
+	const unsigned char* data() const { return mData; }
 
 protected:
 	MemoryBin(Poco::UInt32 size);

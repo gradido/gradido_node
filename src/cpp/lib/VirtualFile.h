@@ -1,0 +1,53 @@
+/*!
+*
+* \author Dario Rekowski
+*
+* \date 20-05-01
+*
+* \brief VirtualFile for reading and writing files in memory
+*/
+
+#ifndef __GRADIDO_NODE_LIB_VIRTUAL_FILE
+#define __GRADIDO_NODE_LIB_VIRTUAL_FILE
+
+#include "../SingletonManager/MemoryManager.h"
+#include <assert.h>
+
+class VirtualFile
+{
+public:
+	//! \brief get memory bin from memory manager by his own
+	VirtualFile(size_t size);
+
+	//! \brief take given memory bin 
+	VirtualFile(MemoryBin* buffer);
+
+	//! \brief handle memory bin back to memory manager
+	~VirtualFile();
+
+	//! \brief copy from buffer over into dst, move cursor 
+	//! \return false if size + cursor is greater than buffer
+	bool read(unsigned char* dst, size_t size);
+
+	//! \brief copy to buffer from src, move cursor
+	//! \return false if size + cursor is greater than buffer
+	bool write(const unsigned char* src, size_t size);
+
+	//! \brief set cursor to new dst 
+	//! \return false if dst is greater than buffer
+	bool setCursor(size_t dst);
+
+	//! \brief write memory bin content to file, until cursor position
+	bool writeToFile(const char* filename);
+
+	//! \brief get memory bin in file size and fill it with file content
+	static VirtualFile* readFromFile(const char* filename);
+
+protected:
+	MemoryBin* mBuffer;
+	size_t mCursor;
+
+	
+};
+
+#endif //__GRADIDO_NODE_LIB_VIRTUAL_FILE

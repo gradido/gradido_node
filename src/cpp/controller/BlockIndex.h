@@ -24,6 +24,7 @@ namespace controller {
 
 	class BlockIndex : public ControllerBase
 	{
+		friend model::files::BlockIndex;
 	public:
 		BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 		~BlockIndex();
@@ -49,6 +50,10 @@ namespace controller {
 		inline uint64_t getMinTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return mMinTransactionNr; }
 
 	protected:
+
+		//! \brief called from model::files::BlockIndex while reading file
+
+
 		model::files::BlockIndex mBlockIndexFile;
 		uint64_t				 mMaxTransactionNr;
 		uint64_t				 mMinTransactionNr;

@@ -2,7 +2,9 @@
 #define __GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H
 
 #include "FileBase.h"
-#include "Poco/FileStream.h"
+
+
+#include "sodium.h"
 
 namespace controller {
 	class BlockIndex;
@@ -28,13 +30,24 @@ namespace model {
 			BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 			~BlockIndex();
 
-			inline void addMonthBlock(uint8_t month) {mDataBlocks.push(new MonthBlock(month));}
-			inline void addYearBlock(uint16_t year) { mDataBlocks.push(new YearBlock(year)); }
+			inline void addMonthBlock(uint8_t month) {
+				mDataBlocks.push(new MonthBlock(month)); 
+				mDataBlockSumSize += mDataBlocks.back()->size();
+			}
+			inline void addYearBlock(uint16_t year) { 
+				mDataBlocks.push(new YearBlock(year)); 
+				mDataBlockSumSize += mDataBlocks.back()->size();
+			}
 			inline void addDataBlock(uint64_t transactionNr, const std::vector<uint32_t>& addressIndices) {
 				mDataBlocks.push(new DataBlock(transactionNr, addressIndices));
+				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
 
+			
+			//! \brief replace Index File with new one, clear blocks after writing into file
 			bool writeToFile();
+			
+			//! \brief read from file, put content into receiver
 			bool readFromFile(controller::BlockIndex* receiver);
 
 		protected:
@@ -45,9 +58,18 @@ namespace model {
 			};
 			struct Block {
 				Block(uint8_t _type) : type(_type) {}
-				virtual ~Block();
+				virtual ~Block() {};
 				uint8_t type;
 				virtual size_t size() = 0;
+
+				virtual void writeIntoFile(MemoryBin* memoryBin, crypto_generichash_state &state) {
+					file.write((const char*)this, size());
+					crypto_generichash_update(&state, (const unsigned char*)this, size());
+				};
+				virtual void readFromFile(Poco::FileInputStream &file, crypto_generichash_state &state) {
+					file.read((char*)this, size());
+					crypto_generichash_update(&state, (const unsigned char*)this, size());
+				}
 			};
 			struct YearBlock : public Block {
 				YearBlock(uint16_t _year) : Block(YEAR_BLOCK), year(_year) {}
@@ -76,10 +98,14 @@ namespace model {
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
 				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(uint32_t) * addressIndicesCount; }
+
+				virtual void writeIntoFile(Poco::FileOutputStream &file, crypto_generichash_state &state);
+				virtual void readFromFile(Poco::FileInputStream &file, crypto_generichash_state &state);
 			};
 
 			std::string mFilename;
 			std::queue<Block*> mDataBlocks;
+			size_t mDataBlockSumSize;
 		};
 	}
 }
