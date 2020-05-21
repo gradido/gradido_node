@@ -1,33 +1,50 @@
 #include "BlockIndex.h"
-#include "../../SingletonManager/FileLockManager.h"
-#include "../../SingletonManager/MemoryManager.h"
 
 #include "Poco/File.h"
-#include "Poco/FileStream.h"
+#include "../TransactionEntry.h"
+#include "../../controller/BlockIndex.h"
+//#include "Poco/FileStream.h"
 
 namespace model {
 	namespace files {
 
 		
 
-		void BlockIndex::DataBlock::writeIntoFile(Poco::FileOutputStream &file, crypto_generichash_state &state)
+		void BlockIndex::DataBlock::writeIntoFile(VirtualFile* vFile)
 		{
-			// write block type, transaction nr and address index count
-			uint8_t size1 = sizeof(uint64_t) + sizeof(uint16_t);
-			file.write((const char*)this, size1);
+			// first part, write block type, transaction nr and address index count
+			vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
-			// write address indices
-			uint8_t size2 = sizeof(uint32_t) * addressIndicesCount;
-			file.write((const char*)addressIndices, size2);
-
-			// hashing 
-			crypto_generichash_update(&state, (const unsigned char*)this, size1);
-			crypto_generichash_update(&state, (const unsigned char*)addressIndices, size2);
+			// second part, write address indices
+			vFile->write(addressIndices, sizeof(uint32_t) * addressIndicesCount);
 		}
 
-		void BlockIndex::DataBlock::readFromFile(Poco::FileInputStream &file, crypto_generichash_state &state)
+		bool BlockIndex::DataBlock::readFromFile(VirtualFile* vFile)
 		{
+			// first part, read block type, transaction nr and address index count
+			if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 
+			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
+			addressIndices = (uint32_t*)malloc(addressIndexSize);
+
+			// second part, read address indices
+			return vFile->read(addressIndices, addressIndexSize);
+		}
+
+		void BlockIndex::DataBlock::updateHash(crypto_generichash_state* state)
+		{
+			// first part
+			crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
+			// second part
+			crypto_generichash_update(state, (const unsigned char*)addressIndices, sizeof(uint32_t) * addressIndicesCount);
+		}
+
+		Poco::SharedPtr<TransactionEntry> BlockIndex::DataBlock::createTransactionEntry(uint8_t month, uint16_t year)
+		{
+			// TransactionEntry(uint64_t transactionNr, uint32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
+			return new TransactionEntry(
+				transactionNr, fileCursor, month, year, addressIndices, addressIndicesCount
+			);
 		}
 
 		// **************************************************************************
@@ -62,60 +79,99 @@ namespace model {
 
 		bool BlockIndex::writeToFile()
 		{
-			auto fl = FileLockManager::getInstance();
 			auto mm = MemoryManager::getInstance();
-
-			auto fileBuffer = mm->getFreeMemory(mDataBlockSumSize + crypto_generichash_BYTES);
-
-			if (!fl->tryLockTimeout(mFilename, 100)) {
-				return false;
-			}
-
-			Poco::FileOutputStream file(mFilename);
 
 			auto hash = mm->getFreeMemory(crypto_generichash_BYTES);
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 
+			VirtualFile vFile(mDataBlockSumSize + crypto_generichash_BYTES);
+
+			// maybe has more speed (cache hits) with list and calling update hash in a row, but I think must be profiled and depend on CPU type
+			// auto-profiling and strategy choosing?
 			while (!mDataBlocks.empty())
 			{
 				auto block = mDataBlocks.front();
 				mDataBlocks.pop();
-				if (DATA_BLOCK == block->type) {
-					uint32_t size = block->size();
-					file.write((const char*)&size, sizeof(uint32_t));
-				}
-				else {
-					file.write((const char*)block, block->size());
-				}
-				crypto_generichash_update(&state, (const unsigned char*)block, block->size());
+				block->writeIntoFile(&vFile);
+				block->updateHash(&state);
 				delete block;
 			}
 
 			crypto_generichash_final(&state, *hash, hash->size());
-			file.write((const char*)*hash, hash->size());
+			uint8_t hash_type = HASH_BLOCK;
+			vFile.write(&hash_type, sizeof(uint8_t));
+			vFile.write((const char*)*hash, hash->size());
 			mm->releaseMemory(hash);
 
-			fl->unlock(mFilename);
-			return true;
+			return vFile.writeToFile(mFilename.data());
+
 		}
 
 		bool BlockIndex::readFromFile(controller::BlockIndex* receiver)
 		{
-			auto fl = FileLockManager::getInstance();
-			if (!fl->tryLockTimeout(mFilename, 100)) {
-				return false;
+			auto mm = MemoryManager::getInstance();
+
+			assert(receiver);
+
+			VirtualFile* vFile = VirtualFile::readFromFile(mFilename.data());
+			auto hashFromFile = mm->getFreeMemory(crypto_generichash_BYTES);
+			auto hashCalculated = mm->getFreeMemory(crypto_generichash_BYTES);
+			crypto_generichash_state state;
+
+			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+
+			uint8_t monthCursor = 0;
+			uint16_t yearCursor = 0;
+
+			while (vFile->getCursor() < vFile->getSize()) 
+			{
+				uint8_t blockType = NONE_BLOCK;
+				Block* block = nullptr;
+				// read type (uint8_t)
+				vFile->read(&blockType, sizeof(uint8_t));
+
+				switch (blockType) {
+				case DATA_BLOCK: block = new DataBlock; break;
+				case MONTH_BLOCK: block = new MonthBlock; break;
+				case YEAR_BLOCK: block = new YearBlock; break;
+				case HASH_BLOCK: vFile->read(hashFromFile, crypto_generichash_BYTES); break;
+				}
+				// read block
+				if (block) {
+					// file end reached
+					if (!block->readFromFile(vFile)) {
+						break;
+					}
+					block->updateHash(&state);
+					// call receiver
+					if (YEAR_BLOCK == blockType) {
+						yearCursor = static_cast<YearBlock*>(block)->year;
+					}
+					else if (MONTH_BLOCK == blockType) {
+						monthCursor = static_cast<MonthBlock*>(block)->month;
+					}
+					else if (DATA_BLOCK == blockType) {
+						auto dataBlock = static_cast<DataBlock*>(block);
+						receiver->addIndicesForTransaction(dataBlock->createTransactionEntry(monthCursor, yearCursor));
+					}
+
+				}
+				// if block is nullptr, means hash found and file should be end, ignore data after hash
+				else {
+					break;
+				}
 			}
+			crypto_generichash_final(&state, *hashCalculated, hashCalculated->size());
 
-			Poco::FileInputStream file(mFilename);
+			int hashCompareResult = sodium_compare(*hashFromFile, *hashCalculated, hashCalculated->size());
 
-			// read type (uint8_t)
-			// read block
-			// call receiver
-			
-			fl->unlock(mFilename);
-			return true;
+			mm->releaseMemory(hashFromFile);
+			mm->releaseMemory(hashCalculated);
+			delete vFile;
+
+			return 0 == hashCompareResult;
 		}
 	}
 

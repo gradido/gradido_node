@@ -31,7 +31,8 @@ namespace model {
 
 		TransactionEntry(Poco::AutoPtr<Transaction> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
 
-
+		//! \brief init entry object from details e.g. by loading from file
+		TransactionEntry(uint64_t transactionNr, uint32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
 		
 
 		//! \brief operator for sorting by mTransactionNr in ascending order

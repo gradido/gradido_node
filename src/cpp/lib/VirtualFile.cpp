@@ -22,20 +22,24 @@ VirtualFile::~VirtualFile()
 	}
 }
 
-bool VirtualFile::read(unsigned char* dst, size_t size)
+bool VirtualFile::read(void* dst, size_t size)
 {
 	assert(mBuffer);
-	if (mCursor + size > mBuffer->size()) return false;
+	if (mCursor + size > mBuffer->size()) {
+		return false;
+	}
 	
 	memcpy(dst, &mBuffer->data()[mCursor], size);
 	mCursor += size;
 	return true;
 }
 
-bool VirtualFile::write(const unsigned char* src, size_t size)
+bool VirtualFile::write(const void* src, size_t size)
 {
 	assert(mBuffer);
-	if (mCursor + size > mBuffer->size()) return false;
+	if (mCursor + size > mBuffer->size()) {
+		return false;
+	}
 
 	memcpy(&mBuffer->data()[mCursor], src, size);
 	mCursor += size;

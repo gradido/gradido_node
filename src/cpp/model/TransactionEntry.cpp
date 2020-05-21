@@ -27,4 +27,13 @@ namespace model {
 		mYear = received.year();
 		mAddressIndices = transaction->getInvolvedAddressIndices(addressIndex);
 	}
+
+	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount)
+		: mTransactionNr(transactionNr), mFileCursor(fileCursor), mMonth(month), mYear(year) 
+	{
+		mAddressIndices.reserve(addressIndiceCount);
+		for (int i = 0; i < addressIndiceCount; i++) {
+			mAddressIndices.push_back(addressIndices[i]);
+		}
+	}
 }
