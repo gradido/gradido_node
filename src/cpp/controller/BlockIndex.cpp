@@ -17,6 +17,16 @@ namespace controller {
 		
 	}
 
+	bool BlockIndex::loadFromFile()
+	{
+		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		mSlowWorkingMutex.lock();
+		assert(!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size());
+		mSlowWorkingMutex.unlock();
+
+		return mBlockIndexFile.readFromFile(this);
+	}
+
 
 	bool BlockIndex::addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry)
 	{

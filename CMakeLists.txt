@@ -11,6 +11,7 @@ include_directories(
 	"dependencies/iroha-ed25519/include"
 	"dependencies/jsonrpcpp/lib"
 	#"dependencies/googletest/googletest/include"
+	"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
 
 
@@ -73,9 +74,6 @@ endif(MSVC)
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
-#add_subdirectory("dependencies/curl")
-#add_subdirectory("dependencies/mariadb-connector-c")
-
 add_subdirectory("dependencies/jsonrpcpp")
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
@@ -124,7 +122,7 @@ enable_testing()
 add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_MODEL} ${TEST_MODEL_FILES} ${TEST_CONTROLLER})
 target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
 
-target_link_libraries(Gradido_Node_Test gtest_main jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node_Test gtest_main gmock jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
 
 if(WIN32)
 	

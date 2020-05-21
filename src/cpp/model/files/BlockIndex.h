@@ -18,6 +18,12 @@ namespace model {
 
 	namespace files {
 
+		class IBlockIndexReceiver 
+		{
+		public:
+			virtual bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry) = 0;
+		};
+
 		/*!
 		 * @author Dario Rekowski
 		 * @date 2020-02-11
@@ -54,7 +60,7 @@ namespace model {
 			
 			//! \brief read from file, put content into receiver
 			//! \return true if hash in file and calculated hash are the same
-			bool readFromFile(controller::BlockIndex* receiver);
+			bool readFromFile(IBlockIndexReceiver* receiver);
 
 		protected:
 			enum BlockTypes {
@@ -71,15 +77,18 @@ namespace model {
 				virtual size_t size() = 0;
 
 				virtual void writeIntoFile(VirtualFile* vFile) {
-					vFile->write(this, size());
+					//vFile->write(this, size());
+					vFile->write(&type, sizeof(uint8_t));
 				};
 				//! return false if reading failed, file to short?
 				virtual bool readFromFile(VirtualFile* vFile) {
-					return vFile->read(this, size());
+					//return vFile->read(this, size());
+					return vFile->read(&type, sizeof(uint8_t));
 				}
 
 				virtual void updateHash(crypto_generichash_state* state) {
-					crypto_generichash_update(state, (const unsigned char*)this, size());
+					//crypto_generichash_update(state, (const unsigned char*)this, size());
+					crypto_generichash_update(state, (const unsigned char*)&type, sizeof(uint8_t));
 				}
 			};
 			struct YearBlock : public Block {
@@ -87,12 +96,42 @@ namespace model {
 				YearBlock() : Block(YEAR_BLOCK), year(0) {}
 				uint16_t year;
 				size_t size() { return sizeof(uint8_t) + sizeof(uint16_t); }
+
+				bool readFromFile(VirtualFile* vFile) {
+					return vFile->read(&year, sizeof(uint16_t));
+				}
+
+				void writeIntoFile(VirtualFile* vFile) {
+					Block::writeIntoFile(vFile);
+					vFile->write(&year, sizeof(uint16_t));
+				}
+
+				void updateHash(crypto_generichash_state* state) {
+					//crypto_generichash_update(state, (const unsigned char*)this, size());
+					Block::updateHash(state);
+					crypto_generichash_update(state, (const unsigned char*)&year, sizeof(uint16_t));
+				}
 			};
 			struct MonthBlock: public Block {
 				MonthBlock(uint8_t _month) : Block(MONTH_BLOCK), month(_month) {}
 				MonthBlock() : Block(MONTH_BLOCK), month(0) {}
 				uint8_t month;
 				size_t size() { return sizeof(uint8_t) * 2; }
+
+				bool readFromFile(VirtualFile* vFile) {
+					return vFile->read(&month, sizeof(uint8_t));
+				}
+
+				void writeIntoFile(VirtualFile* vFile) {
+					Block::writeIntoFile(vFile);
+					vFile->write(&month, sizeof(uint8_t));
+				}
+
+				void updateHash(crypto_generichash_state* state) {
+					//crypto_generichash_update(state, (const unsigned char*)this, size());
+					Block::updateHash(state);
+					crypto_generichash_update(state, (const unsigned char*)&month, sizeof(uint8_t));
+				}
 			};
 			struct DataBlock: public Block {
 				DataBlock(uint64_t _transactionNr, const std::vector<uint32_t>& _addressIndices)

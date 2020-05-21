@@ -13,7 +13,13 @@ namespace model {
 		void BlockIndex::DataBlock::writeIntoFile(VirtualFile* vFile)
 		{
 			// first part, write block type, transaction nr and address index count
-			vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
+			// write type
+			Block::writeIntoFile(vFile);
+
+			vFile->write(&transactionNr, sizeof(uint64_t));
+			vFile->write(&fileCursor, sizeof(uint32_t));
+			vFile->write(&addressIndicesCount, sizeof(uint8_t));
+			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
 			// second part, write address indices
 			vFile->write(addressIndices, sizeof(uint32_t) * addressIndicesCount);
@@ -22,7 +28,10 @@ namespace model {
 		bool BlockIndex::DataBlock::readFromFile(VirtualFile* vFile)
 		{
 			// first part, read block type, transaction nr and address index count
-			if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
+			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
+			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
+			if(!vFile->read(&fileCursor, sizeof(uint32_t))) return false;
+			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
 			addressIndices = (uint32_t*)malloc(addressIndexSize);
@@ -33,8 +42,13 @@ namespace model {
 
 		void BlockIndex::DataBlock::updateHash(crypto_generichash_state* state)
 		{
+			Block::updateHash(state);
 			// first part
-			crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
+			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
+			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));
+			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(uint32_t));
+			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
+
 			// second part
 			crypto_generichash_update(state, (const unsigned char*)addressIndices, sizeof(uint32_t) * addressIndicesCount);
 		}
@@ -109,7 +123,7 @@ namespace model {
 
 		}
 
-		bool BlockIndex::readFromFile(controller::BlockIndex* receiver)
+		bool BlockIndex::readFromFile(IBlockIndexReceiver* receiver)
 		{
 			auto mm = MemoryManager::getInstance();
 

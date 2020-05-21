@@ -22,12 +22,14 @@ namespace controller {
 	 * year[month[
 	 */
 
-	class BlockIndex : public ControllerBase
+	class BlockIndex : public ControllerBase, public model::files::IBlockIndexReceiver
 	{
 		friend model::files::BlockIndex;
 	public:
 		BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 		~BlockIndex();
+
+		bool loadFromFile();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
 
