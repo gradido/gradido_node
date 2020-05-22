@@ -19,12 +19,50 @@ namespace controller {
 
 	bool BlockIndex::loadFromFile()
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		mSlowWorkingMutex.lock();
 		assert(!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size());
 		mSlowWorkingMutex.unlock();
 
 		return mBlockIndexFile.readFromFile(this);
+	}
+
+	bool BlockIndex::writeIntoFile()
+	{
+		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		assert(mYearMonthAddressIndexEntrys.size() && mTransactionNrsFileCursors.size());
+
+		mBlockIndexFile.reset();
+
+		for (auto itYear = mYearMonthAddressIndexEntrys.begin(); itYear != mYearMonthAddressIndexEntrys.end(); itYear++) 
+		{
+			mBlockIndexFile.addYearBlock(itYear->first);
+			for (auto itMonth = itYear->second.begin(); itMonth != itYear->second.end(); itMonth++) 
+			{
+				mBlockIndexFile.addMonthBlock(itMonth->first);
+
+				auto addressIndexEntry = itMonth->second;
+				// memory for putting address indices and transactions together
+				std::vector<std::vector<uint32_t>> transactionTransactionIndices;
+				transactionTransactionIndices.reserve(addressIndexEntry.transactionNrs->size());
+				
+				for (auto itAddressIndex = addressIndexEntry.addressIndicesTransactionNrIndices.begin(); itAddressIndex != addressIndexEntry.addressIndicesTransactionNrIndices.end(); itAddressIndex++)
+				{
+					auto addressIndex = itAddressIndex->first;
+					for (auto itTrNrIndex = itAddressIndex->second.begin(); itTrNrIndex != itAddressIndex->second.end(); itTrNrIndex++) {
+						transactionTransactionIndices[*itTrNrIndex].push_back(addressIndex);
+					}
+				}
+				// put into file object
+				int index = 0;
+				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
+					mBlockIndexFile.addDataBlock(*itTrID, transactionTransactionIndices[index]);
+					index++;
+				}
+			}
+		}
+		// finally write down to file
+		return mBlockIndexFile.writeToFile();
+		//return true;
 	}
 
 

@@ -62,6 +62,9 @@ namespace model {
 			//! \return true if hash in file and calculated hash are the same
 			bool readFromFile(IBlockIndexReceiver* receiver);
 
+			//! \brief clear data blocks
+			void reset();
+
 		protected:
 			enum BlockTypes {
 				YEAR_BLOCK = 0xad,

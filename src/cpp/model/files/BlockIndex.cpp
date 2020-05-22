@@ -54,7 +54,7 @@ namespace model {
 		{
 			// TransactionEntry(uint64_t transactionNr, uint32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
 			return new TransactionEntry(
-				transactionNr, 0, month, year, addressIndices, addressIndicesCount
+				transactionNr, month, year, addressIndices, addressIndicesCount
 			);
 		}
 
@@ -80,7 +80,12 @@ namespace model {
 
 		BlockIndex::~BlockIndex()
 		{
-			while (!mDataBlocks.empty()) 
+			reset();
+		}
+
+		void BlockIndex::reset()
+		{
+			while (!mDataBlocks.empty())
 			{
 				auto block = mDataBlocks.front();
 				mDataBlocks.pop();

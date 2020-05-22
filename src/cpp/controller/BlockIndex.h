@@ -29,7 +29,11 @@ namespace controller {
 		BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 		~BlockIndex();
 
+		//! \brief loading block index from file (or at least try to load)
 		bool loadFromFile();
+
+		//! \brief write block index into files
+		bool writeIntoFile();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
 
