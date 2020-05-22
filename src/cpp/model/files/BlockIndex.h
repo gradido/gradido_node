@@ -141,7 +141,7 @@ namespace model {
 					memcpy(addressIndices, _addressIndices.data(), addressIndicesCount * sizeof(uint32_t));
 				}
 				DataBlock()
-					: Block(DATA_BLOCK), transactionNr(0), fileCursor(0), addressIndices(nullptr), addressIndicesCount(0)
+					: Block(DATA_BLOCK), transactionNr(0), addressIndices(nullptr), addressIndicesCount(0)
 				{
 
 				}
@@ -153,7 +153,6 @@ namespace model {
 					addressIndicesCount = 0;
 				}
 				uint64_t transactionNr;
-				uint32_t fileCursor;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
 				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; }

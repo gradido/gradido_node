@@ -17,7 +17,6 @@ namespace model {
 			Block::writeIntoFile(vFile);
 
 			vFile->write(&transactionNr, sizeof(uint64_t));
-			vFile->write(&fileCursor, sizeof(uint32_t));
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
@@ -30,7 +29,6 @@ namespace model {
 			// first part, read block type, transaction nr and address index count
 			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
-			if(!vFile->read(&fileCursor, sizeof(uint32_t))) return false;
 			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
@@ -45,8 +43,7 @@ namespace model {
 			Block::updateHash(state);
 			// first part
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
-			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));
-			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(uint32_t));
+			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));			
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
 
 			// second part
@@ -57,7 +54,7 @@ namespace model {
 		{
 			// TransactionEntry(uint64_t transactionNr, uint32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
 			return new TransactionEntry(
-				transactionNr, fileCursor, month, year, addressIndices, addressIndicesCount
+				transactionNr, 0, month, year, addressIndices, addressIndicesCount
 			);
 		}
 
@@ -150,7 +147,7 @@ namespace model {
 				case DATA_BLOCK: block = new DataBlock; break;
 				case MONTH_BLOCK: block = new MonthBlock; break;
 				case YEAR_BLOCK: block = new YearBlock; break;
-				case HASH_BLOCK: vFile->read(hashFromFile, crypto_generichash_BYTES); break;
+				case HASH_BLOCK: vFile->read(*hashFromFile, crypto_generichash_BYTES); break;
 				}
 				// read block
 				if (block) {
