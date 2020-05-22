@@ -21,7 +21,7 @@ namespace model {
 		class IBlockIndexReceiver 
 		{
 		public:
-			virtual bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry) = 0;
+			virtual bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
 		};
 
 		/*!

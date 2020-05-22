@@ -170,7 +170,10 @@ namespace model {
 					}
 					else if (DATA_BLOCK == blockType) {
 						auto dataBlock = static_cast<DataBlock*>(block);
-						receiver->addIndicesForTransaction(dataBlock->createTransactionEntry(monthCursor, yearCursor));
+						//receiver->addIndicesForTransaction(dataBlock->createTransactionEntry(monthCursor, yearCursor));
+						//bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices);
+						receiver->addIndicesForTransaction(yearCursor, monthCursor, dataBlock->transactionNr, dataBlock->addressIndices, dataBlock->addressIndicesCount);
+
 					}
 
 				}

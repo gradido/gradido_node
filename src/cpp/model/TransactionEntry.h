@@ -32,7 +32,7 @@ namespace model {
 		TransactionEntry(Poco::AutoPtr<Transaction> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
 
 		//! \brief init entry object from details e.g. by loading from file
-		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
+		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 		//! \brief init entry object without indices
 		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year);

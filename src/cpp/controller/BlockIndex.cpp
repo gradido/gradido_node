@@ -64,13 +64,15 @@ namespace controller {
 		return mBlockIndexFile.writeToFile();
 		//return true;
 	}
+	
+	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices)
+	{
+		return addIndicesForTransaction(year, month, transactionNr, addressIndices.data(), addressIndices.size());
+	}
 
-
-	bool BlockIndex::addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry)
+	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
-		auto fileCursor = transactionEntry->getFileCursor();
-		auto transactionNr = transactionEntry->getTransactionNr();
 
 		if (transactionNr > mMaxTransactionNr) {
 			mMaxTransactionNr = transactionNr;
@@ -79,22 +81,18 @@ namespace controller {
 			mMinTransactionNr = transactionNr;
 		}
 
-		// transaction nr - file cursor map
-		if (fileCursor >= 0) {
-			addFileCursorForTransaction(transactionNr, fileCursor);
-		}
 		// year
-		auto yearIt = mYearMonthAddressIndexEntrys.find(transactionEntry->getYear());
+		auto yearIt = mYearMonthAddressIndexEntrys.find(year);
 		if (yearIt == mYearMonthAddressIndexEntrys.end()) {
 			std::map<uint8_t, AddressIndexEntry> monthAddressIndexMap;
 			auto result = mYearMonthAddressIndexEntrys.insert(std::pair<uint16_t, std::map<uint8_t, AddressIndexEntry>>
-				(transactionEntry->getYear(), monthAddressIndexMap));
+				(year, monthAddressIndexMap));
 			yearIt = result.first;
 		}
 		// month
-		auto monthIt = yearIt->second.find(transactionEntry->getMonth());
+		auto monthIt = yearIt->second.find(month);
 		if (monthIt == yearIt->second.end()) {
-			auto result = yearIt->second.insert(std::pair<uint8_t, AddressIndexEntry>(transactionEntry->getMonth(), AddressIndexEntry()));
+			auto result = yearIt->second.insert(std::pair<uint8_t, AddressIndexEntry>(month, AddressIndexEntry()));
 			monthIt = result.first;
 			monthIt->second.transactionNrs = new std::vector<uint64_t>;
 		}
@@ -103,19 +101,40 @@ namespace controller {
 		uint32_t transactionNrIndex = addressIndexEntry->transactionNrs->size() - 1;
 
 		// address index - transactions nr map
-		auto addressIndices = transactionEntry->getAddressIndices();
 		auto addressIndexTrans = &addressIndexEntry->addressIndicesTransactionNrIndices;
-		for (auto it = addressIndices.begin(); it != addressIndices.end(); it++) {
-			auto addressIndexEntry = addressIndexTrans->find(*it);
+		for (int i = 0; i < addressIndiceCount; i++) 
+		{
+			auto value = addressIndices[i];
+			auto addressIndexEntry = addressIndexTrans->find(value);
 			if (addressIndexEntry == addressIndexTrans->end()) {
 				//uint32_t, std::vector<uint32_t>
-				addressIndexTrans->insert(std::pair<uint32_t, std::vector<uint32_t>>(*it, transactionNrIndex));
+				addressIndexTrans->insert(std::pair<uint32_t, std::vector<uint32_t>>(value, transactionNrIndex));
 			}
 			else {
 				addressIndexEntry->second.push_back(transactionNrIndex);
 			}
 		}
+		
 		return true;
+	}
+
+	bool BlockIndex::addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry)
+	{
+		auto fileCursor = transactionEntry->getFileCursor();
+		auto transactionNr = transactionEntry->getTransactionNr();
+
+		// transaction nr - file cursor map
+		if (fileCursor >= 0) {
+			addFileCursorForTransaction(transactionNr, fileCursor);
+		}
+
+		return addIndicesForTransaction(
+			transactionEntry->getYear(),
+			transactionEntry->getMonth(),
+			transactionNr,
+			transactionEntry->getAddressIndices()
+		);
+		
 	}
 
 	bool BlockIndex::addFileCursorForTransaction(uint64_t transactionNr, uint32_t fileCursor)

@@ -28,7 +28,7 @@ namespace model {
 		mAddressIndices = transaction->getInvolvedAddressIndices(addressIndex);
 	}
 
-	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount)
+	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 		: TransactionEntry(transactionNr, month, year)
 	{
 		mAddressIndices.reserve(addressIndiceCount);

@@ -4,14 +4,19 @@
 //#define GTEST_LINKED_AS_SHARED_LIBRARY
 #include "gmock/gmock.h"  // Brings in gMock.
 #include "../../model/files/BlockIndex.h"
+#include "../../model/TransactionEntry.h"
 
 namespace controller {
 	class MockBlockIndex : public model::files::IBlockIndexReceiver {
 	public: 
 
-		//bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
-		//MOCK_METHOD(bool, addIndicesForTransaction, (Poco::SharedPtr<model::TransactionEntry> transactionEntry), ());
-		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry) { mTransactionEntrys.push_back(transactionEntry); return true; }
+		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount) {
+			
+			mTransactionEntrys.push_back(new model::TransactionEntry(
+				transactionNr, month, year, addressIndices, addressIndiceCount
+			));
+			return true;
+		}
 
 		std::vector < Poco::SharedPtr<model::TransactionEntry>> mTransactionEntrys;
 	protected: 
