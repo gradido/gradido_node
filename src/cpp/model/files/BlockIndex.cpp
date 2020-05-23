@@ -5,6 +5,8 @@
 #include "../../controller/BlockIndex.h"
 //#include "Poco/FileStream.h"
 
+#include "../../SingletonManager/LoggerManager.h"
+
 namespace model {
 	namespace files {
 
@@ -70,11 +72,19 @@ namespace model {
 			sprintf(fileName, "blk%08d.index", blockNr);
 #endif
 			groupFolderPath.append(fileName);
-			Poco::File file(groupFolderPath);
-			if (!file.exists()) {
-				file.createFile();
+			try {
+				Poco::File file(groupFolderPath);
+				if (!file.exists()) {
+					file.createFile();
+				}
+				mFilename = groupFolderPath.toString();
 			}
-			mFilename = groupFolderPath.toString();
+			catch (Poco::Exception& ex) {
+				auto lm = LoggerManager::getInstance();
+				std::string functionName = __FUNCTION__;
+				lm->mErrorLogging.error("[%s] Poco Exception: %s\n", functionName, ex.displayText());
+				//printf("[%s] Poco Exception: %s\n", __FUNCTION__, ex.displayText().data());
+			}
 
 		}
 
@@ -127,11 +137,14 @@ namespace model {
 
 		bool BlockIndex::readFromFile(IBlockIndexReceiver* receiver)
 		{
-			auto mm = MemoryManager::getInstance();
-
 			assert(receiver);
 
 			VirtualFile* vFile = VirtualFile::readFromFile(mFilename.data());
+			if (!vFile) {
+				return false;
+			}
+
+			auto mm = MemoryManager::getInstance();
 			auto hashFromFile = mm->getFreeMemory(crypto_generichash_BYTES);
 			auto hashCalculated = mm->getFreeMemory(crypto_generichash_BYTES);
 			crypto_generichash_state state;

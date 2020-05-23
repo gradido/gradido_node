@@ -10,7 +10,7 @@
 namespace model {
 	namespace files {
 
-		TEST_F(BlockIndexTest, ReadAndWrite) {
+		TEST_F(ModelFilesTestFixture, ReadAndWrite) {
 
 			// clear block file at first, because appending
 			removeFile(std::string("blockTest/blk00000001.index"));
@@ -50,6 +50,15 @@ namespace model {
 			EXPECT_EQ(transaction2_indices[2], 1234);
 			EXPECT_EQ(transaction2_indices[3], 121);
 
+			delete blockIndexModelFile;
+
+		}
+
+		TEST_F(ModelFilesTestFixture, InvalidFile) {
+			auto blockIndexModelFile = new model::files::BlockIndex("blockTest/", 6);
+			controller::MockBlockIndex blockIndexController;
+			EXPECT_FALSE(blockIndexModelFile->readFromFile(&blockIndexController));
+			delete blockIndexModelFile;
 		}
 	}
 }

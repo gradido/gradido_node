@@ -47,6 +47,7 @@ public:
 	bool writeToFile(const char* filename);
 
 	//! \brief get memory bin in file size and fill it with file content
+	//! \return nullptr if file wasn't found or couldn't be locked within 100ms
 	static VirtualFile* readFromFile(const char* filename);
 
 protected:

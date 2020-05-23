@@ -1,9 +1,9 @@
-#include "BaseTestFixture.h"
+#include "ModelFilesTestFixture.h"
 
 
 namespace model {
 	namespace files {
-		class BlockTest : public BaseTestFixture
+		class BlockTest : public ModelFilesTestFixture
 		{
 		protected:
 			// You can remove any or all of the following functions if their bodies would

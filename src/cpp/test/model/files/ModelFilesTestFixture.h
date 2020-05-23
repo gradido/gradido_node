@@ -7,17 +7,17 @@
 
 namespace model {
 	namespace files {
-		class BaseTestFixture : public ::testing::Test
+		class ModelFilesTestFixture : public ::testing::Test
 		{
 		protected:
 			// You can remove any or all of the following functions if their bodies would
 			// be empty.
 
-			BaseTestFixture() {
+			ModelFilesTestFixture() {
 				// You can do set-up work for each test here.
 			}
 
-			~BaseTestFixture() override {
+			~ModelFilesTestFixture() override {
 				// You can do clean-up work that doesn't throw exceptions here.
 			}
 

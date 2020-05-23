@@ -1,8 +1,8 @@
-#include "BaseTestFixture.h"
+#include "ModelFilesTestFixture.h"
 
 namespace model {
 	namespace files {
-		class AddressIndexTest : public BaseTestFixture
+		class AddressIndexTest : public ModelFilesTestFixture
 		{
 		protected:
 			// You can remove any or all of the following functions if their bodies would

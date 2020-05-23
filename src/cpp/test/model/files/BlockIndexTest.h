@@ -1,9 +1,9 @@
 //#include "gtest/gtest.h"
-#include "BaseTestFixture.h"
+#include "ModelFilesTestFixture.h"
 
 namespace model {
 	namespace files {
-		class BlockIndexTest : public BaseTestFixture
+		class BlockIndexTest : public ModelFilesTestFixture
 		{
 		protected:
 			// You can remove any or all of the following functions if their bodies would

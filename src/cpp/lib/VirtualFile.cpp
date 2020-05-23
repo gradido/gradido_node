@@ -4,6 +4,7 @@
 #include "Poco/FileStream.h"
 
 #include "../SingletonManager/FileLockManager.h"
+#include "../SingletonManager/LoggerManager.h"
 
 VirtualFile::VirtualFile(size_t size)
 	: mBuffer(MemoryManager::getInstance()->getFreeMemory(size)), mCursor(0)
@@ -62,7 +63,8 @@ bool VirtualFile::writeToFile(const char* filename)
 	}
 
 	Poco::FileOutputStream file(filename);
-	
+	file.seekp(0, SEEK_SET);
+
 	file.write(*mBuffer, mCursor);
 	file.close();
 
@@ -75,21 +77,39 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 {
 	auto fl = FileLockManager::getInstance();
 	auto mm = MemoryManager::getInstance();
+	
 
 	if (!fl->tryLockTimeout(filename, 100)) {
 		return nullptr;
 	}
+	try {
+		Poco::FileInputStream file(filename);
+		file.seekg(0, SEEK_END);
+		auto telled = file.tellg();
+		file.seekg(0, SEEK_SET);
 
-	Poco::FileInputStream file(filename);
-	file.seekg(0, SEEK_END);
-	auto telled = file.tellg();
-	file.seekg(0, SEEK_SET);
+		auto fileBuffer = mm->getFreeMemory(telled);
+		file.read(*fileBuffer, telled);
+		file.close();
 
-	auto fileBuffer = mm->getFreeMemory(telled);
-	file.read(*fileBuffer, telled);
-	file.close();
+		fl->unlock(filename);
 
-	fl->unlock(filename);
+		return new VirtualFile(fileBuffer);
 
-	return new VirtualFile(fileBuffer);
+	} 
+	catch (Poco::FileNotFoundException& ex) {
+		return nullptr;
+	}
+	catch (Poco::Exception& ex) {
+		fl->unlock(filename);
+
+		auto lm = LoggerManager::getInstance();
+		//printf("[%s] Poco Exception: %s\n", __FUNCTION__, ex.displayText().data());
+		std::string functionName = __FUNCTION__;
+		lm->mErrorLogging.error("[%s] Poco Exception: %s\n", functionName, ex.displayText());
+		return nullptr;
+	}
+	
+
+	
 }

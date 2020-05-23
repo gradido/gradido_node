@@ -60,6 +60,7 @@ namespace model {
 			
 			//! \brief read from file, put content into receiver
 			//! \return true if hash in file and calculated hash are the same
+			//! \return false if file not found or couldn't opened
 			bool readFromFile(IBlockIndexReceiver* receiver);
 
 			//! \brief clear data blocks

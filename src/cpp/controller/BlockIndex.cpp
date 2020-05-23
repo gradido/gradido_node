@@ -44,6 +44,11 @@ namespace controller {
 				// memory for putting address indices and transactions together
 				std::vector<std::vector<uint32_t>> transactionTransactionIndices;
 				transactionTransactionIndices.reserve(addressIndexEntry.transactionNrs->size());
+				for (int i = 0; i < addressIndexEntry.transactionNrs->size(); i++) {
+					transactionTransactionIndices.push_back(std::vector<uint32_t>());
+				}
+				//std::vector<uint32_t>* transactionTransactionIndices = new std::vector<uint32_t>[addressIndexEntry.transactionNrs->size()];
+				//transactionTransactionIndices.reserve(addressIndexEntry.transactionNrs->size());
 				
 				for (auto itAddressIndex = addressIndexEntry.addressIndicesTransactionNrIndices.begin(); itAddressIndex != addressIndexEntry.addressIndicesTransactionNrIndices.end(); itAddressIndex++)
 				{
@@ -108,7 +113,7 @@ namespace controller {
 			auto addressIndexEntry = addressIndexTrans->find(value);
 			if (addressIndexEntry == addressIndexTrans->end()) {
 				//uint32_t, std::vector<uint32_t>
-				addressIndexTrans->insert(std::pair<uint32_t, std::vector<uint32_t>>(value, transactionNrIndex));
+				addressIndexTrans->insert(std::pair<uint32_t, std::vector<uint32_t>>(value, { transactionNrIndex }));
 			}
 			else {
 				addressIndexEntry->second.push_back(transactionNrIndex);
