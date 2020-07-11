@@ -63,7 +63,7 @@ bool VirtualFile::writeToFile(const char* filename)
 	}
 
 	Poco::FileOutputStream file(filename);
-	file.seekp(0, SEEK_SET);
+	file.seekp(0, std::ios_base::beg);
 
 	file.write(*mBuffer, mCursor);
 	file.close();
@@ -84,9 +84,9 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 	}
 	try {
 		Poco::FileInputStream file(filename);
-		file.seekg(0, SEEK_END);
+		file.seekg(0, std::ios_base::end);
 		auto telled = file.tellg();
-		file.seekg(0, SEEK_SET);
+		file.seekg(0, std::ios_base::beg);
 
 		auto fileBuffer = mm->getFreeMemory(telled);
 		file.read(*fileBuffer, telled);

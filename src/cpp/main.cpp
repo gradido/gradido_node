@@ -1,6 +1,6 @@
 
 #include "main.h"
-#include "mainServer.h"
+#include "MainServer.h"
 
 #include "proto/gradido/TransactionBody.pb.h"
 #include <sodium.h>

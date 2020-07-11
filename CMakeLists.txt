@@ -121,6 +121,7 @@ enable_testing()
 
 add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_MODEL} ${TEST_MODEL_FILES} ${TEST_CONTROLLER})
 target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
+add_test(main Gradido_Node_Test)
 
 target_link_libraries(Gradido_Node_Test gtest_main gmock jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
 

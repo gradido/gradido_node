@@ -7,6 +7,10 @@
 
 #include "../SingletonManager/MemoryManager.h"
 
+// additional header for linux
+#include <cstring>
+#include <cmath>
+
 static Poco::RegularExpression regExpIsHexString("^[a-fA-F0-9]*$");
 static Poco::RegularExpression regExpIsBase58String("^[1-9A-HJ-NP-Za-km-z]*$");
 static Poco::RegularExpression regExpIsBase64String("^[0-9A-Za-z+/]*=*$");

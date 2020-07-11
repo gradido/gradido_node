@@ -37,7 +37,7 @@ namespace model {
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			if (mBlockFile.isNull()) {
 				mBlockFile = new Poco::FileStream(mBlockPath.toString());
-				mBlockFile->seekg(0, SEEK_END);
+				mBlockFile->seekg(0, std::ios_base::end);
 				auto telled = mBlockFile->tellg();
 				if (telled && telled > crypto_generichash_KEYBYTES) {
 					mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
@@ -180,7 +180,7 @@ namespace model {
 			}
 			auto fileStream = getOpenFile();
 
-			fileStream->seekg(SEEK_SET);
+			fileStream->seekg(0);
 			fileStream->read(*vfile, mCurrentFileSize);
 
 			fl->unlock(filePath);
