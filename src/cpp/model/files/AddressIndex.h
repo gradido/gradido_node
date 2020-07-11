@@ -17,7 +17,7 @@ namespace model {
 		* @brief File for storing account address indices
 		* 
 		* Store indices for every account public key.\n
-		
+		*
 		*/
 
 		class AddressIndex : public FileBase
