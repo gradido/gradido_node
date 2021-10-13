@@ -11,8 +11,56 @@ include_directories(
 	"dependencies/iroha-ed25519/include"
 	"dependencies/jsonrpcpp/lib"
 	#"dependencies/googletest/googletest/include"
-	"dependencies/leveldb/third_party/googletest/googlemock/include"
+	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
+
+############################## find protobuf  #########################################
+# prevent problems with two libs including googletest
+option(protobuf_BUILD_TESTS "Build tests" OFF)
+add_subdirectory(dependencies/protobuf/cmake)
+
+############################## parse protobuf files ###################################
+
+FILE(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/proto GRADIDO_PROTO_MODEL_PATH)
+FILE(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/build/proto PROTOBINDING_PATH)
+file(MAKE_DIRECTORY ${PROTOBINDING_PATH})
+file(MAKE_DIRECTORY ${PROTOBINDING_PATH}/gradido)
+
+FILE(GLOB DATAMODEL_GRADIDO_PROTOS "${GRADIDO_PROTO_MODEL_PATH}/gradido/*.proto")
+
+IF(WIN32)
+	set(PROTOC_BIN_PATH "build/dependencies/protobuf/cmake/bin")
+	find_program(PROTOBUF_PROTOC_EXECUTABLE protoc PATHS "${PROTOC_BIN_PATH}/Debug" )
+	find_program(PROTOBUF_PROTOC_EXECUTABLE protoc PATHS "${PROTOC_BIN_PATH}/Release" )
+ELSE()
+	find_program(PROTOBUF_PROTOC_EXECUTABLE protoc PATHS "build/dependencies/protobuf/cmake/bin" )
+ENDIF()
+FILE(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf/src GOOGLE_PROTOBUF_INCLUDES)
+MESSAGE("protoc: ${PROTOBUF_PROTOC_EXECUTABLE} in build/dependencies/protobuf/bin/${CMAKE_BUILD_TYPE}")
+FOREACH(proto ${DATAMODEL_GRADIDO_PROTOS})
+   FILE(TO_NATIVE_PATH ${proto} proto_native)
+   get_filename_component(proto_parsed ${proto} NAME_WLE)
+   FILE(TO_NATIVE_PATH ${PROTOBINDING_PATH}/gradido/${proto_parsed}.pb.h proto_parsed_native)
+   
+   IF(${proto_native} IS_NEWER_THAN ${proto_parsed_native})
+		EXECUTE_PROCESS(
+			COMMAND 
+			${PROTOBUF_PROTOC_EXECUTABLE} 
+			--proto_path=${GRADIDO_PROTO_MODEL_PATH} 
+			--cpp_out=${PROTOBINDING_PATH} 
+			${proto_native}
+			RESULT_VARIABLE rv
+		)
+		# Optional, but that can show the user if something have gone wrong with the proto generation 
+		IF(${rv})
+			MESSAGE("Generation of data model returned ${rv} for proto ${proto_native}")
+		ELSE()
+			MESSAGE("Parsed: src/proto/gradido/${proto_parsed}.proto")
+		ENDIF()
+   ENDIF()
+
+ENDFOREACH(proto)
+
 
 
 FILE(GLOB CONTAINER, "src/cpp/container/*.h" "src/cpp/container/*.cpp")
