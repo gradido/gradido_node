@@ -21,7 +21,7 @@ namespace controller {
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
 	}
 
-	bool Group::addTransaction(Poco::AutoPtr<model::Transaction> newTransaction)
+	bool Group::addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction)
 	{
 		// intern validation
 		if (!newTransaction->validate()) {
@@ -93,25 +93,25 @@ namespace controller {
 			auto body = (*it)->getTransactionBody();
 			if (body->getType() == model::TRANSACTION_CREATION) {
 				auto creation = body->getCreation();
-				sum += creation->getReceiverAmount();
+				sum += creation->getRecipiantAmount();
 			}
 		}
 		return sum;
 	}
 
-	Poco::AutoPtr<model::Transaction> Group::findLastTransaction(const std::string& address)
+	Poco::AutoPtr<model::GradidoBlock> Group::findLastTransaction(const std::string& address)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 		auto index = mAddressIndex->getIndexForAddress(address);
-		if (!index) { return Poco::AutoPtr<model::Transaction>(); }
+		if (!index) { return Poco::AutoPtr<model::GradidoBlock>(); }
 
-		return Poco::AutoPtr<model::Transaction>();
+		return Poco::AutoPtr<model::GradidoBlock>();
 	}
 
-	std::vector<Poco::AutoPtr<model::Transaction>> Group::findTransactions(const std::string& address)
+	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
-		std::vector<Poco::AutoPtr<model::Transaction>> transactions;
+		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
@@ -119,10 +119,10 @@ namespace controller {
 		return transactions;
 	}
 
-	std::vector<Poco::AutoPtr<model::Transaction>> Group::findTransactions(const std::string& address, int month, int year)
+	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address, int month, int year)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
-		std::vector<Poco::AutoPtr<model::Transaction>> transactions;
+		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }

@@ -1,21 +1,24 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.18.2)
 project(Gradido_Node C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin" )
 
-add_definitions("-std=c++11")
-set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_FLAGS "-std=c++17" )
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(
 	"dependencies" 
 	"dependencies/iroha-ed25519/include"
-	"dependencies/jsonrpcpp/lib"
+	"dependencies/jsonrpcpp/include"
+	"dependencies/protobuf/src"
+	"build/proto"
+	"dependencies/rapidjson/include"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
 
 ############################## find protobuf  #########################################
-# prevent problems with two libs including googletest
+# prevent problems with two libs including googletest 
 option(protobuf_BUILD_TESTS "Build tests" OFF)
 add_subdirectory(dependencies/protobuf/cmake)
 
@@ -71,7 +74,7 @@ FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp" "src/cpp/lib/*.c")
 FILE(GLOB MODEL "src/cpp/model/*.h" "src/cpp/model/*.cpp")
 FILE(GLOB MODEL_FILES "src/cpp/model/files/*.h" "src/cpp/model/files/*.cpp")
 FILE(GLOB MODEL_TRANSACTIONS "src/cpp/model/transactions/*.h" "src/cpp/model/transactions/*.cpp")
-FILE(GLOB PROTO_GRADIDO "src/cpp/proto/gradido/*.cc" "src/cpp/proto/gradido/*.h")
+FILE(GLOB PROTO_GRADIDO "build/proto/gradido/*.cc" "build/proto/gradido/*.h")
 FILE(GLOB SINGLETON_MANAGER "src/cpp/SingletonManager/*.h" "src/cpp/SingletonManager/*.cpp")
 FILE(GLOB TASK "src/cpp/task/*.cpp" "src/cpp/task/*.h")
 FILE(GLOB TCP_SERVER "src/cpp/TCPServer/*.cpp" "src/cpp/TCPServer/*.h")
@@ -150,7 +153,7 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node leveldb libprotobuf ${CONAN_LIBS} ${IROHA_ED25519})
 if(WIN32)
 TARGET_LINK_LIBRARIES(Gradido_Node optimized Shlwapi)
 TARGET_LINK_LIBRARIES(Gradido_Node debug Shlwapi)
@@ -171,7 +174,7 @@ add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_MODEL} ${TEST_MODE
 target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
 add_test(main Gradido_Node_Test)
 
-target_link_libraries(Gradido_Node_Test gtest_main gmock jsonrpcpp leveldb ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node_Test libprotobuf gtest_main gmock leveldb ${CONAN_LIBS} ${IROHA_ED25519})
 
 if(WIN32)
 	

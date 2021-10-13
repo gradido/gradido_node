@@ -7,7 +7,7 @@
 #include "BlockIndex.h"
 #include "TaskObserver.h"
 
-#include "../model/transactions/Transaction.h"
+#include "../model/transactions/GradidoBlock.h"
 
 #include "../model/files/GroupState.h"
 
@@ -34,19 +34,19 @@ namespace controller {
 
 		//! \brief Put new transaction to block chain, if valid.
 		//! \return True if valid, else false.
-		bool addTransaction(Poco::AutoPtr<model::Transaction> newTransaction);
+		bool addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction);
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
-		Poco::AutoPtr<model::Transaction> findLastTransaction(const std::string& address);
+		Poco::AutoPtr<model::GradidoBlock> findLastTransaction(const std::string& address);
 		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 		//!
 		//! Use with care, can need some time and return huge amount of data.
 		//! \param address Address = user account public key.
-		std::vector<Poco::AutoPtr<model::Transaction>> findTransactions(const std::string& address);
+		std::vector<Poco::AutoPtr<model::GradidoBlock>> findTransactions(const std::string& address);
 		//! \brief Find transactions of account in memory or block chain from a specific month.
 		//! \param address User account public key.
-		std::vector<Poco::AutoPtr<model::Transaction>> findTransactions(const std::string& address, int month, int year);
+		std::vector<Poco::AutoPtr<model::GradidoBlock>> findTransactions(const std::string& address, int month, int year);
 
 		//! \brief Search for creation transactions from specific month and add balances together.
 		//! \param address User account public key.
@@ -62,7 +62,7 @@ namespace controller {
 		Poco::SharedPtr<AddressIndex> mAddressIndex;
 		model::files::GroupState mGroupState;
 
-		Poco::AutoPtr<model::Transaction> mLastTransaction;
+		Poco::AutoPtr<model::GradidoBlock> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
 

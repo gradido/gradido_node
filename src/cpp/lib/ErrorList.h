@@ -19,7 +19,7 @@
 #include "Poco/Net/StringPartSource.h"
 #include "Poco/Logger.h"
 
-#include "jsonrp.hpp"
+#include "rapidjson/document.h"
 
 class ErrorList : public IErrorCollection
 {
@@ -42,10 +42,13 @@ public:
 		return recv->getErrors(send);
 	}
 	int getErrors(ErrorList* send);
-	int getErrors(Json& send);
+	//int getErrors(Json& send);
 
 	void printErrors();
 	std::string getErrorsHtml();
+
+	std::vector<std::string> getErrorsArray();
+	rapidjson::Value getErrorsArray(rapidjson::Document::AllocatorType& alloc);
 
 
 protected:

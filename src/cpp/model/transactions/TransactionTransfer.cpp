@@ -6,8 +6,8 @@
 
 namespace model {
 	TransactionTransfer::TransactionTransfer(
-		const model::messages::gradido::Transfer& transafer,
-		const model::messages::gradido::SignatureMap& sigMap)
+		const proto::gradido::GradidoTransfer& transafer,
+		const proto::gradido::SignatureMap& sigMap)
 		: mProtoTransfer(transafer), mSignatureMap(sigMap)
 	{
 
@@ -15,51 +15,30 @@ namespace model {
 
 	bool TransactionTransfer::validate(TransactionValidationLevel level)
 	{
-		std::unordered_map<std::string, std::string> pubkeys_map;
-		int mapInsertCount = 0;
-
-		auto senderAmounts = mProtoTransfer.senderamounts();
-		int senderSum = 0;
-
-		for (auto it = senderAmounts.begin(); it != senderAmounts.end(); it++) 
-		{
-			senderSum += it->amount();
-			pubkeys_map.insert(std::pair<std::string, std::string>(it->ed25519_sender_pubkey(), "sender"));
-			mapInsertCount++;
+		proto::gradido::LocalTransfer transfer = getTransfer();
+		
+		if (transfer.sender().amount() <= 0) {
+			addError(new Error(__FUNCTION__, "invalid sender amount"));
 		}
-
-		auto receiverAmounts = mProtoTransfer.receiveramounts();
-		int receiverSum = 0;
-		for (auto it = receiverAmounts.begin(); it != receiverAmounts.end(); it++) 
-		{
-			receiverSum += it->amount();
-			pubkeys_map.insert(std::pair<std::string, std::string>(it->ed25519_receiver_pubkey(), "receiver"));
-			mapInsertCount++;
-		}
-
-		if (mapInsertCount != pubkeys_map.size()) {
-			addError(new Error(__FUNCTION__, "duplicate pubkey in sender and/or receiver"));
-			return false;
-		}
-		if (senderSum != receiverSum) {
-			addError(new Error(__FUNCTION__, "sender amounts don't match receiver amounts!"));
-			return false;
+		if (transfer.sender().pubkey() == transfer.recipiant()) {
+			addError(new Error(__FUNCTION__, "sender is recipiant"));
 		}
 
 		auto sigpairs = mSignatureMap.sigpair();
-		int pubkey_founds = 0;
+		bool sender_pubkey_found = false;
 		for (auto it = sigpairs.begin(); it != sigpairs.end(); it++) {
-			if (pubkeys_map.find(it->ed25519()) != pubkeys_map.end()) {
-				pubkey_founds++;
+			if (it->pubkey() == transfer.sender().pubkey()) {
+				sender_pubkey_found = true;
+				break;
 			}
 		}
-		if (pubkey_founds != pubkeys_map.size()) {
-			addError(new Error(__FUNCTION__, "missing signature for sender/receiver"));
+		if (!sender_pubkey_found) {
+			addError(new Error(__FUNCTION__, "missing signature for sender"));
 			return false;
 		}
 
 		if (level == TRANSACTION_VALIDATION_SINGLE_PREVIOUS) {
-
+			// TODO: check if enough gradidos exist on account of user
 		}
 
 		return true;
@@ -68,46 +47,42 @@ namespace model {
 	std::vector<uint32_t> TransactionTransfer::getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer)
 	{
 		std::vector<uint32_t> addressIndices;
-		auto senderAmounts = mProtoTransfer.senderamounts();
-
-		for (auto it = senderAmounts.begin(); it != senderAmounts.end(); it++)
-		{
-			auto index = addressIndexContainer->getOrAddIndexForAddress((*it).ed25519_sender_pubkey());
-			if (!index) 
-			{
-				std::string hexPubkey = convertBinToHex((*it).ed25519_sender_pubkey());
-				addError(new ParamError(__FUNCTION__, "sender, cannot find address index for", hexPubkey.data()));
-			} 
-			else 
-			{
-				addressIndices.push_back(index);
-			}
-		}
-
-		auto receiverAmounts = mProtoTransfer.receiveramounts();
+		proto::gradido::LocalTransfer transfer = getTransfer();
 		
-		for (auto it = receiverAmounts.begin(); it != receiverAmounts.end(); it++)
+		auto senderIndex = addressIndexContainer->getOrAddIndexForAddress(transfer.sender().pubkey());
+
+		if (!senderIndex) {
+			std::string hexPubkey = convertBinToHex(transfer.sender().pubkey());
+			addError(new ParamError(__FUNCTION__, "sender, cannot find address index for", hexPubkey.data()));
+		} else {
+			addressIndices.push_back(senderIndex);
+		}
+		
+		auto recipiantIndex = addressIndexContainer->getOrAddIndexForAddress(transfer.recipiant());
+		
+		if (!recipiantIndex)
 		{
-			auto index = addressIndexContainer->getOrAddIndexForAddress((*it).ed25519_receiver_pubkey());
-			if (!index) 
-			{
-				std::string hexPubkey = convertBinToHex((*it).ed25519_receiver_pubkey());
-				addError(new ParamError(__FUNCTION__, "receiver, cannot find address index for", hexPubkey.data()));
-			} 
-			else
-			{
-				bool exist = false;
-				for (auto it = addressIndices.begin(); it != addressIndices.end(); it++) {
-					if (index == *it) {
-						exist = true;
-						break;
-					}
-				}
-				if (!exist) {
-					addressIndices.push_back(index);
-				}
-			}
+			std::string hexPubkey = convertBinToHex(transfer.recipiant());
+			addError(new ParamError(__FUNCTION__, "receiver, cannot find address index for", hexPubkey.data()));
+		} 
+		else {
+			addressIndices.push_back(recipiantIndex);
 		}
 		return addressIndices;
 	}
+
+	const proto::gradido::LocalTransfer TransactionTransfer::getTransfer()
+	{
+		if (mProtoTransfer.has_local()) {
+			return mProtoTransfer.local();
+		}
+		else if (mProtoTransfer.has_inbound()) {
+			return mProtoTransfer.inbound().transfer();
+		}
+		else if (mProtoTransfer.has_outbound()) {
+			return mProtoTransfer.outbound().transfer();
+		}
+		throw std::exception("invalid transfer transaction");
+	}
+		
 }

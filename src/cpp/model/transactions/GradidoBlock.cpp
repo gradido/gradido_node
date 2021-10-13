@@ -1,4 +1,4 @@
-#include "Transaction.h"
+#include "GradidoBlock.h"
 #include "sodium.h"
 #include "../../SingletonManager/MemoryManager.h"
 
@@ -13,7 +13,7 @@
 
 namespace model {
 
-	Transaction::Transaction(const std::string& transactionBinString)
+	GradidoBlock::GradidoBlock(const std::string& transactionBinString)
 		: mTransactionBody(nullptr)
 	{
 		if (0 == transactionBinString.size() || "" == transactionBinString) {
@@ -21,11 +21,11 @@ namespace model {
 			return;
 		}
 		Poco::Mutex::ScopedLock lock(mWorkingMutex);
-		if (!mProtoTransaction.ParseFromString(transactionBinString)) {
+		if (!mProtoGradidoBlock.ParseFromString(transactionBinString)) {
 			addError(new Error(__FUNCTION__, "invalid transaction binary string"));
 			return;
 		}
-		mTransactionBody = new TransactionBody(mProtoTransaction.bodybytes(), mProtoTransaction.sigmap());
+		mTransactionBody = new TransactionBody(mProtoGradidoBlock.transaction().body_bytes(), mProtoGradidoBlock.transaction().sig_map());
 		if (mTransactionBody->errorCount() > 0) {
 			mTransactionBody->getErrors(this);
 			delete mTransactionBody;
@@ -35,7 +35,7 @@ namespace model {
 		duplicate();
 	}
 
-	Transaction::~Transaction()
+	GradidoBlock::~GradidoBlock()
 	{
 		if (mTransactionBody) {
 			delete mTransactionBody;
@@ -43,12 +43,12 @@ namespace model {
 		}
 	}
 
-	bool Transaction::validate(TransactionValidationLevel level)
+	bool GradidoBlock::validate(TransactionValidationLevel level)
 	{
 		// check signatures
-		auto sigmap = mProtoTransaction.sigmap();
+		auto sigmap = mProtoGradidoBlock.transaction().sig_map();
 		auto sigPairs = sigmap.sigpair();
-		auto bodyBytes = mProtoTransaction.bodybytes();
+		auto bodyBytes = mProtoGradidoBlock.transaction().body_bytes();
 		std::unordered_map<std::string, std::string> pubkeys_map;
 
 		for (auto it = sigPairs.begin(); it != sigPairs.end(); it++) {
@@ -59,14 +59,14 @@ namespace model {
 				return false;
 			}
 			pubkeys_map.insert(std::pair<std::string, std::string>(pubkey, pubkey));
-			auto signature = it->ed25519();
+			auto signature = it->signature();
 
 			/*std::string hex_bodyBytes = convertBinToHex(bodyBytes);
 			//printf("body bytes try to verify signature: \n%s\n", hex_bodyBytes.data());
 			std::string protoPrettyPrint;
 			google::protobuf::TextFormat::PrintToString(mProtoTransaction, &protoPrettyPrint);
 			printf("transaction pretty: \n%s\n", protoPrettyPrint.data());
-			model::messages::gradido::TransactionBody transactionBody;
+			proto::gradido::TransactionBody transactionBody;
 			transactionBody.MergeFromString(mProtoTransaction.bodybytes());
 			google::protobuf::TextFormat::PrintToString(transactionBody, &protoPrettyPrint);
 			printf("transaction body pretty: \n%s\n", protoPrettyPrint.data());
@@ -93,17 +93,17 @@ namespace model {
 		return true;
 	}
 
-	bool Transaction::validate(Poco::AutoPtr<Transaction> previousTransaction)
+	bool GradidoBlock::validate(Poco::AutoPtr<GradidoBlock> previousTransaction)
 	{
 		auto mm = MemoryManager::getInstance();
 		auto prevTxHash = previousTransaction->getTxHash();
 
-		std::string transactionIdString = std::to_string(mProtoTransaction.id());
+		std::string transactionIdString = std::to_string(mProtoGradidoBlock.id());
 		std::string receivedString;
 
 		//yyyy-MM-dd HH:mm:ss
 		try {
-			Poco::DateTime received(Poco::Timestamp(mProtoTransaction.received().seconds() * 1000000));
+			Poco::DateTime received(Poco::Timestamp(mProtoGradidoBlock.received().seconds() * 1000000));
 			receivedString = Poco::DateTimeFormatter::format(received, "%Y-%m-%f %H:%M:%S");
 		}
 		catch (Poco::Exception& ex) {
@@ -112,7 +112,7 @@ namespace model {
 			return false;
 		}
 
-		std::string signatureMapString = mProtoTransaction.sigmap().SerializeAsString();
+		std::string signatureMapString = mProtoGradidoBlock.transaction().sig_map().SerializeAsString();
 
 		auto hash = mm->getFreeMemory(crypto_generichash_BYTES);
 
@@ -125,7 +125,7 @@ namespace model {
 		crypto_generichash_update(&state, (const unsigned char*)signatureMapString.data(), signatureMapString.size());
 		crypto_generichash_final(&state, *hash, hash->size());
 
-		if (memcmp(*hash, mProtoTransaction.txhash().data(), hash->size()) != 0) {
+		if (memcmp(*hash, mProtoGradidoBlock.running_hash().data(), hash->size()) != 0) {
 			addError(new Error(__FUNCTION__, "txhash error"));
 			mm->releaseMemory(hash);
 			return false;

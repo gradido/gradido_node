@@ -4,7 +4,7 @@
 #include "TransactionBase.h"
 #include "TransactionCreation.h"
 #include "TransactionTransfer.h"
-#include "../../proto/gradido/TransactionBody.pb.h"
+#include "gradido/TransactionBody.pb.h"
 
 namespace model {
 
@@ -17,11 +17,11 @@ namespace model {
 	class TransactionBody : public TransactionBase
 	{
 	public:
-		TransactionBody(const std::string& transactionBinString, const model::messages::gradido::SignatureMap& signatureMap);
+		TransactionBody(const std::string& transactionBinString, const proto::gradido::SignatureMap& signatureMap);
 		~TransactionBody();
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
-		void setParent(Transaction* parent);
+		void setParent(GradidoBlock* parent);
 
 		inline TransactionType getType() { return mTransactionType; }
 		inline TransactionCreation* getCreation() { return dynamic_cast<TransactionCreation*>(mTransactionSpecific); }
@@ -33,7 +33,7 @@ namespace model {
 		}
 
 	protected:
-		model::messages::gradido::TransactionBody mProtoTransactionBody;
+		proto::gradido::TransactionBody mProtoTransactionBody;
 
 		TransactionBase* mTransactionSpecific;
 		TransactionType mTransactionType;

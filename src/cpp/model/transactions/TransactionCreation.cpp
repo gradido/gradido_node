@@ -1,13 +1,13 @@
 #include "TransactionCreation.h"
-#include "Transaction.h"
+#include "GradidoBlock.h"
 #include "../../controller/Group.h"
 
 #include "../../lib/BinTextConverter.h"
 
 namespace model {
 	TransactionCreation::TransactionCreation(
-		const model::messages::gradido::TransactionCreation& transaction,
-		const model::messages::gradido::SignatureMap& sigMap)
+		const proto::gradido::GradidoCreation& transaction,
+		const proto::gradido::SignatureMap& sigMap)
 		: mProtoCreation(transaction), mSignatureMap(sigMap)
 	{
 
@@ -16,7 +16,7 @@ namespace model {
 	bool TransactionCreation::validate(TransactionValidationLevel level)
 	{
 		// single
-		auto receiverPubkey = mProtoCreation.receiveramount().ed25519_receiver_pubkey();
+		auto receiverPubkey = mProtoCreation.recipiant().pubkey();
 		auto sigPairs = mSignatureMap.sigpair();
 		for (auto it = sigPairs.begin(); it != sigPairs.end(); it++) {
 			if (receiverPubkey == it->pubkey()) {
@@ -26,7 +26,7 @@ namespace model {
 		}
 		// TODO: replace with variable, state transaction for group
 		// TODO: start with two month range and 2.000 GDD
-		if (mProtoCreation.receiveramount().amount() > 20000000) {
+		if (mProtoCreation.recipiant().amount() > 20000000) {
 			addError(new Error(__FUNCTION__, "creation more than 2.000 GDD per creation not allowed"));
 			return false;
 		}
@@ -35,9 +35,9 @@ namespace model {
 			if (mParent) {
 				auto received = mParent->getReceived();
 				
-				auto pubkey = mProtoCreation.receiveramount().ed25519_receiver_pubkey();
+				auto pubkey = mProtoCreation.recipiant().pubkey();
 				auto groups = getGroups();
-				uint64_t sum = mProtoCreation.receiveramount().amount();
+				uint64_t sum = mProtoCreation.recipiant().amount();
 				for (auto it = groups.begin(); it != groups.end(); it++) {
 					sum += (*it)->calculateCreationSum(pubkey, received.month(), received.year());
 					if (received.month() == 1) {
@@ -64,9 +64,9 @@ namespace model {
 	std::vector<uint32_t> TransactionCreation::getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer)
 	{
 		std::vector<uint32_t> addressIndices;
-		auto index = addressIndexContainer->getOrAddIndexForAddress(getReceiverPubkey());
+		auto index = addressIndexContainer->getOrAddIndexForAddress(getRecipiantPubkey());
 		if (!index) {
-			std::string hexPubkey = convertBinToHex(getReceiverPubkey());
+			std::string hexPubkey = convertBinToHex(getRecipiantPubkey());
 			addError(new ParamError(__FUNCTION__, "cannot find address index for", hexPubkey.data()));
 		}
 		else {

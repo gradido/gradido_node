@@ -7,10 +7,10 @@
 class JsonRPCHandler : public JsonRequestHandler
 {
 public:
-	void handle(const jsonrpcpp::Request& request, Json& response);
+	rapidjson::Document handle(std::string method, const rapidjson::Value& params);
 
 protected:
-	void putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary, Json& response);
+	rapidjson::Document putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary);
 
 
 };

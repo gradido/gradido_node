@@ -3,62 +3,79 @@
 #include "../lib/BinTextConverter.h"
 #include "../lib/Profiler.h"
 #include "../SingletonManager/GroupManager.h"
-#include "../model/transactions/Transaction.h"
+#include "../model/transactions/GradidoBlock.h"
 #include "Poco/AutoPtr.h"
 
-void JsonRPCHandler::handle(const jsonrpcpp::Request& request, Json& response)
+using namespace rapidjson;
+
+Document JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 {
-	if (request.method == "puttransaction") {
-		if (request.params.has("group") && request.params.has("transaction")) {
-			auto group = convertBinTransportStringToBin(request.params.get<std::string>("group"));
-			printf("transaction: %s\n", request.params.get<std::string>("transaction").data());
-			auto transaction = convertBinTransportStringToBin(request.params.get<std::string>("transaction"));
-			if ("" == group || "" == transaction) {
-				response = { {"state", "error"}, {"msg", "wrong parameter format"} };
-			}
-			else {
-				putTransaction(transaction, group, response);
-			}
+	Document result(kObjectType);
+	auto alloc = result.GetAllocator();
+
+	if (method == "puttransaction") {
+		if (!params.IsObject()) {
+			return stateError("params not an object");
+		}
+		std::string groupString;
+		std::string transactionString;
+		try {
+			 groupString = params["group"].GetString();
+			 transactionString = params["transaction"].GetString();
+		}
+		catch (std::exception& e) {
+			return stateError("parameter error");
+		}
+
+		auto group = convertBinTransportStringToBin(groupString);
+		printf("transaction: %s\n", groupString.data());
+		auto transaction = convertBinTransportStringToBin(transactionString);
+		if ("" == group || "" == transaction) {
+			return stateError("wrong parameter format");
 		}
 		else {
-			response = { { "state", "error" },{ "msg", "missing parameter" } };
+			result = putTransaction(transaction, group);
 		}
 	}
-	else if (request.method == "getlasttransaction") {
-		response = { {"state" , "success"}, {"transaction", ""} };
+	else if (method == "getlasttransaction") {
+		result.AddMember("state", "success", alloc);
+		result.AddMember("transaction", "", alloc);
+		return result;
 	}
 	else {
-		response = { { "state", "error" },{ "msg", "method not known" } };
+		return stateError("method not known");
 	}
+	return result;
+	
 }
 
-void JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary, Json& response)
+
+Document JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary)
 {
 	Profiler timeUsed;
+	Document result(kObjectType);
+	auto alloc = result.GetAllocator();
+
 	auto gm = GroupManager::getInstance();
 	auto groupBase58 = convertBinToBase58(groupPublicBinary);
 	auto group = gm->findGroup(groupBase58);
-	Poco::AutoPtr<model::Transaction> transaction(new model::Transaction(transactionBinary));
+	Poco::AutoPtr<model::GradidoBlock> transaction(new model::GradidoBlock(transactionBinary));
 	transaction->addBase58GroupHash(groupBase58);
 
 	if (transaction->errorCount() > 0) {
-		Json errorJson;
-		transaction->getErrors(errorJson);
-		response["errors"] = errorJson;
-		response["state"] = "error";
-		return;
+		result.AddMember("state", "error", alloc);
+		result.AddMember("errors", transaction->getErrorsArray(alloc), alloc);
+		return result;
 	}
 	
 	if (!group->addTransaction(transaction)) {
-		response = { { "state", "error" },{ "msg", "error adding transaction" } };
-		Json errorJson; 
-		transaction->getErrors(errorJson);
-		response["details"] = errorJson;
-		return;
+		result.AddMember("state", "error", alloc);
+		result.AddMember("msg", "error adding transaction", alloc);
+		result.AddMember("details", transaction->getErrorsArray(alloc), alloc);
+		return result;
 	}
-
-
-	//response = { { "state", "error" },{ "groupBase58", groupBase58 } };
-	response = { { "state", "success"}, {"timeUsed", timeUsed.string() } };
 	
+	result.AddMember("state", "success", alloc);
+	result.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
+	return result;
 }

@@ -4,7 +4,7 @@
 
 namespace model {
 
-	TransactionBody::TransactionBody(const std::string& transactionBinString, const model::messages::gradido::SignatureMap& signatureMap)
+	TransactionBody::TransactionBody(const std::string& transactionBinString, const proto::gradido::SignatureMap& signatureMap)
 		: mTransactionSpecific(nullptr), mTransactionType(TRANSACTION_NONE)
 	{
 		if (0 == transactionBinString.size() || "" == transactionBinString) {
@@ -53,7 +53,7 @@ namespace model {
 		return true;
 	}
 
-	void TransactionBody::setParent(Transaction* parent)
+	void TransactionBody::setParent(GradidoBlock* parent)
 	{
 		mParent = parent;
 		if (mTransactionSpecific) {

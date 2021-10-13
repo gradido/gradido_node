@@ -1,6 +1,6 @@
 [submodule "src/proto"]
 	path = src/proto
-	url = ssh://git@85.214.134.190:18521/~/gradido_protocol
+	url = https://github.com/gradido/gradido_protocol.git
 [submodule "dependencies/jsonrpcpp"]
 	path = dependencies/jsonrpcpp
 	url = https://github.com/badaix/jsonrpcpp.git
@@ -19,3 +19,6 @@
 [submodule "dependencies/--branch"]
 	path = dependencies/--branch
 	url = https://github.com/protocolbuffers/protobuf.git
+[submodule "dependencies/rapidjson"]
+	path = dependencies/rapidjson
+	url = https://github.com/Tencent/rapidjson.git

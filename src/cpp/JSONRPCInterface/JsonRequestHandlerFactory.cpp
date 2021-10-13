@@ -4,8 +4,6 @@
 #include "Poco/DateTimeFormatter.h"
 #include "Poco/DateTime.h"
 
-#include "JsonUnknown.h"
-#include "PutTransaction.h"
 #include "JsonRPCHandler.h"
 
 #include <sstream>

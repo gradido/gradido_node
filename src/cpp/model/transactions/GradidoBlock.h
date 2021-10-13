@@ -4,32 +4,32 @@
 #include "TransactionBase.h"
 #include "TransactionBody.h"
 #include "Poco/DateTime.h"
-#include "../../proto/gradido/Transaction.pb.h"
+#include "gradido/GradidoBlock.pb.h"
 
 
 
 namespace model {
-	class Transaction : public TransactionBase
+	class GradidoBlock : public TransactionBase
 	{
 	public:
-		Transaction(const std::string& transactionBinString);
-		~Transaction();
+		GradidoBlock(const std::string& transactionBinString);
+		~GradidoBlock();
 
-		inline int getID() const { return mProtoTransaction.id(); }
-		inline const std::string& getTxHash() const { return mProtoTransaction.txhash(); }
-		inline Poco::DateTime getReceived() const { return Poco::Timestamp(mProtoTransaction.received().seconds()); }
+		inline int getID() const { return mProtoGradidoBlock.id(); }
+		inline const std::string& getTxHash() const { return mProtoGradidoBlock.running_hash(); }
+		inline Poco::DateTime getReceived() const { return Poco::Timestamp(mProtoGradidoBlock.received().seconds()); }
 
 		inline TransactionBody* getTransactionBody() { return mTransactionBody; }
-		inline std::string getSerialized() { return mProtoTransaction.SerializeAsString(); }
+		inline std::string getSerialized() { return mProtoGradidoBlock.SerializeAsString(); }
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
-		bool validate(Poco::AutoPtr<Transaction> previousTransaction);
+		bool validate(Poco::AutoPtr<GradidoBlock> previousTransaction);
 
 		inline std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) {
 			return mTransactionBody->getInvolvedAddressIndices(addressIndexContainer);
 		}
 	protected:
-		model::messages::gradido::Transaction mProtoTransaction;
+		proto::gradido::GradidoBlock mProtoGradidoBlock;
 		TransactionBody* mTransactionBody;
 	};
 }

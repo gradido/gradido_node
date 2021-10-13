@@ -34,20 +34,20 @@ namespace model {
 		TRANSACTION_VALIDATION_FULL_BLOCKCHAIN
 	};
 
-	class Transaction;
+	class GradidoBlock;
 	
 	class TransactionBase : public ErrorList
 	{
 	public:
 		TransactionBase();
-		TransactionBase(Transaction* parent);
+		TransactionBase(GradidoBlock* parent);
 
 		virtual bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE) = 0;
 
 		inline void addBase58GroupHash(const std::string& base58GroupHash) { mBase58GroupHashes.push_back(base58GroupHash); }
 		void addBase58GroupHashes(TransactionBase* parent);
 
-		virtual void setParent(Transaction* parent);
+		virtual void setParent(GradidoBlock* parent);
 		virtual std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) = 0;
 
 		// for poco auto ptr
@@ -61,7 +61,7 @@ namespace model {
 		Poco::Mutex mWorkingMutex;
 		Poco::Mutex mAutoPtrMutex;
 
-		Transaction* mParent;
+		GradidoBlock* mParent;
 		std::vector<std::string> mBase58GroupHashes;
 
 		int mReferenceCount;

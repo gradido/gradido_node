@@ -10,7 +10,7 @@ namespace model {
 
 	}
 
-	TransactionBase::TransactionBase(Transaction* parent)
+	TransactionBase::TransactionBase(GradidoBlock* parent)
 		: mReferenceCount(1), mParent(parent)
 	{
 
@@ -22,7 +22,7 @@ namespace model {
 		mReferenceCount++;
 	}
 
-	void TransactionBase::setParent(Transaction* parent)
+	void TransactionBase::setParent(GradidoBlock* parent)
 	{
 		mParent = parent;
 	}

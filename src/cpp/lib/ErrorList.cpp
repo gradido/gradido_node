@@ -92,7 +92,7 @@ std::string ErrorList::getErrorsHtml()
 	return res;
 }
 
-int ErrorList::getErrors(Json& send)
+/*int ErrorList::getErrors(Json& send)
 {
 	int count = 0;
 	while (mErrorStack.size() > 0) {
@@ -102,4 +102,33 @@ int ErrorList::getErrors(Json& send)
 		count++;
 	}
 	return count;
+}*/
+
+
+std::vector<std::string> ErrorList::getErrorsArray()
+{
+	std::vector<std::string> result;
+	result.reserve(mErrorStack.size());
+
+	while (mErrorStack.size() > 0) {
+		auto error = mErrorStack.top();
+		mErrorStack.pop();
+		//result->add(error->getString());
+		result.push_back(error->getString());
+		delete error;
+	}
+	return result;
+}
+
+rapidjson::Value ErrorList::getErrorsArray(rapidjson::Document::AllocatorType& alloc)
+{
+	rapidjson::Value value;
+	value.SetArray();
+	while (mErrorStack.size() > 0) {
+		auto error = mErrorStack.top();
+		mErrorStack.pop();
+		value.PushBack(rapidjson::Value(error->getString().data(), alloc), alloc);
+		delete error;
+	}
+	return value;
 }
