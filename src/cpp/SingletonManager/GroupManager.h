@@ -17,7 +17,7 @@
  *
  * @brief for getting controller::Group for group public key
  * 
- *  TODO: function to adding group if program is running (new group not in group.index file)
+ *  TODO: function to adding group if program is running (new group not in group.index file) or group removed from cache
  */
 
 class GroupManager
@@ -43,7 +43,6 @@ protected:
 	controller::GroupIndex* mGroupIndex;
 	//std::unordered_map<std::string, controller::Group*> mGroups;
 	Poco::AccessExpireCache<std::string, controller::Group> mGroupAccessExpireCache;
-
 };
 
 #endif //__GRADIDO_NODE_SINGLETON_MANAGER_CACHE_MANAGER_H
