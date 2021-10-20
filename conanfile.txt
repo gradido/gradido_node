@@ -1,6 +1,6 @@
 [requires]
-Poco/1.9.4@pocoproject/stable
-libsodium/1.0.18@bincrafters/stable
+
+libsodium/1.0.18
 
 [options]
 Poco:enable_json=False
