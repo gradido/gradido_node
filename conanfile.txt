@@ -1,9 +1,9 @@
 [requires]
-Poco/1.9.4@pocoproject/stable
-libsodium/1.0.18@bincrafters/stable
+poco/1.9.4
+libsodium/1.0.18
 
 [options]
-Poco:enable_json=False
+poco:enable_json=False
 
 [generators]
 cmake
