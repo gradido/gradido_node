@@ -20,6 +20,7 @@ public:
     static OrderingManager* getInstance();
 
     inline iota::MessageValidator* getIotaMessageValidator() {return &mIotaMessageValidator;}
+    
 
 protected:
     OrderingManager();

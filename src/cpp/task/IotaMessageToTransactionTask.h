@@ -3,6 +3,7 @@
 
 #include "CPUTask.h"
 #include "../model/transactions/GradidoTransaction.h"
+#include "../iota/IotaWrapper.h"
 
 /*!
  * @author: einhornimmond
@@ -21,15 +22,17 @@
 class IotaMessageToTransactionTask : public UniLib::controller::CPUTask
 {
 public:
-    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, MemoryBin* messageId) 
-    : mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessageId(messageId) {}
+    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, const iota::MessageId& messageId);
+
     const char* getResourceType() const {return "MessageToTransactionTask";};
     int run();
+
+    ~IotaMessageToTransactionTask();
 
 protected:
     uint32_t mMilestoneIndex;
     uint64_t mTimestamp;
-    MemoryBin* mMessageId;
+    iota::MessageId mMessageId;
     Poco::AutoPtr<model::GradidoTransaction> mTransaction;
 };
 

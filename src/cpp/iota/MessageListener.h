@@ -3,6 +3,7 @@
 
 #include "Poco/Timer.h"
 #include "../lib/MultithreadContainer.h"
+#include "../controller/Group.h"
 #include <vector>
 #include <map>
 #include "IotaWrapper.h"
@@ -23,7 +24,8 @@ namespace iota
     public:
         //! \param index should be something like messages/indexation/{index}
         MessageListener(const std::string& index, MessageType messageType, long intervalMilliseconds = 500);
-        
+        inline void setGroupAlias(const std::string& groupAlias) {mGroupAlias = groupAlias;}
+
         virtual void listener(Poco::Timer& timer);
     protected:
 
@@ -31,6 +33,7 @@ namespace iota
         MessageType mMessageType;
         Poco::Timer mListenerTimer;
         Poco::Logger& mErrorLog;
+        std::string mGroupAlias;
 
         enum MessageState 
         {
@@ -40,12 +43,7 @@ namespace iota
             MESSAGE_REMOVED // not longer returned from iota
         };
 
-        struct MessageEntry 
-        {
-            std::string messageId;
-            MessageState state;
-        }
-        std::map<MessageId, MessageEntry> mStoredMessageIds;            
+        std::map<MessageId, MessageState> mStoredMessageIds;            
     };
 }
 

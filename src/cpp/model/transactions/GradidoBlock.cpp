@@ -13,13 +13,14 @@
 
 namespace model {
 
-	GradidoBlock::GradidoBlock(const std::string& transactionBinString)
+	GradidoBlock::GradidoBlock(const std::string& transactionBinString, Poco::SharedPtr<controller::Group> groupRoot)
 		: mTransactionBody(nullptr)
 	{
 		if (0 == transactionBinString.size() || "" == transactionBinString) {
 			addError(new Error(__FUNCTION__, "parameter empty"));
 			return;
 		}
+		mGroupRoot = groupRoot;
 		Poco::Mutex::ScopedLock lock(mWorkingMutex);
 		if (!mProtoGradidoBlock.ParseFromString(transactionBinString)) {
 			addError(new Error(__FUNCTION__, "invalid transaction binary string"));
@@ -31,7 +32,7 @@ namespace model {
 			delete mTransactionBody;
 			mTransactionBody = nullptr;
 		}
-		mTransactionBody->setParent(this);
+		mTransactionBody->setParent(groupRoot);
 		duplicate();
 	}
 

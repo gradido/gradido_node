@@ -10,7 +10,7 @@ namespace model {
 
 	}
 
-	TransactionBase::TransactionBase(GradidoBlock* parent)
+	TransactionBase::TransactionBase(controller::Group* parent)
 		: mReferenceCount(1), mParent(parent)
 	{
 
@@ -22,7 +22,7 @@ namespace model {
 		mReferenceCount++;
 	}
 
-	void TransactionBase::setParent(GradidoBlock* parent)
+	void TransactionBase::setParent(Poco::SharedPtr<controller::Group> parent)
 	{
 		mParent = parent;
 	}
@@ -39,18 +39,18 @@ namespace model {
 		}
 	}
 
-	void TransactionBase::addBase58GroupHashes(TransactionBase* parent)
+	void TransactionBase::addGroupAliases(TransactionBase* parent)
 	{
-		for (auto it = parent->mBase58GroupHashes.begin(); it != parent->mBase58GroupHashes.end(); it++) {
-			mBase58GroupHashes.push_back(*it);
+		for (auto it = parent->mGroupAliases.begin(); it != parent->mGroupAliases.end(); it++) {
+			mGroupAliases.push_back(*it);
 		}
 
 	}
 
-	void TransactionBase::collectGroups(std::vector<std::string> groupBase58Hashes, std::list<controller::Group*>& container)
+	void TransactionBase::collectGroups(std::vector<std::string> groupAliases, std::list<controller::Group*>& container)
 	{
 		auto gm = GroupManager::getInstance();
-		for (auto it = groupBase58Hashes.begin(); it != groupBase58Hashes.end(); it++) {
+		for (auto it = groupAliases.begin(); it != groupAliases.end(); it++) {
 			auto group = gm->findGroup(*it);
 			if (nullptr == group) {
 				addError(new ParamError(__FUNCTION__, "group not found", (*it).data()));
@@ -63,14 +63,14 @@ namespace model {
 
 	std::list<controller::Group*> TransactionBase::getGroups()
 	{
-		
+
 		std::list<controller::Group*> groups;
 
-		if (mBase58GroupHashes.size() > 0) {
-			collectGroups(mBase58GroupHashes, groups);
+		if (mGroupAliases.size() > 0) {
+			collectGroups(mGroupAliases, groups);
 		}
-		if (mParent && mParent->mBase58GroupHashes.size() > 0) {
-			collectGroups(mParent->mBase58GroupHashes, groups);
+		if (mParent && mParent->mGroupAliases.size() > 0) {
+			collectGroups(mParent->mGroupAliases, groups);
 		}
 
 		// make unique

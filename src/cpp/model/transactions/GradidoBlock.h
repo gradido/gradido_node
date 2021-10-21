@@ -12,7 +12,7 @@ namespace model {
 	class GradidoBlock : public TransactionBase
 	{
 	public:
-		GradidoBlock(const std::string& transactionBinString);
+		GradidoBlock(const std::string& transactionBinString, Poco::SharedPtr<controller::Group> groupRoot);
 		~GradidoBlock();
 
 		inline int getID() const { return mProtoGradidoBlock.id(); }

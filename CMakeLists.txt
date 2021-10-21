@@ -25,6 +25,7 @@ IF(UNIX)
 		"dependencies/poco/JSON/include"
 		"dependencies/poco/Net/include"
 		"dependencies/poco/NetSSL_OpenSSL/include"
+		"dependencies/iota.c/src"
 	)
 ENDIF()
 
@@ -79,6 +80,7 @@ ENDFOREACH(proto)
 
 FILE(GLOB CONTAINER, "src/cpp/container/*.h" "src/cpp/container/*.cpp")
 FILE(GLOB CONTROLLER "src/cpp/controller/*.cpp" "src/cpp/controller/*.h")
+FILE(GLOB IOTA "src/cpp/iota/*.cpp" "src/cpp/iota/*.h")
 FILE(GLOB HTTPInterface "src/cpp/HTTPInterface/*.h" "src/cpp/HTTPInterface/*.cpp")
 FILE(GLOB JSONRPCInterface "src/cpp/JSONRPCInterface/*.h" "src/cpp/JSONRPCInterface/*.cpp")
 FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp" "src/cpp/lib/*.c")
@@ -99,7 +101,7 @@ FILE(GLOB TEST_MODEL_FILES "src/cpp/test/model/files/*.cpp" "src/cpp/test/model/
 FILE(GLOB TEST_CONTROLLER "src/cpp/test/controller/*.cpp" "src/cpp/test/controller/*.h")
 
 SET(LOCAL_SRCS 
-	${CONTAINER} ${CONTROLLER}
+	${CONTAINER} ${CONTROLLER} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
 	${MODEL} ${MODEL_FILES} ${MODEL_TRANSACTIONS}
@@ -115,6 +117,7 @@ if(MSVC)
 # src
 source_group("container" FILES ${CONTAINER})
 source_group("controller" FILES ${CONTROLLER})
+source_group("iota" FILES ${IOTA})
 source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
@@ -155,6 +158,13 @@ IF(UNIX)
 	set(POCO_LIBS PocoFoundation PocoUtil PocoNet PocoNetSSL PocoData)
 ENDIF()
 
+############################## bind iota c lib   ###################################
+IF(UNIX)
+#add_subdirectory("dependencies/iota-wrapper")
+	#add_subdirectory("dependencies/cJSON")
+	add_subdirectory("dependencies/iota.c")
+endif()
+
 add_executable(Gradido_Node ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
@@ -177,12 +187,15 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node leveldb libprotobuf ${CONAN_LIBS} )
+target_link_libraries(Gradido_Node PUBLIC leveldb libprotobuf ${CONAN_LIBS} )
+
 if(WIN32)
-TARGET_LINK_LIBRARIES(Gradido_Node optimized Shlwapi)
-TARGET_LINK_LIBRARIES(Gradido_Node debug Shlwapi)
+	target_link_libraries(Gradido_Node PUBLIC optimized Shlwapi)
+	target_link_libraries(Gradido_Node PUBLIC debug Shlwapi)
 else()
-target_link_libraries(Gradido_Node ${POCO_LIBS} -pthread)
+	add_dependencies(Gradido_Node iota_client)
+	target_link_libraries(Gradido_Node PRIVATE iota_client)
+	target_link_libraries(Gradido_Node PUBLIC ${POCO_LIBS} -pthread)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 

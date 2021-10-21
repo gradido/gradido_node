@@ -6,6 +6,7 @@
 
 #include "Poco/Mutex.h"
 #include "Poco/AccessExpireCache.h"
+#include "../iota/MessageListener.h"
 
 //#include <unordered_map>
 
@@ -33,7 +34,7 @@ public:
 	//! \brief getting group object from Poco::AccessExpireCache or create if not in cache and put in cache
 	//!
 	//! Poco::AccessExpireCache use his own mutex
-	Poco::SharedPtr<controller::Group> findGroup(const std::string& base58GroupHash);
+	Poco::SharedPtr<controller::Group> findGroup(const std::string& groupAlias);
 
 protected:
 	// load 
@@ -43,6 +44,10 @@ protected:
 	controller::GroupIndex* mGroupIndex;
 	//std::unordered_map<std::string, controller::Group*> mGroups;
 	Poco::AccessExpireCache<std::string, controller::Group> mGroupAccessExpireCache;
+	//! message listener for each group
+	//! should stay in memory on the same address because pointer to group alias string will be used quiet often
+	std::list<iota::MessageListener*> mMessageListener;
+
 };
 
 #endif //__GRADIDO_NODE_SINGLETON_MANAGER_CACHE_MANAGER_H

@@ -48,12 +48,12 @@ namespace model {
 			getErrors(mTransactionSpecific);
 			return false;
 		}
-		
-	
+
+
 		return true;
 	}
 
-	void TransactionBody::setParent(GradidoBlock* parent)
+	void TransactionBody::setParent(Poco::SharedPtr<controller::Group> parent)
 	{
 		mParent = parent;
 		if (mTransactionSpecific) {

@@ -11,14 +11,14 @@ namespace model {
 		 * 
 		 * \date 2020-01-29
 		 * 
-		 * \brief load group.index file with group public key = folder assignments
+		 * \brief load group.index file with group alias = folder assignments
 		 * 
 		 * load ~/.gradido/group.index as Poco Property File Configuration \n
 		 * txt format, created by user\n
 		 * containing in this format: \n
-		 * &lt;group public key&gt; = &lt;folder name&gt;\n
+		 * &lt;group alias&gt; = &lt;folder name&gt;\n
 		 * example: \n
-		 * <code>FLWHbJcMCKq2LF14K5484zkyMn5LZyFPFbd2n6DE2Zwp = group_gradido_academy</code> \n
+		 * <code>gdd1 = group_gradido_academy</code> \n
 		 * \n
 		 * TODO: adding function to adding group folder pair and save changed group.index file\n
 		 *

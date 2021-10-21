@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_IOTA_MESSAGE_VALIDATOR
 
 #include "Poco/Thread.h"
-#include "Poco/Semaphore.h"
+#include "Poco/Condition.h"
 #include "Poco/Logger.h"
 #include "../lib/MultithreadQueue.h"
 #include "IotaWrapper.h"
@@ -23,6 +23,10 @@ namespace iota {
      * For every new milestone check if already pending messages are included in them and therefore confirmed
      * Put confirmed messages into blockchain
      */
+    //! MAGIC NUMBER: how many milestones in list allowed before deleting the oldest
+    //! TODO: try it out to guess best number
+    //! TODO: Put it into Config
+    #define MILESTONES_MAX_CACHED 100
 
     class MessageValidator: public Poco::Runnable
     {
@@ -30,30 +34,33 @@ namespace iota {
         MessageValidator();
         ~MessageValidator();
 
-        void pushMessageId(const char* messageId, MessageType type);
+        void pushMessageId(const iota::MessageId& messageId, MessageType type);
         void run();
 
     protected:
         Poco::Thread mThread;
-        Poco::Semaphore mSemaphore;
-        Poco::Mutex mWorkMutex;
+        Poco::Condition mCondition;
+        Poco::FastMutex mWorkMutex;
+        bool mExitCalled;
+        Poco::FastMutex mExitMutex;
+
+        int mCountErrorsFetchingMilestone;
 
         // put messages as json here which aren't found in milestones
         Poco::Logger& mDroppedMessages;
 
-        struct Milestone 
-        {
-            uint64_t timestamp;
-            std::vector<MessageId> messageIds;
-        };
-        std::map<uint32_t, Milestone*> mMilestones;
-        Poco::Mutex mMilestonesMutex;
+        
+        std::map<uint32_t, Milestone> mMilestones;
+        Poco::FastMutex mMilestonesMutex;
 
         //! message ids from confirmed milestones
         std::unordered_map<MessageId, uint32_t> mConfirmedMessages;
-        Poco::Mutex mConfirmedMessagesMutex;
+        Poco::FastMutex mConfirmedMessagesMutex;
 
-        UniLib::lib::MultithreadQueue<MessageId> mMessageIds[MESSAGE_TYPE_MAX];
+        std::unordered_map<MessageId, MessageId> mUnconfirmedMessages;
+        Poco::FastMutex mUnconfirmedMessagesMutex;
+
+        UniLib::lib::MultithreadQueue<MessageId> mPendingMilestones;
 
     };
 }

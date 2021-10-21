@@ -38,7 +38,7 @@ namespace controller {
 		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
 		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices);
 		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount);
-		
+
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
 		//! \return false if transactionNr exist, else return true
@@ -70,7 +70,7 @@ namespace controller {
 		std::map<uint64_t, uint32_t> mTransactionNrsFileCursors;
 		typedef std::pair<uint64_t, uint32_t> TransactionNrsFileCursorsPair;
 
-		struct AddressIndexEntry 
+		struct AddressIndexEntry
 		{
 			Poco::SharedPtr<std::vector<uint64_t>> transactionNrs;
 			std::map<uint32_t, std::vector<uint32_t>> addressIndicesTransactionNrIndices;
@@ -80,7 +80,7 @@ namespace controller {
 
 
 		Poco::Mutex mSlowWorkingMutex;
-		
+
 	};
 }
 

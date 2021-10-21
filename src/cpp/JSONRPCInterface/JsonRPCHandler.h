@@ -10,7 +10,7 @@ public:
 	rapidjson::Document handle(std::string method, const rapidjson::Value& params);
 
 protected:
-	rapidjson::Document putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary);
+	rapidjson::Document putTransaction(const std::string& transactionBinary, const std::string& groupAlias);
 
 
 };
