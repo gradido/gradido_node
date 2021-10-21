@@ -75,6 +75,13 @@ namespace iota
         MESSAGE_TYPE_MAX
     };
 
+    struct NodeInfo
+    {
+        int32_t lastMilestoneIndex;
+        int64_t lastMilestoneTimestamp;
+        int32_t confirmedMilestoneIndex;
+    }
+
 
     //! \brief collect message ids for indexiation from iota
     //! \param indexiation something like for example messages/indexation/{index} or milestones/confirmed
@@ -84,6 +91,8 @@ namespace iota
 
     Milestone getMilestone(MessageId milestoneMessageId);
     std::string getIndexiationMessage(MessageId indexiationMessageId);
+
+    NodeInfo getNodeInfo();
 
 }
 

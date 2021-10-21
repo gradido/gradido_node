@@ -31,14 +31,18 @@ namespace ServerGlobals {
 
 	bool initIota(const Poco::Util::LayeredConfiguration& cfg)
 	{
-		std::string iota_host = cfg.getString("iota.host", "api.lb-0.testnet.chrysalis2.com");
+		std::string iota_host = cfg.getString("iota.host", "api.lb-0.h.chrysalis-devnet.iota.cafe");
+		// testnet
+		// api.lb-0.h.chrysalis-devnet.iota.cafe
+		// mainnet:
+		// chrysalis-nodes.iota.org
         int iota_port = cfg.getInt("iota.port", 443);
 #ifdef __linux__
 		strcpy(g_IotaClientConfig.host, iota_host.data());
 		g_IotaClientConfig.port = iota_port;
 		g_IotaClientConfig.use_tls = true;
-#else 
-		
+#else
+
 #endif
 
         return true;

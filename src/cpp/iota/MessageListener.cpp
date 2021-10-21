@@ -2,6 +2,7 @@
 
 #include "IotaWrapper.h"
 #include "../SingletonManager/OrderingManager.h"
+#include "../lib/Profiler.h"
 
 namespace iota
 {
@@ -23,8 +24,10 @@ namespace iota
         if(skipped) {
             mErrorLog.error("[%s] %d calls skipped, function needs to much time %d", function_name, skipped, 0);
         }
+        Profiler timeUsed;
         // collect message ids for index from iota
         auto messageIds = iota::getMessageIdsForIndexiation(mIndex);
+        //printf("called getMessageIdsForIndexiation and get %d message ids %s\n", messageIds.size(), timeUsed.string().data());
 
         auto om = OrderingManager::getInstance();
         auto validator = om->getIotaMessageValidator();

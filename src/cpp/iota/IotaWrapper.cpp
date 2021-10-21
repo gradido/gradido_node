@@ -3,6 +3,8 @@
 #ifdef __linux__
 #include "client/api/v1/get_message.h"
 #include "client/api/v1/find_message.h"
+#include "client/api/v1/get_node_info.h"
+#include <inttypes.h>
 #endif
 
 #include "../SingletonManager/LoggerManager.h"
@@ -10,6 +12,10 @@
 #include "../ServerGlobals.h"
 #include <sstream>
 #include <assert.h>
+
+#ifndef __linux__
+#define __linux__
+#endif
 
 namespace iota
 {
@@ -26,20 +32,23 @@ namespace iota
     {
         Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
         static const char* functionName = "iota::getMessageIdsForIndexiation";
-
         std::vector<MessageId> result;
 #ifdef __linux__
         res_find_msg_t* iotaResult = res_find_msg_new();
         if(!iotaResult) {
             errorLog.error("[%s] couldn't get memory for message response", functionName);
+            return result;
         }
 
         if(!find_message_by_index(&ServerGlobals::g_IotaClientConfig, indexiation.data(), iotaResult)) {
             // success
-            if(iotaResult->is_error){
-                errorLog.error("[%s] find some, but with error: %s", functionName, toErrorString(iotaResult->u.error));
+            if(iotaResult->is_error) {
+                errorLog.error("[%s] find some, but with error: %s", std::string(functionName), toErrorString(iotaResult->u.error));
             }
             auto count = res_find_msg_get_id_len(iotaResult);
+            if(count > 0) {
+                printf("find %d messages\n", count);
+            }
             result.reserve(count);
             for(int i = 0; i < count; i++) {
                 MessageId messageId;
@@ -50,7 +59,7 @@ namespace iota
             errorLog.error("[%s] nothing found with error: %s", functionName, toErrorString(iotaResult->u.error));
         }
         res_find_msg_free(iotaResult);
-#endif 
+#endif
         return result;
     }
 
@@ -123,6 +132,51 @@ namespace iota
         }
 
         res_message_free(msg);
+#endif
+        return result;
+    }
+
+    NodeInfo getNodeInfo()
+    {
+        NodeInfo result;
+#ifdef __linux__
+        res_node_info_t *info = res_node_info_new();
+        if (info)
+        {
+            int ret = get_node_info(&ServerGlobals::g_IotaClientConfig, info);
+            if (ret == 0)
+            {
+              if (!info->is_error)
+              {
+                result.confirmedMilestoneIndex = info->u.output_node_info->confirmed_milestone_index;
+                result.lastMilestoneIndex = info->u.output_node_info->latest_milestone_index;
+                result.lastMilestoneTimestamp = info->u.output_node_info->latest_milestone_timestamp;
+
+                /*
+                printf("Name: %s\n", info->u.output_node_info->name);
+                printf("Version: %s\n", info->u.output_node_info->version);
+                printf("isHealthy: %s\n", info->u.output_node_info->is_healthy ? "true" : "false");
+                printf("Network ID: %s\n", info->u.output_node_info->network_id);
+                printf("bech32HRP: %s\n", info->u.output_node_info->bech32hrp);
+                printf("minPoWScore: %" PRIu64 "\n", info->u.output_node_info->min_pow_score);
+                printf("Latest Milestone Index: %" PRIu64 "\n", info->u.output_node_info->latest_milestone_index);
+                printf("Latest Milestone Timestamp: %" PRIu64 "\n", info->u.output_node_info->latest_milestone_timestamp);
+                printf("Confirmed Milestone Index: %" PRIu64 "\n", info->u.output_node_info->confirmed_milestone_index);
+                printf("Pruning Index: %" PRIu64 "\n", info->u.output_node_info->pruning_milestone_index);
+                printf("MSP: %0.2f\n", info->u.output_node_info->msg_pre_sec);
+                printf("Referenced MPS: %0.2f\n", info->u.output_node_info->referenced_msg_pre_sec);
+                printf("Reference Rate: %0.2f%%\n", info->u.output_node_info->referenced_rate);
+                */
+              } else {
+                printf("Node response: %s\n", info->u.error->msg);
+              }
+            } else {
+              printf("get node info API failed\n");
+            }
+            res_node_info_free(info);
+          } else {
+            printf("new respose object failed\n");
+          }
 #endif
         return result;
     }

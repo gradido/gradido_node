@@ -129,7 +129,7 @@ int MainServer::main(const std::vector<std::string>& args)
 
 		// messages which aren't found in milestones, will put here as json
 		createConsoleFileAsyncLogger("droppedMessages", log_Path + "droppedMessages.txt");
-		
+
 
 		// *************** load from config ********************************************
 
@@ -158,15 +158,13 @@ int MainServer::main(const std::vector<std::string>& args)
 		}
 
 		ServerGlobals::initIota(config());
-		
+
 		// start cpu scheduler
 		uint8_t worker_count = Poco::Environment::processorCount() * 2;
 		// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
-		uint8_t io_worker_count = config().getInt("io.workerCount", 2); 
+		uint8_t io_worker_count = config().getInt("io.workerCount", 2);
 		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
 		ServerGlobals::g_WriteFileCPUScheduler = new UniLib::controller::CPUSheduler(io_worker_count, "IO Worker");
-
-		
 
 		GroupManager::getInstance()->init("group.index");
 		OrderingManager::getInstance();
