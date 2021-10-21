@@ -7,6 +7,7 @@
 #include "Poco/Path.h"
 
 #include "ControllerBase.h"
+#include <unordered_map>
 
 namespace controller {
 
@@ -38,24 +39,28 @@ namespace controller {
 		//! \brief get full folder path for group public key
 		//! if the hash from groupPublicKey exist multiple time, getting folder from mModel, else from mHashList (faster)
 		//! \return complete path to group folder or empty path if not group not found
-		Poco::Path getFolder(const std::string& groupPublicKey);
+		Poco::Path getFolder(const std::string& groupAlias);
+
+		//! \brief collect all froup aliases from unordered map (not the fastest operation from unordered map)
+		//! \return vector with group aliases registered to the node server
+		std::vector<std::string> listGroupAliases();
 
 	protected:
 
-		struct GroupIndexEntry {
-			std::string hash;
+		struct GroupIndexEntry
+		{
+			std::string alias;
 			std::string folderName;
 
 			DHASH makeHash() {
-				return DRMakeStringHash(hash.data(), hash.size());
+				return DRMakeStringHash(alias.data(), alias.size());
 			}
 		};
 
 		//! pointer to model get in constructor, deleted in deconstruction
 		model::files::GroupIndex* mModel;
-		DRHashList mHashList;
-		//! containing group public key hash doublet's
-		std::vector<DHASH> mDoublettes;
+
+		std::unordered_map<std::string, GroupIndexEntry> mGroups;
 
 		//! \brief clear hash list and doublet's vector
 		void clear();

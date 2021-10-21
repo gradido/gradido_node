@@ -10,6 +10,10 @@
 
 #include "controller/GroupIndex.h"
 
+#ifdef __linux__
+#include "client/api/v1/get_message.h"
+#endif
+
 namespace ServerGlobals {
 
 	extern UniLib::controller::CPUSheduler* g_CPUScheduler;
@@ -22,7 +26,11 @@ namespace ServerGlobals {
 	extern Poco::UInt16						g_TimeoutCheck;
 	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
 	extern Poco::UInt16						g_WriteToDiskTimeout;
+#ifdef __linux__
+	extern iota_client_conf_t g_IotaClientConfig;
+#endif
 
+	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
 	void clearMemory();
 };
 

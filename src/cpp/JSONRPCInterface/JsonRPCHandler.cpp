@@ -46,35 +46,34 @@ Document JsonRPCHandler::handle(std::string method, const rapidjson::Value& para
 		return stateError("method not known");
 	}
 	return result;
-	
+
 }
 
 
-Document JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupPublicBinary)
+Document JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupAlias)
 {
 	Profiler timeUsed;
 	Document result(kObjectType);
 	auto alloc = result.GetAllocator();
 
 	auto gm = GroupManager::getInstance();
-	auto groupBase58 = convertBinToBase58(groupPublicBinary);
-	auto group = gm->findGroup(groupBase58);
-	Poco::AutoPtr<model::GradidoBlock> transaction(new model::GradidoBlock(transactionBinary));
-	transaction->addBase58GroupHash(groupBase58);
+	auto group = gm->findGroup(groupAlias);
+	Poco::AutoPtr<model::GradidoBlock> transaction(new model::GradidoBlock(transactionBinary, group));
+	transaction->addGroupAlias(groupAlias);
 
 	if (transaction->errorCount() > 0) {
 		result.AddMember("state", "error", alloc);
 		result.AddMember("errors", transaction->getErrorsArray(alloc), alloc);
 		return result;
 	}
-	
+
 	if (!group->addTransaction(transaction)) {
 		result.AddMember("state", "error", alloc);
 		result.AddMember("msg", "error adding transaction", alloc);
 		result.AddMember("details", transaction->getErrorsArray(alloc), alloc);
 		return result;
 	}
-	
+
 	result.AddMember("state", "success", alloc);
 	result.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 	return result;

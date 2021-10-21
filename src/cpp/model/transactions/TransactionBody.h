@@ -21,7 +21,7 @@ namespace model {
 		~TransactionBody();
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
-		void setParent(GradidoBlock* parent);
+		void setParent(Poco::SharedPtr<controller::Group> parent);
 
 		inline TransactionType getType() { return mTransactionType; }
 		inline TransactionCreation* getCreation() { return dynamic_cast<TransactionCreation*>(mTransactionSpecific); }
@@ -31,6 +31,8 @@ namespace model {
 			if (mTransactionSpecific) return mTransactionSpecific->getInvolvedAddressIndices(addressIndexContainer);
 			return std::vector<uint32_t>();
 		}
+		inline proto::gradido::TransactionBody* getProto() {return &mProtoTransactionBody;}
+
 
 	protected:
 		proto::gradido::TransactionBody mProtoTransactionBody;

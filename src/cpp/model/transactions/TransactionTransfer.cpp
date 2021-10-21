@@ -3,6 +3,7 @@
 
 #include "../../controller/AddressIndex.h"
 #include "../../lib/BinTextConverter.h"
+#include <stdexcept>
 
 namespace model {
 	TransactionTransfer::TransactionTransfer(
@@ -16,7 +17,7 @@ namespace model {
 	bool TransactionTransfer::validate(TransactionValidationLevel level)
 	{
 		proto::gradido::LocalTransfer transfer = getTransfer();
-		
+
 		if (transfer.sender().amount() <= 0) {
 			addError(new Error(__FUNCTION__, "invalid sender amount"));
 		}
@@ -48,7 +49,7 @@ namespace model {
 	{
 		std::vector<uint32_t> addressIndices;
 		proto::gradido::LocalTransfer transfer = getTransfer();
-		
+
 		auto senderIndex = addressIndexContainer->getOrAddIndexForAddress(transfer.sender().pubkey());
 
 		if (!senderIndex) {
@@ -57,14 +58,14 @@ namespace model {
 		} else {
 			addressIndices.push_back(senderIndex);
 		}
-		
+
 		auto recipiantIndex = addressIndexContainer->getOrAddIndexForAddress(transfer.recipiant());
-		
+
 		if (!recipiantIndex)
 		{
 			std::string hexPubkey = convertBinToHex(transfer.recipiant());
 			addError(new ParamError(__FUNCTION__, "receiver, cannot find address index for", hexPubkey.data()));
-		} 
+		}
 		else {
 			addressIndices.push_back(recipiantIndex);
 		}
@@ -82,7 +83,7 @@ namespace model {
 		else if (mProtoTransfer.has_outbound()) {
 			return mProtoTransfer.outbound().transfer();
 		}
-		throw std::exception("invalid transfer transaction");
+		throw std::runtime_error("invalid transfer transaction");
 	}
-		
+
 }

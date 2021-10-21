@@ -4,9 +4,6 @@
 [submodule "dependencies/jsonrpcpp"]
 	path = dependencies/jsonrpcpp
 	url = https://github.com/badaix/jsonrpcpp.git
-[submodule "dependencies/iroha-ed25519"]
-	path = dependencies/iroha-ed25519
-	url = ssh://git@85.214.134.190:18521/~/forks/iroha-ed25519.git
 [submodule "dependencies/libbase58"]
 	path = dependencies/libbase58
 	url = https://github.com/bitcoin/libbase58.git
@@ -16,9 +13,15 @@
 [submodule "dependencies/googletest"]
 	path = dependencies/googletest
 	url = https://github.com/google/googletest.git
-[submodule "dependencies/--branch"]
-	path = dependencies/--branch
+[submodule "dependencies/protobuf"]
+	path = dependencies/protobuf
 	url = https://github.com/protocolbuffers/protobuf.git
 [submodule "dependencies/rapidjson"]
 	path = dependencies/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "dependencies/poco"]
+	path = dependencies/poco
+	url = https://github.com/pocoproject/poco.git
+[submodule "dependencies/iota.c"]
+	path = dependencies/iota.c
+	url = https://github.com/iotaledger/iota.c.git

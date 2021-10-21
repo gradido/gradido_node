@@ -1,5 +1,5 @@
-#ifndef __GRADIDO_NODE_MODEL_TRANSACTIONS_TRANSACTION_H
-#define __GRADIDO_NODE_MODEL_TRANSACTIONS_TRANSACTION_H
+#ifndef __GRADIDO_NODE_MODEL_TRANSACTIONS_GRADIDO_BLOCK_H
+#define __GRADIDO_NODE_MODEL_TRANSACTIONS_GRADIDO_BLOCK_H
 
 #include "TransactionBase.h"
 #include "TransactionBody.h"
@@ -12,7 +12,7 @@ namespace model {
 	class GradidoBlock : public TransactionBase
 	{
 	public:
-		GradidoBlock(const std::string& transactionBinString);
+		GradidoBlock(const std::string& transactionBinString, Poco::SharedPtr<controller::Group> groupRoot);
 		~GradidoBlock();
 
 		inline int getID() const { return mProtoGradidoBlock.id(); }
@@ -34,4 +34,4 @@ namespace model {
 	};
 }
 
-#endif //__GRADIDO_NODE_MODEL_TRANSACTIONS_TRANSACTION_H
+#endif //__GRADIDO_NODE_MODEL_TRANSACTIONS_GRADIDO_BLOCK_H

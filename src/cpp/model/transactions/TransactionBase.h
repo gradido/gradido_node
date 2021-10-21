@@ -35,19 +35,19 @@ namespace model {
 	};
 
 	class GradidoBlock;
-	
+
 	class TransactionBase : public ErrorList
 	{
 	public:
 		TransactionBase();
-		TransactionBase(GradidoBlock* parent);
+		TransactionBase(controller::Group* parent);
 
 		virtual bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE) = 0;
 
-		inline void addBase58GroupHash(const std::string& base58GroupHash) { mBase58GroupHashes.push_back(base58GroupHash); }
-		void addBase58GroupHashes(TransactionBase* parent);
+		inline void addGroupAlias(const std::string& groupAlias) { mGroupAliases.push_back(groupAlias); }
+		void addGroupAliases(TransactionBase* parent);
 
-		virtual void setParent(GradidoBlock* parent);
+		virtual void setGroupRoot(Poco::SharedPtr<controller::Group> parent);
 		virtual std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) = 0;
 
 		// for poco auto ptr
@@ -56,13 +56,13 @@ namespace model {
 	protected:
 
 		std::list<controller::Group*> getGroups();
-		void collectGroups(std::vector<std::string> groupBase58Hashes, std::list<controller::Group*>& container);
+		void collectGroups(std::vector<std::string> groupAliases, std::list<controller::Group*>& container);
 
 		Poco::Mutex mWorkingMutex;
 		Poco::Mutex mAutoPtrMutex;
 
-		GradidoBlock* mParent;
-		std::vector<std::string> mBase58GroupHashes;
+		Poco::SharedPtr<controller::Group> mGroupRoot;
+		std::vector<std::string> mGroupAliases;
 
 		int mReferenceCount;
 	};

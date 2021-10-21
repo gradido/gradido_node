@@ -5,7 +5,7 @@
 #include "Poco/Mutex.h"
 #include "Poco/DateTime.h"
 
-#include "../controller/AddressIndex.h"
+#include "../controller/Group.h"
 #include "transactions/GradidoBlock.h"
 
 #include <vector>
@@ -15,8 +15,8 @@ namespace model {
 	/*!
 	* @author Dario Rekowski
 	* @date 2020-03-12
-	* @brief container for transaction + index details 
-	* 
+	* @brief container for transaction + index details
+	*
 	* Used between multiple controller while write to block is pending and while it is cached
 	* It contains the serialized transaction and multiple data for fast indexing
 	*/
@@ -27,7 +27,7 @@ namespace model {
 			: mTransactionNr(0), mFileCursor(-10) {}
 
 		//! \brief init entry object from serialized transaction, deserialize transaction to get infos
-		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, Poco::SharedPtr<controller::AddressIndex> addressIndex);
+		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot);
 
 		TransactionEntry(Poco::AutoPtr<GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
 
@@ -36,7 +36,7 @@ namespace model {
 
 		//! \brief init entry object without indices
 		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year);
-		
+
 
 		//! \brief operator for sorting by mTransactionNr in ascending order
 		bool operator < (const TransactionEntry& b) { return mTransactionNr < b.mTransactionNr; }

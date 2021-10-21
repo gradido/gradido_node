@@ -8,7 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include_directories(
 	"dependencies" 
-	"dependencies/iroha-ed25519/include"
 	"dependencies/jsonrpcpp/include"
 	"dependencies/protobuf/src"
 	"build/proto"
@@ -16,6 +15,19 @@ include_directories(
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
+
+IF(UNIX)
+	include_directories(
+		"dependencies/poco/Crypto/include" 
+		"dependencies/poco/Data/include" 
+		"dependencies/poco/Util/include" 
+		"dependencies/poco/Foundation/include"
+		"dependencies/poco/JSON/include"
+		"dependencies/poco/Net/include"
+		"dependencies/poco/NetSSL_OpenSSL/include"
+		"dependencies/iota.c/src"
+	)
+ENDIF()
 
 ############################## find protobuf  #########################################
 # prevent problems with two libs including googletest 
@@ -68,6 +80,7 @@ ENDFOREACH(proto)
 
 FILE(GLOB CONTAINER, "src/cpp/container/*.h" "src/cpp/container/*.cpp")
 FILE(GLOB CONTROLLER "src/cpp/controller/*.cpp" "src/cpp/controller/*.h")
+FILE(GLOB IOTA "src/cpp/iota/*.cpp" "src/cpp/iota/*.h")
 FILE(GLOB HTTPInterface "src/cpp/HTTPInterface/*.h" "src/cpp/HTTPInterface/*.cpp")
 FILE(GLOB JSONRPCInterface "src/cpp/JSONRPCInterface/*.h" "src/cpp/JSONRPCInterface/*.cpp")
 FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp" "src/cpp/lib/*.c")
@@ -88,7 +101,7 @@ FILE(GLOB TEST_MODEL_FILES "src/cpp/test/model/files/*.cpp" "src/cpp/test/model/
 FILE(GLOB TEST_CONTROLLER "src/cpp/test/controller/*.cpp" "src/cpp/test/controller/*.h")
 
 SET(LOCAL_SRCS 
-	${CONTAINER} ${CONTROLLER}
+	${CONTAINER} ${CONTROLLER} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
 	${MODEL} ${MODEL_FILES} ${MODEL_TRANSACTIONS}
@@ -104,6 +117,7 @@ if(MSVC)
 # src
 source_group("container" FILES ${CONTAINER})
 source_group("controller" FILES ${CONTROLLER})
+source_group("iota" FILES ${IOTA})
 source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
@@ -126,8 +140,30 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
 add_subdirectory("dependencies/jsonrpcpp")
+option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
+
+############################## config and add poco ###################################
+#SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
+IF(UNIX)
+	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
+	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
+	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
+	SET(ENABLE_PAGECOMPILER OFF CACHE BOOL "" FORCE)
+	SET(ENABLE_JSON OFF CACHE BOOL "" FORCE)
+	add_subdirectory("dependencies/poco")
+
+	set(POCO_LIBS PocoFoundation PocoUtil PocoNet PocoNetSSL PocoData)
+ENDIF()
+
+############################## bind iota c lib   ###################################
+IF(UNIX)
+#add_subdirectory("dependencies/iota-wrapper")
+	#add_subdirectory("dependencies/cJSON")
+	add_subdirectory("dependencies/iota.c")
+endif()
 
 add_executable(Gradido_Node ${LOCAL_SRCS})
 #SUBDIRS("src/test")
@@ -137,15 +173,13 @@ if(WIN32)
 
 #find_library(MYSQL_LIBRARIES_DEBUG  mariadbclient.lib PATHS "import/mariadb/lib/debug")
 
-find_library(IROHA_ED25519 ed25519 PATHS "dependencies/iroha-ed25519/build/Debug" REQUIRED)
 
 
 set(CMAKE_CXX_FLAGS         "/MP /EHsc")
 #set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3")
 #set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-else(WIN32)
-find_library(IROHA_ED25519 ed25519 PATHS "dependencies/iroha-ed25519/build" REQUIRED)
+else()
 # set vars for mariadb cmake files 
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
@@ -153,13 +187,17 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node leveldb libprotobuf ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node PUBLIC leveldb libprotobuf ${CONAN_LIBS} )
+
 if(WIN32)
-TARGET_LINK_LIBRARIES(Gradido_Node optimized Shlwapi)
-TARGET_LINK_LIBRARIES(Gradido_Node debug Shlwapi)
-else(WIN32)
-target_link_libraries(Gradido_Node PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL protoc protobuf -pthread)
-endif(WIN32)
+	target_link_libraries(Gradido_Node PUBLIC optimized Shlwapi)
+	target_link_libraries(Gradido_Node PUBLIC debug Shlwapi)
+else()
+	add_dependencies(Gradido_Node iota_client)
+	target_link_libraries(Gradido_Node PRIVATE iota_client)
+	target_link_libraries(Gradido_Node PUBLIC ${POCO_LIBS} -pthread)
+endif()
+#PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 
 # install 
 if(UNIX)
@@ -170,14 +208,20 @@ enable_testing()
 
 #  ----------------------    Test -----------------------------------------
 
+add_subdirectory("dependencies/googletest")
+
 add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_MODEL} ${TEST_MODEL_FILES} ${TEST_CONTROLLER})
 target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
-add_test(main Gradido_Node_Test)
+#add_test(main Gradido_Node_Test)
 
-target_link_libraries(Gradido_Node_Test libprotobuf gtest_main gmock leveldb ${CONAN_LIBS} ${IROHA_ED25519})
+target_link_libraries(Gradido_Node_Test libprotobuf leveldb ${CONAN_LIBS})
 
 if(WIN32)
 	
-else(WIN32)
-	target_link_libraries(Gradido_Node_Test PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL protoc protobuf -pthread)
-endif(WIN32)
+else()
+	target_link_libraries(Gradido_Node_Test ${POCO_LIBS} -pthread)
+	#PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
+endif()
+
+target_link_libraries(Gradido_Node_Test gtest)
+

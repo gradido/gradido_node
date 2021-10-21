@@ -13,6 +13,11 @@ GroupManager::GroupManager()
 
 GroupManager::~GroupManager()
 {
+	for(auto it = mMessageListener.begin(); it != mMessageListener.end(); it++) {
+		delete *it;
+	}
+	mMessageListener.clear();
+
 	if (mGroupIndex) {
 		delete mGroupIndex;
 		mGroupIndex = nullptr;
@@ -30,6 +35,11 @@ int GroupManager::init(const char* groupIndexFileName)
 
 	mGroupIndex = new controller::GroupIndex(new model::files::GroupIndex(groupIndexFileName));
 	mGroupIndex->update();
+	auto groups = mGroupIndex->listGroupAliases();
+	for(auto it = groups.begin(); it != groups.end(); it++) {
+		std::string iotaIndex = "messages/indexation/" + *it;
+		iota::MessageListener* groupMessageListener = new iota::MessageListener("")
+	}
 	mInitalized = true;
 
 	return 0;
@@ -41,23 +51,23 @@ GroupManager* GroupManager::getInstance()
 	return &theOne;
 }
 
-Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& base58GroupHash)
+Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& groupAlias)
 {
 	if (!mInitalized) return nullptr;
 	//Poco::Mutex::ScopedLock lock(mWorkingMutex);
-	auto skey = mGroupAccessExpireCache.get(base58GroupHash);
+	auto skey = mGroupAccessExpireCache.get(groupAlias);
 	if (!skey.isNull()) {
 		return skey;
 	}
 
 	if (!mGroupIndex) return nullptr;
 
-	auto folder = mGroupIndex->getFolder(base58GroupHash);
+	auto folder = mGroupIndex->getFolder(groupAlias);
 	if (folder.depth() == 0) {
 		return nullptr;
 	}
-	Poco::SharedPtr<controller::Group> group = new controller::Group(base58GroupHash, folder);
-	mGroupAccessExpireCache.add(base58GroupHash, group);
-	//mGroups.insert(std::pair<std::string, controller::Group*>(base58GroupHash, group));
+	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
+	mGroupAccessExpireCache.add(groupAlias, group);
+	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;
 }
