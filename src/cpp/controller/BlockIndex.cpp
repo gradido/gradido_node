@@ -3,6 +3,8 @@
 #include "Poco/Logger.h"
 #include "../SingletonManager/LoggerManager.h"
 
+#include "../model/TransactionEntry.h"
+
 namespace controller {
 
 

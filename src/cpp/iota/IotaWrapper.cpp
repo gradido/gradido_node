@@ -6,19 +6,21 @@
 #endif
 
 #include "../SingletonManager/LoggerManager.h"
-#include "../lib/DataTypeConverter.h"
+#include "../lib/BinTextConverter.h"
 #include "../ServerGlobals.h"
 #include <sstream>
+#include <assert.h>
 
 namespace iota
 {
-
+#ifdef __linux__
     std::string toErrorString(res_err_t* iotaResponseError)
     {
         std::stringstream ss;
         ss << "Iota Error: " << iotaResponseError->msg << ", code: " << iotaResponseError->code << std::endl;
         return ss.str();
     }
+#endif
 
     std::vector<MessageId> getMessageIdsForIndexiation(const std::string& indexiation)
     {
@@ -26,7 +28,7 @@ namespace iota
         static const char* functionName = "iota::getMessageIdsForIndexiation";
 
         std::vector<MessageId> result;
-
+#ifdef __linux__
         res_find_msg_t* iotaResult = res_find_msg_new();
         if(!iotaResult) {
             errorLog.error("[%s] couldn't get memory for message response", functionName);
@@ -48,6 +50,7 @@ namespace iota
             errorLog.error("[%s] nothing found with error: %s", functionName, toErrorString(iotaResult->u.error));
         }
         res_find_msg_free(iotaResult);
+#endif 
         return result;
     }
 
@@ -56,7 +59,7 @@ namespace iota
         Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
         static const char* functionName = "iota::getMilestone";
         Milestone result;
-
+#ifdef __linux__
         res_message_t *msg = res_message_new();
         if(!msg) {
             errorLog.error("[%s] couldn't get memory for message response", functionName);
@@ -87,15 +90,16 @@ namespace iota
         }
 
         res_message_free(msg);
+#endif
         return result;
     }
 
-    MemoryBin* getIndexiationMessage(MessageId indexiationMessageId)
+    std::string getIndexiationMessage(MessageId indexiationMessageId)
     {
         Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
         static const char* functionName = "iota::getIndexiationMessage";
-        MemoryBin* result = nullptr;
-
+        std::string result = "";
+#ifdef __linux__
         res_message_t *msg = res_message_new();
         if(!msg) {
             errorLog.error("[%s] couldn't get memory for message response", functionName);
@@ -110,8 +114,8 @@ namespace iota
                     errorLog.error("[%s] wrong message type: %d", functionName, msg->u.msg->type);
                 } else {
                     auto payload = (payload_index_t*)msg->u.msg->payload;
-                    // make binary from hex and copy it over
-                    result = DataTypeConverter::hexToBin((const char*)payload->data->data);
+                    // iota encode the payload as hex, protobuf need binary in a string
+                    result = convertHexToBin((const char*)payload->data->data);
                 }
             }
         } else {
@@ -119,6 +123,7 @@ namespace iota
         }
 
         res_message_free(msg);
+#endif
         return result;
     }
 

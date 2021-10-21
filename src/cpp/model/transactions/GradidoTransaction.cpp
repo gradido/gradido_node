@@ -2,14 +2,15 @@
 #include <google/protobuf/util/json_util.h>
 
 namespace model {
-    GradidoTransaction::GradidoTransaction(const std::string& transactionBinString, Poco::SharedPtr<controller::Group> parent)
+    GradidoTransaction::GradidoTransaction(const std::string& transactionBinString, Poco::SharedPtr<controller::Group> groupRoot)
     : mTransactionBody(nullptr)
     {
         if (0 == transactionBinString.size() || "" == transactionBinString) {
 			addError(new Error(__FUNCTION__, "parameter empty"));
 			return;
 		}
-		mParent = parent;
+		mGroupRoot = groupRoot;
+
 		Poco::Mutex::ScopedLock lock(mWorkingMutex);
 		if (!mProtoGradidoTransaction.ParseFromString(transactionBinString)) {
 			addError(new Error(__FUNCTION__, "invalid transaction binary string"));
@@ -21,7 +22,7 @@ namespace model {
 			delete mTransactionBody;
 			mTransactionBody = nullptr;
 		}
-		mTransactionBody->setParent(parent);
+		mTransactionBody->setGroupRoot(groupRoot);
 		duplicate();
     }
     GradidoTransaction::~GradidoTransaction()
@@ -42,15 +43,15 @@ namespace model {
 
 	std::string GradidoTransaction::getJson()
 	{
+		static const char* function_name = "GradidoTransaction::getJson";
 		std::string json;
 		google::protobuf::util::JsonPrintOptions options;
 		options.add_whitespace = true;
 		options.always_print_primitive_fields = true;
 
-		status = google::protobuf::util::MessageToJsonString(*mTransactionBody->getProto(), &json, options);
+		auto status = google::protobuf::util::MessageToJsonString(*mTransactionBody->getProto(), &json, options);
 		if (!status.ok()) {
 			addError(new ParamError(function_name, "error by parsing transaction body message to json", status.ToString()));
-			addError(new ParamError(function_name, "pending task id: ", getModel()->getID()));
 			return "";
 		}
 		return json;

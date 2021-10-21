@@ -53,12 +53,20 @@ namespace model {
 		return true;
 	}
 
-	void TransactionBody::setParent(Poco::SharedPtr<controller::Group> parent)
+	void TransactionBody::setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot)
 	{
-		mParent = parent;
+		mGroupRoot = groupRoot;
 		if (mTransactionSpecific) {
-			mTransactionSpecific->setParent(parent);
+			mTransactionSpecific->setGroupRoot(groupRoot);
 			//parent->duplicate();
+		}
+	}
+
+	void TransactionBody::setGradidoBlock(GradidoBlock* gradidoBlock)
+	{
+		mGradidoBlock = gradidoBlock;
+		if (mTransactionSpecific) {
+			mTransactionSpecific->setGradidoBlock(gradidoBlock);
 		}
 	}
 }

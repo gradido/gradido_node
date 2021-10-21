@@ -3,7 +3,7 @@
 
 #include "ControllerBase.h"
 #include "AddressIndex.h"
-#include "Block.h"
+//#include "Block.h"
 #include "BlockIndex.h"
 #include "TaskObserver.h"
 
@@ -19,6 +19,7 @@
 
 namespace controller {
 
+	class Block;
 	/*!
 	* @author Dario Rekowski
 	* @date 2020-02-06

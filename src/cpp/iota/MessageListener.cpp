@@ -21,7 +21,7 @@ namespace iota
 
         auto skipped = timer.skipped();
         if(skipped) {
-            mErrorLog.error("[%s] %d calls skipped, function needs to much time", function_name, skipped);
+            mErrorLog.error("[%s] %d calls skipped, function needs to much time %d", function_name, skipped, 0);
         }
         // collect message ids for index from iota
         auto messageIds = iota::getMessageIdsForIndexiation(mIndex);

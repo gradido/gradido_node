@@ -2,6 +2,8 @@
 #include "sodium.h"
 #include "../ServerGlobals.h"
 
+#include "Block.h"
+
 namespace controller {
 
 	Group::Group(std::string base58Hash, Poco::Path folderPath)

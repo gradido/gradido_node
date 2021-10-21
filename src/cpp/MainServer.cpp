@@ -24,6 +24,7 @@
 #include <google/protobuf/stubs/common.h>
 
 #include "SingletonManager/GroupManager.h"
+#include "SingletonManager/OrderingManager.h"
 
 MainServer::MainServer()
 	: _helpRequested(false)
@@ -168,7 +169,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		
 
 		GroupManager::getInstance()->init("group.index");
-
+		OrderingManager::getInstance();
 
 		// HTTP Interface Server
 		// set-up a server socket

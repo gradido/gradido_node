@@ -83,7 +83,7 @@ namespace iota
     std::vector<MessageId> getMessageIdsForIndexiation(const std::string& indexiation);
 
     Milestone getMilestone(MessageId milestoneMessageId);
-    MemoryBin* getIndexiationMessage(MessageId indexiationMessageId);
+    std::string getIndexiationMessage(MessageId indexiationMessageId);
 
 }
 

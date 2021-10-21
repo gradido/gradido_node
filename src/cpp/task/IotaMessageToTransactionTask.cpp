@@ -2,9 +2,12 @@
 
 #include "../model/transactions/GradidoTransaction.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../SingletonManager/GroupManager.h"
 #include "../lib/DataTypeConverter.h"
 
-IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, const iota::MessageId& messageId)
+#include <stdexcept>
+
+IotaMessageToTransactionTask::IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, const iota::MessageId& messageId)
 : mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessageId(messageId)
 {
 
@@ -17,24 +20,33 @@ IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
 
 int IotaMessageToTransactionTask::run()
 {
+    static const char* function_name = "IotaMessageToTransactionTask::run";
+    Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+    if (!mMessageId.groupAlias) {
+        errorLog.error("[%s] no group alias, abort", function_name);
+        return 0;
+    }
     // get the whole transaction from iota
-    auto bin = iota::getIndexiationMessage(mMessageId);
+    auto binString = iota::getIndexiationMessage(mMessageId);
     // parse proto Object from it and
-
-    Poco::AutoPtr<model::GradidoTransaction> transaction(new model::GradidoTransaction(std::string(bin.data(), bin.size())));
-    if(transaction.errorCount() > 0) {
-        auto errorLog = LoggerManager::getInstance()->mErrorLogging;
+    auto gm = GroupManager::getInstance();
+    auto group = gm->findGroup(mMessageId.groupAlias);
+    if (group.isNull()) {
+        errorLog.error("[%s] group with alias: %s not found on server, abort", function_name, mMessageId.groupAlias);
+        throw new std::runtime_error("group alias not found, but node server should only listen on existing groups");
+    }
+    Poco::AutoPtr<model::GradidoTransaction> transaction(new model::GradidoTransaction(binString, group));
+    if(transaction->errorCount() > 0) {
         auto errors = transaction->getErrorsArray();
         errorLog.error("Error by parsing transaction");
-        errorLog.error("Transaction as base64: %s", DataTypeConverter::binToBase64(bin));
+        errorLog.error("Transaction as base64: %s", DataTypeConverter::binToBase64(binString));
         for(auto it = errors.begin(); it != errors.end();  it++) {
             errorLog.error(*it);
         }
-        MemoryManager::getInstance()->freeMemory(bin);
+        
     } else {
         // hand over to OrderingManager
         std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
-        MemoryManager::getInstance()->freeMemory(bin);
     }
 
     return 0;

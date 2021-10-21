@@ -21,6 +21,7 @@ namespace model {
 
 
 	protected:
+
 		const proto::gradido::GradidoCreation& mProtoCreation;
 		const proto::gradido::SignatureMap& mSignatureMap;
 	};

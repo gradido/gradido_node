@@ -21,7 +21,8 @@ namespace model {
 		~TransactionBody();
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
-		void setParent(Poco::SharedPtr<controller::Group> parent);
+		void setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot);
+		void setGradidoBlock(GradidoBlock* gradidoBlock);
 
 		inline TransactionType getType() { return mTransactionType; }
 		inline TransactionCreation* getCreation() { return dynamic_cast<TransactionCreation*>(mTransactionSpecific); }

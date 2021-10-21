@@ -8,7 +8,6 @@
 #include "Poco/Path.h"
 
 #include "../model/files/BlockIndex.h"
-#include "../model/TransactionEntry.h"
 
 namespace controller {
 

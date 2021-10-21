@@ -40,14 +40,15 @@ namespace model {
 	{
 	public:
 		TransactionBase();
-		TransactionBase(controller::Group* parent);
+		TransactionBase(Poco::SharedPtr<controller::Group> groupRoot);
 
 		virtual bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE) = 0;
 
 		inline void addGroupAlias(const std::string& groupAlias) { mGroupAliases.push_back(groupAlias); }
 		void addGroupAliases(TransactionBase* parent);
 
-		virtual void setGroupRoot(Poco::SharedPtr<controller::Group> parent);
+		virtual void setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot);
+		virtual void setGradidoBlock(GradidoBlock* gradidoBlock);
 		virtual std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) = 0;
 
 		// for poco auto ptr
@@ -62,6 +63,7 @@ namespace model {
 		Poco::Mutex mAutoPtrMutex;
 
 		Poco::SharedPtr<controller::Group> mGroupRoot;
+		GradidoBlock* mGradidoBlock;
 		std::vector<std::string> mGroupAliases;
 
 		int mReferenceCount;

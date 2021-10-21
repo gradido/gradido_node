@@ -11,11 +11,15 @@
 #define DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H
 
 #include "Poco/Mutex.h"
+#include "Poco/AutoPtr.h"
+
 #include "../lib/DRHashList.h"
 #include "../lib/MultithreadContainer.h"
-#include "../task/WriteTransactionsToBlockTask.h"
+#include "../task/Task.h"
+
 
 #include <vector>
+#include <map>
 
 enum TaskObserverType {
 	TASK_OBSERVER_WRITE_BLOCK,
@@ -30,6 +34,8 @@ enum TaskObserverType {
  *
  * to check if a specific transaction was already insert and waiting to be written
  */
+
+class WriteTransactionsToBlockTask;
 
 class TaskObserver : public UniLib::lib::MultithreadContainer
 {

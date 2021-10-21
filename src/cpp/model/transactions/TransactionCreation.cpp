@@ -24,39 +24,61 @@ namespace model {
 				return false;
 			}
 		}
-		// TODO: replace with variable, state transaction for group
-		// TODO: start with two month range and 2.000 GDD
-		if (mProtoCreation.recipiant().amount() > 20000000) {
-			addError(new Error(__FUNCTION__, "creation more than 2.000 GDD per creation not allowed"));
+		
+		if (mProtoCreation.recipiant().amount() > 10000000) {
+			addError(new Error(__FUNCTION__, "creation more than 1.000 GDD per creation not allowed"));
 			return false;
 		}
-		// date range now 2 Month
+		
 		if (level == TRANSACTION_VALIDATION_DATE_RANGE) {
-			if (mParent) {
-				auto received = mParent->getReceived();
+			
+			Poco::DateTime targetDate = Poco::Timestamp(mProtoCreation.target_date().seconds());
 				
-				auto pubkey = mProtoCreation.recipiant().pubkey();
-				auto groups = getGroups();
-				uint64_t sum = mProtoCreation.recipiant().amount();
-				for (auto it = groups.begin(); it != groups.end(); it++) {
-					sum += (*it)->calculateCreationSum(pubkey, received.month(), received.year());
-					if (received.month() == 1) {
-						sum += (*it)->calculateCreationSum(pubkey, 12, received.year()-1);
+			auto pubkey = mProtoCreation.recipiant().pubkey();
+			auto groups = getGroups();
+			uint64_t sum = mProtoCreation.recipiant().amount();
+			for (auto it = groups.begin(); it != groups.end(); it++) {
+				sum += (*it)->calculateCreationSum(pubkey, targetDate.month(), targetDate.year());
+			}
+			// TODO: replace with variable, state transaction for group
+			if (sum > 10000000) {
+				addError(new Error(__FUNCTION__, "creation more than 1.000 GDD per month not allowed"));
+				return false;
+			}
+
+			if (mGradidoBlock) {
+				Poco::DateTime received = mGradidoBlock->getReceived();
+				if (targetDate.year() == received.year())
+				{
+					if (targetDate.month() + 3 < received.month()) {
+						addError(new Error(__FUNCTION__, "year is the same, target date month is more than 3 month in past"));
+						return false;
 					}
-					else {
-						sum += (*it)->calculateCreationSum(pubkey, received.month() - 1, received.year());
+					if (targetDate.month() > received.month()) {
+						addError(new Error(__FUNCTION__, "year is the same, target date month is in future"));
+						return false;
 					}
 				}
-				// TODO: replace with variable, state transaction for group
-				if (sum > 20000000) {
-					addError(new Error(__FUNCTION__, "creation more than 1.000 GDD per month not allowed"));
+				else if (targetDate.year() > received.year())
+				{
+					addError(new Error(__FUNCTION__, "target date year is in future"));
 					return false;
+				}
+				else if (targetDate.year() + 1 < received.year())
+				{
+					addError(new Error(__FUNCTION__, "target date year is in past"));
+					return false;
+				}
+				else
+				{
+					// target_date.year +1 == now.year
+					if (targetDate.month() + 3 < received.month() + 12) {
+						addError(new Error(__FUNCTION__, "target date is more than 3 month in past"));
+						return false;
+					}
 				}
 			}
 		}
-
-		//auto identHash = mProtoCreation.ident_hash();
-		//int zahl = 0;
 
 		return true;
 	}

@@ -32,7 +32,8 @@ namespace model {
 			delete mTransactionBody;
 			mTransactionBody = nullptr;
 		}
-		mTransactionBody->setParent(groupRoot);
+		mTransactionBody->setGroupRoot(groupRoot);
+		mTransactionBody->setGradidoBlock(this);
 		duplicate();
 	}
 

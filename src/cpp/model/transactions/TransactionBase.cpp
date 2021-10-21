@@ -1,17 +1,18 @@
 #include "TransactionBase.h"
 #include "../../SingletonManager/GroupManager.h"
 #include "../../controller/Group.h"
+#include "GradidoBlock.h"
 
 namespace model {
 
 	TransactionBase::TransactionBase()
-		: mReferenceCount(1), mParent(nullptr)
+		: mReferenceCount(1), mGroupRoot(nullptr), mGradidoBlock(nullptr)
 	{
 
 	}
 
-	TransactionBase::TransactionBase(controller::Group* parent)
-		: mReferenceCount(1), mParent(parent)
+	TransactionBase::TransactionBase(Poco::SharedPtr<controller::Group> groupRoot)
+		: mReferenceCount(1), mGroupRoot(groupRoot), mGradidoBlock(nullptr)
 	{
 
 	}
@@ -22,9 +23,14 @@ namespace model {
 		mReferenceCount++;
 	}
 
-	void TransactionBase::setParent(Poco::SharedPtr<controller::Group> parent)
+	void TransactionBase::setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot)
 	{
-		mParent = parent;
+		mGroupRoot = groupRoot;
+	}
+
+	void TransactionBase::setGradidoBlock(GradidoBlock* gradidoBlock)
+	{
+		mGradidoBlock = gradidoBlock;
 	}
 
 	void TransactionBase::release()
@@ -61,6 +67,8 @@ namespace model {
 		}
 	}
 
+
+
 	std::list<controller::Group*> TransactionBase::getGroups()
 	{
 
@@ -69,8 +77,8 @@ namespace model {
 		if (mGroupAliases.size() > 0) {
 			collectGroups(mGroupAliases, groups);
 		}
-		if (mParent && mParent->mGroupAliases.size() > 0) {
-			collectGroups(mParent->mGroupAliases, groups);
+		if (mGradidoBlock && mGradidoBlock->mGroupAliases.size() > 0) {
+			collectGroups(mGradidoBlock->mGroupAliases, groups);
 		}
 
 		// make unique

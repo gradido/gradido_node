@@ -1,4 +1,5 @@
 #include "TaskObserver.h"
+#include "../task/WriteTransactionsToBlockTask.h"
 
 #include <cstring>
 
