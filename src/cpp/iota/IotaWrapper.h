@@ -80,7 +80,7 @@ namespace iota
         int32_t lastMilestoneIndex;
         int64_t lastMilestoneTimestamp;
         int32_t confirmedMilestoneIndex;
-    }
+    };
 
 
     //! \brief collect message ids for indexiation from iota

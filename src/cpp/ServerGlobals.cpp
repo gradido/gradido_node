@@ -1,5 +1,8 @@
 #include "ServerGlobals.h"
 
+#include "iota/IotaWrapper.h"
+#include "lib/Profiler.h"
+
 namespace ServerGlobals {
 
 	UniLib::controller::CPUSheduler* 	g_CPUScheduler = nullptr;
@@ -12,6 +15,7 @@ namespace ServerGlobals {
 #ifdef __linux__
 	iota_client_conf_t 					g_IotaClientConfig;
 #endif
+	JsonRequest g_IotaRequestHandler;
 
 	void clearMemory()
 	{
@@ -37,6 +41,9 @@ namespace ServerGlobals {
 		// mainnet:
 		// chrysalis-nodes.iota.org
         int iota_port = cfg.getInt("iota.port", 443);
+		g_IotaRequestHandler.setHost(iota_host);
+		g_IotaRequestHandler.setPort(iota_port);
+		g_IotaRequestHandler.setUrlPath("/api/v1/");
 #ifdef __linux__
 		strcpy(g_IotaClientConfig.host, iota_host.data());
 		g_IotaClientConfig.port = iota_port;
@@ -44,6 +51,9 @@ namespace ServerGlobals {
 #else
 
 #endif
+		Profiler timeUsed;
+		iota::getNodeInfo();
+		printf("time for node info: %s\n", timeUsed.string().data());
 
         return true;
 	}

@@ -6,7 +6,7 @@
 #include "Poco/Logger.h"
 
 #include "task/CPUSheduler.h"
-
+#include "lib/JsonRequest.h"
 
 #include "controller/GroupIndex.h"
 
@@ -29,6 +29,7 @@ namespace ServerGlobals {
 #ifdef __linux__
 	extern iota_client_conf_t g_IotaClientConfig;
 #endif
+	extern JsonRequest g_IotaRequestHandler;
 
 	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
 	void clearMemory();
