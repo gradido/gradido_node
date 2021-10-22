@@ -3,10 +3,10 @@
 
 #include "IotaWrapper.h"
 
-namespace iota {
-    Milestone getMilestone(MessageId milestoneMessageId);
-    MessageId getMilestoneByIndex(int32_t milestoneIndex);
-    NodeInfo getNodeInfo();
+namespace iotaHttp {
+    iota::Milestone getMilestone(iota::MessageId milestoneMessageId);
+    iota::MessageId getMilestoneByIndex(int32_t milestoneIndex);
+    iota::NodeInfo getNodeInfo();
 }
 
 #endif //GRADIDO_NODE_IOTA_HTTP_API

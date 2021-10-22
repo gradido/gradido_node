@@ -27,14 +27,9 @@ enum JsonRequestReturn
 class JsonRequest : public ErrorList
 {
 public:
-	JsonRequest();
 	//! \param urlPath path between host and method name, for iota: /api/v1/
 	JsonRequest(const std::string& serverHost, int serverPort, const std::string& urlPath);
 	~JsonRequest();
-
-	inline void setHost(const std::string& host) {mServerHost = host;}
-	inline void setPort(int port) {mServerPort = port;}
-	inline void setUrlPath(const std::string& urlPath) {mUrlPath = urlPath;}
 
 	rapidjson::Document GET(const char* methodName);
 

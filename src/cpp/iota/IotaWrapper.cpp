@@ -13,9 +13,6 @@
 #include <sstream>
 #include <assert.h>
 
-#ifndef __linux__
-#define __linux__
-#endif
 
 namespace iota
 {

@@ -6,6 +6,7 @@
 #include "Poco/Net/HTTPResponse.h"
 
 #include "sodium.h"
+#include "../ServerGlobals.h"
 #include "../SingletonManager/MemoryManager.h"
 #include "DataTypeConverter.h"
 
@@ -15,7 +16,7 @@
 using namespace rapidjson;
 
 JsonRequest::JsonRequest(const std::string& serverHost, int serverPort, const std::string& urlPath)
-	: mServerHost(serverHost), mServerPort(serverPort), mJsonDocument(kObjectType), mUrlPath(urlPath)
+	: mServerHost(serverHost), mServerPort(serverPort), mUrlPath(urlPath)
 {
 	if (mServerHost.data()[mServerHost.size() - 1] == '/') {
 		mServerHost = mServerHost.substr(0, mServerHost.size() - 1);
@@ -41,14 +42,14 @@ Document JsonRequest::GET(const char* methodName)
 
 		Poco::SharedPtr<Poco::Net::HTTPClientSession> clientSession;
 		if (mServerPort == 443) {
-			clientSession = new Poco::Net::HTTPSClientSession(mServerHost, mServerPort);
+			clientSession = new Poco::Net::HTTPSClientSession(mServerHost, mServerPort, ServerGlobals::g_SSL_CLient_Context);
 		}
 		else {
 			clientSession = new Poco::Net::HTTPClientSession(mServerHost, mServerPort);
 		}
-		Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, mUrlPath + "/" + methodName);
+		Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, mUrlPath + methodName);
 
-		request.setChunkedTransferEncoding(true);
+		request.setChunkedTransferEncoding(false);
 		std::ostream& request_stream = clientSession->sendRequest(request);
 
 		Poco::Net::HTTPResponse response;
@@ -63,12 +64,11 @@ Document JsonRequest::GET(const char* methodName)
 		std::string method_name(methodName);
 
 		// extract parameter from request
-		Document resultJson;
-		resultJson.Parse(responseStringStream.str().data());
+		result.Parse(responseStringStream.str().data());
 		
-		if(resultJson.HasParseError()) {
-			addError(new ParamError(functionName, "error parsing request answer", resultJson.GetParseError()));
-			addError(new ParamError(functionName, "position of last parsing error", resultJson.GetErrorOffset()));
+		if(result.HasParseError()) {
+			addError(new ParamError(functionName, "error parsing request answer", result.GetParseError()));
+			addError(new ParamError(functionName, "position of last parsing error", result.GetErrorOffset()));
 		}
 	
 	}

@@ -157,6 +157,9 @@ int MainServer::main(const std::vector<std::string>& args)
 			homeFolder.createDirectory();
 		}
 
+		if (!ServerGlobals::initSSLClientContext()) {
+			return Application::EXIT_CANTCREAT;
+		}
 		ServerGlobals::initIota(config());
 
 		// start cpu scheduler

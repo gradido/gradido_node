@@ -4,6 +4,7 @@
 #include "Poco/Util/LayeredConfiguration.h"
 #include "Poco/Types.h"
 #include "Poco/Logger.h"
+#include "Poco/Net/Context.h"
 
 #include "task/CPUSheduler.h"
 #include "lib/JsonRequest.h"
@@ -29,10 +30,12 @@ namespace ServerGlobals {
 #ifdef __linux__
 	extern iota_client_conf_t g_IotaClientConfig;
 #endif
-	extern JsonRequest g_IotaRequestHandler;
+	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
+	extern JsonRequest* g_IotaRequestHandler;
 
-	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
 	void clearMemory();
+	bool initSSLClientContext();
+	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
 };
 
 #endif //GRADIDO_NODE_SERVER_GLOBALS

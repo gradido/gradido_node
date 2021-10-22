@@ -77,6 +77,9 @@ namespace iota
 
     struct NodeInfo
     {
+        std::string version;
+        bool isHealthy;
+        float messagesPerSecond;
         int32_t lastMilestoneIndex;
         int64_t lastMilestoneTimestamp;
         int32_t confirmedMilestoneIndex;
