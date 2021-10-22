@@ -2,6 +2,7 @@
 #include "../task/IotaMessageToTransactionTask.h"
 #include "../SingletonManager/MemoryManager.h"
 #include "sodium.h"
+#include "HTTPApi.h"
 #include <assert.h>
 #include <stdexcept>
 
@@ -67,7 +68,7 @@ namespace iota {
             while(mPendingMilestones.pop(milestoneMessageId))
             {
                 // fetch one milestone from iota
-                auto milestone = iota::getMilestone(milestoneMessageId);
+                auto milestone = iotaHttp::getMilestone(milestoneMessageId);
                 std::clog << "new milestone " << std::to_string(milestone.id) << ", "
                     << std::to_string(milestone.timestamp) << std::endl;
                 // put into `mMilestones` map

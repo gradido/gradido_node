@@ -29,6 +29,8 @@ namespace iota
         virtual void listener(Poco::Timer& timer);
     protected:
 
+        void updateStoredMessages(const std::vector<MessageId>& currentMessageIds);
+
         std::string mIndex; 
         MessageType mMessageType;
         Poco::Timer mListenerTimer;

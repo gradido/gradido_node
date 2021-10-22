@@ -25,7 +25,7 @@ namespace iotaHttp {
             result.lastMilestoneTimestamp = data["latestMilestoneTimestamp"].GetInt64();
         }
         catch (std::exception& e) {
-            throw new std::runtime_error("iota info result changed!");
+            throw std::runtime_error("iota info result changed!");
         }
         return result;
     }
@@ -44,7 +44,7 @@ namespace iotaHttp {
             result.fromHex(messageIdHex);
         }
         catch (std::exception& e) {
-            throw new std::runtime_error("iota milestones result changed!");
+            throw std::runtime_error("iota milestones result changed!");
         }
         return result;
     }
@@ -64,7 +64,7 @@ namespace iotaHttp {
             Value& payload = data["payload"];
             int type = payload["type"].GetInt();
             if (type != 1) {
-                throw new std::runtime_error("message isn't milestone message!");
+                throw std::runtime_error("message isn't milestone message!");
             }
             result.id = payload["index"].GetInt();
             result.timestamp = payload["timestamp"].GetInt64();
@@ -98,7 +98,7 @@ namespace iotaHttp {
 			Value& payload = data["payload"];
 			int type = payload["type"].GetInt();
 			if (type != 2) {
-				throw new std::runtime_error("message isn't indexiation message!");
+				throw std::runtime_error("message isn't indexiation message!");
 			}
             result = convertHexToBin(payload["data"].GetString());
 		}

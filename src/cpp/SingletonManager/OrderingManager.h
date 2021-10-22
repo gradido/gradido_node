@@ -10,7 +10,7 @@
  * Additional check for cross-group transactions
  */
 
-#include "../iota/MessageListener.h"
+#include "../iota/MilestoneListener.h"
 #include "../iota/MessageValidator.h"
 
 class OrderingManager
@@ -25,7 +25,7 @@ public:
 protected:
     OrderingManager();
 
-    iota::MessageListener mIotaMilestoneListener;
+    iota::MilestoneListener mIotaMilestoneListener;
     iota::MessageValidator mIotaMessageValidator;
 };
 
