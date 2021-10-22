@@ -32,6 +32,7 @@ public:
 	~JsonRequest();
 
 	rapidjson::Document GET(const char* methodName);
+	
 
 protected:
 	int mServerPort;

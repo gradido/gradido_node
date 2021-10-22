@@ -5,6 +5,7 @@
 
 namespace iotaHttp {
     iota::Milestone getMilestone(iota::MessageId milestoneMessageId);
+    std::string     getIndexiation(iota::MessageId indexiationMessageId);
     iota::MessageId getMilestoneByIndex(int32_t milestoneIndex);
     iota::NodeInfo getNodeInfo();
 }

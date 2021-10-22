@@ -55,7 +55,9 @@ namespace iota
         }
 
         void fromByteArray(const char* byteArray);
+        void fromHex(std::string hex);
         MemoryBin* toMemoryBin();
+        std::string toHex();
 
     };
 

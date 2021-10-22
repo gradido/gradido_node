@@ -1,6 +1,7 @@
 #include "HTTPApi.h"
 #include "../ServerGlobals.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../lib/BinTextConverter.h"
 #include <stdexcept>
 
 using namespace rapidjson;
@@ -33,6 +34,78 @@ namespace iotaHttp {
     {
         iota::MessageId result;
         // api/v1/milestones/909039
+        std::stringstream ss;
+        ss << "milestones/" << std::to_string(milestoneIndex);
+        auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+        if (!json.IsObject()) return result;
+        try {
+            Value& data = json["data"];
+            std::string messageIdHex = data["messageId"].GetString();
+            result.fromHex(messageIdHex);
+        }
+        catch (std::exception& e) {
+            throw new std::runtime_error("iota milestones result changed!");
+        }
         return result;
+    }
+
+    iota::Milestone getMilestone(iota::MessageId milestoneMessageId)
+    {
+        // GET /api/v1/messages/{messageId} 
+		std::stringstream ss;
+        ss << "messages/" << milestoneMessageId.toHex();
+
+        iota::Milestone result;
+
+		auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+		if (!json.IsObject()) return result;
+		try {
+			Value& data = json["data"];
+            Value& payload = data["payload"];
+            int type = payload["type"].GetInt();
+            if (type != 1) {
+                throw new std::runtime_error("message isn't milestone message!");
+            }
+            result.id = payload["index"].GetInt();
+            result.timestamp = payload["timestamp"].GetInt64();
+            auto parentMessageIds = data["parentMessageIds"].GetArray();
+            result.messageIds.reserve(parentMessageIds.Size());
+            for (auto it = parentMessageIds.Begin(); it != parentMessageIds.End(); ++it) {
+                iota::MessageId messageId;
+                messageId.fromHex(it->GetString());
+                result.messageIds.push_back(messageId);
+            }
+		}
+		catch (std::exception& e) {
+			throw new std::runtime_error("iota milestone message result changed!");
+		}
+
+        return result;
+    }
+
+    std::string getIndexiation(iota::MessageId indexiationMessageId)
+    {
+		// GET /api/v1/messages/{messageId} 
+		std::stringstream ss;
+		ss << "messages/" << indexiationMessageId.toHex();
+
+		std::string result;
+
+		auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+		if (!json.IsObject()) return result;
+		try {
+			Value& data = json["data"];
+			Value& payload = data["payload"];
+			int type = payload["type"].GetInt();
+			if (type != 2) {
+				throw new std::runtime_error("message isn't indexiation message!");
+			}
+            result = convertHexToBin(payload["data"].GetString());
+		}
+		catch (std::exception& e) {
+			throw new std::runtime_error("iota milestone message result changed!");
+		}
+
+		return result;
     }
 }

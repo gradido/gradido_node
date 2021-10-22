@@ -95,13 +95,6 @@ namespace ServerGlobals {
 #else
 
 #endif
-		Profiler timeUsed;
-		iota::getNodeInfo();
-		printf("time for node info: %s\n", timeUsed.string().data());
-
-		timeUsed.reset();
-		auto nodeInfo = iotaHttp::getNodeInfo();
-		printf("HTTP Api get node info time: %s\n", timeUsed.string().data());
 
         return true;
 	}

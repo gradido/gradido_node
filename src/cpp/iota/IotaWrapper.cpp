@@ -9,6 +9,7 @@
 
 #include "../SingletonManager/LoggerManager.h"
 #include "../lib/BinTextConverter.h"
+#include "../lib/DataTypeConverter.h"
 #include "../ServerGlobals.h"
 #include <sstream>
 #include <assert.h>
@@ -187,10 +188,21 @@ namespace iota
         memcpy(messageId, byteArray, 32);
     }
 
+    void MessageId::fromHex(std::string hex)
+    {
+        auto binString = convertHexToBin(hex);
+        fromByteArray(binString.data());
+    }
+
     MemoryBin* MessageId::toMemoryBin()
     {
         auto result = MemoryManager::getInstance()->getFreeMemory(32);
         memcpy(result->data(), messageId, 32);
         return result;
+    }
+
+    std::string MessageId::toHex()
+    {
+        return DataTypeConverter::binToHex((unsigned char*)messageId, 32);
     }
 }
