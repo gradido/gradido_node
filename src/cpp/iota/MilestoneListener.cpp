@@ -20,7 +20,7 @@ namespace iota {
 		auto info = iotaHttp::getNodeInfo();
 		bool firstRun = false;
 		if (!mLastKnownMilestoneIndex) {
-			mLastKnownMilestoneIndex = info.confirmedMilestoneIndex - MILESTONES_MAX_CACHED;
+			mLastKnownMilestoneIndex = info.confirmedMilestoneIndex - MILESTONES_MAX_CACHED + 1;
 			firstRun = true;
 		}
 		// no new milestone by iota so we can early exit here
@@ -38,7 +38,7 @@ namespace iota {
 		}
 		for (int i = mLastKnownMilestoneIndex; i <= info.confirmedMilestoneIndex; i++) {
 			if (firstRun) {
-				printf("\rrequest milestone %d (%d/%d)", i, i - mLastKnownMilestoneIndex+1, messageCount);
+				printf("\rrequest milestone %d (%d/%d)", i, i - mLastKnownMilestoneIndex+1, messageCount+1);
 			}
 			messageIds.push_back(iotaHttp::getMilestoneByIndex(i));
 			

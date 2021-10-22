@@ -133,9 +133,9 @@ int MainServer::main(const std::vector<std::string>& args)
 
 		// *************** load from config ********************************************
 
-		std::string cfg_Path = Poco::Path::config() + "grd_node/";
+		std::string cfg_Path = Poco::Path::home() + ".gradido/";
 		try {
-			loadConfiguration(cfg_Path + "grd_node.properties");
+			loadConfiguration(cfg_Path + "gradido.properties");
 		}
 		catch (Poco::Exception& ex) {
 			errorLog.error("error loading config: %s", ex.displayText());

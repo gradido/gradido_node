@@ -23,10 +23,10 @@ namespace iota {
      * For every new milestone check if already pending messages are included in them and therefore confirmed
      * Put confirmed messages into blockchain
      */
-    //! MAGIC NUMBER: how many milestones in list allowed before deleting the oldest
+    //! MAGIC NUMBER: how many milestones in list allowed before deleting the oldest, count of older milestones which are loaded on startup
     //! TODO: try it out to guess best number
     //! TODO: Put it into Config
-    #define MILESTONES_MAX_CACHED 100
+    #define MILESTONES_MAX_CACHED 10
 
     class MessageValidator: public Poco::Runnable
     {
