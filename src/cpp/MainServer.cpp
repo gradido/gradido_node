@@ -140,8 +140,6 @@ int MainServer::main(const std::vector<std::string>& args)
 		catch (Poco::Exception& ex) {
 			errorLog.error("error loading config: %s", ex.displayText());
 		}
-
-		unsigned short port = (unsigned short)config().getInt("HTTPServer.port", 9970);
 		unsigned short jsonrpc_port = (unsigned short)config().getInt("JSONRPCServer.port", 8340);
 		unsigned short tcp_port = (unsigned short)config().getInt("TCPServer.port", 8341);
 

@@ -37,7 +37,7 @@ int GroupManager::init(const char* groupIndexFileName)
 	mGroupIndex->update();
 	auto groups = mGroupIndex->listGroupAliases();
 	for(auto it = groups.begin(); it != groups.end(); it++) {
-		std::string iotaIndex = "messages/indexation/" + *it;
+		std::string iotaIndex = "GRADIDO." + *it;
 		iota::MessageListener* groupMessageListener = new iota::MessageListener(iotaIndex, iota::MESSAGE_TYPE_TRANSACTION);
 		mMessageListener.push_back(groupMessageListener);
 	}
