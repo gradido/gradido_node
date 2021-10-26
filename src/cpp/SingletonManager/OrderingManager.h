@@ -11,22 +11,17 @@
  */
 
 #include "../iota/MilestoneListener.h"
-#include "../iota/MessageValidator.h"
 
 class OrderingManager
 {
 public: 
     ~OrderingManager();
     static OrderingManager* getInstance();
-
-    inline iota::MessageValidator* getIotaMessageValidator() {return &mIotaMessageValidator;}
     
 
 protected:
     OrderingManager();
-
     iota::MilestoneListener mIotaMilestoneListener;
-    iota::MessageValidator mIotaMessageValidator;
 };
 
 #endif //__GRADIDO_NODE_SINGLETON_MANAGER_ORDERING_MANAGER

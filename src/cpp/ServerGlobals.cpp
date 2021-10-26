@@ -19,6 +19,7 @@ namespace ServerGlobals {
 
 	UniLib::controller::CPUSheduler* 	g_CPUScheduler = nullptr;
 	UniLib::controller::CPUSheduler* 	g_WriteFileCPUScheduler = nullptr;
+	UniLib::controller::CPUSheduler* g_IotaRequestCPUScheduler = nullptr;
 	controller::GroupIndex* 			g_GroupIndex = nullptr;
 	std::string							g_FilesPath;
 	Poco::UInt16						g_CacheTimeout = 600;
@@ -39,6 +40,10 @@ namespace ServerGlobals {
 		if (g_WriteFileCPUScheduler) {
 			delete g_WriteFileCPUScheduler;
 			g_WriteFileCPUScheduler = nullptr;
+		}
+		if (g_IotaRequestCPUScheduler) {
+			delete g_IotaRequestCPUScheduler;
+			g_IotaRequestCPUScheduler = nullptr;
 		}
 		if (g_GroupIndex) {
 			delete g_GroupIndex;

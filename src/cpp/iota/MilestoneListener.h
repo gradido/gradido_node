@@ -1,11 +1,14 @@
 #ifndef GRADIDO_NODE_IOTA_MILESTONE_LISTENER
 #define GRADIDO_NODE_IOTA_MILESTONE_LISTENER
 
-#include "MessageListener.h"
-
+#include "Poco/Timer.h"
 
 namespace iota {
-	class MilestoneListener : public MessageListener
+
+	//! MAGIC NUMBER: how many milestones should be loaded on startup from the past
+#define MILESTONES_BOOTSTRAP_COUNT 5
+
+	class MilestoneListener
 	{
 	public:
 		MilestoneListener(long intervalMilliseconds = 500);
@@ -14,6 +17,7 @@ namespace iota {
 		void listener(Poco::Timer& timer);
 
 	protected:
+		Poco::Timer mListenerTimer;
 		int32_t mLastKnownMilestoneIndex;
 	};
 }

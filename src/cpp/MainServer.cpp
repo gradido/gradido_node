@@ -166,6 +166,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		uint8_t io_worker_count = config().getInt("io.workerCount", 2);
 		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
 		ServerGlobals::g_WriteFileCPUScheduler = new UniLib::controller::CPUSheduler(io_worker_count, "IO Worker");
+		ServerGlobals::g_IotaRequestCPUScheduler = new UniLib::controller::CPUSheduler(16, "Iota Worker");
 
 		GroupManager::getInstance()->init("group.index");
 		OrderingManager::getInstance();

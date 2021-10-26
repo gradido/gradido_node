@@ -118,7 +118,7 @@ MemoryBin* MemoryManager::getFreeMemory(Poco::UInt32 size)
 	}
 	auto index = getMemoryStackIndex(size);
 	if (index < 0) {
-		printf("custom memory bin: %d\n", size);
+		//printf("custom memory bin: %d\n", size);
 		return new MemoryBin(size);
 	}
 	else {

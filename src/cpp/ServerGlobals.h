@@ -19,6 +19,7 @@ namespace ServerGlobals {
 
 	extern UniLib::controller::CPUSheduler* g_CPUScheduler;
 	extern UniLib::controller::CPUSheduler* g_WriteFileCPUScheduler;
+	extern UniLib::controller::CPUSheduler* g_IotaRequestCPUScheduler;
 	extern controller::GroupIndex*			g_GroupIndex;
 	extern std::string						g_FilesPath;
 	//! cache timeout in seconds, default 10 minutes

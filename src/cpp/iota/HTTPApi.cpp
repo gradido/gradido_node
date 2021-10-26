@@ -6,11 +6,11 @@
 
 using namespace rapidjson;
 
-namespace iotaHttp {
+namespace iota {
     // api endpoints: 
     // https://docs.rs/iota-client/1.0.1/iota_client/client/struct.Client.html
 
-    iota::NodeInfo getNodeInfo()
+    NodeInfo getNodeInfo()
     {
         iota::NodeInfo result;
         auto json = ServerGlobals::g_IotaRequestHandler->GET("info");
@@ -30,9 +30,9 @@ namespace iotaHttp {
         return result;
     }
 
-    iota::MessageId getMilestoneByIndex(int32_t milestoneIndex)
+    MessageId getMilestoneByIndex(int32_t milestoneIndex)
     {
-        iota::MessageId result;
+        MessageId result;
         // api/v1/milestones/909039
         std::stringstream ss;
         ss << "milestones/" << std::to_string(milestoneIndex);
@@ -41,7 +41,12 @@ namespace iotaHttp {
         try {
             Value& data = json["data"];
             std::string messageIdHex = data["messageId"].GetString();
+            //printf("hex before: %s, length: %d\n", messageIdHex.data(), messageIdHex.size());
             result.fromHex(messageIdHex);
+            //std::string hexAfter = result.toHex();
+            //printf("hex after: %s, length: %d\n", hexAfter.data(), hexAfter.size());
+            //printf("hex compare: %d %d\n", messageIdHex == hexAfter, result == result);
+
         }
         catch (std::exception& e) {
             throw std::runtime_error("iota milestones result changed!");
@@ -49,63 +54,37 @@ namespace iotaHttp {
         return result;
     }
 
-    iota::Milestone getMilestone(iota::MessageId milestoneMessageId)
-    {
-        // GET /api/v1/messages/{messageId} 
-		std::stringstream ss;
-        ss << "messages/" << milestoneMessageId.toHex();
-
-        iota::Milestone result;
-
-		auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
-		if (!json.IsObject()) return result;
-		try {
-			Value& data = json["data"];
-            Value& payload = data["payload"];
-            int type = payload["type"].GetInt();
-            if (type != 1) {
-                throw std::runtime_error("message isn't milestone message!");
-            }
-            result.id = payload["index"].GetInt();
-            result.timestamp = payload["timestamp"].GetInt64();
-            auto parentMessageIds = data["parentMessageIds"].GetArray();
-            result.messageIds.reserve(parentMessageIds.Size());
-            for (auto it = parentMessageIds.Begin(); it != parentMessageIds.End(); ++it) {
-                iota::MessageId messageId;
-                messageId.fromHex(it->GetString());
-                result.messageIds.push_back(messageId);
-            }
-		}
-		catch (std::exception& e) {
-			throw new std::runtime_error("iota milestone message result changed!");
-		}
-
-        return result;
-    }
-
-    std::string getIndexiation(iota::MessageId indexiationMessageId)
+    Document getMessageJson(MessageId messageId)
     {
 		// GET /api/v1/messages/{messageId} 
 		std::stringstream ss;
-		ss << "messages/" << indexiationMessageId.toHex();
+		ss << "messages/" << messageId.toHex();
 
-		std::string result;
+		return ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+    }
 
-		auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
-		if (!json.IsObject()) return result;
-		try {
-			Value& data = json["data"];
-			Value& payload = data["payload"];
-			int type = payload["type"].GetInt();
-			if (type != 2) {
-				throw std::runtime_error("message isn't indexiation message!");
+    std::vector<MessageId> findByIndex(std::string index)
+    {
+        // GET /api/v1/messages?index=4752414449444f2e7079746861676f726173
+        std::stringstream ss;
+        ss << "messages?index=" << convertBinToHex(index);
+
+        std::vector<MessageId> result;
+
+        auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+        if (!json.IsObject()) return result;
+        try {
+            Value& data = json["data"];
+            auto messageIds = data["messageIds"].GetArray();
+			for (auto it = messageIds.Begin(); it != messageIds.End(); ++it) {
+				MessageId messageId;
+				messageId.fromHex(it->GetString());
+				result.push_back(messageId);
 			}
-            result = convertHexToBin(payload["data"].GetString());
-		}
-		catch (std::exception& e) {
-			throw new std::runtime_error("iota milestone message result changed!");
-		}
-
-		return result;
+        }
+        catch (std::exception& e) {
+            throw new std::runtime_error("iota find by index message result changed!");
+        }
+        return result;
     }
 }

@@ -1,8 +1,6 @@
 #include "OrderingManager.h"
 
 OrderingManager::OrderingManager()
-// maybe milestones/confirmed must be tried
-// milestones/latest"
 : mIotaMilestoneListener()
 {
 }

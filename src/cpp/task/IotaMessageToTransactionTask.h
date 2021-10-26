@@ -3,8 +3,7 @@
 
 #include "CPUTask.h"
 #include "../model/transactions/GradidoTransaction.h"
-#include "../iota/IotaWrapper.h"
-
+#include "../iota/Message.h"
 /*!
  * @author: einhornimmond
  * 
@@ -22,7 +21,7 @@
 class IotaMessageToTransactionTask : public UniLib::controller::CPUTask
 {
 public:
-    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, const iota::MessageId& messageId);
+    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, Poco::SharedPtr<iota::Message> message, Poco::SharedPtr<controller::Group> group);
 
     const char* getResourceType() const {return "MessageToTransactionTask";};
     int run();
@@ -32,7 +31,8 @@ public:
 protected:
     uint32_t mMilestoneIndex;
     uint64_t mTimestamp;
-    iota::MessageId mMessageId;
+    Poco::SharedPtr<iota::Message> mMessage;
+    Poco::SharedPtr<controller::Group> mGroup;
     Poco::AutoPtr<model::GradidoTransaction> mTransaction;
 };
 
