@@ -5,6 +5,7 @@
 #include "../task/IotaMessageToTransactionTask.h"
 #include "../SingletonManager/GroupManager.h"
 #include "../ServerGlobals.h"
+#include "ConfirmedMessagesCache.h"
 #include "HTTPApi.h"
 
 using namespace rapidjson;
@@ -97,7 +98,7 @@ namespace iota {
 				mIndex = convertHexToBin(payload["index"].GetString());
 				std::string group = getGradidoGroupAlias();
 				if (group != "") {
-					printf("[iota::Message::loadFromJson] find gradido transaction with group alias: %s\n", group.data());
+					printf("[iota::Message::loadFromJson] find gradido transaction with group alias: %s %s\n", group.data(), mId.toHex().data());
 				}
 			}
 			mFetched = true;
@@ -128,9 +129,12 @@ namespace iota {
 
 	std::string Message::getGradidoGroupAlias() const
 	{
+		if (mIndex != "" && mIndex != "Testnet Spammer") {
+			printf("index: %s\n", mIndex.data());
+		}
 		auto findPos = mIndex.find("GRADIDO");
 		if (findPos != mIndex.npos) {
-			return mIndex.substr(findPos + 1);
+			return mIndex.substr(8);
 		}
 		return "";
 	}
@@ -163,6 +167,9 @@ namespace iota {
 				return -1;
 			}
 		}
+
+		//printf("fetched message: %s\n", id.toHex().data());
+		auto cmCache = ConfirmedMessagesCache::getInstance();
 		if (MESSAGE_TYPE_TRANSACTION == mMessage->getType()) {
 			auto groupAlias = mMessage->getGradidoGroupAlias();
 			// yes, we found a gradido transaction
@@ -179,10 +186,22 @@ namespace iota {
 				}
 			}
 		}
-
+		else if (MESSAGE_TYPE_MILESTONE == mMessage->getType()) {
+			if (!mRootMilestone.isNull()) {
+				// we found another milestone
+				printf("found milestone %d \n", mMessage->getMilestoneId());
+				return 0;
+			}
+		}
+		
 		if (mTargetRecursionDeep > mRecursionDeep) {
 			auto messageIds = mMessage->getParentMessageIds();
 			for (auto it = messageIds.begin(); it != messageIds.end(); it++) {
+				// check if message was already checked, if not it will be added, if we go to next
+				if (cmCache->existInCache(*it)) {
+					continue;
+				}
+
 				Poco::AutoPtr<ConfirmedMessageLoader> loader(new ConfirmedMessageLoader(*it, mTargetRecursionDeep, mRecursionDeep + 1));
 				if (mRootMilestone.isNull() && MESSAGE_TYPE_MILESTONE == mMessage->getType()) {
 					loader->setRootMilestone(mMessage);

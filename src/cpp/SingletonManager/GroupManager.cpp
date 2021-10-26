@@ -13,6 +13,7 @@ GroupManager::GroupManager()
 
 GroupManager::~GroupManager()
 {
+	Poco::ScopedLock<Poco::FastMutex> lock(mWorkMutex);
 	if (mGroupIndex) {
 		delete mGroupIndex;
 		mGroupIndex = nullptr;
@@ -22,6 +23,7 @@ GroupManager::~GroupManager()
 
 int GroupManager::init(const char* groupIndexFileName)
 {
+	Poco::ScopedLock<Poco::FastMutex> lock(mWorkMutex);
 	Poco::File groupIndexFile(Poco::Path(Poco::Path(ServerGlobals::g_FilesPath), groupIndexFileName));
 
 	if (!groupIndexFile.exists()) {
@@ -46,7 +48,7 @@ GroupManager* GroupManager::getInstance()
 Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& groupAlias)
 {
 	if (!mInitalized) return nullptr;
-	//Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	Poco::ScopedLock<Poco::FastMutex> lock(mWorkMutex);
 	auto skey = mGroupAccessExpireCache.get(groupAlias);
 	if (!skey.isNull()) {
 		return skey;

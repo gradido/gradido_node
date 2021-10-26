@@ -43,6 +43,8 @@ protected:
 	controller::GroupIndex* mGroupIndex;
 	//std::unordered_map<std::string, controller::Group*> mGroups;
 	Poco::AccessExpireCache<std::string, controller::Group> mGroupAccessExpireCache;
+
+	Poco::FastMutex mWorkMutex;
 	
 
 };

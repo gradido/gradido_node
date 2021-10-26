@@ -36,7 +36,7 @@ namespace iota {
 		if (firstRun) {
 			printf("bootstrap milestones: \n");
 		}
-		for (int i = mLastKnownMilestoneIndex; i <= info.confirmedMilestoneIndex; i++) {
+		for (int i = mLastKnownMilestoneIndex + 1; i <= info.confirmedMilestoneIndex; i++) {
 			if (firstRun) {
 				printf("\rrequest milestone %d (%d/%d)", i, i - mLastKnownMilestoneIndex+1, messageCount+1);
 			}
@@ -44,7 +44,7 @@ namespace iota {
 				std::clog << "request milestone: " << std::to_string(i) << std::endl;
 			}
 
-			Poco::AutoPtr<iota::ConfirmedMessageLoader> task = new iota::ConfirmedMessageLoader(iota::getMilestoneByIndex(i), 2);
+			Poco::AutoPtr<iota::ConfirmedMessageLoader> task = new iota::ConfirmedMessageLoader(iota::getMilestoneByIndex(i), 10);
 			task->scheduleTask(task);
 			
 		}
