@@ -19,7 +19,8 @@ namespace model {
 
 			// value 1
 			Poco::Path testPath;
-			testPath.pushDirectory("pubkeys_94");
+			testPath.pushDirectory("pubkeys");
+			testPath.pushDirectory("_94");
 			testPath.append("_93.index");
 
 			auto path = controller::AddressIndex::getAddressIndexFilePathForAddress(mBinaryAddresses[0]);
@@ -27,7 +28,8 @@ namespace model {
 
 			// value 2
 			testPath.clear();
-			testPath.pushDirectory("pubkeys_81");
+			testPath.pushDirectory("pubkeys");
+			testPath.pushDirectory("_81");
 			testPath.append("_90.index");
 
 			path = controller::AddressIndex::getAddressIndexFilePathForAddress(mBinaryAddresses[1]);

@@ -127,13 +127,13 @@ namespace model {
 					addError(new ParamError(__FUNCTION__, "last pair", lastPair.data()));
 					throw new Poco::Exception("[model::files::AddressIndex] inserting index address pair failed, index already exist!");
 				}
-				file << it->first << it->second;
+				file.write(it->first.data(), 32);
+				file.write((const char*)&it->second, sizeof(int32_t));
 			}
 			auto hash = calculateHash(sortedMap);
-			file << hash;
+			file.write((const char*)hash->data(), hash->size());
 			file.close();
 			fl->unlock(filePath);
-
 			mm->releaseMemory(hash);			
 			mFileWritten = true;
 		}
