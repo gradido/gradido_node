@@ -10,7 +10,7 @@
 #include "../model/transactions/GradidoBlock.h"
 #include "../model/transactions/GradidoTransaction.h"
 
-#include "../model/files/GroupState.h"
+#include "../model/files/State.h"
 
 #include "Poco/Path.h"
 #include "Poco/AutoPtr.h"
@@ -73,7 +73,7 @@ namespace controller {
 		std::string mGroupAlias;
 		Poco::Path mFolderPath;
 		Poco::SharedPtr<AddressIndex> mAddressIndex;
-		model::files::GroupState mGroupState;
+		model::files::State mGroupState;
 
 		Poco::AutoPtr<model::GradidoBlock> mLastTransaction;
 		int mLastAddressIndex;

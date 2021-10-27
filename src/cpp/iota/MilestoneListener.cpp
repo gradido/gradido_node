@@ -1,5 +1,6 @@
 #include "MilestoneListener.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../SingletonManager/GlobalStateManager.h"
 #include "HTTPApi.h"
 #include <stdexcept>
 
@@ -7,9 +8,11 @@ namespace iota {
 	MilestoneListener::MilestoneListener(long intervalMilliseconds /* = 500 */)
 		: mListenerTimer(0, intervalMilliseconds), mLastKnownMilestoneIndex(0)
 	{
-		Poco::TimerCallback<MilestoneListener> callback(*this, &MilestoneListener::listener);
-		mListenerTimer.start(callback);
+		auto g_state = GlobalStateManager::getInstance();
+		mLastKnownMilestoneIndex = g_state->getLastIotaMilestone();
 
+		Poco::TimerCallback<MilestoneListener> callback(*this, &MilestoneListener::listener);
+		mListenerTimer.start(callback);		
 	}
 
 	MilestoneListener::~MilestoneListener()
@@ -21,10 +24,17 @@ namespace iota {
 	{
 		auto info = iota::getNodeInfo();
 		bool firstRun = false;
+
+		// if stored last know milestone is to far in the past, consider it a fresh start
+		// TODO IMPORTANT!: first fetch missing transactions from other gradido nodes before continue with query iota for new transactions to prevent holes in the blockchain
+		if (info.confirmedMilestoneIndex - mLastKnownMilestoneIndex > MILESTONES_BOOTSTRAP_COUNT) {
+			mLastKnownMilestoneIndex = 0;
+		}
 		if (!mLastKnownMilestoneIndex) {
 			mLastKnownMilestoneIndex = info.confirmedMilestoneIndex - MILESTONES_BOOTSTRAP_COUNT + 1;
 			firstRun = true;
 		}
+		
 		// no new milestone by iota so we can early exit here
 		if (mLastKnownMilestoneIndex == info.confirmedMilestoneIndex) {
 			return;
@@ -59,6 +69,8 @@ namespace iota {
 		if (firstRun) {
 			printf("\n");
 		}
-		mLastKnownMilestoneIndex = info.confirmedMilestoneIndex;	
+		mLastKnownMilestoneIndex = info.confirmedMilestoneIndex;
+		auto g_state = GlobalStateManager::getInstance();
+		g_state->updateLastIotaMilestone(mLastKnownMilestoneIndex);
 	}
 }

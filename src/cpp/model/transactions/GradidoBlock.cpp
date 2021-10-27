@@ -129,6 +129,7 @@ namespace model {
 		crypto_generichash_state state;
 		crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 		if (prevTxHash.size()) {
+			printf("[GradidoBlock::calculateTxHash] calculate with prev tx hash: %s", prevTxHash.data());
 			crypto_generichash_update(&state, (const unsigned char*)prevTxHash.data(), prevTxHash.size());
 		}
 		crypto_generichash_update(&state, (const unsigned char*)transactionIdString.data(), transactionIdString.size());

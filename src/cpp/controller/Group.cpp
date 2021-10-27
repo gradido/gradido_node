@@ -15,6 +15,7 @@ namespace controller {
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
+		// TODO: sanity check, compare with block size
 		mLastTransactionId = mGroupState.getInt32ValueForKey("lastTransactionId", mLastTransactionId);
 
 		std::clog << "[Group " << groupAlias << "] " 
@@ -37,16 +38,19 @@ namespace controller {
 	{
 		mLastAddressIndex = lastAddressIndex;
 		mGroupState.setKeyValue("lastAddressIndex", std::to_string(mLastAddressIndex));
+		printf("[Group::updateLastAddressIndex] %d\n", lastAddressIndex);
 	}
 	void Group::updateLastBlockNr(int lastBlockNr)
 	{	
 		mLastBlockNr = lastBlockNr;
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
+		printf("[Group::updateLastBlockNr] %d\n", lastBlockNr);
 	}
 	void Group::updateLastTransactionId(int lastTransactionId)
 	{
 		mLastTransactionId = lastTransactionId;
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
+		printf("[Group::updateLastTransactionId] %d\n", lastTransactionId);
 	}
 
 	bool Group::addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction)
@@ -104,6 +108,7 @@ namespace controller {
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
 		Poco::SharedPtr<model::TransactionEntry> transactionEntry = new model::TransactionEntry(newTransaction, mAddressIndex);
+		updateLastAddressIndex(mAddressIndex->getLastIndex());
 		return block->pushTransaction(transactionEntry);
 
 		// TODO: collect all indices for addresses in this block
@@ -156,6 +161,8 @@ namespace controller {
 		if (result) {
 			mLastTransaction = gradidoBlock;
 			updateLastTransactionId(gradidoBlock->getID());
+			// TODO: move call to better place
+			updateLastAddressIndex(mAddressIndex->getLastIndex());
 		}
 		return result;
 	}

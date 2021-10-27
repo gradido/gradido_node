@@ -1,11 +1,11 @@
-#include "GroupState.h"
+#include "State.h"
 
 #include <cassert>
 
 namespace model {
 	namespace files {
 	
-		GroupState::GroupState(Poco::Path path)
+		State::State(Poco::Path path)
 			: mLevelDB(nullptr)
 		{
 			path.pushDirectory(".state");
@@ -15,7 +15,7 @@ namespace model {
 			assert(status.ok());
 		}
 
-		GroupState::~GroupState()
+		State::~State()
 		{
 			if (mLevelDB) {
 				delete mLevelDB;
@@ -24,7 +24,7 @@ namespace model {
 			//mDBEntrys.clear();
 		}
 
-		std::string GroupState::getValueForKey(const std::string& key)
+		std::string State::getValueForKey(const std::string& key)
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 
@@ -37,7 +37,7 @@ namespace model {
 			return "<not found>";
 		}
 
-		int32_t GroupState::getInt32ValueForKey(const std::string& key, int32_t defaultValue /* = 0 */)
+		int32_t State::getInt32ValueForKey(const std::string& key, int32_t defaultValue /* = 0 */)
 		{
 			auto value = getValueForKey(key);
 			if (value == "<not found>") {
@@ -61,7 +61,7 @@ namespace model {
 			return defaultValue;
 		}
 
-		bool GroupState::addKeyValue(const std::string& key, const std::string& value)
+		bool State::addKeyValue(const std::string& key, const std::string& value)
 		{
 			// check if already exist
 			auto result = getValueForKey(key);
@@ -81,7 +81,7 @@ namespace model {
 
 			return false;
 		}
-		bool GroupState::setKeyValue(const std::string& key, const std::string& value)
+		bool State::setKeyValue(const std::string& key, const std::string& value)
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			leveldb::Status s = mLevelDB->Put(leveldb::WriteOptions(), key, value);

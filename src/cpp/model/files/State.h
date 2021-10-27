@@ -16,13 +16,13 @@
 
 namespace model {
 	namespace files {
-		class GroupState : public FileBase
+		class State : public FileBase
 		{
 		public:
 			//! open level db file
-			GroupState(Poco::Path path);
+			State(Poco::Path path);
 			//! close leveldb file, should save not already saved key value pairs
-			~GroupState();
+			~State();
 
 			//! read value for key from leveldb
 			//! \return <not found> if key not found, else value
