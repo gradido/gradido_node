@@ -40,7 +40,7 @@ namespace model {
 			//! Check if each index is unique
 			//! Could need some time, calculate also sha256 hash for putting at end of file.
 			//! Throw Poco::Exception if two addresses have the same index.
-			void safeExit();
+			void writeToFile();
 
 			
 

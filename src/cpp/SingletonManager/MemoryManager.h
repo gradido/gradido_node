@@ -82,6 +82,7 @@ protected:
 
 	MemoryManager();
 	MemoryPageStack* mMemoryPageStacks[7];
+	bool			 mInitalized;
 };
 
 

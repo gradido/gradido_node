@@ -115,17 +115,17 @@ namespace iota {
 		// every iota message has at least two parent messages
 		// with recursion messages will be loaded recursively
 		// command will be needed for retrieving results
-		ConfirmedMessageLoader(MessageId id, uint8_t targetRecursionDeep = 0, uint8_t recursionDeep = 0);
-		ConfirmedMessageLoader(Poco::SharedPtr<Message> message, uint8_t targetRecursionDeep = 0, uint8_t recursionDeep = 0);
+		ConfirmedMessageLoader(Poco::SharedPtr<Message> rootMilestone, uint8_t targetRecursionDeep = 0, uint8_t recursionDeep = 0);
+		ConfirmedMessageLoader(MessageId id, Poco::SharedPtr<Message> rootMilestone, uint8_t targetRecursionDeep = 0, uint8_t recursionDeep = 0);
 		~ConfirmedMessageLoader();
 
 		const char* getResourceType() const { return "iota::ConfirmedMessageLoader"; }
 		int run();
 
-		inline Poco::SharedPtr<Message> getMessage() { return mMessage; }
+		inline const Poco::SharedPtr<Message> getMessage() const { return mMessage; }
 		inline uint8_t getTargetRecursionDeep() const { return mTargetRecursionDeep; }
 		inline uint8_t getRecursionDeep() const { return mRecursionDeep; }
-		inline void setRootMilestone(Poco::SharedPtr<Message> rootMilestone) { mRootMilestone = rootMilestone; }
+		inline const Poco::SharedPtr<Message> getRootMilestone() const { return mRootMilestone; }
 
 	protected:
 		 Poco::SharedPtr<Message> mMessage;		 

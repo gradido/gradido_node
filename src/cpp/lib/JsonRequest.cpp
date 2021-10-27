@@ -73,7 +73,7 @@ Document JsonRequest::GET(const char* methodName)
 	
 	}
 	catch (Poco::Exception& e) {
-		addError(new ParamError(functionName, "connect error to php server", e.displayText().data()));
+		addError(new ParamError(functionName, "connect error to iota server", e.displayText().data()));
 		addError(new ParamError(functionName, "host", mServerHost));
 		addError(new ParamError(functionName, "port", mServerPort));
 	}

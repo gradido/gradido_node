@@ -11,7 +11,8 @@ namespace model {
 	enum TransactionType {
 		TRANSACTION_NONE,
 		TRANSACTION_CREATION,
-		TRANSACTION_TRANSFER
+		TRANSACTION_TRANSFER,
+		TRANSACTION_MEMBER_UPDATE
 	};
 
 	class TransactionBody : public TransactionBase
@@ -25,6 +26,10 @@ namespace model {
 		void setGradidoBlock(GradidoBlock* gradidoBlock);
 
 		inline TransactionType getType() { return mTransactionType; }
+		inline bool isCreation() const { return TRANSACTION_CREATION == mTransactionType; }
+		inline bool isTransfer() const { return TRANSACTION_TRANSFER == mTransactionType; }
+		inline bool isMemberUpdate() const { return TRANSACTION_MEMBER_UPDATE == mTransactionType; }
+		inline uint32_t getCreatedSeconds() { return mProtoTransactionBody.created().seconds(); }
 		inline TransactionCreation* getCreation() { return dynamic_cast<TransactionCreation*>(mTransactionSpecific); }
 		inline TransactionTransfer* getTransfer() { return dynamic_cast<TransactionTransfer*>(mTransactionSpecific); }
 

@@ -51,6 +51,8 @@ namespace model {
 		virtual void setGradidoBlock(GradidoBlock* gradidoBlock);
 		virtual std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) = 0;
 
+		inline Poco::SharedPtr<controller::Group> getGroupRoot() { return mGroupRoot; }
+
 		// for poco auto ptr
 		void duplicate();
 		void release();

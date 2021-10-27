@@ -47,7 +47,7 @@ namespace controller {
 		//! \return Index for address.
 		uint32_t getOrAddIndexForAddress(const std::string& address);
 
-		//! \brief Add index, maybe I/O read.
+		//! \brief Add index, maybe I/O read, I/O write if index is new.
 		//! \param address User public key.
 		//! \param index Index for address.
 		//! \return False if index address already exist, else true.
@@ -60,6 +60,7 @@ namespace controller {
 		//!  Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n
 		//!  ./94/93.index
 		static Poco::Path getAddressIndexFilePathForAddress(const std::string& address);
+
 
 	protected:
 		//! \brief reading model::files::AddressIndex from cache or if not exist in cache, creating model::files::AddressIndex which load from file if exist

@@ -4,6 +4,7 @@
 #include "../lib/BinTextConverter.h"
 #include "../task/IotaMessageToTransactionTask.h"
 #include "../SingletonManager/GroupManager.h"
+#include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
 #include "ConfirmedMessagesCache.h"
 #include "HTTPApi.h"
@@ -72,7 +73,7 @@ namespace iota {
 	bool Message::loadFromJson(Document& json)
 	{
 		if (!json.IsObject()) {
-			return -1;
+			return false;
 		}
 		try {
 			Value& data = json["data"];
@@ -129,48 +130,55 @@ namespace iota {
 
 	std::string Message::getGradidoGroupAlias() const
 	{
-		if (mIndex != "" && mIndex != "Testnet Spammer") {
-			printf("index: %s\n", mIndex.data());
-		}
 		auto findPos = mIndex.find("GRADIDO");
+		
 		if (findPos != mIndex.npos) {
+			printf("index: %s\n", mIndex.data());
 			return mIndex.substr(8);
 		}
 		return "";
 	}
 
 	// ******************* Message Loader ********************************
-	ConfirmedMessageLoader::ConfirmedMessageLoader(MessageId id, uint8_t targetRecursionDeep /* = 0 */, uint8_t recursionDeep /* = 0 */)
-		: UniLib::controller::CPUTask(ServerGlobals::g_IotaRequestCPUScheduler), mMessage(new Message(id)),
+	ConfirmedMessageLoader::ConfirmedMessageLoader(Poco::SharedPtr<Message> rootMilestone, uint8_t targetRecursionDeep/* = 0*/, uint8_t recursionDeep /*= 0 */)
+		: UniLib::controller::CPUTask(ServerGlobals::g_IotaRequestCPUScheduler), mRootMilestone(rootMilestone), 
 		mTargetRecursionDeep(targetRecursionDeep), mRecursionDeep(recursionDeep)
 	{
-		assert(!mMessage->getId().isEmpty());
+		OrderingManager::getInstance()->pushMilestoneTaskObserver(rootMilestone->getMilestoneId(), rootMilestone->getMilestoneTimestamp());
 	}
-
-	ConfirmedMessageLoader::ConfirmedMessageLoader(Poco::SharedPtr<Message> message, uint8_t targetRecursionDeep /* = 0 */, uint8_t recursionDeep /* = 0 */)
-		: UniLib::controller::CPUTask(ServerGlobals::g_IotaRequestCPUScheduler), mMessage(message),
+	ConfirmedMessageLoader::ConfirmedMessageLoader(MessageId id, Poco::SharedPtr<Message> rootMilestone, uint8_t targetRecursionDeep/* = 0*/, uint8_t recursionDeep /*= 0 */)
+		: UniLib::controller::CPUTask(ServerGlobals::g_IotaRequestCPUScheduler), mMessage(new Message(id)), mRootMilestone(rootMilestone),
 		mTargetRecursionDeep(targetRecursionDeep), mRecursionDeep(recursionDeep)
 	{
-
+		assert(!id.isEmpty());
+		OrderingManager::getInstance()->pushMilestoneTaskObserver(rootMilestone->getMilestoneId(), rootMilestone->getMilestoneTimestamp());
 	}
-
+	
 	ConfirmedMessageLoader::~ConfirmedMessageLoader()
 	{
-
+		OrderingManager::getInstance()->popMilestoneTaskObserver(mRootMilestone->getMilestoneId());
 	}
 
 	int ConfirmedMessageLoader::run()
 	{
-		if (!mMessage->isFetched()) {
-			auto result = mMessage->requestFromIota();
-			if (!result) {
-				return -1;
+		if (!mMessage.isNull()) {
+			if (!mMessage->isFetched()) {
+				auto result = mMessage->requestFromIota();
+				if (!result) {
+					return -1;
+				}
 			}
 		}
-
-		//printf("fetched message: %s\n", id.toHex().data());
-		auto cmCache = ConfirmedMessagesCache::getInstance();
-		if (MESSAGE_TYPE_TRANSACTION == mMessage->getType()) {
+		else {
+			mMessage = mRootMilestone;
+		}
+		
+		if (MESSAGE_TYPE_MILESTONE == mMessage->getType() && mMessage->getMilestoneId() != mRootMilestone->getMilestoneId()) {
+			// we found another milestone
+			//printf("[%d] found milestone %d on recursion: %d\n", mRootMilestone->getMilestoneId(), mMessage->getMilestoneId(), mRecursionDeep);
+			return 0;		
+		}		
+		else if (MESSAGE_TYPE_TRANSACTION == mMessage->getType()) {
 			auto groupAlias = mMessage->getGradidoGroupAlias();
 			// yes, we found a gradido transaction
 			if (groupAlias != "") {
@@ -186,30 +194,29 @@ namespace iota {
 				}
 			}
 		}
-		else if (MESSAGE_TYPE_MILESTONE == mMessage->getType()) {
-			if (!mRootMilestone.isNull()) {
-				// we found another milestone
-				printf("found milestone %d \n", mMessage->getMilestoneId());
-				return 0;
-			}
-		}
-		
+				
 		if (mTargetRecursionDeep > mRecursionDeep) {
 			auto messageIds = mMessage->getParentMessageIds();
+			int countExist = 0;
+			auto cmCache = ConfirmedMessagesCache::getInstance();
+
 			for (auto it = messageIds.begin(); it != messageIds.end(); it++) {
 				// check if message was already checked, if not it will be added, if we go to next
 				if (cmCache->existInCache(*it)) {
+					countExist++;
 					continue;
 				}
 
-				Poco::AutoPtr<ConfirmedMessageLoader> loader(new ConfirmedMessageLoader(*it, mTargetRecursionDeep, mRecursionDeep + 1));
-				if (mRootMilestone.isNull() && MESSAGE_TYPE_MILESTONE == mMessage->getType()) {
-					loader->setRootMilestone(mMessage);
-				}
-				else {
-					loader->setRootMilestone(mRootMilestone);
-				}
+				Poco::AutoPtr<ConfirmedMessageLoader> loader(new ConfirmedMessageLoader(*it, mRootMilestone, mTargetRecursionDeep, mRecursionDeep + 1));
 				loader->scheduleTask(loader);
+			}
+			if (countExist == messageIds.size()) {
+				//printf("[%d] exit on recursion %d because all message ids already exist\n", mRootMilestone->getMilestoneId(), mRecursionDeep);
+			}
+		}
+		else {
+			if (mTargetRecursionDeep > 1) {
+				//printf("[%d] exit on recursion: %d\n", mRootMilestone->getMilestoneId(), mRecursionDeep);
 			}
 		}
 		return 0;

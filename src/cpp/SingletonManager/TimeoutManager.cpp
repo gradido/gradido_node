@@ -23,7 +23,7 @@ void TimeoutManager::onTimer(Poco::Timer& timer)
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
 	for (auto it = mTimeouts.begin(); it != mTimeouts.end(); it++) {
-		if (!it->second) {
+		if (it->second) {
 			it->second->checkTimeout();
 		}
 	}

@@ -75,6 +75,7 @@ MemoryManager* MemoryManager::getInstance()
 
 
 MemoryManager::MemoryManager()
+	: mInitalized(false)
 {
 	mMemoryPageStacks[0] = new MemoryPageStack(32); // pubkey
 	mMemoryPageStacks[1] = new MemoryPageStack(64); // privkey
@@ -83,13 +84,15 @@ MemoryManager::MemoryManager()
 	mMemoryPageStacks[4] = new MemoryPageStack(161); // privkey hex 
 	mMemoryPageStacks[5] = new MemoryPageStack(45);
 	mMemoryPageStacks[6] = new MemoryPageStack(252);
-	
+	mInitalized = true;
 }
 
 MemoryManager::~MemoryManager()
 {
+	mInitalized = false;
 	for (int i = 0; i < 7; i++) {
 		delete mMemoryPageStacks[i];
+		mMemoryPageStacks[i] = nullptr;
 	}
 }
 
@@ -113,6 +116,7 @@ Poco::Int8 MemoryManager::getMemoryStackIndex(Poco::UInt16 size)
 
 MemoryBin* MemoryManager::getFreeMemory(Poco::UInt32 size)
 {
+	if (!mInitalized) return nullptr;
 	if (size != (Poco::UInt32)((Poco::UInt16)size)) {
 		throw Poco::Exception("MemoryManager::getFreeMemory size is to large, only 16 Bit allowed");
 	}

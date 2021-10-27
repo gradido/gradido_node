@@ -42,7 +42,7 @@ int WriteTransactionsToBlockTask::run()
 			break;
 		}
 		
-		if (result[cursor] <= 0) {
+		if (result[cursor] < 0) {
 			addError(new ParamError(__FUNCTION__, "critical, error in append line, result", result[cursor]));
 		}
 		else {
@@ -51,6 +51,8 @@ int WriteTransactionsToBlockTask::run()
 		}
 		cursor++;
 	}
+	// save also block index
+	mBlockIndex->writeIntoFile();
 
 	return 0;
 }

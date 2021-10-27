@@ -19,7 +19,7 @@ namespace model {
 		AddressIndex::~AddressIndex()
 		{
 			if (!mFileWritten) {
-				safeExit();
+				writeToFile();
 			}
 		}
 
@@ -29,6 +29,11 @@ namespace model {
 
 			mFileWritten = false;
 			auto result = mAddressesIndices.insert(std::pair<std::string, uint32_t>(address, index));
+			if (result.second) {
+				// write update direct to file
+				// TODO: optimize, write not every time, maybe better like block after a certain timeout
+				writeToFile();
+			}
 			return result.second;
 		}
 
@@ -89,7 +94,7 @@ namespace model {
 			return hash;
 		}
 
-		void AddressIndex::safeExit()
+		void AddressIndex::writeToFile()
 		{
 			if (checkFile() || errorCount()) {
 				// current file seems containing address indices 

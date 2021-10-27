@@ -37,7 +37,7 @@ namespace iota {
         std::stringstream ss;
         ss << "milestones/" << std::to_string(milestoneIndex);
         auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
-        if (!json.IsObject()) return result;
+        if (!json.IsObject() || json.FindMember("data") == json.MemberEnd()) return result;
         try {
             Value& data = json["data"];
             std::string messageIdHex = data["messageId"].GetString();

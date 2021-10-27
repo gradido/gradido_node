@@ -3,6 +3,7 @@
 #include "../model/transactions/GradidoTransaction.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/GroupManager.h"
+#include "../SingletonManager/OrderingManager.h"
 #include "../lib/DataTypeConverter.h"
 
 #include <stdexcept>
@@ -12,12 +13,12 @@ IotaMessageToTransactionTask::IotaMessageToTransactionTask(
     Poco::SharedPtr<iota::Message> message, Poco::SharedPtr<controller::Group> group)
 : mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessage(message), mGroup(group)
 {
-
+    OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneIndex, mTimestamp);
 }
 
 IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
 {
-
+    OrderingManager::getInstance()->popMilestoneTaskObserver(mMilestoneIndex);
 }
 
 int IotaMessageToTransactionTask::run()
@@ -43,6 +44,7 @@ int IotaMessageToTransactionTask::run()
     } else {
         // hand over to OrderingManager
         std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
+        OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex);
     }
 
     return 0;

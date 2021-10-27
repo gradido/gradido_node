@@ -44,7 +44,7 @@ namespace model {
 			addError(new Error(__FUNCTION__, "error no specific transaction found/recognized"));
 			return false;
 		}
-		if (!mTransactionSpecific->validate()) {
+		if (!mTransactionSpecific->validate(level)) {
 			getErrors(mTransactionSpecific);
 			return false;
 		}

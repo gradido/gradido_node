@@ -71,7 +71,8 @@ namespace controller {
 		sodium_bin2hex(firstBytesHex, 5, (const unsigned char*)address.data(), 2);
 		//printf("bytes %x\n", firstBytes);
 		std::string firstBytesString = firstBytesHex;
-		addressIndexPath.pushDirectory("pubkeys_" + firstBytesString.substr(0, 2));
+		addressIndexPath.pushDirectory("pubkeys");
+		addressIndexPath.pushDirectory("_" + firstBytesString.substr(0, 2));
 		std::string file = "_" + firstBytesString.substr(2, 2);
 		file += ".index";
 		addressIndexPath.append(file);

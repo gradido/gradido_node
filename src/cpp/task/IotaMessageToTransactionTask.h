@@ -27,6 +27,7 @@ public:
     int run();
 
     ~IotaMessageToTransactionTask();
+    inline uint32_t getMilestoneIndex() const { return mMilestoneIndex; }
 
 protected:
     uint32_t mMilestoneIndex;

@@ -8,6 +8,7 @@
 #include "TaskObserver.h"
 
 #include "../model/transactions/GradidoBlock.h"
+#include "../model/transactions/GradidoTransaction.h"
 
 #include "../model/files/GroupState.h"
 
@@ -30,16 +31,22 @@ namespace controller {
 	{
 	public:
 		//! \brief Load group states via model::files::GroupState.
-		Group(std::string base58Hash, Poco::Path folderPath);
+		Group(std::string alias, Poco::Path folderPath);
 		~Group();
 
 		//! \brief Put new transaction to block chain, if valid.
 		//! \return True if valid, else false.
 		bool addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction);
 
+		//! \brief add transaction from iota into blockchain, important! must be called in correct order
+		bool addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp);
+
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
 		Poco::AutoPtr<model::GradidoBlock> findLastTransaction(const std::string& address);
+
+		Poco::AutoPtr<model::GradidoBlock> getLastTransaction();
+
 		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 		//!
 		//! Use with care, can need some time and return huge amount of data.
@@ -55,10 +62,15 @@ namespace controller {
 
 		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 
+		inline const std::string& getGroupAlias() { return mGroupAlias; }
+
 	protected:
+		void updateLastAddressIndex(int lastAddressIndex);
+		void updateLastBlockNr(int lastBlockNr);
+		void updateLastTransactionId(int lastTransactionId);
 
 		TaskObserver mTaskObserver;
-		std::string mBase58GroupHash;
+		std::string mGroupAlias;
 		Poco::Path mFolderPath;
 		Poco::SharedPtr<AddressIndex> mAddressIndex;
 		model::files::GroupState mGroupState;
@@ -66,6 +78,7 @@ namespace controller {
 		Poco::AutoPtr<model::GradidoBlock> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
+		int mLastTransactionId;
 
 		//std::list<BlockEntry> mBlocks;
 		Poco::AccessExpireCache<Poco::UInt32, Block> mCachedBlocks;

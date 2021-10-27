@@ -1,4 +1,5 @@
 #include "MilestoneListener.h"
+#include "../SingletonManager/LoggerManager.h"
 #include "HTTPApi.h"
 #include <stdexcept>
 
@@ -44,8 +45,15 @@ namespace iota {
 				std::clog << "request milestone: " << std::to_string(i) << std::endl;
 			}
 
-			Poco::AutoPtr<iota::ConfirmedMessageLoader> task = new iota::ConfirmedMessageLoader(iota::getMilestoneByIndex(i), 10);
-			task->scheduleTask(task);
+			auto milestoneId = iota::getMilestoneByIndex(i);
+			Poco::SharedPtr<iota::Message> milestone = new iota::Message(milestoneId);
+			if (milestone->requestFromIota()) {
+				Poco::AutoPtr<iota::ConfirmedMessageLoader> task = new iota::ConfirmedMessageLoader(milestone, MILESTONE_PARENT_MAX_RECURSION_DEEP);
+				task->scheduleTask(task);
+			}
+			else {
+				LoggerManager::getInstance()->mErrorLogging.error("[MilestoneListener::listener] couldn't load milestone %d from iota", i);
+			}
 			
 		}
 		if (firstRun) {

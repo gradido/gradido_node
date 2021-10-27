@@ -24,6 +24,7 @@ namespace model {
 		inline std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) {
 			return mTransactionBody->getInvolvedAddressIndices(addressIndexContainer);
 		}
+
 	protected:
 		proto::gradido::GradidoTransaction mProtoGradidoTransaction;
 		TransactionBody* mTransactionBody;

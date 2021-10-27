@@ -16,7 +16,7 @@ namespace controller {
 
 	BlockIndex::~BlockIndex()
 	{
-		
+		writeIntoFile();
 	}
 
 	bool BlockIndex::loadFromFile()
