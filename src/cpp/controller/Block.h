@@ -31,7 +31,7 @@ namespace controller {
 	{
 		friend model::files::Block;
 	public:
-		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
+		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias);
 		~Block();
 
 		//! \brief put new transaction to cache and file system
@@ -63,7 +63,7 @@ namespace controller {
 		Poco::SharedPtr<BlockIndex> mBlockIndex;
 		Poco::AutoPtr<model::files::Block> mBlockFile;
 		Poco::AutoPtr<WriteTransactionsToBlockTask> mTransactionWriteTask;
-		std::string mGroupHash;
+		std::string mGroupAlias;
 	};
 }
 

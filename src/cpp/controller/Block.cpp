@@ -4,15 +4,15 @@
 #include "TaskObserver.h"
 
 #include "../SingletonManager/GroupManager.h"
-
+#include "../SingletonManager/LoggerManager.h"
 
 
 
 namespace controller {
-	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash)
+	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
 		: mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
-		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupHash(groupHash)
+		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias)
 	{
 		TimeoutManager::getInstance()->registerTimeout(this);
 	}
@@ -48,7 +48,7 @@ namespace controller {
 	bool Block::addTransaction(const std::string& serializedTransaction, uint32_t fileCursor)
 	{
 		auto gm = GroupManager::getInstance();
-		auto group = gm->findGroup(mGroupHash);
+		auto group = gm->findGroup(mGroupAlias);
 		try {
 			Poco::SharedPtr<model::TransactionEntry> transactionEntry(new model::TransactionEntry(serializedTransaction, fileCursor, group));
 			mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
@@ -56,6 +56,7 @@ namespace controller {
 			return true;
 		}
 		catch (Poco::Exception& e) {
+			LoggerManager::getInstance()->mErrorLogging.error("[Block::addTransactio] couldn't load Transaction from serialized data, fileCursor: %d", fileCursor);
 			return false;
 		}
 
@@ -68,7 +69,20 @@ namespace controller {
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
 		if (transactionEntry.isNull()) {
 			// read from file system
-
+			uint32_t fileCursor = 0;
+			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
+				return -2;
+			}
+			std::string blockLine;
+			auto readResult = mBlockFile->readLine(fileCursor, blockLine);
+			if (readResult) {
+				LoggerManager::getInstance()->mErrorLogging.error("[Block::getTransaction] error reading line from block file: %d", readResult);
+				return -3;
+			}
+			if (!addTransaction(blockLine, fileCursor)) {
+				return -4;
+			}
+			transactionEntry = mSerializedTransactions.get(transactionNr);
 		}
 		if (transactionEntry.isNull()) {
 			return -1;
