@@ -18,6 +18,7 @@ namespace model {
 		inline TransactionBody* getTransactionBody() { return mTransactionBody; }
 		inline std::string getSerialized() { return mProtoGradidoTransaction.SerializeAsString(); }
 		std::string getJson();
+		const proto::gradido::GradidoTransaction& getProto() const { return mProtoGradidoTransaction; }
 
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
 

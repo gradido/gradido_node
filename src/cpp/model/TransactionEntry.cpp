@@ -38,7 +38,7 @@ namespace model {
 	}
 
 	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year)
-		: mTransactionNr(transactionNr), mFileCursor(-10), mMonth(month), mYear(year)
+		: mTransactionNr(transactionNr), mFileCursor(0), mMonth(month), mYear(year)
 	{
 
 	}

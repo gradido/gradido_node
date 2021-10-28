@@ -27,7 +27,7 @@ namespace iota {
 
 		// if stored last know milestone is to far in the past, consider it a fresh start
 		// TODO IMPORTANT!: first fetch missing transactions from other gradido nodes before continue with query iota for new transactions to prevent holes in the blockchain
-		if (info.confirmedMilestoneIndex - mLastKnownMilestoneIndex > MILESTONES_BOOTSTRAP_COUNT) {
+		if ((info.confirmedMilestoneIndex - mLastKnownMilestoneIndex) > MILESTONES_BOOTSTRAP_COUNT) {
 			mLastKnownMilestoneIndex = 0;
 		}
 		if (!mLastKnownMilestoneIndex) {

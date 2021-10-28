@@ -35,8 +35,9 @@ namespace controller {
 		bool writeIntoFile();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices);
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const std::vector<uint32_t>& addressIndices);
+		// implement from model::files::IBlockIndexReceiver, called by loading block index from file
+		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist

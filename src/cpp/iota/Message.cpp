@@ -191,6 +191,7 @@ namespace iota {
 						mRootMilestone->getMilestoneId(), mRootMilestone->getMilestoneTimestamp(), mMessage, group
 					);
 					task->scheduleTask(task);
+					printf("find transaction on deep: %d, root milestone: %d\n", mRecursionDeep, mRootMilestone->getMilestoneId());
 				}
 			}
 		}

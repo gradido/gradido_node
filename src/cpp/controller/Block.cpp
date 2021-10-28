@@ -15,6 +15,7 @@ namespace controller {
 		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias)
 	{
 		TimeoutManager::getInstance()->registerTimeout(this);
+		mBlockIndex->loadFromFile();
 	}
 
 	Block::~Block()
@@ -76,7 +77,7 @@ namespace controller {
 			std::string blockLine;
 			auto readResult = mBlockFile->readLine(fileCursor, blockLine);
 			if (readResult) {
-				LoggerManager::getInstance()->mErrorLogging.error("[Block::getTransaction] error reading line from block file: %d", readResult);
+				LoggerManager::getInstance()->mErrorLogging.error("[Block::getTransaction] error reading line from block file: %d, fileCursor: %d", readResult, fileCursor);
 				return -3;
 			}
 			if (!addTransaction(blockLine, fileCursor)) {

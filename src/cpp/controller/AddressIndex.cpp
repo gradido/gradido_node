@@ -39,7 +39,7 @@ namespace controller {
 		assert(!addressIndex.isNull());
 		auto index = addressIndex->getIndexForAddress(address);
 		if (!index) {
-			index = mLastIndex + 1;
+			index = ++mLastIndex;
 			addressIndex->add(address, index);
 		}
 		return index;

@@ -21,7 +21,7 @@ namespace model {
 		class IBlockIndexReceiver 
 		{
 		public:
-			virtual bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
+			virtual bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
 		};
 
 		/*!
@@ -157,6 +157,7 @@ namespace model {
 					addressIndicesCount = 0;
 				}
 				uint64_t transactionNr;
+				uint32_t fileCursor;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
 				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; }

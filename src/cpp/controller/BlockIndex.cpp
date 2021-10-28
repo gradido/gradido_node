@@ -72,12 +72,12 @@ namespace controller {
 		//return true;
 	}
 	
-	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices)
+	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const std::vector<uint32_t>& addressIndices)
 	{
-		return addIndicesForTransaction(year, month, transactionNr, addressIndices.data(), addressIndices.size());
+		return addIndicesForTransaction(year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
 	}
 
-	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 
@@ -121,6 +121,7 @@ namespace controller {
 				addressIndexEntry->second.push_back(transactionNrIndex);
 			}
 		}
+		addFileCursorForTransaction(transactionNr, fileCursor);
 		
 		return true;
 	}
@@ -139,6 +140,7 @@ namespace controller {
 			transactionEntry->getYear(),
 			transactionEntry->getMonth(),
 			transactionNr,
+			transactionEntry->getFileCursor(),
 			transactionEntry->getAddressIndices()
 		);
 		

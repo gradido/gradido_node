@@ -15,7 +15,7 @@
 #include "Poco/Path.h"
 #include "Poco/AutoPtr.h"
 #include "Poco/AccessExpireCache.h"
-
+#include "Poco/ExpireCache.h"
 
 
 namespace controller {
@@ -69,6 +69,12 @@ namespace controller {
 		void updateLastBlockNr(int lastBlockNr);
 		void updateLastTransactionId(int lastTransactionId);
 
+		bool isTransactionAlreadyExist(Poco::AutoPtr<model::GradidoTransaction> transaction);
+		void addSignatureToCache(Poco::AutoPtr<model::GradidoTransaction> transaction);
+		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
+		//! put all signatures from young enough blocks into signature cache
+		void fillSignatureCacheOnStartup();
+
 		TaskObserver mTaskObserver;
 		std::string mGroupAlias;
 		Poco::Path mFolderPath;
@@ -86,6 +92,32 @@ namespace controller {
 		//! \brief get current block to write more transactions in it
 		Poco::SharedPtr<Block> getCurrentBlock();
 		Poco::SharedPtr<Block> getBlock(Poco::UInt32 blockNr);
+
+		// for preventing double transactions
+		// keep first 32 Byte of first signature of each transaction from last MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes
+		struct HalfSignature
+		{
+			HalfSignature(const char* signature) {
+				memcpy(&sign, signature, 32);
+			}
+			bool operator<(const HalfSignature& ob) const {
+				return
+					sign[0] < ob.sign[0] ||
+					(sign[0] == ob.sign[0] && sign[1] < ob.sign[1]) || (
+						sign[0] == ob.sign[0] &&
+						sign[1] == ob.sign[1] &&
+						sign[2] < ob.sign[2]
+						) || (
+							sign[0] == ob.sign[0] &&
+							sign[1] == ob.sign[1] &&
+							sign[2] == ob.sign[2] &&
+							sign[3] < ob.sign[3]
+							);
+			}
+			//bool comp(a, b)
+			int64_t sign[4];
+		};
+		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
 
 	};
 }
