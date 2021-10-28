@@ -34,6 +34,9 @@ namespace controller {
 		Group(std::string alias, Poco::Path folderPath);
 		~Group();
 
+		// initialize, fill cache 
+		bool init();
+
 		//! \brief Put new transaction to block chain, if valid.
 		//! \return True if valid, else false.
 		bool addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction);
@@ -47,6 +50,7 @@ namespace controller {
 
 		Poco::AutoPtr<model::GradidoBlock> getLastTransaction();
 
+		std::vector<std::string> findTransactionsSerialized(uint64_t fromTransactionId);
 		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 		//!
 		//! Use with care, can need some time and return huge amount of data.
@@ -92,6 +96,7 @@ namespace controller {
 		//! \brief get current block to write more transactions in it
 		Poco::SharedPtr<Block> getCurrentBlock();
 		Poco::SharedPtr<Block> getBlock(Poco::UInt32 blockNr);
+		Poco::SharedPtr<Block> getBlockContainingTransaction(uint64_t transactionId);
 
 		// for preventing double transactions
 		// keep first 32 Byte of first signature of each transaction from last MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes

@@ -16,6 +16,12 @@
 
 using namespace rapidjson;
 
+JsonRequestHandler::JsonRequestHandler()
+	: mResponseJson(kObjectType), mResponseResult(kObjectType)
+{
+
+}
+
 void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
 {
 
@@ -31,22 +37,24 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 	auto method = request.getMethod();
 	std::istream& request_stream = request.stream();
 
-	Document rapid_json_result;
+	int id = 0;
+	
 	Document rapidjson_params;
 	if (method == "POST" || method == "PUT") {
 		// extract parameter from request
 		parseJsonWithErrorPrintFile(request_stream, rapidjson_params);
+		getIntParameter(rapidjson_params, "id", id);
 
 		if (rapidjson_params.IsObject()) {
-			rapid_json_result = checkObjectOrArrayParameter(rapidjson_params, "params");
+			bool isParams = checkObjectOrArrayParameter(rapidjson_params, "params");
 			std::string method;
-			auto paramError = getStringParameter(rapidjson_params, "method", method);
-			if (!rapid_json_result.IsObject() && !paramError.IsObject()) {
-				rapid_json_result = handle(rapidjson_params["method"].GetString(), rapidjson_params["params"]);
+			bool isMethod = getStringParameter(rapidjson_params, "method", method);
+			if (isParams && isMethod) {
+				handle(method, rapidjson_params["params"]);
 			}
 		}
 		else {
-			rapid_json_result = stateError("empty body");
+			stateError("empty body");
 		}
 	}
 	else if (method == "GET") {
@@ -57,24 +65,25 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 		printf("[%s] must be implemented\n", __FUNCTION__);
 	}
 	else {
-		responseStream << "{\"state\":\"error\", \"msg\":\"no post or put request\"}";
+		responseStream << "{\"result\":{\"state\":\"error\", \"msg\":\"no post or put request\"}}";
 	}
 
-	if (!rapid_json_result.IsNull()) {
+	if (!mResponseJson.IsNull()) {
 		// 3. Stringify the DOM
 		StringBuffer buffer;
 		Writer<StringBuffer> writer(buffer);
-		Document result(kObjectType);
-		auto alloc = result.GetAllocator();
-		result.AddMember("result", rapid_json_result, alloc);
-		result.Accept(writer);
+		auto alloc = mResponseJson.GetAllocator();
+		mResponseJson.AddMember("result", mResponseResult, alloc);
+		mResponseJson.AddMember("jsonrpc", "2.0", alloc);
+		mResponseJson.AddMember("id", id, alloc);
+		mResponseJson.Accept(writer);
 
 		printf("result: %s\n", buffer.GetString());
 
 		responseStream << buffer.GetString() << std::endl;
 	}
 	else {
-		responseStream << "{\"state\":\"error\", \"msg\":\"no result\"}";
+		responseStream << "{\"result\":{\"state\":\"error\", \"msg\":\"no result\"}}";
 	}
 	
 	//if (_compressResponse) _gzipStream.close();
@@ -128,159 +137,159 @@ void JsonRequestHandler::parseJsonWithErrorPrintFile(std::istream& request_strea
 	}
 }
 
-Document JsonRequestHandler::stateError(const char* msg, std::string details)
+void JsonRequestHandler::stateError(const char* msg, std::string details)
 {
-	Document obj(kObjectType);
-	auto alloc = obj.GetAllocator();
-	obj.AddMember("state", "error", alloc);
-	obj.AddMember("msg", Value(msg, alloc), alloc);
+	auto alloc = mResponseJson.GetAllocator();
+	mResponseResult.AddMember("state", "error", alloc);
+	mResponseResult.AddMember("msg", Value(msg, alloc), alloc);
 
 	if (details.size()) {
-		obj.AddMember("details", Value(details.data(), alloc), alloc);
+		mResponseResult.AddMember("details", Value(details.data(), alloc), alloc);
 	}
-
-	return obj;
 }
 
 
-rapidjson::Document JsonRequestHandler::stateError(const char* msg, ErrorList* errorReciver)
+void JsonRequestHandler::stateError(const char* msg, ErrorList* errorReciver)
 {
-	Document obj(kObjectType);
-	obj.AddMember("state", "error", obj.GetAllocator());
-	obj.AddMember("msg", Value(msg, obj.GetAllocator()).Move(), obj.GetAllocator());
+	auto alloc = mResponseJson.GetAllocator();
+	mResponseResult.AddMember("state", "error", alloc);
+	mResponseResult.AddMember("msg", Value(msg, alloc).Move(), alloc);
 	Value details(kArrayType);
 	auto error_vec = errorReciver->getErrorsArray();
 	for (auto it = error_vec.begin(); it != error_vec.end(); it++) {
-		details.PushBack(Value(it->data(), obj.GetAllocator()).Move(), obj.GetAllocator());
+		details.PushBack(Value(it->data(), alloc).Move(), alloc);
 	}
-	obj.AddMember("details", details.Move(), obj.GetAllocator());
-
-	return obj;
+	mResponseResult.AddMember("details", details.Move(), alloc);
 }
 
-Document JsonRequestHandler::stateSuccess()
+void JsonRequestHandler::stateSuccess()
 {
-	Document obj(kObjectType);
-	obj.AddMember("state", "success", obj.GetAllocator());
-
-	return obj;
+	mResponseResult.AddMember("state", "success", mResponseJson.GetAllocator());
 }
 
 
-Document JsonRequestHandler::customStateError(const char* state, const char* msg, std::string details /* = "" */)
+void JsonRequestHandler::customStateError(const char* state, const char* msg, std::string details /* = "" */)
 {
-	Document obj(kObjectType);
-	obj.AddMember("state", Value(state, obj.GetAllocator()).Move(), obj.GetAllocator());
-	obj.AddMember("msg", Value(msg, obj.GetAllocator()).Move(), obj.GetAllocator());
+	auto alloc = mResponseJson.GetAllocator();
+	mResponseResult.AddMember("state", Value(state, alloc).Move(), alloc);
+	mResponseResult.AddMember("msg", Value(msg, alloc).Move(), alloc);
 
 	if (details.size()) {
-		obj.AddMember("details", Value(details.data(), obj.GetAllocator()).Move(), obj.GetAllocator());
+		mResponseResult.AddMember("details", Value(details.data(), alloc).Move(), alloc);
 	}
-	return obj;
 }
 
 
-Document JsonRequestHandler::stateWarning(const char* msg, std::string details/* = ""*/)
+void JsonRequestHandler::stateWarning(const char* msg, std::string details/* = ""*/)
 {
-	Document obj(kObjectType);
-	obj.AddMember("state", "warning", obj.GetAllocator());
-	obj.AddMember("msg", Value(msg, obj.GetAllocator()).Move(), obj.GetAllocator());
+	auto alloc = mResponseJson.GetAllocator();
+	mResponseResult.AddMember("state", "warning", alloc);
+	mResponseResult.AddMember("msg", Value(msg, alloc).Move(), alloc);
 
 	if (details.size()) {
-		obj.AddMember("details", Value(details.data(), obj.GetAllocator()).Move(), obj.GetAllocator());
+		mResponseResult.AddMember("details", Value(details.data(), alloc).Move(), alloc);
 	}
-
-	return obj;
 }
 
 
 
-Document JsonRequestHandler::getIntParameter(const Document& params, const char* fieldName, int& iparameter)
+bool JsonRequestHandler::getIntParameter(const rapidjson::Value& params, const char* fieldName, int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	if (!itr->value.IsInt()) {
 		message = "invalid " + message;
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
-	iparameter = itr->value.GetInt();
-	return Document();
+	iParameter = itr->value.GetInt();
+	return true;
 }
 
-Document JsonRequestHandler::getBoolParameter(const rapidjson::Document& params, const char* fieldName, bool& bParameter)
+bool JsonRequestHandler::getBoolParameter(const rapidjson::Value& params, const char* fieldName, bool& bParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	if (!itr->value.IsBool()) {
 		message = "invalid " + message;
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	bParameter = itr->value.GetBool();
-	return Document();
+	return true;
 }
 
-Document JsonRequestHandler::getUIntParameter(const Document& params, const char* fieldName, unsigned int& iParameter)
+bool JsonRequestHandler::getUIntParameter(const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	if (!itr->value.IsUint()) {
 		message = "invalid " + message;
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	iParameter = itr->value.GetUint();
-	return Document();
+	return true;
 }
 
-Document JsonRequestHandler::getUInt64Parameter(const Document& params, const char* fieldName, Poco::UInt64& iParameter)
+bool JsonRequestHandler::getUInt64Parameter(const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	if (!itr->value.IsUint64()) {
 		message = "invalid " + message;
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	iParameter = itr->value.GetUint64();
-	return Document();
+	return true;
 }
-Document JsonRequestHandler::getStringParameter(const Document& params, const char* fieldName, std::string& strParameter)
+bool JsonRequestHandler::getStringParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	if (!itr->value.IsString()) {
 		message = "invalid " + message;
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	strParameter = std::string(itr->value.GetString(), itr->value.GetStringLength());
-	return Document();
+	return true;
 }
 
-Document JsonRequestHandler::getStringIntParameter(const Document& params, const char* fieldName, std::string& strParameter, int& iParameter)
+bool JsonRequestHandler::getStringIntParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 	if (itr->value.IsString()) {
 		strParameter = std::string(itr->value.GetString(), itr->value.GetStringLength());
@@ -290,62 +299,69 @@ Document JsonRequestHandler::getStringIntParameter(const Document& params, const
 	}
 	else {
 		message += " isn't neither int or string";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
-	return Document();
+	return true;
 }
 
-Document JsonRequestHandler::checkArrayParameter(const Document& params, const char* fieldName)
+bool JsonRequestHandler::checkArrayParameter(const rapidjson::Value& params, const char* fieldName)
 {
 
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
 	if (!itr->value.IsArray()) {
 		message += " is not a array";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
-	return Document();
+	return true;
 }
 
-Document JsonRequestHandler::checkObjectParameter(const Document& params, const char* fieldName)
+bool JsonRequestHandler::checkObjectParameter(const rapidjson::Value& params, const char* fieldName)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
 	if (!itr->value.IsObject()) {
 		message += " is not a object";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
-	return Document();
+	return true;
 }
 
-Document JsonRequestHandler::checkObjectOrArrayParameter(const rapidjson::Document& params, const char* fieldName)
+bool JsonRequestHandler::checkObjectOrArrayParameter(const rapidjson::Value& params, const char* fieldName)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
 	if (!itr->value.IsObject() && !itr->value.IsArray()) {
 		message += " is not a object or array";
-		return stateError(message.data());
+		stateError(message.data());
+		return false;
 	}
 
-	return Document();
+	return true;
 }
 
 

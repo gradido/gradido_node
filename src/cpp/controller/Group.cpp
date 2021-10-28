@@ -26,7 +26,6 @@ namespace controller {
 			<< ", last transaction id: " << std::to_string(mLastTransactionId)
 			<< std::endl;
 		mAddressIndex = new AddressIndex(folderPath, mLastAddressIndex);
-		fillSignatureCacheOnStartup();
 	}
 
 	Group::~Group()
@@ -35,6 +34,12 @@ namespace controller {
 		mGroupState.setKeyValue("lastAddressIndex", std::to_string(mLastAddressIndex));
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
+	}
+
+	bool Group::init()
+	{
+		fillSignatureCacheOnStartup();
+		return true;
 	}
 
 	void Group::updateLastAddressIndex(int lastAddressIndex)
@@ -199,6 +204,31 @@ namespace controller {
 		return Poco::AutoPtr<model::GradidoBlock>();
 	}
 
+	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
+	std::vector<std::string> Group::findTransactionsSerialized(uint64_t fromTransactionId)
+	{
+		std::vector<std::string> transactionsSerialized;
+		uint64_t transactionIdCursor = fromTransactionId;
+		// we cannot handle zero transaction id, starts with one, 
+		// but if someone ask for zero he gets all 
+		if (!transactionIdCursor) transactionIdCursor = 1;
+		Poco::SharedPtr<Block> block;
+		while (transactionIdCursor <= mLastTransactionId) {
+			if (block.isNull() || !block->getBlockIndex()->hasTransactionNr(transactionIdCursor)) {
+				block = getBlockContainingTransaction(transactionIdCursor);
+			}
+			if (block.isNull()) {
+				throw std::runtime_error("[Group::findTransactionsSerialized] cannot find block for transaction id: " + std::to_string(transactionIdCursor));
+			}
+			std::string serializedTransaction;
+			block->getTransaction(transactionIdCursor, serializedTransaction);
+			transactionsSerialized.push_back(serializedTransaction);
+			++transactionIdCursor;
+
+		}
+		return transactionsSerialized;
+	}
+
 	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address)
 	{
 		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
@@ -256,6 +286,26 @@ namespace controller {
 		return block;
 	}
 
+	Poco::SharedPtr<Block> Group::getBlockContainingTransaction(uint64_t transactionId)
+	{
+		// find block by transactions id
+		// approximately 1.200.000 transactions can be fitted in one block
+		// for now search simply from last block 
+		// TODO: think of a better approach later, if more than 10 blocks a written
+		int lastBlockNr = mLastBlockNr;
+		Poco::SharedPtr<Block> block;
+		do {
+			auto block = getBlock(lastBlockNr);
+			if (block->getBlockIndex()->getMaxTransactionNr() < transactionId) {
+				return nullptr;
+			}
+			lastBlockNr--;
+			if (lastBlockNr < 1) return nullptr;
+		} while (!block->getBlockIndex()->hasTransactionNr(transactionId));
+
+		return block;
+	}
+
 	Poco::SharedPtr<Block> Group::getCurrentBlock()
 	{
 		auto block = getBlock(mLastBlockNr);
@@ -283,6 +333,7 @@ namespace controller {
 			mCachedSignatures.get(transactionSign);
 			return true;
 		}
+		return false;
 	}
 
 	void Group::addSignatureToCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
@@ -306,15 +357,26 @@ namespace controller {
 		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MILESTONES_BOOTSTRAP_COUNT * 1.5 * 60, 0);
 
 		do {
+			if (transactionNr <= 0) break;
+			if (blockNr <= 0) break;
+
 			auto block = getBlock(blockNr);
 			std::string serializedTransaction;
-			block->getTransaction(transactionNr, serializedTransaction);
+			auto getTransationResult = block->getTransaction(transactionNr, serializedTransaction);
+			if (-2 == getTransationResult) {
+				blockNr--;				
+				continue;
+			}
+			else if (0 != getTransationResult) {
+
+			}
 			transaction = new model::GradidoBlock(serializedTransaction, group);
 			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();
 			if (sigPairs.size()) {
 				HalfSignature transactionSign(sigPairs.Get(0).signature().data());
 				mCachedSignatures.Add({ transactionSign, nullptr });
 			}
+			transactionNr--;
 		} while (!transaction.isNull() && transaction->getReceived() > border);
 	}
 }

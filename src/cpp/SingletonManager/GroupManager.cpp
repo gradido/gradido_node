@@ -62,6 +62,7 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 	}
 	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
 	mGroupAccessExpireCache.add(groupAlias, group);
+	group->init();
 	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;
 }

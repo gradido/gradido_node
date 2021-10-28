@@ -131,6 +131,13 @@ namespace controller {
 		auto fileCursor = transactionEntry->getFileCursor();
 		auto transactionNr = transactionEntry->getTransactionNr();
 
+		if (transactionNr > mMaxTransactionNr) {
+			mMaxTransactionNr = transactionNr;
+		}
+		if (!mMinTransactionNr || transactionNr < mMinTransactionNr) {
+			mMinTransactionNr = transactionNr;
+		}
+
 		// transaction nr - file cursor map
 		if (fileCursor >= 0) {
 			addFileCursorForTransaction(transactionNr, fileCursor);

@@ -53,9 +53,7 @@ namespace controller {
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
 		bool addTransaction(const std::string& serializedTransaction, uint32_t fileCursor);
 		
-		uint32_t mBlockNr;
-		int64_t mKtoIndexLowest;
-		int64_t mKtoIndexHighest;
+		uint32_t mBlockNr;		
 
 		TaskObserver *mTaskObserver;
 		Poco::AccessExpireCache<uint64_t, model::TransactionEntry> mSerializedTransactions;

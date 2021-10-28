@@ -1,6 +1,7 @@
 #include "JsonRPCHandler.h"
 
 #include "../lib/BinTextConverter.h"
+#include "../lib/DataTypeConverter.h"
 #include "../lib/Profiler.h"
 #include "../SingletonManager/GroupManager.h"
 #include "../model/transactions/GradidoBlock.h"
@@ -8,14 +9,14 @@
 
 using namespace rapidjson;
 
-Document JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
+void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 {
-	Document result(kObjectType);
-	auto alloc = result.GetAllocator();
+	auto alloc = mResponseJson.GetAllocator();
 
 	if (method == "puttransaction") {
 		if (!params.IsObject()) {
-			return stateError("params not an object");
+			stateError("params not an object");
+			return;
 		}
 		std::string groupString;
 		std::string transactionString;
@@ -24,37 +25,49 @@ Document JsonRPCHandler::handle(std::string method, const rapidjson::Value& para
 			 transactionString = params["transaction"].GetString();
 		}
 		catch (std::exception& e) {
-			return stateError("parameter error");
+			stateError("parameter error");
+			return;
 		}
 
 		auto group = convertBinTransportStringToBin(groupString);
 		printf("transaction: %s\n", groupString.data());
 		auto transaction = convertBinTransportStringToBin(transactionString);
 		if ("" == group || "" == transaction) {
-			return stateError("wrong parameter format");
+			stateError("wrong parameter format");
+			return;
 		}
 		else {
-			result = putTransaction(transaction, group);
+			putTransaction(transaction, group);
 		}
 	}
 	else if (method == "getlasttransaction") {
-		result.AddMember("state", "success", alloc);
-		result.AddMember("transaction", "", alloc);
-		return result;
+		stateSuccess();
+		mResponseResult.AddMember("transaction", "", alloc);
+	}
+	else if (method == "getTransactions") {
+		if(!params.IsObject()) {
+			return stateError("params not an object");
+		}
+		std::string groupAlias;
+		uint64_t transactionId = 0;
+		
+		if(!getStringParameter(params, "group", groupAlias)) return;
+		if(!getUInt64Parameter(params, "fromTransactionId", transactionId)) return;
+
+		transactionId = params["fromTransactionId"].GetUint64();
+		getTransactions(transactionId, groupAlias);
+
 	}
 	else {
-		return stateError("method not known");
+		stateError("method not known");
 	}
-	return result;
-
 }
 
 
-Document JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupAlias)
+void JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupAlias)
 {
 	Profiler timeUsed;
-	Document result(kObjectType);
-	auto alloc = result.GetAllocator();
+	auto alloc = mResponseJson.GetAllocator();
 
 	auto gm = GroupManager::getInstance();
 	auto group = gm->findGroup(groupAlias);
@@ -62,19 +75,34 @@ Document JsonRPCHandler::putTransaction(const std::string& transactionBinary, co
 	transaction->addGroupAlias(groupAlias);
 
 	if (transaction->errorCount() > 0) {
-		result.AddMember("state", "error", alloc);
-		result.AddMember("errors", transaction->getErrorsArray(alloc), alloc);
-		return result;
+		stateError("error by parsing transaction", transaction);
+		return;
 	}
 
 	if (!group->addTransaction(transaction)) {
-		result.AddMember("state", "error", alloc);
-		result.AddMember("msg", "error adding transaction", alloc);
-		result.AddMember("details", transaction->getErrorsArray(alloc), alloc);
-		return result;
+		stateError("error adding transaction", transaction);
+		return;
 	}
 
-	result.AddMember("state", "success", alloc);
-	result.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
-	return result;
+	stateSuccess();
+	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
+}
+
+void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::string& groupAlias)
+{
+	Profiler timeUsed;
+	auto alloc = mResponseJson.GetAllocator();
+
+	auto gm = GroupManager::getInstance();
+	auto group = gm->findGroup(groupAlias);
+
+	auto transactions = group->findTransactionsSerialized(fromTransactionId);
+	stateSuccess();
+	mResponseResult.AddMember("type", "base64", alloc);
+	Value jsonTransactionArray(kArrayType);
+	for (auto it = transactions.begin(); it != transactions.end(); it++) {
+		jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
+	}
+	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);
+	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 }

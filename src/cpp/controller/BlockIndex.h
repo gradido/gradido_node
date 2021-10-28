@@ -54,6 +54,7 @@ namespace controller {
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
 		bool getFileCursorForTransactionNr(uint64_t transactionNr, uint32_t& fileCursor);
+		bool hasTransactionNr(uint64_t transactionNr) { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return transactionNr >= mMinTransactionNr && transactionNr <= mMaxTransactionNr; }
 
 		inline uint64_t getMaxTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);  return mMaxTransactionNr; }
 		inline uint64_t getMinTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return mMinTransactionNr; }
