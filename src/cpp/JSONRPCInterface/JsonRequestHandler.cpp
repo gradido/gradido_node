@@ -50,7 +50,12 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 			std::string method;
 			bool isMethod = getStringParameter(rapidjson_params, "method", method);
 			if (isParams && isMethod) {
-				handle(method, rapidjson_params["params"]);
+				try {
+					handle(method, rapidjson_params["params"]);
+				}
+				catch (std::exception& ex) {
+					stateError("exception", ex.what());
+				}
 			}
 		}
 		else {

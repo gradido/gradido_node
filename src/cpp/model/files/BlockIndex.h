@@ -21,7 +21,7 @@ namespace model {
 		class IBlockIndexReceiver 
 		{
 		public:
-			virtual bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
+			virtual bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
 		};
 
 		/*!
@@ -49,8 +49,8 @@ namespace model {
 				mDataBlocks.push(new YearBlock(year)); 
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
-			inline void addDataBlock(uint64_t transactionNr, const std::vector<uint32_t>& addressIndices) {
-				mDataBlocks.push(new DataBlock(transactionNr, addressIndices));
+			inline void addDataBlock(uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices) {
+				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, addressIndices));
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
 
@@ -138,14 +138,14 @@ namespace model {
 				}
 			};
 			struct DataBlock: public Block {
-				DataBlock(uint64_t _transactionNr, const std::vector<uint32_t>& _addressIndices)
-					: Block(DATA_BLOCK), transactionNr(_transactionNr), addressIndices(nullptr), addressIndicesCount(_addressIndices.size())
+				DataBlock(uint64_t _transactionNr, uint32_t _fileCursor, const std::vector<uint32_t>& _addressIndices)
+					: Block(DATA_BLOCK), transactionNr(_transactionNr), fileCursor(_fileCursor), addressIndices(nullptr), addressIndicesCount(_addressIndices.size())
 				{
 					addressIndices = (uint32_t*)malloc(addressIndicesCount * sizeof(uint32_t));
 					memcpy(addressIndices, _addressIndices.data(), addressIndicesCount * sizeof(uint32_t));
 				}
 				DataBlock()
-					: Block(DATA_BLOCK), transactionNr(0), addressIndices(nullptr), addressIndicesCount(0)
+					: Block(DATA_BLOCK), transactionNr(0), fileCursor(-10), addressIndices(nullptr), addressIndicesCount(0)
 				{
 
 				}
@@ -155,9 +155,10 @@ namespace model {
 					free(addressIndices);
 					addressIndices = nullptr;
 					addressIndicesCount = 0;
+					fileCursor = 0;
 				}
 				uint64_t transactionNr;
-				uint32_t fileCursor;
+				int32_t fileCursor;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
 				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; }

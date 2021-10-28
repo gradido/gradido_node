@@ -24,10 +24,10 @@ namespace model {
 	{
 	public:
 		TransactionEntry()
-			: mTransactionNr(0), mFileCursor(-10) {}
+			: mTransactionNr(0), mFileCursor(0) {}
 
 		//! \brief init entry object from serialized transaction, deserialize transaction to get infos
-		TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot);
+		TransactionEntry(std::string _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot);
 
 		TransactionEntry(Poco::AutoPtr<GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
 
@@ -41,8 +41,8 @@ namespace model {
 		//! \brief operator for sorting by mTransactionNr in ascending order
 		bool operator < (const TransactionEntry& b) { return mTransactionNr < b.mTransactionNr; }
 
-		inline void setFileCursor(uint32_t newFileCursorValue) { Poco::FastMutex::ScopedLock lock(mFastMutex); mFileCursor = newFileCursorValue; }
-		inline uint32_t getFileCursor() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mFileCursor; }
+		inline void setFileCursor(int32_t newFileCursorValue) { Poco::FastMutex::ScopedLock lock(mFastMutex); mFileCursor = newFileCursorValue; }
+		inline int32_t getFileCursor() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mFileCursor; }
 
 		inline void addAddressIndex(uint32_t addressIndex) { Poco::FastMutex::ScopedLock lock(mFastMutex); mAddressIndices.push_back(addressIndex); }
 		inline const std::vector<uint32_t>& getAddressIndices() { return mAddressIndices; }
@@ -56,7 +56,7 @@ namespace model {
 	protected:
 		uint64_t mTransactionNr;
 		std::string mSerializedTransaction;
-		uint32_t mFileCursor;
+		int32_t mFileCursor;
 		uint8_t mMonth;
 		uint16_t mYear;
 		Poco::FastMutex mFastMutex;

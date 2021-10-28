@@ -62,7 +62,8 @@ namespace controller {
 				// put into file object
 				int index = 0;
 				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
-					mBlockIndexFile.addDataBlock(*itTrID, transactionTransactionIndices[index]);
+					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+					mBlockIndexFile.addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], transactionTransactionIndices[index]);
 					index++;
 				}
 			}
@@ -72,12 +73,12 @@ namespace controller {
 		//return true;
 	}
 	
-	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const std::vector<uint32_t>& addressIndices)
+	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
 	{
 		return addIndicesForTransaction(year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
 	}
 
-	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 
@@ -153,8 +154,9 @@ namespace controller {
 		
 	}
 
-	bool BlockIndex::addFileCursorForTransaction(uint64_t transactionNr, uint32_t fileCursor)
+	bool BlockIndex::addFileCursorForTransaction(uint64_t transactionNr, int32_t fileCursor)
 	{
+		if (fileCursor < 0) return false;
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		auto result = mTransactionNrsFileCursors.insert(TransactionNrsFileCursorsPair(transactionNr, fileCursor));
 		return result.second;
@@ -199,7 +201,7 @@ namespace controller {
 		return monthIt->second.transactionNrs;
 	}
 
-	bool BlockIndex::getFileCursorForTransactionNr(uint64_t transactionNr, uint32_t& fileCursor)
+	bool BlockIndex::getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		auto it = mTransactionNrsFileCursors.find(transactionNr);

@@ -5,7 +5,7 @@
 namespace model {
 
 
-	TransactionEntry::TransactionEntry(std::string _serializedTransaction, uint32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot)
+	TransactionEntry::TransactionEntry(std::string _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot)
 		: mTransactionNr(0), mSerializedTransaction(_serializedTransaction), mFileCursor(fileCursor)
 	{
 		Poco::AutoPtr<model::GradidoBlock> transaction(new model::GradidoBlock(_serializedTransaction, groupRoot));
@@ -38,7 +38,7 @@ namespace model {
 	}
 
 	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year)
-		: mTransactionNr(transactionNr), mFileCursor(0), mMonth(month), mYear(year)
+		: mTransactionNr(transactionNr), mFileCursor(-10), mMonth(month), mYear(year)
 	{
 
 	}

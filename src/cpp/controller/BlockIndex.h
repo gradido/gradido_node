@@ -35,14 +35,14 @@ namespace controller {
 		bool writeIntoFile();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const std::vector<uint32_t>& addressIndices);
+		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
 		// implement from model::files::IBlockIndexReceiver, called by loading block index from file
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, uint32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
 		//! \return false if transactionNr exist, else return true
-		bool addFileCursorForTransaction(uint64_t transactionNr, uint32_t fileCursor);
+		bool addFileCursorForTransaction(uint64_t transactionNr, int32_t fileCursor);
 
 		//! \brief find transaction nrs for address index in specific month and year
 		//! \return empty vector in case nothing found
@@ -53,7 +53,7 @@ namespace controller {
 
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
-		bool getFileCursorForTransactionNr(uint64_t transactionNr, uint32_t& fileCursor);
+		bool getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor);
 		bool hasTransactionNr(uint64_t transactionNr) { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return transactionNr >= mMinTransactionNr && transactionNr <= mMaxTransactionNr; }
 
 		inline uint64_t getMaxTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);  return mMaxTransactionNr; }
@@ -68,8 +68,8 @@ namespace controller {
 		uint64_t				 mMaxTransactionNr;
 		uint64_t				 mMinTransactionNr;
 
-		std::map<uint64_t, uint32_t> mTransactionNrsFileCursors;
-		typedef std::pair<uint64_t, uint32_t> TransactionNrsFileCursorsPair;
+		std::map<uint64_t, int32_t> mTransactionNrsFileCursors;
+		typedef std::pair<uint64_t, int32_t> TransactionNrsFileCursorsPair;
 
 		struct AddressIndexEntry
 		{

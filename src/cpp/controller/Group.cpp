@@ -289,18 +289,18 @@ namespace controller {
 	Poco::SharedPtr<Block> Group::getBlockContainingTransaction(uint64_t transactionId)
 	{
 		// find block by transactions id
-		// approximately 1.200.000 transactions can be fitted in one block
+		// approximately 300.000 transactions can be fitted in one block
 		// for now search simply from last block 
 		// TODO: think of a better approach later, if more than 10 blocks a written
 		int lastBlockNr = mLastBlockNr;
 		Poco::SharedPtr<Block> block;
 		do {
-			auto block = getBlock(lastBlockNr);
+			if (lastBlockNr < 1) return nullptr;
+			block = getBlock(lastBlockNr);
 			if (block->getBlockIndex()->getMaxTransactionNr() < transactionId) {
 				return nullptr;
 			}
-			lastBlockNr--;
-			if (lastBlockNr < 1) return nullptr;
+			lastBlockNr--;			
 		} while (!block->getBlockIndex()->hasTransactionNr(transactionId));
 
 		return block;
@@ -368,7 +368,7 @@ namespace controller {
 				continue;
 			}
 			else if (0 != getTransationResult) {
-
+				throw std::runtime_error("[Group::fillSignatureCacheOnStartup] couldnt load transaction: " + std::to_string(transactionNr));
 			}
 			transaction = new model::GradidoBlock(serializedTransaction, group);
 			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();

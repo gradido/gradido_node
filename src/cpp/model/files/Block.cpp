@@ -57,6 +57,10 @@ namespace model {
 
 		int Block::readLine(Poco::UInt32 startReading, std::string& resultString)
 		{
+			// set also mCurrentFileSize
+			auto fileStream = getOpenFile();
+
+			if (mCurrentFileSize <= (sizeof(Poco::UInt16) + 25)) return -4;
 			if (startReading > mCurrentFileSize - (sizeof(Poco::UInt16) + 25)) {
 				return -3;
 			}
@@ -68,7 +72,7 @@ namespace model {
 			if (!fl->tryLockTimeout(filePath, 100)) {
 				return -1;
 			}
-			auto fileStream = getOpenFile();
+			
 			Poco::UInt16 transactionSize = 0;
 			fileStream->seekg(startReading);
 			fileStream->read((char*)&transactionSize, sizeof(Poco::UInt16));
@@ -78,6 +82,7 @@ namespace model {
 			}
 			std::vector<char> lineVector(transactionSize);
 			fileStream->read(lineVector.data(), transactionSize);
+			
 
 			fl->unlock(filePath);
 

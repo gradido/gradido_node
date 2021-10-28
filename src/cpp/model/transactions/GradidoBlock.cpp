@@ -25,7 +25,7 @@ namespace model {
 			addError(new Error(__FUNCTION__, "invalid transaction binary string"));
 			return;
 		}
-		mGradidoTransaction = new GradidoTransaction(mProtoGradidoBlock.transaction().body_bytes(), groupRoot);
+		mGradidoTransaction = new GradidoTransaction(mProtoGradidoBlock.transaction().SerializeAsString(), groupRoot);
 		if (mGradidoTransaction->errorCount() > 0) {
 			mGradidoTransaction->getErrors(this);
 			mGradidoTransaction->release();
@@ -49,11 +49,13 @@ namespace model {
 		timestampSeconds->set_seconds(receivedSeconds);
 		auto mutableMessageId = mProtoGradidoBlock.mutable_message_id();
 		*mutableMessageId = iotaMessageId;
-		mProtoGradidoBlock.set_version_number(1);
+		mProtoGradidoBlock.set_version_number(GRADIDO_PROTOCOL_VERSION);
 		auto runningHash = mProtoGradidoBlock.mutable_running_hash();
 		auto txHash = calculateTxHash(previousTransaction);
 		*runningHash = std::string((const char*)txHash->data(), txHash->size());
 		mm->releaseMemory(txHash);
+		auto protoTransaction = mProtoGradidoBlock.mutable_transaction();
+		protoTransaction->CopyFrom(gradidoTransaction->getProto());
 
 		mGradidoTransaction = gradidoTransaction.get();
 		mGradidoTransaction->duplicate();

@@ -19,7 +19,7 @@ namespace model {
 			Block::writeIntoFile(vFile);
 
 			vFile->write(&transactionNr, sizeof(uint64_t));
-			vFile->write(&fileCursor, sizeof(uint32_t));
+			vFile->write(&fileCursor, sizeof(int32_t));
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
@@ -32,7 +32,7 @@ namespace model {
 			// first part, read block type, transaction nr and address index count
 			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
-			if (!vFile->read(&fileCursor, sizeof(uint32_t))) return false;
+			if (!vFile->read(&fileCursor, sizeof(int32_t))) return false;
 			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
@@ -48,7 +48,7 @@ namespace model {
 			// first part
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));		
-			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(uint32_t));
+			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(int32_t));
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
 
 			// second part
@@ -57,7 +57,7 @@ namespace model {
 
 		Poco::SharedPtr<TransactionEntry> BlockIndex::DataBlock::createTransactionEntry(uint8_t month, uint16_t year)
 		{
-			// TransactionEntry(uint64_t transactionNr, uint32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
+			// TransactionEntry(uint64_t transactionNr, int32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
 			auto transactionEntry = new TransactionEntry(
 				transactionNr, month, year, addressIndices, addressIndicesCount
 			);

@@ -8,6 +8,8 @@
 
 #include "../../SingletonManager/MemoryManager.h"
 
+#define GRADIDO_PROTOCOL_VERSION 1
+
 namespace model {
 	class GradidoBlock : public TransactionBase
 	{

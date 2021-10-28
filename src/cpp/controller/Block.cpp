@@ -46,7 +46,7 @@ namespace controller {
 
 	}
 
-	bool Block::addTransaction(const std::string& serializedTransaction, uint32_t fileCursor)
+	bool Block::addTransaction(const std::string& serializedTransaction, int32_t fileCursor)
 	{
 		auto gm = GroupManager::getInstance();
 		auto group = gm->findGroup(mGroupAlias);
@@ -70,7 +70,7 @@ namespace controller {
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
 		if (transactionEntry.isNull()) {
 			// read from file system
-			uint32_t fileCursor = 0;
+			int32_t fileCursor = 0;
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
 				return -2;
 			}

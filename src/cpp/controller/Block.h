@@ -51,7 +51,7 @@ namespace controller {
 			
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
-		bool addTransaction(const std::string& serializedTransaction, uint32_t fileCursor);
+		bool addTransaction(const std::string& serializedTransaction, int32_t fileCursor);
 		
 		uint32_t mBlockNr;		
 
