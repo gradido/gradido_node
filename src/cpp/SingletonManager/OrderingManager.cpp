@@ -86,18 +86,32 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
             return;
         }
         MilestoneTransactions* mt = it->second;
-        // sort after creation date
-        mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
-            return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
-        });
-        if (mt->transactions.size()) {
+        if (mt->transactions.size()) 
+        {
+            printf("[OrderingManager::finishedMilestone] before sort:\n");
+            for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
+                auto type = (*itTransaction)->getTransactionBody()->getType();
+                auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
+                printf("transaction type: %d, created: %d\n", type, seconds);
+            }
+            // sort after creation date
+            mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
+                return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
+                });
+            
             printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
-        }
-        for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
-            Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
-            bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
-            if (!result) {
-                transaction->addError(new Error("OrderingManager::finishedMilestone", "couldn't add transaction"));
+            
+            printf("[OrderingManager::finishedMilestone] after sort:\n");
+            for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
+				auto type = (*itTransaction)->getTransactionBody()->getType();
+				auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
+				printf("transaction type: %d, created: %d\n", type, seconds);
+
+                Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
+                bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
+                if (!result) {
+                    transaction->addError(new Error("OrderingManager::finishedMilestone", "couldn't add transaction"));
+                }
             }
         }
 

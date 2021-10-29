@@ -1,22 +1,30 @@
 #include "State.h"
 
 #include <cassert>
+#include "Poco/Mutex.h"
 
 namespace model {
 	namespace files {
 	
+		// use this global mutex to prevent an error with level db if one group is deconstructed while the same group is created new at the same time
+		Poco::FastMutex g_StateMutex;
+
 		State::State(Poco::Path path)
 			: mLevelDB(nullptr)
 		{
+			Poco::ScopedLock<Poco::FastMutex> _lock(g_StateMutex);
 			path.pushDirectory(".state");
 			leveldb::Options options;
 			options.create_if_missing = true;
 			leveldb::Status status = leveldb::DB::Open(options, path.toString(), &mLevelDB);
+			// TODO: check if on deconstruct State level db will be closed correctly so it can be opened again
+			// prevent opening two times at once
 			assert(status.ok());
 		}
 
 		State::~State()
 		{
+			Poco::ScopedLock<Poco::FastMutex> _lock(g_StateMutex);
 			if (mLevelDB) {
 				delete mLevelDB;
 				mLevelDB = nullptr;

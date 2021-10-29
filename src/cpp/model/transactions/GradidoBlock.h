@@ -20,7 +20,8 @@ namespace model {
 
 		inline uint64_t getID() const { return mProtoGradidoBlock.id(); }
 		inline const std::string& getTxHash() const { return mProtoGradidoBlock.running_hash(); }
-		inline Poco::DateTime getReceived() const { return Poco::Timestamp(mProtoGradidoBlock.received().seconds()); }
+		// convert from seconds to microseconds
+		inline Poco::DateTime getReceived() const { return Poco::Timestamp(mProtoGradidoBlock.received().seconds() * 1000000); }
 
 		inline GradidoTransaction* getGradidoTransaction() { return mGradidoTransaction; }
 		inline std::string getSerialized() { return mProtoGradidoBlock.SerializeAsString(); }

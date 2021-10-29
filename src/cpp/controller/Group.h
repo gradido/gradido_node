@@ -68,6 +68,8 @@ namespace controller {
 
 		inline const std::string& getGroupAlias() { return mGroupAlias; }
 
+		bool isSignatureInCache(Poco::AutoPtr<model::GradidoTransaction> transaction);
+
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
 		void updateLastBlockNr(int lastBlockNr);
@@ -123,6 +125,7 @@ namespace controller {
 			int64_t sign[4];
 		};
 		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
+		Poco::FastMutex mSignatureCacheMutex;
 
 	};
 }

@@ -42,9 +42,13 @@ int IotaMessageToTransactionTask::run()
         }
         
     } else {
-        // hand over to OrderingManager
-        std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
-        OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex);
+        // check if transaction already exist
+        if (!mGroup->isSignatureInCache(transaction)) {
+            // hand over to OrderingManager
+            std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
+            OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex);
+        }
+
     }
 
     return 0;

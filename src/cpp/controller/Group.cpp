@@ -5,7 +5,11 @@
 #include "../SingletonManager/GroupManager.h"
 #include "../iota/MilestoneListener.h"
 
+#include "../lib/DataTypeConverter.h"
+
 #include "Block.h"
+
+#include <inttypes.h>
 
 namespace controller {
 
@@ -13,7 +17,7 @@ namespace controller {
 		: mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
-		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MILESTONES_BOOTSTRAP_COUNT * 1.5 * 1000 * 60))
+		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MILESTONES_BOOTSTRAP_COUNT * 3 * 1000 * 60))
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -338,23 +342,36 @@ namespace controller {
 
 	void Group::addSignatureToCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
 	{
+		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		auto sigPairs = transaction->getProto().sig_map().sigpair();
 		if (sigPairs.size() == 0) {
 			throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
 		}
 		HalfSignature transactionSign(sigPairs.Get(0).signature().data());
-		mCachedSignatures.Add({ transactionSign, nullptr });
+		mCachedSignatures.add(transactionSign, nullptr);
+	}
+
+	bool Group::isSignatureInCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
+	{
+		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
+		auto sigPairs = transaction->getProto().sig_map().sigpair();
+		if (sigPairs.size() == 0) {
+			throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
+		}
+		HalfSignature transactionSign(sigPairs.Get(0).signature().data());
+		return mCachedSignatures.has(transactionSign);
 	}
 	
 	void Group::fillSignatureCacheOnStartup()
 	{
+		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		int blockNr = mLastBlockNr;
 		int transactionNr = mLastTransactionId;
 
 		Poco::AutoPtr<model::GradidoBlock> transaction;
 		auto gm = GroupManager::getInstance();
 		auto group = gm->findGroup(mGroupAlias);
-		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MILESTONES_BOOTSTRAP_COUNT * 1.5 * 60, 0);
+		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MILESTONES_BOOTSTRAP_COUNT * 3 * 60, 0);
 
 		do {
 			if (transactionNr <= 0) break;
@@ -373,10 +390,14 @@ namespace controller {
 			transaction = new model::GradidoBlock(serializedTransaction, group);
 			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();
 			if (sigPairs.size()) {
+				auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());
+				//printf("[Group::fillSignatureCacheOnStartup] add signature: %s\n", signature.data());
 				HalfSignature transactionSign(sigPairs.Get(0).signature().data());
-				mCachedSignatures.Add({ transactionSign, nullptr });
+				mCachedSignatures.add(transactionSign, nullptr);
 			}
 			transactionNr--;
+			//printf("compare received: %" PRId64 " with border : %" PRId64 "\n", transaction->getReceived().timestamp().raw(), border.timestamp().raw());
 		} while (!transaction.isNull() && transaction->getReceived() > border);
+
 	}
 }
