@@ -2,9 +2,11 @@
 #include "sodium.h"
 
 #include "../../lib/BinTextConverter.h"
+#include "../../lib/DataTypeConverter.h"
 
 #include "Poco/DateTimeFormatter.h"
 //#include "Poco/Exception.h"
+
 
 #include <unordered_map>
 
@@ -51,9 +53,7 @@ namespace model {
 		*mutableMessageId = iotaMessageId;
 		mProtoGradidoBlock.set_version_number(GRADIDO_PROTOCOL_VERSION);
 		auto runningHash = mProtoGradidoBlock.mutable_running_hash();
-		auto txHash = calculateTxHash(previousTransaction);
-		*runningHash = std::string((const char*)txHash->data(), txHash->size());
-		mm->releaseMemory(txHash);
+		
 		auto protoTransaction = mProtoGradidoBlock.mutable_transaction();
 		protoTransaction->CopyFrom(gradidoTransaction->getProto());
 
@@ -62,6 +62,10 @@ namespace model {
 
 		setGroupRoot(mGradidoTransaction->getGroupRoot());
 		mGradidoTransaction->setGradidoBlock(this);
+
+		auto txHash = calculateTxHash(previousTransaction);
+		*runningHash = std::string((const char*)txHash->data(), txHash->size());
+		mm->releaseMemory(txHash);
 	}
 
 	GradidoBlock::~GradidoBlock()
@@ -131,14 +135,14 @@ namespace model {
 		crypto_generichash_state state;
 		crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 		if (prevTxHash.size()) {
-			printf("[GradidoBlock::calculateTxHash] calculate with prev tx hash: %s", prevTxHash.data());
+			auto prexHashHex = convertBinToHex(prevTxHash);
+			printf("[GradidoBlock::calculateTxHash] calculate with prev tx hash: %s", prexHashHex.data());
 			crypto_generichash_update(&state, (const unsigned char*)prevTxHash.data(), prevTxHash.size());
 		}
 		crypto_generichash_update(&state, (const unsigned char*)transactionIdString.data(), transactionIdString.size());
 		crypto_generichash_update(&state, (const unsigned char*)receivedString.data(), receivedString.size());
 		crypto_generichash_update(&state, (const unsigned char*)signatureMapString.data(), signatureMapString.size());
 		crypto_generichash_final(&state, *hash, hash->size());
-
 		return hash;
 	}
 }

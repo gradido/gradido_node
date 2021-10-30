@@ -3,6 +3,8 @@
 #include <cassert>
 #include "Poco/Mutex.h"
 
+#include "../../SingletonManager/LoggerManager.h"
+
 namespace model {
 	namespace files {
 	
@@ -19,6 +21,10 @@ namespace model {
 			leveldb::Status status = leveldb::DB::Open(options, path.toString(), &mLevelDB);
 			// TODO: check if on deconstruct State level db will be closed correctly so it can be opened again
 			// prevent opening two times at once
+			if (!status.ok()) {
+				 //status.ToString()
+				LoggerManager::getInstance()->mErrorLogging.error("[State::State] path: %s, state: %s", path.toString(), status.ToString());
+			}
 			assert(status.ok());
 		}
 

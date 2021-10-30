@@ -100,8 +100,12 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
 	Value jsonTransactionArray(kArrayType);
+	std::string prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
-		jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
+		if (it->size() > 0) {
+			jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
+			prevTransaction = *it;
+		}
 	}
 	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);
 	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);

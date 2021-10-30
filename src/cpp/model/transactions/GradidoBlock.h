@@ -32,9 +32,11 @@ namespace model {
 		inline std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer) {
 			return mGradidoTransaction->getInvolvedAddressIndices(addressIndexContainer);
 		}
-	protected:
+
 		//! \return called must free return value
 		MemoryBin* calculateTxHash(Poco::AutoPtr<GradidoBlock> previousTransaction);
+	protected:
+		
 
 		proto::gradido::GradidoBlock mProtoGradidoBlock;
 		GradidoTransaction* mGradidoTransaction;
