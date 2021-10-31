@@ -29,6 +29,10 @@ public:
 
     int pushTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction, int32_t milestoneId);
 
+    void pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction);
+    Poco::AutoPtr<model::GradidoTransaction> findPairedTransaction(Poco::Timestamp pairedTransactionId);
+    void removePairedTransaction(Poco::Timestamp pairedTransactionId);
+
 protected:
     OrderingManager();
     void finishedMilestone(int32_t milestoneId);
@@ -50,6 +54,10 @@ protected:
 
     std::map<int32_t, MilestoneTransactions*> mMilestonesWithTransactions;
     Poco::FastMutex mMilestonesWithTransactionsMutex;
+
+    // all paired outbound transactions for validation which other group belong to this node
+    std::unordered_map<int64_t, Poco::AutoPtr<model::GradidoTransaction>> mPairedTransactions;
+    Poco::FastMutex mPairedTransactionMutex;
 
     Poco::FastMutex mFinishMilestoneTaskMutex;
 };

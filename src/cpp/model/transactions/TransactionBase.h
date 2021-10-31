@@ -16,22 +16,18 @@ namespace model {
 
 	enum TransactionValidationLevel {
 		// check only the transaction
-		TRANSACTION_VALIDATION_SINGLE,
+		TRANSACTION_VALIDATION_SINGLE = 1,
 		// check also with previous transaction
-		TRANSACTION_VALIDATION_SINGLE_PREVIOUS,
+		TRANSACTION_VALIDATION_SINGLE_PREVIOUS = 2,
 		// check all transaction from within date range
 		// by creation automatic the same month
-		TRANSACTION_VALIDATION_DATE_RANGE,
-		// check all transactions from this address(es)
-		TRANSACTION_VALIDATION_FULL_ADDRESS,
+		TRANSACTION_VALIDATION_DATE_RANGE = 4,
+		// check paired transaction on another group by cross group transactions
+		TRANSACTION_VALIDATION_PAIRED = 8,
 		// check all transactions in the group which connected with this transaction address(es)
-		TRANSACTION_VALIDATION_CONNECTED_GROUP,
-		// check all transactions in this group
-		TRANSACTION_VALIDATION_FULL_GROUP,
+		TRANSACTION_VALIDATION_CONNECTED_GROUP = 16,
 		// check all transactions which connected with this transaction
-		TRANSACTION_VALIDATION_CONNECTED_BLOCKCHAIN,
-		// check every transaction in every group
-		TRANSACTION_VALIDATION_FULL_BLOCKCHAIN
+		TRANSACTION_VALIDATION_CONNECTED_BLOCKCHAIN = 32
 	};
 
 	class GradidoBlock;

@@ -22,6 +22,15 @@ OrderingManager::~OrderingManager()
         delete it->second;
     }
     mMilestonesWithTransactions.clear();
+
+    mPairedTransactionMutex.lock();
+    // print it out on shutdown to see if all transactions are always deleted or
+    // if we need a clear process to check from time to time if there unneeded paired transactions are left over
+    if (mPairedTransactions.size()) {
+        std::clog << "OrderingManager::~OrderingManager" << "left over paired transactions: " << std::to_string(mPairedTransactions.size()) << std::endl;
+    }
+    mPairedTransactionMutex.unlock();
+
     mMilestonesWithTransactionsMutex.unlock();
 }
 
@@ -63,7 +72,12 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 
 void OrderingManager::finishedMilestone(int32_t milestoneId)
 {
-    
+    // exit task if another is already running, because he will go one as long there is something to work on
+    // TODO: make own thread for this, because to keep transactions in order only one thread is allowed to run 
+    // TODO: put transactions in queues per group and work on this per group base to reduce the impact of malicious transactions
+    // for the whole node (cross group transactions with missing pair)
+    if (!mFinishMilestoneTaskMutex.tryLock()) return;
+    mFinishMilestoneTaskMutex.unlock();
     // enforce that the finishing milestone tasks must wait on each other
     Poco::ScopedLock<Poco::FastMutex> _lockRoot(mFinishMilestoneTaskMutex);
 
@@ -145,4 +159,28 @@ int OrderingManager::pushTransaction(Poco::AutoPtr<model::GradidoTransaction> tr
     it->second->mutex.unlock();
 
     return 0;
+}
+
+void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction)
+{
+    Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
+    assert(transaction->getTransactionBody()->isTransfer());
+    auto transfer = transaction->getTransactionBody()->getTransfer();
+    mPairedTransactions.insert({ transfer->getPairedTransactionId().raw(), transaction });
+}
+
+Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(Poco::Timestamp pairedTransactionId)
+{
+    Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
+    auto it = mPairedTransactions.find(pairedTransactionId.raw());
+    if (it != mPairedTransactions.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
+void OrderingManager::removePairedTransaction(Poco::Timestamp pairedTransactionId)
+{
+    Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
+    mPairedTransactions.erase(pairedTransactionId.raw());
 }

@@ -6,7 +6,7 @@
 #include "../ServerGlobals.h"
 
 GroupManager::GroupManager()
-	: mInitalized(false), mGroupIndex(nullptr), mGroupAccessExpireCache(ServerGlobals::g_CacheTimeout * 1000)
+	: mInitalized(false), mGroupIndex(nullptr)
 {
 	
 }
@@ -49,9 +49,9 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 {
 	if (!mInitalized) return nullptr;
 	Poco::ScopedLock<Poco::FastMutex> lock(mWorkMutex);
-	auto skey = mGroupAccessExpireCache.get(groupAlias);
-	if (!skey.isNull()) {
-		return skey;
+	auto it = mGroupMap.find(groupAlias);
+	if (it != mGroupMap.end()) {
+		return it->second;
 	}
 
 	if (!mGroupIndex) return nullptr;
@@ -61,7 +61,7 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 		return nullptr;
 	}
 	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
-	mGroupAccessExpireCache.add(groupAlias, group);
+	mGroupMap.insert({ groupAlias, group });
 	group->init();
 	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;

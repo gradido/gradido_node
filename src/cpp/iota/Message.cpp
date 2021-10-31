@@ -3,7 +3,6 @@
 #include "../lib/DataTypeConverter.h"
 #include "../lib/BinTextConverter.h"
 #include "../task/IotaMessageToTransactionTask.h"
-#include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
 #include "ConfirmedMessagesCache.h"
@@ -125,7 +124,7 @@ namespace iota {
 
 	bool Message::isGradidoTransaction() const
 	{
-		if (getGradidoGroupAlias() != "") return true;
+		return getGradidoGroupAlias() != "";		
 	}
 
 	std::string Message::getGradidoGroupAlias() const
@@ -182,17 +181,12 @@ namespace iota {
 			auto groupAlias = mMessage->getGradidoGroupAlias();
 			// yes, we found a gradido transaction
 			if (groupAlias != "") {
-				auto gm = GroupManager::getInstance();
-				auto group = gm->findGroup(groupAlias);
-				if (!group.isNull()) {
-					// okay the node is listening to this group / community
-					// let make a gradido transaction from it and put it into ordering manager
-					Poco::AutoPtr<IotaMessageToTransactionTask> task = new IotaMessageToTransactionTask(
-						mRootMilestone->getMilestoneId(), mRootMilestone->getMilestoneTimestamp(), mMessage, group
-					);
-					task->scheduleTask(task);
-					printf("find transaction on deep: %d, root milestone: %d\n", mRecursionDeep, mRootMilestone->getMilestoneId());
-				}
+				// let make a gradido transaction from it and put it into ordering manager if it is from our group or it is a paired transaction from or for us
+				Poco::AutoPtr<IotaMessageToTransactionTask> task = new IotaMessageToTransactionTask(
+					mRootMilestone->getMilestoneId(), mRootMilestone->getMilestoneTimestamp(), mMessage
+				);
+				task->scheduleTask(task);
+				printf("find transaction on deep: %d, root milestone: %d\n", mRecursionDeep, mRootMilestone->getMilestoneId());
 			}
 		}
 				

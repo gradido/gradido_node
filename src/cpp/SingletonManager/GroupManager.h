@@ -7,7 +7,7 @@
 #include "Poco/Mutex.h"
 #include "Poco/AccessExpireCache.h"
 
-//#include <unordered_map>
+#include <unordered_map>
 
 /*!
  * 
@@ -41,8 +41,9 @@ protected:
 
 	bool mInitalized;
 	controller::GroupIndex* mGroupIndex;
-	//std::unordered_map<std::string, controller::Group*> mGroups;
-	Poco::AccessExpireCache<std::string, controller::Group> mGroupAccessExpireCache;
+	// TODO: think about if a custom cashing is needed (remove only if no reference is left)
+	// because of level db only one instance is allowed per group
+	std::unordered_map<std::string, Poco::SharedPtr<controller::Group>> mGroupMap;
 
 	Poco::FastMutex mWorkMutex;
 	

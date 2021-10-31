@@ -24,14 +24,14 @@ enum JsonRequestReturn
 	JSON_REQUEST_CONNECT_ERROR
 };
 
-class JsonRequest : public ErrorList
+class JsonRequest
 {
 public:
 	//! \param urlPath path between host and method name, for iota: /api/v1/
 	JsonRequest(const std::string& serverHost, int serverPort, const std::string& urlPath);
 	~JsonRequest();
 
-	rapidjson::Document GET(const char* methodName);
+	rapidjson::Document GET(const char* methodName, ErrorList* errors = nullptr);
 	
 
 protected:

@@ -68,6 +68,14 @@ namespace model {
 		mm->releaseMemory(txHash);
 	}
 
+	void GradidoBlock::setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot)
+	{
+		mGroupRoot = groupRoot;
+		if (mGradidoTransaction) {
+			mGradidoTransaction->setGroupRoot(groupRoot);
+		}
+	}
+
 	GradidoBlock::~GradidoBlock()
 	{
 		if (mGradidoTransaction) {

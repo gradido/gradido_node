@@ -26,6 +26,8 @@ namespace model {
 		inline GradidoTransaction* getGradidoTransaction() { return mGradidoTransaction; }
 		inline std::string getSerialized() { return mProtoGradidoBlock.SerializeAsString(); }
 
+		void setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot);
+
 		bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE);
 		bool validate(Poco::AutoPtr<GradidoBlock> previousTransaction);
 

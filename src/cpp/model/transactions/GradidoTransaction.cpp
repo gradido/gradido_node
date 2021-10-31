@@ -34,6 +34,14 @@ namespace model {
 		}
     }
 
+	void GradidoTransaction::setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot)
+	{
+		mGroupRoot = groupRoot;
+		if (mTransactionBody) {
+			mTransactionBody->setGroupRoot(groupRoot);
+		}
+	}
+
     bool GradidoTransaction::validate(TransactionValidationLevel level /*= TRANSACTION_VALIDATION_SINGLE*/)
     {
 		// check signatures

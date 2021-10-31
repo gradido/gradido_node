@@ -30,7 +30,7 @@ namespace model {
 			return false;
 		}
 		
-		if (level == TRANSACTION_VALIDATION_DATE_RANGE) {
+		if ((level & TRANSACTION_VALIDATION_DATE_RANGE) == TRANSACTION_VALIDATION_DATE_RANGE) {
 			
 			Poco::DateTime targetDate = Poco::Timestamp(mProtoCreation.target_date().seconds());
 				

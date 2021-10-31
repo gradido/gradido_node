@@ -20,7 +20,6 @@ int main(int argc, char** argv)
 		printf("error initing sodium, early exit\n");
 		return -1;
 	}
-
 	
 	MainServer app;
 	int result = 0;

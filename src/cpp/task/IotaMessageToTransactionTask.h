@@ -21,7 +21,7 @@
 class IotaMessageToTransactionTask : public UniLib::controller::CPUTask
 {
 public:
-    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, Poco::SharedPtr<iota::Message> message, Poco::SharedPtr<controller::Group> group);
+    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, Poco::SharedPtr<iota::Message> message);
 
     const char* getResourceType() const {return "MessageToTransactionTask";};
     int run();
@@ -33,7 +33,6 @@ protected:
     uint32_t mMilestoneIndex;
     uint64_t mTimestamp;
     Poco::SharedPtr<iota::Message> mMessage;
-    Poco::SharedPtr<controller::Group> mGroup;
     Poco::AutoPtr<model::GradidoTransaction> mTransaction;
 };
 

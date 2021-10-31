@@ -8,6 +8,7 @@
 #include "sodium.h"
 #include "../ServerGlobals.h"
 #include "../SingletonManager/MemoryManager.h"
+#include "../SingletonManager/LoggerManager.h"
 #include "DataTypeConverter.h"
 
 #include "rapidjson/writer.h"
@@ -25,17 +26,22 @@ JsonRequest::JsonRequest(const std::string& serverHost, int serverPort, const st
 
 JsonRequest::~JsonRequest()
 {
-
 }
 
 using namespace rapidjson;
 
-Document JsonRequest::GET(const char* methodName)
+Document JsonRequest::GET(const char* methodName, ErrorList* errors/* = nullptr*/)
 {
 	static const char* functionName = "JsonRequest::GET";
+	auto& log = LoggerManager::getInstance()->mErrorLogging;
 	Document result;
 	if (mServerHost.empty() || !mServerPort) {
-		addError(new Error(functionName, "server host or server port not given"));
+		if (errors) {
+			errors->addError(new Error(functionName, "server host or server port not given"));
+		}
+		else {
+			log.error("[%s] server host or server port not given", functionName);
+		}
 		return result;
 	}
 	try {
@@ -67,15 +73,25 @@ Document JsonRequest::GET(const char* methodName)
 		result.Parse(responseStringStream.str().data());
 		
 		if(result.HasParseError()) {
-			addError(new ParamError(functionName, "error parsing request answer", result.GetParseError()));
-			addError(new ParamError(functionName, "position of last parsing error", result.GetErrorOffset()));
+			if (errors) {
+				errors->addError(new ParamError(functionName, "error parsing request answer", result.GetParseError()));
+				errors->addError(new ParamError(functionName, "position of last parsing error", result.GetErrorOffset()));
+			}
+			else {
+				log.error("[%s] error parsing request answer: %s on position: %d", functionName, result.GetParseError(), result.GetErrorOffset());
+			}
 		}
 	
 	}
 	catch (Poco::Exception& e) {
-		addError(new ParamError(functionName, "connect error to iota server", e.displayText().data()));
-		addError(new ParamError(functionName, "host", mServerHost));
-		addError(new ParamError(functionName, "port", mServerPort));
+		if (errors) {
+			errors->addError(new ParamError(functionName, "connect error to iota server", e.displayText().data()));
+			errors->addError(new ParamError(functionName, "host", mServerHost));
+			errors->addError(new ParamError(functionName, "port", mServerPort));
+		}
+		else {
+			log.error("[%s] exception on connecting to iota server: %s (%s:%d)", e.displayText(), mServerHost, mServerPort);
+		}
 	}
 
 	return result;

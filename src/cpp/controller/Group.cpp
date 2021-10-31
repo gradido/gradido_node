@@ -141,15 +141,20 @@ namespace controller {
 		}
 
 		auto type = newTransaction->getTransactionBody()->getType();
+
 		switch (type) {
 		case model::TRANSACTION_CREATION:
 			// check if address has get maximal 1.000 GDD creation in the month 
-			level = model::TRANSACTION_VALIDATION_DATE_RANGE;
+			level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_DATE_RANGE);
 			//uint64_t sum = calculateCreationSum()
 			break;
 		case model::TRANSACTION_TRANSFER:
 			// check if send address(es) have enough GDD
-			level = model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS;
+			level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);
+			// check if outbound transaction also exist
+			if (newTransaction->getTransactionBody()->getTransfer()->isInbound()) {
+				level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_PAIRED);
+			}
 			break;
 		}
 		

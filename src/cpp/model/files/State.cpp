@@ -19,11 +19,18 @@ namespace model {
 			leveldb::Options options;
 			options.create_if_missing = true;
 			leveldb::Status status = leveldb::DB::Open(options, path.toString(), &mLevelDB);
-			// TODO: check if on deconstruct State level db will be closed correctly so it can be opened again
-			// prevent opening two times at once
+			// if group is removed from cache and created new at the same time, the lock file from other level db instance is maybe still there 
+			// and trigger an io error, so give it same time an try it again, maximal 100 times. 
+			// TODO: Maybe use the FileLockManager for this 
+			int maxTry = 100;
+			while (status.IsIOError() && maxTry > 0) {
+				Poco::Thread::sleep(100);
+				status = leveldb::DB::Open(options, path.toString(), &mLevelDB);
+				maxTry--;
+			}
 			if (!status.ok()) {
 				 //status.ToString()
-				LoggerManager::getInstance()->mErrorLogging.error("[State::State] path: %s, state: %s", path.toString(), status.ToString());
+				LoggerManager::getInstance()->mErrorLogging.error("[State::State] path: %s, state: %s, ioError: %d", path.toString(), status.ToString(), status.IsIOError());
 			}
 			assert(status.ok());
 		}
@@ -32,6 +39,7 @@ namespace model {
 		{
 			Poco::ScopedLock<Poco::FastMutex> _lock(g_StateMutex);
 			if (mLevelDB) {
+				printf("[State::~State]\n");
 				delete mLevelDB;
 				mLevelDB = nullptr;
 			}

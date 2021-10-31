@@ -26,6 +26,8 @@ namespace model {
 			return mTransactionBody->getInvolvedAddressIndices(addressIndexContainer);
 		}
 
+		void setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot);
+
 	protected:
 		proto::gradido::GradidoTransaction mProtoGradidoTransaction;
 		TransactionBody* mTransactionBody;

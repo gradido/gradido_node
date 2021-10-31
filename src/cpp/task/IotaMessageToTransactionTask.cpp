@@ -6,12 +6,10 @@
 #include "../SingletonManager/OrderingManager.h"
 #include "../lib/DataTypeConverter.h"
 
-#include <stdexcept>
-
 IotaMessageToTransactionTask::IotaMessageToTransactionTask(
     uint32_t milestoneIndex, uint64_t timestamp, 
-    Poco::SharedPtr<iota::Message> message, Poco::SharedPtr<controller::Group> group)
-: mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessage(message), mGroup(group)
+    Poco::SharedPtr<iota::Message> message)
+: mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessage(message)
 {
     OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneIndex, mTimestamp);
 }
@@ -27,12 +25,10 @@ int IotaMessageToTransactionTask::run()
     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
     
     auto binString = mMessage->getDataString();
-
-    if (mGroup.isNull()) {
-        errorLog.error("[%s] group not found on server, abort", function_name);
-        throw new std::runtime_error("group alias not found, but node server should only listen on existing groups");
-    }
-    Poco::AutoPtr<model::GradidoTransaction> transaction(new model::GradidoTransaction(binString, mGroup));
+    auto gm = GroupManager::getInstance();
+    auto group = gm->findGroup(mMessage->getGradidoGroupAlias());
+    
+    Poco::AutoPtr<model::GradidoTransaction> transaction(new model::GradidoTransaction(binString, group));
     if(transaction->errorCount() > 0) {
         auto errors = transaction->getErrorsArray();
         errorLog.error("Error by parsing transaction");
@@ -41,14 +37,30 @@ int IotaMessageToTransactionTask::run()
             errorLog.error(*it);
         }
         
-    } else {
+    } else {		
         // check if transaction already exist
-        if (!mGroup->isSignatureInCache(transaction)) {
-            // hand over to OrderingManager
-            std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
-            OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex);
+        if (group->isSignatureInCache(transaction)) {
+            return 0;
         }
-
+        // if it is a cross group transaction and the other pair belongs to us we store it for later use in validation
+        if (transaction->getTransactionBody()->isTransfer()) {
+            auto transfer = transaction->getTransactionBody()->getTransfer();
+            // we need only outbound transactions from another groups for validation
+            if (transfer->isOutbound()) {
+                auto pairGroup = gm->findGroup(transfer->getOtherGroup());
+                if (!pairGroup.isNull()) {
+                    OrderingManager::getInstance()->pushPairedTransaction(transaction);
+                }
+            }
+        }
+        // if this transaction doesn't belong to us, we can quit here 
+		if (group.isNull()) {
+			return 0;
+		}
+        
+        // hand over to OrderingManager
+        std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
+        OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex);
     }
 
     return 0;
