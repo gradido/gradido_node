@@ -136,7 +136,7 @@ source_group("test" FILES ${TEST})
 
 endif(MSVC)
 
-IF(UNIX)
+IF(WIN32)
 	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 	conan_basic_setup()
 ENDIF()
