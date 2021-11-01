@@ -50,7 +50,10 @@ namespace model {
 			auto om = OrderingManager::getInstance();
 			auto gm = GroupManager::getInstance();
 			auto pairedTransactionId = getPairedTransactionId();
-			if (pairedTransactionId == 0) return false;
+			if (pairedTransactionId == 0) {
+				addError(new Error(__FUNCTION__, "paired transaction id is zero"));
+				return false;
+			}
 
 			// we must wait until this node receive also the pair transaction
 			Poco::Timestamp timeout = Poco::Timestamp() + Poco::Timespan(MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SECONDS, 0);
@@ -65,6 +68,7 @@ namespace model {
 			// include "iota/HTTPApi.h"
 			// iota::getNodeInfo 
 			if (pairTransaction.isNull()) {
+				addError(new Error(__FUNCTION__, "cannot find pairing transaction"));
 				return false;
 			}
 			auto otherGroup = gm->findGroup(getOtherGroup());
@@ -73,9 +77,11 @@ namespace model {
 				pairValidationLevel = TRANSACTION_VALIDATION_SINGLE_PREVIOUS;
 			}
 			if (!pairTransaction->validate(pairValidationLevel)) {
+				addError(new Error(__FUNCTION__, "pair transaction isn't valid"));
 				return false;
 			}
 			if (!pairTransaction->getTransactionBody()->getTransfer()->isBelongTo(this)) {
+				addError(new Error(__FUNCTION__, "pair transaction don't belong to us"));
 				return false;
 			}
 			// so we know for sure the paired transaction exist and is valid

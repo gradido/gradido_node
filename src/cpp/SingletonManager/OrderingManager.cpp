@@ -62,6 +62,7 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
     if (it != mMilestoneTaskObserver.end()) {
         (*it->second)--;
 		if (*it->second <= 0) {
+            delete it->second;
             mMilestoneTaskObserver.erase(it);
             // call finishedMilestone in task because it could need some time
             Poco::AutoPtr<FinishMilestoneTask> task = new FinishMilestoneTask(milestoneId);
