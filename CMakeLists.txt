@@ -136,8 +136,10 @@ source_group("test" FILES ${TEST})
 
 endif(MSVC)
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+IF(UNIX)
+	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	conan_basic_setup()
+ENDIF()
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
@@ -187,15 +189,14 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node PUBLIC leveldb libprotobuf ${CONAN_LIBS} )
+target_link_libraries(Gradido_Node leveldb libprotobuf )
 
 if(WIN32)
-	target_link_libraries(Gradido_Node PUBLIC optimized Shlwapi)
-	target_link_libraries(Gradido_Node PUBLIC debug Shlwapi)
+	target_link_libraries(Gradido_Node ${CONAN_LIBS})
+	target_link_libraries(Gradido_Node optimized Shlwapi)
+	target_link_libraries(Gradido_Node debug Shlwapi)
 else()
-	add_dependencies(Gradido_Node iota_client)
-	target_link_libraries(Gradido_Node PRIVATE iota_client)
-	target_link_libraries(Gradido_Node PUBLIC ${POCO_LIBS} -pthread)
+	target_link_libraries(Gradido_Node ${POCO_LIBS} -pthread)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 
