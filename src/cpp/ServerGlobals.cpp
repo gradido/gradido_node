@@ -25,9 +25,6 @@ namespace ServerGlobals {
 	Poco::UInt16						g_CacheTimeout = 600;
 	Poco::UInt16						g_TimeoutCheck = 60;
 	Poco::UInt16						g_WriteToDiskTimeout = 10;
-#ifdef __linux__
-	iota_client_conf_t 					g_IotaClientConfig;
-#endif
 	Context::Ptr g_SSL_CLient_Context = nullptr;
 	JsonRequest* g_IotaRequestHandler = nullptr;
 
@@ -92,14 +89,6 @@ namespace ServerGlobals {
 		// chrysalis-nodes.iota.org
         int iota_port = cfg.getInt("iota.port", 443);
 		g_IotaRequestHandler = new JsonRequest(iota_host, iota_port, "/api/v1/");
-
-#ifdef __linux__
-		strcpy(g_IotaClientConfig.host, iota_host.data());
-		g_IotaClientConfig.port = iota_port;
-		g_IotaClientConfig.use_tls = true;
-#else
-
-#endif
 
         return true;
 	}
