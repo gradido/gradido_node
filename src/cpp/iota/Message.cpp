@@ -38,7 +38,7 @@ namespace iota {
 
 	bool MessageId::isEmpty() const
 	{
-		return 
+		return
 			messageId[0] == 0 &&
 			messageId[1] == 0 &&
 			messageId[2] == 0 &&
@@ -111,11 +111,11 @@ namespace iota {
 
 	bool Message::requestFromIota()
 	{
-		// GET /api/v1/messages/{messageId} 
+		// GET /api/v1/messages/{messageId}
 		std::stringstream ss;
 		ss << "messages/" << mId.toHex();
 
-		Document& json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+		Document json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
 		if (!json.IsObject()) {
 			return false;
 		}
@@ -124,13 +124,13 @@ namespace iota {
 
 	bool Message::isGradidoTransaction() const
 	{
-		return getGradidoGroupAlias() != "";		
+		return getGradidoGroupAlias() != "";
 	}
 
 	std::string Message::getGradidoGroupAlias() const
 	{
 		auto findPos = mIndex.find("GRADIDO");
-		
+
 		if (findPos != mIndex.npos) {
 			printf("index: %s\n", mIndex.data());
 			return mIndex.substr(8);
@@ -140,7 +140,7 @@ namespace iota {
 
 	// ******************* Message Loader ********************************
 	ConfirmedMessageLoader::ConfirmedMessageLoader(Poco::SharedPtr<Message> rootMilestone, uint8_t targetRecursionDeep/* = 0*/, uint8_t recursionDeep /*= 0 */)
-		: UniLib::controller::CPUTask(ServerGlobals::g_IotaRequestCPUScheduler), mRootMilestone(rootMilestone), 
+		: UniLib::controller::CPUTask(ServerGlobals::g_IotaRequestCPUScheduler), mRootMilestone(rootMilestone),
 		mTargetRecursionDeep(targetRecursionDeep), mRecursionDeep(recursionDeep)
 	{
 		OrderingManager::getInstance()->pushMilestoneTaskObserver(rootMilestone->getMilestoneId(), rootMilestone->getMilestoneTimestamp());
@@ -152,7 +152,7 @@ namespace iota {
 		assert(!id.isEmpty());
 		OrderingManager::getInstance()->pushMilestoneTaskObserver(rootMilestone->getMilestoneId(), rootMilestone->getMilestoneTimestamp());
 	}
-	
+
 	ConfirmedMessageLoader::~ConfirmedMessageLoader()
 	{
 		OrderingManager::getInstance()->popMilestoneTaskObserver(mRootMilestone->getMilestoneId());
@@ -171,12 +171,12 @@ namespace iota {
 		else {
 			mMessage = mRootMilestone;
 		}
-		
+
 		if (MESSAGE_TYPE_MILESTONE == mMessage->getType() && mMessage->getMilestoneId() != mRootMilestone->getMilestoneId()) {
 			// we found another milestone
 			//printf("[%d] found milestone %d on recursion: %d\n", mRootMilestone->getMilestoneId(), mMessage->getMilestoneId(), mRecursionDeep);
-			return 0;		
-		}		
+			return 0;
+		}
 		else if (MESSAGE_TYPE_TRANSACTION == mMessage->getType()) {
 			auto groupAlias = mMessage->getGradidoGroupAlias();
 			// yes, we found a gradido transaction
@@ -189,7 +189,7 @@ namespace iota {
 				printf("find transaction on deep: %d, root milestone: %d\n", mRecursionDeep, mRootMilestone->getMilestoneId());
 			}
 		}
-				
+
 		if (mTargetRecursionDeep > mRecursionDeep) {
 			auto messageIds = mMessage->getParentMessageIds();
 			int countExist = 0;

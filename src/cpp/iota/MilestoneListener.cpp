@@ -3,6 +3,7 @@
 #include "../SingletonManager/GlobalStateManager.h"
 #include "HTTPApi.h"
 #include <stdexcept>
+#include <iostream>
 
 namespace iota {
 	MilestoneListener::MilestoneListener(long intervalMilliseconds /* = 500 */)
@@ -12,7 +13,7 @@ namespace iota {
 		mLastKnownMilestoneIndex = g_state->getLastIotaMilestone();
 
 		Poco::TimerCallback<MilestoneListener> callback(*this, &MilestoneListener::listener);
-		mListenerTimer.start(callback);		
+		mListenerTimer.start(callback);
 	}
 
 	MilestoneListener::~MilestoneListener()
@@ -34,7 +35,7 @@ namespace iota {
 			mLastKnownMilestoneIndex = info.confirmedMilestoneIndex - MILESTONES_BOOTSTRAP_COUNT + 1;
 			firstRun = true;
 		}
-		
+
 		// no new milestone by iota so we can early exit here
 		if (mLastKnownMilestoneIndex == info.confirmedMilestoneIndex) {
 			return;
@@ -64,7 +65,7 @@ namespace iota {
 			else {
 				LoggerManager::getInstance()->mErrorLogging.error("[MilestoneListener::listener] couldn't load milestone %d from iota", i);
 			}
-			
+
 		}
 		if (firstRun) {
 			printf("\n");

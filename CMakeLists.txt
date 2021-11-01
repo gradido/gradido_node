@@ -195,7 +195,7 @@ if(WIN32)
 	target_link_libraries(Gradido_Node optimized Shlwapi)
 	target_link_libraries(Gradido_Node debug Shlwapi)
 else()
-	target_link_libraries(Gradido_Node ${POCO_LIBS} -pthread)
+	target_link_libraries(Gradido_Node ${POCO_LIBS} sodium -pthread)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 
