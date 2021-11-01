@@ -11,10 +11,6 @@
 
 #include "controller/GroupIndex.h"
 
-#ifdef __linux__
-#include "client/api/v1/get_message.h"
-#endif
-
 namespace ServerGlobals {
 
 	extern UniLib::controller::CPUSheduler* g_CPUScheduler;
