@@ -25,7 +25,6 @@ IF(UNIX)
 		"dependencies/poco/JSON/include"
 		"dependencies/poco/Net/include"
 		"dependencies/poco/NetSSL_OpenSSL/include"
-		"dependencies/iota.c/src"
 	)
 ENDIF()
 
