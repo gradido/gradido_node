@@ -192,15 +192,23 @@ int MainServer::main(const std::vector<std::string>& args)
 		printf("[Gradido_Node::main] started in %s, jsonrpc on port: %d\n", usedTime.string().data(), jsonrpc_port);
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
+		
 
 		// Stop the HTTPServer
 		//srv.stop();
 		// Stop the json server
 		jsonrpc_srv.stop();
 
+		printf("[Gradido_Node::main] Running Tasks Count on shutdown: %d\n", ServerGlobals::g_NumberExistingTasks);
+
+		// stop worker scheduler
+		// TODO: make sure that pending transaction are still write out to storage
+		ServerGlobals::g_CPUScheduler->stop();
+		ServerGlobals::g_WriteFileCPUScheduler->stop();
+		ServerGlobals::g_IotaRequestCPUScheduler->stop();		
+
 		// Optional:  Delete all global objects allocated by libprotobuf.
 		google::protobuf::ShutdownProtobufLibrary();
-
 	}
 	return Application::EXIT_OK;
 }

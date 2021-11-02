@@ -19,7 +19,7 @@ namespace ServerGlobals {
 
 	UniLib::controller::CPUSheduler* 	g_CPUScheduler = nullptr;
 	UniLib::controller::CPUSheduler* 	g_WriteFileCPUScheduler = nullptr;
-	UniLib::controller::CPUSheduler* g_IotaRequestCPUScheduler = nullptr;
+	UniLib::controller::CPUSheduler*    g_IotaRequestCPUScheduler = nullptr;
 	controller::GroupIndex* 			g_GroupIndex = nullptr;
 	std::string							g_FilesPath;
 	Poco::UInt16						g_CacheTimeout = 600;
@@ -27,6 +27,7 @@ namespace ServerGlobals {
 	Poco::UInt16						g_WriteToDiskTimeout = 10;
 	Context::Ptr g_SSL_CLient_Context = nullptr;
 	JsonRequest* g_IotaRequestHandler = nullptr;
+	Poco::AtomicCounter              g_NumberExistingTasks;
 
 	void clearMemory()
 	{

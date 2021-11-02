@@ -5,6 +5,7 @@
 #include "Poco/Types.h"
 #include "Poco/Logger.h"
 #include "Poco/Net/Context.h"
+#include "Poco/AtomicCounter.h"
 
 #include "task/CPUSheduler.h"
 #include "lib/JsonRequest.h"
@@ -26,6 +27,7 @@ namespace ServerGlobals {
 	extern Poco::UInt16						g_WriteToDiskTimeout;
 	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
 	extern JsonRequest* g_IotaRequestHandler;
+	extern Poco::AtomicCounter              g_NumberExistingTasks;
 
 	void clearMemory();
 	bool initSSLClientContext();

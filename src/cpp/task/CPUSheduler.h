@@ -61,6 +61,7 @@ namespace UniLib {
 			
 			int sheduleTask(TaskPtr task); 
 			void checkPendingTasks();
+			void stop();
 #ifdef _UNI_LIB_DEBUG
 			CPUShedulerThread** getThreads(uint8_t& count) {count = mThreadCount; return mThreads;};
 #endif
@@ -84,6 +85,8 @@ namespace UniLib {
 			//lib::MultithreadQueue<TaskPtr> mPendingTasks;
 			std::list<TaskPtr> mPendingTasks;
 			lib::MultithreadContainer mPendingTasksMutex;
+			bool mStopped;
+			Poco::FastMutex mCheckStopMutex;
 
         };
     }

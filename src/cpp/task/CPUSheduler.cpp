@@ -8,7 +8,7 @@ namespace UniLib {
 	namespace controller {
 
 		CPUSheduler::CPUSheduler(uint8_t threadCount, const char* name)
-			: mThreads(new CPUShedulerThread*[threadCount]), mThreadCount(threadCount), mName(name)
+			: mThreads(new CPUShedulerThread*[threadCount]), mThreadCount(threadCount), mName(name), mStopped(false)
 		{
 			char nameBuffer[10]; memset(nameBuffer, 0, 10);
 			//uint8_t len = std:: min(strlen(name), 7);
@@ -38,6 +38,12 @@ namespace UniLib {
 
 		int CPUSheduler::sheduleTask(TaskPtr task)
 		{
+			{ // scoped lock
+				Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+				if (mStopped) {
+					return 0;
+				}
+			} // scoped lock end
 			CPUShedulerThread* t = NULL;
 			// look at free worker threads
 			if(task->isAllParentsReady() && mFreeWorkerThreads.pop(t)) {
@@ -50,6 +56,17 @@ namespace UniLib {
 				mPendingTasksMutex.unlock();
 			}
 			return 0;
+		}
+
+		void CPUSheduler::stop()
+		{
+			mCheckStopMutex.lock();
+			mStopped = true;
+			mCheckStopMutex.unlock();
+
+			mPendingTasksMutex.lock();
+			mPendingTasks.clear();
+			mPendingTasksMutex.unlock();
 		}
 		TaskPtr CPUSheduler::getNextUndoneTask(CPUShedulerThread* Me)
 		{
@@ -74,6 +91,12 @@ namespace UniLib {
 		}
 		void CPUSheduler::checkPendingTasks()
 		{
+			{ // scoped lock
+				Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+				if (mStopped) {
+					return;
+				}
+			} // scoped lock end
 			TaskPtr task = getNextUndoneTask(NULL);
 			if (!task.isNull()) {
 				sheduleTask(task);
