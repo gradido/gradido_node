@@ -83,7 +83,7 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 		mResponseJson.AddMember("id", id, alloc);
 		mResponseJson.Accept(writer);
 
-		//printf("result: %s\n", buffer.GetString());
+		printf("result: %s\n", buffer.GetString());
 
 		responseStream << buffer.GetString() << std::endl;
 	}
