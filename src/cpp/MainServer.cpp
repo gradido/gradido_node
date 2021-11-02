@@ -199,7 +199,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		// Stop the json server
 		jsonrpc_srv.stop();
 
-		printf("[Gradido_Node::main] Running Tasks Count on shutdown: %d\n", ServerGlobals::g_NumberExistingTasks);
+		printf("[Gradido_Node::main] Running Tasks Count on shutdown: %d\n", ServerGlobals::g_NumberExistingTasks.value());
 
 		// stop worker scheduler
 		// TODO: make sure that pending transaction are still write out to storage
