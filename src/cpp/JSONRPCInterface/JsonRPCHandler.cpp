@@ -100,11 +100,25 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
 	Value jsonTransactionArray(kArrayType);
-	std::string prevTransaction;
+	//Poco::AutoPtr<model::GradidoBlock> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		if (it->size() > 0) {
 			jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
-			prevTransaction = *it;
+			// check for tx hash error
+			/*
+			Profiler time;
+			Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(*it, group));
+			printf("time unserialize: %s\n", time.string().data());
+			
+			if (!prevTransaction.isNull()) {
+				time.reset();
+				if (!gradidoBlock->validate(prevTransaction)) {
+
+				}
+				printf("time validate tx hash: %s\n", time.string().data());
+			}
+			prevTransaction = gradidoBlock;
+			*/
 		}
 	}
 	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);

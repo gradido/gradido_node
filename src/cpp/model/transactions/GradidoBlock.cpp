@@ -127,7 +127,7 @@ namespace model {
 		//yyyy-MM-dd HH:mm:ss
 		try {
 			Poco::DateTime received(Poco::Timestamp(mProtoGradidoBlock.received().seconds() * 1000000));
-			receivedString = Poco::DateTimeFormatter::format(received, "%Y-%m-%f %H:%M:%S");
+			receivedString = Poco::DateTimeFormatter::format(received, "%Y-%m-%d %H:%M:%S");
 		}
 		catch (Poco::Exception& ex) {
 			addError(new Error(__FUNCTION__, "error invalid received time"));
@@ -144,12 +144,15 @@ namespace model {
 		crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 		if (prevTxHash.size()) {
 			auto prexHashHex = convertBinToHex(prevTxHash);
-			printf("[GradidoBlock::calculateTxHash] calculate with prev tx hash: %s", prexHashHex.data());
+			printf("[GradidoBlock::calculateTxHash] calculate with prev tx hash: %s\n", prexHashHex.data());
 			crypto_generichash_update(&state, (const unsigned char*)prevTxHash.data(), prevTxHash.size());
 		}
 		crypto_generichash_update(&state, (const unsigned char*)transactionIdString.data(), transactionIdString.size());
+		//printf("transaction id string: %s\n", transactionIdString.data());
 		crypto_generichash_update(&state, (const unsigned char*)receivedString.data(), receivedString.size());
+		//printf("received: %s\n", receivedString.data());
 		crypto_generichash_update(&state, (const unsigned char*)signatureMapString.data(), signatureMapString.size());
+		//printf("signature map serialized: %s\n", convertBinToHex(signatureMapString).data());
 		crypto_generichash_final(&state, *hash, hash->size());
 		return hash;
 	}
