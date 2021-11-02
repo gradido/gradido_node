@@ -77,7 +77,15 @@ namespace iota {
 		try {
 			Value& data = json["data"];
 			Value& payload = data["payload"];
-			uint32_t iotaType = payload["type"].GetUint();
+			if (!payload.IsObject()) {
+				return false;
+			}
+			Value& typeObj = payload["type"];
+			if (!typeObj.IsUint()) {
+				printf("type isn't Uint, instead it is: %d\n", typeObj.GetType());
+				return false;
+			}
+			uint32_t iotaType = typeObj.GetUint();
 			auto type = fromIotaTransactionType(iotaType);
 			mType = type;
 

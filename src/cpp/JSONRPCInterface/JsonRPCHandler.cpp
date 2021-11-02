@@ -45,6 +45,7 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 		mResponseResult.AddMember("transaction", "", alloc);
 	}
 	else if (method == "getTransactions") {
+		printf("getTransactions called\n");
 		if(!params.IsObject()) {
 			return stateError("params not an object");
 		}
@@ -53,7 +54,7 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 		
 		if(!getStringParameter(params, "group", groupAlias)) return;
 		if(!getUInt64Parameter(params, "fromTransactionId", transactionId)) return;
-
+		printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
 		transactionId = params["fromTransactionId"].GetUint64();
 		getTransactions(transactionId, groupAlias);
 
@@ -95,7 +96,10 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 
 	auto gm = GroupManager::getInstance();
 	auto group = gm->findGroup(groupAlias);
-
+	if (group.isNull()) {
+		stateError("group not known");
+		return;
+	}
 	auto transactions = group->findTransactionsSerialized(fromTransactionId);
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
