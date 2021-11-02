@@ -222,7 +222,7 @@ namespace controller {
 		// but if someone ask for zero he gets all 
 		if (!transactionIdCursor) transactionIdCursor = 1;
 		Poco::SharedPtr<Block> block;
-		
+		printf("while %d <= %d\n", transactionIdCursor, mLastTransactionId);
 		while (transactionIdCursor <= mLastTransactionId) {
 			printf("while %d <= %d\n", transactionIdCursor, mLastTransactionId);
 			if (block.isNull() || !block->getBlockIndex()->hasTransactionNr(transactionIdCursor)) {
@@ -237,6 +237,7 @@ namespace controller {
 			++transactionIdCursor;
 
 		}
+		printf("return serialized: %d\n", transactionsSerialized.size());
 		return transactionsSerialized;
 	}
 
