@@ -101,6 +101,7 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 		return;
 	}
 	auto transactions = group->findTransactionsSerialized(fromTransactionId);
+	printf("%d transactions found\n", transactions.size());
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
 	Value jsonTransactionArray(kArrayType);

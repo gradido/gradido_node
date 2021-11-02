@@ -222,7 +222,9 @@ namespace controller {
 		// but if someone ask for zero he gets all 
 		if (!transactionIdCursor) transactionIdCursor = 1;
 		Poco::SharedPtr<Block> block;
+		
 		while (transactionIdCursor <= mLastTransactionId) {
+			printf("while %d <= %d\n", transactionIdCursor, mLastTransactionId);
 			if (block.isNull() || !block->getBlockIndex()->hasTransactionNr(transactionIdCursor)) {
 				block = getBlockContainingTransaction(transactionIdCursor);
 			}
