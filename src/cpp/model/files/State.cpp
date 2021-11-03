@@ -39,7 +39,6 @@ namespace model {
 		{
 			Poco::ScopedLock<Poco::FastMutex> _lock(g_StateMutex);
 			if (mLevelDB) {
-				printf("[State::~State]\n");
 				delete mLevelDB;
 				mLevelDB = nullptr;
 			}

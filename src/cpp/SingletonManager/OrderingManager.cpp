@@ -156,7 +156,6 @@ int OrderingManager::pushTransaction(Poco::AutoPtr<model::GradidoTransaction> tr
     }
     it->second->mutex.lock();
     it->second->transactions.push_back(transaction);
-    printf("[OrderingManager::pushTransaction] received transaction\n");
     it->second->mutex.unlock();
 
     return 0;

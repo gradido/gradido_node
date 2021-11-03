@@ -22,14 +22,10 @@ namespace model {
 	TransactionEntry::TransactionEntry(Poco::AutoPtr<GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex)
 		: mTransactionNr(transaction->getID()), mSerializedTransaction(transaction->getSerialized()), mFileCursor(-10)
 	{
-		printf("TransactionEntry::TransactionEntry\n");
 		auto received = transaction->getReceived();
-		printf("after received\n");
 		mMonth = received.month();
 		mYear = received.year();
-		printf("after month and year\n");
 		mAddressIndices = transaction->getInvolvedAddressIndices(addressIndex);
-		printf("after address indices\n");
 	}
 
 	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const uint32_t* addressIndices, uint8_t addressIndiceCount)
