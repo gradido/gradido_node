@@ -11,6 +11,9 @@ IotaMessageToTransactionTask::IotaMessageToTransactionTask(
     Poco::SharedPtr<iota::Message> message)
 : mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessage(message)
 {
+#ifdef _UNI_LIB_DEBUG
+    setName(mMessage->getId().toHex().data());
+#endif
     OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneIndex, mTimestamp);
 }
 
@@ -39,7 +42,7 @@ int IotaMessageToTransactionTask::run()
         
     } else {		
         // check if transaction already exist
-        if (group->isSignatureInCache(transaction)) {
+        if (!group.isNull() && group->isSignatureInCache(transaction)) {
             return 0;
         }
         // if it is a cross group transaction and the other pair belongs to us we store it for later use in validation

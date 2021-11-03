@@ -58,6 +58,7 @@ namespace model {
 			// we must wait until this node receive also the pair transaction
 			Poco::Timestamp timeout = Poco::Timestamp() + Poco::Timespan(MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SECONDS, 0);
 			Poco::AutoPtr<GradidoTransaction> pairTransaction;
+			printf("now: %d, timeout: %d\n", Poco::Timestamp().epochTime(), timeout.epochTime());
 			while (Poco::Timestamp() < timeout) {
 				pairTransaction = om->findPairedTransaction(pairedTransactionId);
 				Poco::Thread::sleep(MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SLEEPTIME_MILLISECONDS);

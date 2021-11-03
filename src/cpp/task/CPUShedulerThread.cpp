@@ -40,16 +40,25 @@ namespace UniLib {
 				//debug::CPUShedulerTasksLog* l = debug::CPUShedulerTasksLog::getInstance();
 				std::string name = mWaitingTask->getName();
 				//l->addTaskLogEntry((HASH)mWaitingTask.getResourcePtrHolder(), mWaitingTask->getResourceType(), mName.data(), name);
-#endif 
-				int returnValue = mWaitingTask->run();
-				if (!returnValue) {
-					mWaitingTask->setTaskFinished();
-				}
-#ifdef _UNI_LIB_DEBUG
-				//l->removeTaskLogEntry((HASH)mWaitingTask.getResourcePtrHolder());
-				mSpeedLog.information("%s used on thread: %s by Task: %s of: %s (returned: %d)",
-					counter.string(), mName, std::string(mWaitingTask->getResourceType()), name, returnValue);
 #endif
+				try {
+					int returnValue = mWaitingTask->run();
+					if (!returnValue) {
+						mWaitingTask->setTaskFinished();
+					}
+#ifdef _UNI_LIB_DEBUG
+					//l->removeTaskLogEntry((HASH)mWaitingTask.getResourcePtrHolder());
+					mSpeedLog.information("%s used on thread: %s by Task: %s of: %s (returned: %d)",
+						counter.string(), mName, std::string(mWaitingTask->getResourceType()), name, returnValue);
+#endif
+				}
+				catch (Poco::NullPointerException& e) {
+					printf("[CPUShedulerThread] null pointer exception for task type: %s", mWaitingTask->getResourceType());
+#ifdef _UNI_LIB_DEBUG
+					printf("task name: %s\n", name.data());
+#endif
+				}
+				
 				mWaitingTask = mParent->getNextUndoneTask(this);
 			}
 			return 0;
