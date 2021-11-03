@@ -107,6 +107,13 @@ namespace controller {
 			HalfSignature(const char* signature) {
 				memcpy(&sign, signature, 32);
 			}
+			HalfSignature(Poco::AutoPtr<model::GradidoTransaction> transaction) {
+				auto sigPairs = transaction->getProto().sig_map().sigpair();
+				if (sigPairs.size() == 0) {
+					throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
+				}
+				memcpy(&sign, igPairs.Get(0).signature().data(), 32);
+			}
 			bool operator<(const HalfSignature& ob) const {
 				return
 					sign[0] < ob.sign[0] ||

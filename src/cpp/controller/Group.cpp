@@ -24,9 +24,9 @@ namespace controller {
 		// TODO: sanity check, compare with block size
 		mLastTransactionId = mGroupState.getInt32ValueForKey("lastTransactionId", mLastTransactionId);
 
-		std::clog << "[Group " << groupAlias << "] " 
+		std::clog << "[Group " << groupAlias << "] "
 			<< "loaded from state: last address index : " << std::to_string(mLastAddressIndex)
-			<< ", last block nr: " << std::to_string(mLastBlockNr) 
+			<< ", last block nr: " << std::to_string(mLastBlockNr)
 			<< ", last transaction id: " << std::to_string(mLastTransactionId)
 			<< std::endl;
 		mAddressIndex = new AddressIndex(folderPath, mLastAddressIndex);
@@ -53,7 +53,7 @@ namespace controller {
 		printf("[Group::updateLastAddressIndex] %d\n", lastAddressIndex);
 	}
 	void Group::updateLastBlockNr(int lastBlockNr)
-	{	
+	{
 		mLastBlockNr = lastBlockNr;
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
 		printf("[Group::updateLastBlockNr] %d\n", lastBlockNr);
@@ -73,7 +73,7 @@ namespace controller {
 		}
 
 		// check previous transaction
-		if (newTransaction->getID() > 1) 
+		if (newTransaction->getID() > 1)
 		{
 			Poco::FastMutex::ScopedLock lock(mWorkingMutex);
 			if (mLastTransaction->getID() + 1 != newTransaction->getID()) {
@@ -84,9 +84,9 @@ namespace controller {
 			if (!newTransaction->validate(mLastTransaction)) {
 				return false;
 			}
-		} 
+		}
 
-		// validate specific	
+		// validate specific
 		auto transactionBody = newTransaction->getGradidoTransaction()->getTransactionBody();
 		auto type = transactionBody->getType();
 		model::TransactionBase* specificTransaction = nullptr;
@@ -96,7 +96,7 @@ namespace controller {
 
 		switch (type) {
 		case model::TRANSACTION_CREATION:
-			// check if address has get maximal 1.000 GDD creation in the month 
+			// check if address has get maximal 1.000 GDD creation in the month
 			specificTransaction = transactionBody->getCreation();
 			level = model::TRANSACTION_VALIDATION_DATE_RANGE;
 			//uint64_t sum = calculateCreationSum()
@@ -131,7 +131,7 @@ namespace controller {
 	}
 
 	bool Group::addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
-	{		
+	{
 		printf("[Group::addTransactionFromIota] milestone: %d\n", iotaMilestoneId);
 		model::TransactionValidationLevel level = model::TRANSACTION_VALIDATION_SINGLE;
 
@@ -144,7 +144,7 @@ namespace controller {
 
 		switch (type) {
 		case model::TRANSACTION_CREATION:
-			// check if address has get maximal 1.000 GDD creation in the month 
+			// check if address has get maximal 1.000 GDD creation in the month
 			level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_DATE_RANGE);
 			//uint64_t sum = calculateCreationSum()
 			break;
@@ -157,7 +157,7 @@ namespace controller {
 			}
 			break;
 		}
-		
+
 		// intern validation
 		if (!newTransaction->validate(level)) {
 			return false;
@@ -218,8 +218,8 @@ namespace controller {
 	{
 		std::vector<std::string> transactionsSerialized;
 		uint64_t transactionIdCursor = fromTransactionId;
-		// we cannot handle zero transaction id, starts with one, 
-		// but if someone ask for zero he gets all 
+		// we cannot handle zero transaction id, starts with one,
+		// but if someone ask for zero he gets all
 		if (!transactionIdCursor) transactionIdCursor = 1;
 		Poco::SharedPtr<Block> block;
 		printf("while %d <= %d\n", transactionIdCursor, mLastTransactionId);
@@ -302,7 +302,7 @@ namespace controller {
 	{
 		// find block by transactions id
 		// approximately 300.000 transactions can be fitted in one block
-		// for now search simply from last block 
+		// for now search simply from last block
 		// TODO: think of a better approach later, if more than 10 blocks a written
 		int lastBlockNr = mLastBlockNr;
 		Poco::SharedPtr<Block> block;
@@ -312,7 +312,7 @@ namespace controller {
 			if (block->getBlockIndex()->getMaxTransactionNr() < transactionId) {
 				return nullptr;
 			}
-			lastBlockNr--;			
+			lastBlockNr--;
 		} while (!block->getBlockIndex()->hasTransactionNr(transactionId));
 
 		return block;
@@ -335,12 +335,9 @@ namespace controller {
 
 	bool Group::isTransactionAlreadyExist(Poco::AutoPtr<model::GradidoTransaction> transaction)
 	{
-		auto sigPairs = transaction->getProto().sig_map().sigpair();
-		if (sigPairs.size() == 0) {
-			throw std::runtime_error("[Group::isTransactionAlreadyExist] empty signatures");
-		}
-		HalfSignature transactionSign(sigPairs.Get(0).signature().data());
+		HalfSignature transactionSign(transaction);
 
+		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		if (mCachedSignatures.has(transactionSign)) {
 			mCachedSignatures.get(transactionSign);
 			return true;
@@ -351,25 +348,15 @@ namespace controller {
 	void Group::addSignatureToCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
-		auto sigPairs = transaction->getProto().sig_map().sigpair();
-		if (sigPairs.size() == 0) {
-			throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
-		}
-		HalfSignature transactionSign(sigPairs.Get(0).signature().data());
-		mCachedSignatures.add(transactionSign, nullptr);
+		mCachedSignatures.add(HalfSignature(transaction), nullptr);
 	}
 
 	bool Group::isSignatureInCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
-		auto sigPairs = transaction->getProto().sig_map().sigpair();
-		if (sigPairs.size() == 0) {
-			throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
-		}
-		HalfSignature transactionSign(sigPairs.Get(0).signature().data());
-		return mCachedSignatures.has(transactionSign);
+		return mCachedSignatures.has(HalfSignature(transaction));
 	}
-	
+
 	void Group::fillSignatureCacheOnStartup()
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
@@ -377,8 +364,6 @@ namespace controller {
 		int transactionNr = mLastTransactionId;
 
 		Poco::AutoPtr<model::GradidoBlock> transaction;
-		auto gm = GroupManager::getInstance();
-		auto group = gm->findGroup(mGroupAlias);
 		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MILESTONES_BOOTSTRAP_COUNT * 3 * 60, 0);
 
 		do {
@@ -389,13 +374,13 @@ namespace controller {
 			std::string serializedTransaction;
 			auto getTransationResult = block->getTransaction(transactionNr, serializedTransaction);
 			if (-2 == getTransationResult) {
-				blockNr--;				
+				blockNr--;
 				continue;
 			}
 			else if (0 != getTransationResult) {
 				throw std::runtime_error("[Group::fillSignatureCacheOnStartup] couldnt load transaction: " + std::to_string(transactionNr));
 			}
-			transaction = new model::GradidoBlock(serializedTransaction, group);
+			transaction = new model::GradidoBlock(serializedTransaction, nullptr);
 			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();
 			if (sigPairs.size()) {
 				auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());
