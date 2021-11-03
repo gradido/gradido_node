@@ -165,12 +165,15 @@ namespace model {
 		auto transfer = getTransfer();
 		auto otherTransfer = paired->getTransfer();
 		if (transfer.sender().amount() != otherTransfer.sender().amount()) {
+			printf("sender amount are different\n");
 			return false;
 		}
 		if (getOtherGroup() == paired->getOtherGroup()) {
+			printf("other groups are the same\n");
 			return false;
 		}
 		if (getPairedTransactionId() != paired->getPairedTransactionId()) {
+			printf("paired transaction ids are different\n");
 			return false;
 		}
 		if (
@@ -179,12 +182,15 @@ namespace model {
 			// check if booth has the same type (booth inbound or booth outbound) 
 			mProtoTransfer.has_inbound() != paired->mProtoTransfer.has_outbound()
 			) {
+				printf("one has local or has_inbound != has_outbound")
 			return false;
 		}
 		if (transfer.sender().pubkey() != otherTransfer.sender().pubkey()) {
+			printf("sender publickey are not the same\n");
 			return false;
 		}
 		if (transfer.recipiant() != otherTransfer.recipiant()) {
+			printf("recipiants are not the same\n");
 			return false;
 		}
 		return true;
