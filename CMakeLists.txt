@@ -159,22 +159,12 @@ IF(UNIX)
 	set(POCO_LIBS PocoFoundation PocoUtil PocoNet PocoNetSSL PocoData)
 ENDIF()
 
-############################## bind iota c lib   ###################################
-IF(UNIX)
-#add_subdirectory("dependencies/iota-wrapper")
-	#add_subdirectory("dependencies/cJSON")
-	add_subdirectory("dependencies/iota.c")
-endif()
-
 add_executable(Gradido_Node ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
 if(WIN32)
 
-
 #find_library(MYSQL_LIBRARIES_DEBUG  mariadbclient.lib PATHS "import/mariadb/lib/debug")
-
-
 
 set(CMAKE_CXX_FLAGS         "/MP /EHsc")
 #set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3")
