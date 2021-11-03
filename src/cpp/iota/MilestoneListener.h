@@ -6,7 +6,7 @@
 namespace iota {
 
 	//! MAGIC NUMBER: how many milestones should be loaded on startup from the past
-#define MILESTONES_BOOTSTRAP_COUNT 5
+#define MILESTONES_BOOTSTRAP_COUNT 20
 	//! MAGIC NUMBER: how deep node server should go through parent and parent messages from milestone to find gradido transactions
 	//! it maybe depends on how many messages iota is processing per second
 	//! For every message to request from iota a new task will be started and run in g_IotaRequestCPUScheduler

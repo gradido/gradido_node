@@ -19,14 +19,14 @@ namespace controller {
 
 	void GroupIndex::clear()
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
 	}
 
 	size_t GroupIndex::update()
 	{
 		clear();
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto cfg = mModel->getConfig();
 		std::vector<std::string> keys;
 		cfg->keys(keys);
@@ -42,7 +42,7 @@ namespace controller {
 
 	Poco::Path GroupIndex::getFolder(const std::string& groupAlias)
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto it = mGroups.find(groupAlias);
 		if(it != mGroups.end()) {
 			auto folder = Poco::Path(Poco::Path(ServerGlobals::g_FilesPath + '/'));

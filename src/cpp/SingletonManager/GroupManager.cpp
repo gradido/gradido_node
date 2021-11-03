@@ -8,7 +8,7 @@
 GroupManager::GroupManager()
 	: mInitalized(false), mGroupIndex(nullptr)
 {
-	
+
 }
 
 GroupManager::~GroupManager()
@@ -33,7 +33,7 @@ int GroupManager::init(const char* groupIndexFileName)
 	mGroupIndex = new controller::GroupIndex(new model::files::GroupIndex(groupIndexFileName));
 	mGroupIndex->update();
 	//auto groups = mGroupIndex->listGroupAliases();
-	
+
 	mInitalized = true;
 
 	return 0;
@@ -48,20 +48,28 @@ GroupManager* GroupManager::getInstance()
 Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& groupAlias)
 {
 	if (!mInitalized) return nullptr;
-	Poco::ScopedLock<Poco::FastMutex> lock(mWorkMutex);
+
+	mWorkMutex.lock();
 	auto it = mGroupMap.find(groupAlias);
 	if (it != mGroupMap.end()) {
-		return it->second;
+		auto result = it->second;
+		mWorkMutex.unlock();
+		return result;
 	}
 
-	if (!mGroupIndex) return nullptr;
+	if (!mGroupIndex) {
+		mWorkMutex.unlock();
+		return nullptr;
+	}
 
 	auto folder = mGroupIndex->getFolder(groupAlias);
 	if (folder.depth() == 0) {
+		mWorkMutex.unlock();
 		return nullptr;
 	}
 	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
 	mGroupMap.insert({ groupAlias, group });
+	mWorkMutex.unlock();
 	group->init();
 	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;

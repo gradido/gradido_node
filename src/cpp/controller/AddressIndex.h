@@ -36,7 +36,7 @@ namespace controller {
 	{
 	public:
 		AddressIndex(Poco::Path path, uint32_t lastIndex);
-		
+
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
 		//! \return Index or 0 if address didn't exist.
 		uint32_t getIndexForAddress(const std::string& address);
@@ -53,7 +53,7 @@ namespace controller {
 		//! \return False if index address already exist, else true.
 		bool addAddressIndex(const std::string& address, uint32_t index);
 
-		inline uint32_t getLastIndex() { Poco::FastMutex::ScopedLock lock(mWorkingMutex); return mLastIndex; }
+		inline uint32_t getLastIndex() { Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex); return mLastIndex; }
 
 		//! \brief take first hex sets from address as folder and file name
 		//!
@@ -64,7 +64,7 @@ namespace controller {
 
 	protected:
 		//! \brief reading model::files::AddressIndex from cache or if not exist in cache, creating model::files::AddressIndex which load from file if exist
-		//! 
+		//!
 		//! Can need some time if file must at first load from disk, maybe I/O read.
 		Poco::SharedPtr<model::files::AddressIndex> getAddressIndex(const std::string& address);
 

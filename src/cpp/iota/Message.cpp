@@ -140,7 +140,6 @@ namespace iota {
 		auto findPos = mIndex.find("GRADIDO");
 
 		if (findPos != mIndex.npos) {
-			printf("index: %s\n", mIndex.data());
 			return mIndex.substr(8);
 		}
 		return "";

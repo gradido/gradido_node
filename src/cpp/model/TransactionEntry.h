@@ -45,7 +45,7 @@ namespace model {
 		inline int32_t getFileCursor() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mFileCursor; }
 
 		inline void addAddressIndex(uint32_t addressIndex) { Poco::FastMutex::ScopedLock lock(mFastMutex); mAddressIndices.push_back(addressIndex); }
-		inline const std::vector<uint32_t>& getAddressIndices() { return mAddressIndices; }
+		inline std::vector<uint32_t> getAddressIndices() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mAddressIndices; }
 
 		inline uint64_t getTransactionNr() { return mTransactionNr; }
 		inline std::string getSerializedTransaction() { return mSerializedTransaction; }

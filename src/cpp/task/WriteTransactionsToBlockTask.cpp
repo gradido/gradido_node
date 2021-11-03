@@ -15,6 +15,7 @@ WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()
 
 int WriteTransactionsToBlockTask::run()
 {
+	printf("WriteTransactionsToBlockTask::run\n");
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
 	// sort in ascending order by transaction nr
 	mTransactions.sort();
@@ -34,6 +35,7 @@ int WriteTransactionsToBlockTask::run()
 	if (result.size() != mTransactions.size()) {
 		addError(new Error(__FUNCTION__, "error by append lines, result vector size didn't match transaction list size"));
 	}
+	printf("append lines success: %d\n", result[0]);
 
 	size_t cursor = 0;
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {

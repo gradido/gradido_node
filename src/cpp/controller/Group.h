@@ -34,7 +34,7 @@ namespace controller {
 		Group(std::string alias, Poco::Path folderPath);
 		~Group();
 
-		// initialize, fill cache 
+		// initialize, fill cache
 		bool init();
 
 		//! \brief Put new transaction to block chain, if valid.
@@ -112,7 +112,7 @@ namespace controller {
 				if (sigPairs.size() == 0) {
 					throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
 				}
-				memcpy(&sign, igPairs.Get(0).signature().data(), 32);
+				memcpy(&sign, sigPairs.Get(0).signature().data(), 32);
 			}
 			bool operator<(const HalfSignature& ob) const {
 				return

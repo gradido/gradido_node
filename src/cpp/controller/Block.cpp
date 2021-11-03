@@ -20,7 +20,7 @@ namespace controller {
 
 	Block::~Block()
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		TimeoutManager::getInstance()->unregisterTimeout(this);
 
 		/*for (auto it = mSerializedTransactions.begin(); it != mSerializedTransactions.end(); it++) {
@@ -34,14 +34,13 @@ namespace controller {
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
 	bool Block::pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction)
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
-
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+	
 		if (mTransactionWriteTask.isNull()) {
 			mTransactionWriteTask = new WriteTransactionsToBlockTask(mBlockFile, mBlockIndex);
 		}
-		mTransactionWriteTask->addSerializedTransaction(transaction);
+		mTransactionWriteTask->addSerializedTransaction(transaction);	
 		mSerializedTransactions.add(transaction->getTransactionNr(), transaction);
-
 		return true;
 
 	}
@@ -95,7 +94,7 @@ namespace controller {
 
 	void Block::checkTimeout()
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
 		if (!mTransactionWriteTask.isNull()) {
 			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {

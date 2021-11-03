@@ -25,16 +25,17 @@ namespace model {
 
 		bool AddressIndex::add(const std::string& address, uint32_t index)
 		{
-			Poco::FastMutex::ScopedLock lock(mFastMutex);
-
 			mFileWritten = false;
-			auto result = mAddressesIndices.insert(std::pair<std::string, uint32_t>(address, index));
-			if (result.second) {
+			mFastMutex.lock();
+			bool result = mAddressesIndices.insert(std::pair<std::string, uint32_t>(address, index)).second;
+			mFastMutex.unlock();
+
+			if (result) {
 				// write update direct to file
 				// TODO: optimize, write not every time, maybe better like block after a certain timeout
 				writeToFile();
 			}
-			return result.second;
+			return result;
 		}
 
 		uint32_t AddressIndex::getIndexForAddress(const std::string &address)
@@ -160,6 +161,8 @@ namespace model {
 			uint32_t index = 0;
 			std::map<int, std::string> sortedMap;
 
+			Poco::FastMutex::ScopedLock lock(mFastMutex);
+			
 			while (readedSize < fileSize) {
 				fileStream.read(*hash, 32);
 				readedSize += 32;

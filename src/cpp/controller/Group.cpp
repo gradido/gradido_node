@@ -50,19 +50,16 @@ namespace controller {
 	{
 		mLastAddressIndex = lastAddressIndex;
 		mGroupState.setKeyValue("lastAddressIndex", std::to_string(mLastAddressIndex));
-		printf("[Group::updateLastAddressIndex] %d\n", lastAddressIndex);
 	}
 	void Group::updateLastBlockNr(int lastBlockNr)
 	{
 		mLastBlockNr = lastBlockNr;
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
-		printf("[Group::updateLastBlockNr] %d\n", lastBlockNr);
 	}
 	void Group::updateLastTransactionId(int lastTransactionId)
 	{
 		mLastTransactionId = lastTransactionId;
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
-		printf("[Group::updateLastTransactionId] %d\n", lastTransactionId);
 	}
 
 	bool Group::addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction)
@@ -75,7 +72,7 @@ namespace controller {
 		// check previous transaction
 		if (newTransaction->getID() > 1)
 		{
-			Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 			if (mLastTransaction->getID() + 1 != newTransaction->getID()) {
 				newTransaction->addError(new Error(__FUNCTION__, "Last transaction is not previous transaction"));
 				return false;
@@ -111,7 +108,7 @@ namespace controller {
 			return false;
 		}
 
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		mLastTransaction = newTransaction;
 		auto block = getCurrentBlock();
 		if (block.isNull()) {
@@ -132,7 +129,7 @@ namespace controller {
 
 	bool Group::addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
 	{
-		printf("[Group::addTransactionFromIota] milestone: %d\n", iotaMilestoneId);
+		//printf("[Group::addTransactionFromIota] milestone: %d\n", iotaMilestoneId);
 		model::TransactionValidationLevel level = model::TRANSACTION_VALIDATION_SINGLE;
 
 		if (isTransactionAlreadyExist(newTransaction)) {
@@ -171,7 +168,7 @@ namespace controller {
 			getLastTransaction()
 		));
 
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto block = getCurrentBlock();
 		if (block.isNull()) {
 			newTransaction->addError(new Error(__FUNCTION__, "didn't get valid block"));
@@ -206,7 +203,7 @@ namespace controller {
 
 	Poco::AutoPtr<model::GradidoBlock> Group::findLastTransaction(const std::string& address)
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return Poco::AutoPtr<model::GradidoBlock>(); }
 
@@ -222,9 +219,8 @@ namespace controller {
 		// but if someone ask for zero he gets all
 		if (!transactionIdCursor) transactionIdCursor = 1;
 		Poco::SharedPtr<Block> block;
-		printf("while %d <= %d\n", transactionIdCursor, mLastTransactionId);
+		printf("[Group::findTransactionsSerialized] asked transactionId: %d, last: %d\n", fromTransactionId, mLastTransactionId);
 		while (transactionIdCursor <= mLastTransactionId) {
-			printf("while %d <= %d\n", transactionIdCursor, mLastTransactionId);
 			if (block.isNull() || !block->getBlockIndex()->hasTransactionNr(transactionIdCursor)) {
 				block = getBlockContainingTransaction(transactionIdCursor);
 			}
@@ -237,13 +233,12 @@ namespace controller {
 			++transactionIdCursor;
 
 		}
-		printf("return serialized: %d\n", transactionsSerialized.size());
 		return transactionsSerialized;
 	}
 
 	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address)
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
@@ -273,7 +268,7 @@ namespace controller {
 
 	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address, int month, int year)
 	{
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
@@ -291,7 +286,7 @@ namespace controller {
 		if (!block.isNull()) {
 			return block;
 		}
-		Poco::FastMutex::ScopedLock lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		// Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
 		block = new Block(blockNr, mFolderPath, &mTaskObserver, mGroupAlias);
 		mCachedBlocks.add(blockNr, block);

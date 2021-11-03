@@ -1,4 +1,5 @@
 #include "ConfirmedMessagesCache.h"
+#include <iostream>
 
 namespace iota {
 	ConfirmedMessagesCache::ConfirmedMessagesCache()
@@ -13,7 +14,9 @@ namespace iota {
 		Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
 		auto memory = mMaxMessageCount * sizeof(MessageId);
 		float memory_kByte = (float)memory / 1024.0f;
-		printf("[~ConfirmedMessagesCache] max count: %d, memory consumption: %f kByte\n", mMaxMessageCount, memory_kByte);
+		std::clog << "[~ConfirmedMessagesCache] max count: " << mMaxMessageCount 
+				  << ", memory consumption: " << memory_kByte << std::endl;
+		//printf("[~ConfirmedMessagesCache] max count: %d, memory consumption: %f kByte\n", mMaxMessageCount, memory_kByte);
 		mMessageCache.clear();
 	}
 

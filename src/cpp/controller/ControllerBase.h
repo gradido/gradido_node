@@ -9,7 +9,7 @@ namespace controller {
 	{
 	public:
 	protected:
-		Poco::FastMutex mWorkingMutex;
+		Poco::Mutex mWorkingMutex;
 	};
 }
 

@@ -51,13 +51,11 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 		}
 		std::string groupAlias;
 		uint64_t transactionId = 0;
-		
+
 		if(!getStringParameter(params, "group", groupAlias)) return;
 		if(!getUInt64Parameter(params, "fromTransactionId", transactionId)) return;
 		printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
-		transactionId = params["fromTransactionId"].GetUint64();
 		getTransactions(transactionId, groupAlias);
-
 	}
 	else {
 		stateError("method not known");
@@ -100,8 +98,9 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 		stateError("group not known");
 		return;
 	}
+	printf("group found and loaded\n");
 	auto transactions = group->findTransactionsSerialized(fromTransactionId);
-	printf("%d transactions found\n", transactions.size());
+	printf("%d transactions for group: %s found\n", transactions.size(), groupAlias.data());
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
 	Value jsonTransactionArray(kArrayType);
@@ -114,7 +113,7 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 			Profiler time;
 			Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(*it, group));
 			printf("time unserialize: %s\n", time.string().data());
-			
+
 			if (!prevTransaction.isNull()) {
 				time.reset();
 				if (!gradidoBlock->validate(prevTransaction)) {
