@@ -183,7 +183,7 @@ namespace model {
 			// check if booth has the same type (booth inbound or booth outbound) 
 			mProtoTransfer.has_inbound() != paired->mProtoTransfer.has_outbound()
 			) {
-				printf("one has local or has_inbound != has_outbound")
+			printf("one has local or has_inbound != has_outbound");
 			return false;
 		}
 		if (transfer.sender().pubkey() != otherTransfer.sender().pubkey()) {
