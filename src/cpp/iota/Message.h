@@ -1,5 +1,5 @@
-#ifndef __GRADIDO_NODE_IOTA_MESSAGE 
-#define __GRADIDO_NODE_IOTA_MESSAGE 
+#ifndef __GRADIDO_NODE_IOTA_MESSAGE
+#define __GRADIDO_NODE_IOTA_MESSAGE
 
 #include "../SingletonManager/MemoryManager.h"
 #include "../task/CPUTask.h"
@@ -13,9 +13,8 @@ namespace iota {
 	struct MessageId
 	{
 		uint64_t messageId[4];
-		const char* groupAlias;
 
-		MessageId() : groupAlias(nullptr) {
+		MessageId() {
 			memset(messageId, 0, 4 * sizeof(uint64_t));
 		}
 
@@ -98,6 +97,7 @@ namespace iota {
 	protected:
 		MessageId mId;
 		MessageType mType;
+		// TODO: memory optimisation, use fixed array of pointer, use template free list (vgl. Gems 4)
 		std::vector<MessageId> mParentMessageIds;
 		MemoryBin* mData;
 		std::string mIndex;
@@ -128,7 +128,7 @@ namespace iota {
 		inline const Poco::SharedPtr<Message> getRootMilestone() const { return mRootMilestone; }
 
 	protected:
-		 Poco::SharedPtr<Message> mMessage;		 
+		 Poco::SharedPtr<Message> mMessage;
 		 Poco::SharedPtr<Message> mRootMilestone;
 		 uint8_t mTargetRecursionDeep;
 		 uint8_t mRecursionDeep;
@@ -147,4 +147,4 @@ namespace std {
 	};
 }
 
-#endif //__GRADIDO_NODE_IOTA_MESSAGE 
+#endif //__GRADIDO_NODE_IOTA_MESSAGE

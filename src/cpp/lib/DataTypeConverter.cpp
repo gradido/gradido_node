@@ -198,9 +198,6 @@ namespace DataTypeConverter
 		return bin;
 	}
 
-
-
-
 	std::string binToBase64(const unsigned char* data, size_t size, int variant /*= sodium_base64_VARIANT_ORIGINAL*/)
 	{
 		auto mm = MemoryManager::getInstance();
@@ -295,13 +292,13 @@ namespace DataTypeConverter
 		int count_replacements = 0;
 
 		if (json.IsObject()) {
-			for (auto it = json.MemberBegin(); it != json.MemberEnd(); it++) 
+			for (auto it = json.MemberBegin(); it != json.MemberEnd(); it++)
 			{
 				if (it->value.IsString()) {
 					std::string name(it->name.GetString(), it->name.GetStringLength());
 					if ("amount" == name) continue;
 				}
-				
+
 				count_replacements += replaceBase64WithHex(it->value, alloc);
 			}
 		}
@@ -310,7 +307,7 @@ namespace DataTypeConverter
 				count_replacements += replaceBase64WithHex(*it, alloc);
 			}
 		}
-		else if (json.IsString()) 
+		else if (json.IsString())
 		{
 			std::string field_value(json.GetString(), json.GetStringLength());
 			if (!g_rexExpBase64.match(field_value)) return 0;
@@ -353,8 +350,8 @@ namespace DataTypeConverter
 			pocoVar.convert(str);
 			rapidjsonValue.SetString(str.data(), str.size(), alloc);
 			return true;
-		} 
-		else if (pocoVar.isInteger()) 
+		}
+		else if (pocoVar.isInteger())
 		{
 			if (pocoVar.isSigned()) {
 				Poco::Int64 i = 0;
@@ -378,7 +375,7 @@ namespace DataTypeConverter
 				}
 				return true;
 			}
-		} 
+		}
 		else if (pocoVar.isBoolean()) {
 			bool b = false;
 			pocoVar.convert(b);

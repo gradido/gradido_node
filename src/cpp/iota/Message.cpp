@@ -217,11 +217,7 @@ namespace iota {
 				//printf("[%d] exit on recursion %d because all message ids already exist\n", mRootMilestone->getMilestoneId(), mRecursionDeep);
 			}
 		}
-		else {
-			if (mTargetRecursionDeep > 1) {
-				//printf("[%d] exit on recursion: %d\n", mRootMilestone->getMilestoneId(), mRecursionDeep);
-			}
-		}
+
 		return 0;
 	}
 }
