@@ -10,9 +10,11 @@ namespace iota {
 
 	ConfirmedMessagesCache::~ConfirmedMessagesCache()
 	{
+		Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
 		auto memory = mMaxMessageCount * sizeof(MessageId);
 		float memory_kByte = (float)memory / 1024.0f;
 		printf("[~ConfirmedMessagesCache] max count: %d, memory consumption: %f kByte\n", mMaxMessageCount, memory_kByte);
+		mMessageCache.clear();
 	}
 
 	ConfirmedMessagesCache* ConfirmedMessagesCache::getInstance()
@@ -36,6 +38,7 @@ namespace iota {
 
 	void ConfirmedMessagesCache::remove(const MessageId& messageId)
 	{
+		Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
 		mMessageCache.remove(messageId);
 	}
 }
