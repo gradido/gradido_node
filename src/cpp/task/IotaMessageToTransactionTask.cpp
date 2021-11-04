@@ -41,25 +41,15 @@ int IotaMessageToTransactionTask::run()
         }
         
     } else {		
-        // check if transaction already exist
-        if (!group.isNull() && group->isSignatureInCache(transaction)) {
-            return 0;
-        }
-        // if it is a cross group transaction and the other pair belongs to us we store it for later use in validation
-        if (transaction->getTransactionBody()->isTransfer()) {
-            auto transfer = transaction->getTransactionBody()->getTransfer();
-            // we need only outbound transactions from another groups for validation
-            if (transfer->isOutbound()) {
-                auto pairGroup = gm->findGroup(transfer->getOtherGroup());
-                if (!pairGroup.isNull()) {
-                    OrderingManager::getInstance()->pushPairedTransaction(transaction);
-                }
-            }
-        }
-        // if this transaction doesn't belong to us, we can quit here 
-		if (group.isNull()) {
-			return 0;
+		// if it is a cross group transaction we store both in Ordering Manager for easy access for validation
+		if (transaction->getTransactionBody()->isTransfer()) {
+			OrderingManager::getInstance()->pushPairedTransaction(transaction);
 		}
+        // check if transaction already exist
+        // if this transaction doesn't belong to us, we can quit here 
+        if (group.isNull() || group->isSignatureInCache(transaction)) {
+            return 0;
+        }       
         
         // hand over to OrderingManager
         std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;

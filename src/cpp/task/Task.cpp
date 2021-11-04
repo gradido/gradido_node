@@ -78,7 +78,11 @@ namespace UniLib {
 				return;
 			}
 			//mReferenceMutex.unlock();
-
+		}
+		int Task::getReferenceCount()
+		{
+			Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
+			return mReferenceCount;
 		}
 
 		void Task::lock()

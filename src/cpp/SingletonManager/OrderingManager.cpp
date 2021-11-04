@@ -3,8 +3,9 @@
 #include <stdexcept>
 #include "../controller/Group.h"
 
-OrderingManager::OrderingManager()
-: mIotaMilestoneListener()
+
+OrderingManager::OrderingManager() 
+: mIotaMilestoneListener(), mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES)
 {
 }
 
@@ -93,49 +94,53 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
 		}
     } // end scoped lock
 
-    { // scoped lock 
-        Poco::ScopedLock<Poco::FastMutex> _lock(mMilestonesWithTransactionsMutex);
-        auto it = mMilestonesWithTransactions.find(milestoneId);
-        if (it == mMilestonesWithTransactions.end()) {
-            // our entry wasn't found, maybe it was already processed by another thread?
-            return;
+    
+    mMilestonesWithTransactionsMutex.lock();
+    auto it = mMilestonesWithTransactions.find(milestoneId);
+    mMilestonesWithTransactionsMutex.unlock();
+    // end return iterator past last entry so it should be save, even if a new entry is added in another thread
+    if (it == mMilestonesWithTransactions.end()) {   
+        // our entry wasn't found, maybe it was already processed by another thread?
+        return;
+    }
+    MilestoneTransactions* mt = it->second;
+    if (mt->transactions.size()) 
+    {
+        printf("[OrderingManager::finishedMilestone] before sort:\n");
+        for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
+            auto type = (*itTransaction)->getTransactionBody()->getType();
+            auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
+            printf("transaction type: %d, created: %d\n", type, seconds);
         }
-        MilestoneTransactions* mt = it->second;
-        if (mt->transactions.size()) 
-        {
-            printf("[OrderingManager::finishedMilestone] before sort:\n");
-            for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
-                auto type = (*itTransaction)->getTransactionBody()->getType();
-                auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
-                printf("transaction type: %d, created: %d\n", type, seconds);
-            }
-            // sort after creation date
-            mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
-                return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
-                });
+        // sort after creation date
+        mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
+            return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
+            });
             
-            printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
+        printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
             
-            printf("[OrderingManager::finishedMilestone] after sort:\n");
-            for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
-				auto type = (*itTransaction)->getTransactionBody()->getType();
-				auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
-				printf("transaction type: %d, created: %d\n", type, seconds);
+        printf("[OrderingManager::finishedMilestone] after sort:\n");
+        for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
+			auto type = (*itTransaction)->getTransactionBody()->getType();
+			auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
+			printf("transaction type: %d, created: %d\n", type, seconds);
 
-                Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
-                bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
-                if (!result) {
-                    transaction->addError(new Error("OrderingManager::finishedMilestone", "couldn't add transaction"));
-                }
+            Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
+            bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
+            if (!result) {
+                transaction->addError(new Error("OrderingManager::finishedMilestone", "couldn't add transaction"));
             }
         }
-
-    } // end scoped lock  
+    }
 
     // after finish
     { // scoped lock
         Poco::ScopedLock<Poco::FastMutex> _lock1(mMilestoneTaskObserverMutex);
         Poco::ScopedLock<Poco::FastMutex> _lock2(mMilestonesWithTransactionsMutex);
+        // remove not longer needed milestone transactions entry
+        // Inserting into std::map does not invalidate existing iterators.
+        // Q: https://stackoverflow.com/questions/4343220/does-insertion-to-stl-map-invalidate-other-existing-iterator
+        mMilestonesWithTransactions.erase(it);
         auto it1 = mMilestoneTaskObserver.find(milestoneId + 1);
         auto it2 = mMilestonesWithTransactions.find(milestoneId + 1);
 		if (it1 == mMilestoneTaskObserver.end() && it2 != mMilestonesWithTransactions.end()) {
@@ -166,21 +171,26 @@ void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransact
     Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
     assert(transaction->getTransactionBody()->isTransfer());
     auto transfer = transaction->getTransactionBody()->getTransfer();
-    mPairedTransactions.insert({ transfer->getPairedTransactionId().raw(), transaction });
+    auto pairedTransactionId = transfer->getPairedTransactionId().raw();
+    if (!mPairedTransactions.has(pairedTransactionId)) {
+        mPairedTransactions.add(pairedTransactionId, new CrossGroupTransactionPair);
+    }
+    auto pair = mPairedTransactions.get(pairedTransactionId);    
+    pair->setTransaction(transaction);
 }
 
-Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(Poco::Timestamp pairedTransactionId)
+Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(Poco::Timestamp pairedTransactionId, bool outbound)
 {
     Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
-    auto it = mPairedTransactions.find(pairedTransactionId.raw());
-    if (it != mPairedTransactions.end()) {
-        return it->second;
+    auto pair = mPairedTransactions.get(pairedTransactionId.raw());
+    if (!pair.isNull()) {
+        if (outbound) {
+            return pair->mOutboundTransaction;
+        }
+        else {
+            return pair->mInboundTransaction;
+        }
     }
     return nullptr;
 }
 
-void OrderingManager::removePairedTransaction(Poco::Timestamp pairedTransactionId)
-{
-    Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
-    mPairedTransactions.erase(pairedTransactionId.raw());
-}

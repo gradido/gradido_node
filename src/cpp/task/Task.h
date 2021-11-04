@@ -104,6 +104,7 @@ namespace UniLib {
 			// for poco auto ptr
 			void duplicate();
 			void release();
+			int getReferenceCount();
 
 			void setTaskFinished();
         protected:

@@ -3,8 +3,8 @@
 
 namespace iota {
 	ConfirmedMessagesCache::ConfirmedMessagesCache()
-		// expire time in ms
-		: mMessageCache(2 * 60 * 1000), mMaxMessageCount(0)
+		// expire time in micro seconds
+		: mMessageCache(2 * 60 * 1000 * 1000), mMaxMessageCount(0)
 	{
 
 	}

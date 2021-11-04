@@ -60,7 +60,7 @@ namespace model {
 			Poco::AutoPtr<GradidoTransaction> pairTransaction;
 			printf("now: %d, timeout: %d\n", Poco::Timestamp().epochTime(), timeout.epochTime());
 			while (Poco::Timestamp() < timeout) {
-				pairTransaction = om->findPairedTransaction(pairedTransactionId);
+				pairTransaction = om->findPairedTransaction(pairedTransactionId, !isOutbound());
 				Poco::Thread::sleep(MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SLEEPTIME_MILLISECONDS);
 			}
 			// after timeout we don't get the paired transaction so it was maybe a hoax (the other half doesn't exist), 

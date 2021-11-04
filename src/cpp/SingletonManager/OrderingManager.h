@@ -15,6 +15,13 @@
 #include "../model/transactions/GradidoTransaction.h"
 #include "../task/IotaMessageToTransactionTask.h"
 #include <map>
+#include "Poco/ExpireCache.h"
+
+//! MAGIC NUMBER: how many minutes every mPairedTransactions entry should be stored in cache
+//! depends how long the node server needs to process cross group transactions
+//! if number is to small, transaction cannot be validated and can be get lost
+//! TODO: Find a better approach to prevent loosing transactions through timeout
+#define MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES 10
 
 class FinishMilestoneTask;
 class OrderingManager
@@ -30,8 +37,8 @@ public:
     int pushTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction, int32_t milestoneId);
 
     void pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction);
-    Poco::AutoPtr<model::GradidoTransaction> findPairedTransaction(Poco::Timestamp pairedTransactionId);
-    void removePairedTransaction(Poco::Timestamp pairedTransactionId);
+    //! \param outbound if true return outbound transaction, if false return inbound transaction
+    Poco::AutoPtr<model::GradidoTransaction> findPairedTransaction(Poco::Timestamp pairedTransactionId, bool outbound);
 
 protected:
     OrderingManager();
@@ -47,6 +54,21 @@ protected:
         std::list<Poco::AutoPtr<model::GradidoTransaction>> transactions;
         Poco::FastMutex mutex;
     };
+
+    struct CrossGroupTransactionPair
+    {
+        void setTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction) {
+            auto transfer = transaction->getTransactionBody()->getTransfer();
+            if (transfer->isInbound()) {
+                mInboundTransaction = transaction;
+            }
+            else if (transfer->isOutbound()) {
+                mOutboundTransaction = transaction;
+            }
+        }
+        Poco::AutoPtr<model::GradidoTransaction> mOutboundTransaction;
+        Poco::AutoPtr<model::GradidoTransaction> mInboundTransaction;
+    };
     
     iota::MilestoneListener mIotaMilestoneListener;
     std::map<int32_t, int32_t*> mMilestoneTaskObserver;
@@ -55,8 +77,8 @@ protected:
     std::map<int32_t, MilestoneTransactions*> mMilestonesWithTransactions;
     Poco::FastMutex mMilestonesWithTransactionsMutex;
 
-    // all paired outbound transactions for validation which other group belong to this node
-    std::unordered_map<int64_t, Poco::AutoPtr<model::GradidoTransaction>> mPairedTransactions;
+    // all paired transactions for validation which other group belong to this node
+    Poco::ExpireCache<int64_t, CrossGroupTransactionPair> mPairedTransactions;
     Poco::FastMutex mPairedTransactionMutex;
 
     Poco::FastMutex mFinishMilestoneTaskMutex;

@@ -47,6 +47,16 @@ namespace UniLib {
 						mWaitingTask->setTaskFinished();
 					}
 #ifdef _UNI_LIB_DEBUG
+					if (0 == strcmp(mWaitingTask->getResourceType(), "iota::ConfirmedMessageLoader") && 
+						mWaitingTask->getReferenceCount() != 1) {
+						printf("iota::ConfirmedMessageLoader Task has another reference somewhere\n");
+						printf("name: %s\n", mWaitingTask->getName());
+					}
+					if (0 == strcmp(mWaitingTask->getResourceType(), "MessageToTransactionTask") &&
+						mWaitingTask->getReferenceCount() != 1) {
+						printf("MessageToTransactionTask has another reference somewhere\n");
+						printf("name: %s\n", mWaitingTask->getName());
+					}
 					//l->removeTaskLogEntry((HASH)mWaitingTask.getResourcePtrHolder());
 					mSpeedLog.information("%s used on thread: %s by Task: %s of: %s (returned: %d)",
 						counter.string(), mName, std::string(mWaitingTask->getResourceType()), name, returnValue);
