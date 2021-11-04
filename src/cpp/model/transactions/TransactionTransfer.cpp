@@ -83,6 +83,7 @@ namespace model {
 			}
 			if (!pairTransaction->getTransactionBody()->getTransfer()->isBelongTo(this)) {
 				addError(new Error(__FUNCTION__, "pair transaction don't belong to us"));
+				printf("istOutbound: %d, other is Outbound: %d\n", isOutbound(), pairTransaction->getTransactionBody()->getTransfer()->isOutbound());
 				return false;
 			}
 			// so we know for sure the paired transaction exist and is valid
@@ -171,6 +172,7 @@ namespace model {
 		}
 		if (getOtherGroup() == paired->getOtherGroup()) {
 			printf("other groups are the same\n");
+			printf("%s == %s\n", getOtherGroup().data(), paired->getOtherGroup().data());
 			return false;
 		}
 		if (getPairedTransactionId() != paired->getPairedTransactionId()) {
