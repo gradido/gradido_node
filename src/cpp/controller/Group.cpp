@@ -151,11 +151,16 @@ namespace controller {
 			// check if outbound transaction also exist
 			if (newTransaction->getTransactionBody()->getTransfer()->isInbound()) {
 				level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_PAIRED);
+				printf("is inbound\n");
+			}
+			else {
+				printf("is outbound\n");
 			}
 			break;
 		}
 
 		// intern validation
+		printf("validate with level: %d\n", level);
 		if (!newTransaction->validate(level)) {
 			return false;
 		}

@@ -28,7 +28,7 @@ OrderingManager::~OrderingManager()
     // print it out on shutdown to see if all transactions are always deleted or
     // if we need a clear process to check from time to time if there unneeded paired transactions are left over
     if (mPairedTransactions.size()) {
-        std::clog << "OrderingManager::~OrderingManager" << "left over paired transactions: " << std::to_string(mPairedTransactions.size()) << std::endl;
+        std::clog << "OrderingManager::~OrderingManager" << " left over paired transactions: " << std::to_string(mPairedTransactions.size()) << std::endl;
     }
     mPairedTransactionMutex.unlock();
 

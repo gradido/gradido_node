@@ -61,6 +61,7 @@ namespace model {
 			printf("now: %d, timeout: %d\n", Poco::Timestamp().epochTime(), timeout.epochTime());
 			while (Poco::Timestamp() < timeout) {
 				pairTransaction = om->findPairedTransaction(pairedTransactionId, !isOutbound());
+				if (!pairTransaction.isNull()) break;
 				Poco::Thread::sleep(MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SLEEPTIME_MILLISECONDS);
 			}
 			// after timeout we don't get the paired transaction so it was maybe a hoax (the other half doesn't exist), 

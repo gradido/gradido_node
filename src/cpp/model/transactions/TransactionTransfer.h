@@ -28,7 +28,7 @@ namespace model {
 		inline bool isCrossGroupTransfer() const { return mProtoTransfer.has_inbound() || mProtoTransfer.has_outbound(); }
 		inline bool isLocal() const { return mProtoTransfer.has_local(); }
 		inline bool isInbound() const { return mProtoTransfer.has_inbound(); }
-		inline bool isOutbound() const { return mProtoTransfer.has_inbound(); }
+		inline bool isOutbound() const { return mProtoTransfer.has_outbound(); }
 
 		std::string getOtherGroup() const;
 		Poco::Timestamp getPairedTransactionId() const;
