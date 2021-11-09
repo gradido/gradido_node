@@ -6,6 +6,7 @@
 #include "Poco/Path.h"
 #include "Poco/FileStream.h"
 #include "Poco/Timestamp.h"
+#include "Poco/Timer.h"
 
 #include "../../SingletonManager/MemoryManager.h"
 

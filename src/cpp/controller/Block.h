@@ -11,6 +11,7 @@
 #include "../task/WriteTransactionsToBlockTask.h"
 
 #include "Poco/AccessExpireCache.h"
+#include "Poco/Timer.h"
 
 //#include "../SingletonManager/FileLockManager.h"
 class TaskObserver;

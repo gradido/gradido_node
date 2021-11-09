@@ -6,8 +6,6 @@
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
 
-
-
 namespace controller {
 	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
 		: mTimer(0, ServerGlobals::g_TimeoutCheck),
