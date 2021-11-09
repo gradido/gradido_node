@@ -10,8 +10,6 @@
 
 #include "../task/WriteTransactionsToBlockTask.h"
 
-#include "../SingletonManager/TimeoutManager.h"
-
 #include "Poco/AccessExpireCache.h"
 
 //#include "../SingletonManager/FileLockManager.h"
@@ -27,7 +25,7 @@ namespace controller {
 	 * @brief interface for adding and getting transactions from specific block
 	 */
 
-	class Block : public ControllerBase, public ITimeout
+	class Block : public ControllerBase
 	{
 		friend model::files::Block;
 	public:
@@ -41,7 +39,7 @@ namespace controller {
 		int getTransaction(uint64_t transactionNr, std::string& serializedTransaction);
 
 		//! \brief called from timeout manager for scheduling WriteTransactionsToBlockTask 
-		void checkTimeout();
+		void checkTimeout(Poco::Timer& timer);
 
 		inline Poco::SharedPtr<BlockIndex> getBlockIndex() { return mBlockIndex; }
 
@@ -52,6 +50,8 @@ namespace controller {
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
 		bool addTransaction(const std::string& serializedTransaction, int32_t fileCursor);
+
+		Poco::Timer mTimer;
 		
 		uint32_t mBlockNr;		
 

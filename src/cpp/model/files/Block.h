@@ -7,14 +7,13 @@
 #include "Poco/FileStream.h"
 #include "Poco/Timestamp.h"
 
-#include "../../SingletonManager/TimeoutManager.h"
 #include "../../SingletonManager/MemoryManager.h"
 
 #include "../../task/CPUTask.h"
 
 namespace model {
 	namespace files {
-		class Block : public FileBase, public ITimeout
+		class Block : public FileBase
 		{
 		public:
 			Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
@@ -22,8 +21,8 @@ namespace model {
 
 			//! \brief close block file if not used > ServerGlobals::g_CacheTimeout  
 			//!
-			//! called from timeout manager
-			void checkTimeout();
+			//! called from timer
+			void checkTimeout(Poco::Timer& timer);
 
 			//! \return -1 error locking file for reading
 			//! \return -2 error invalid size (greater as file size)
@@ -50,6 +49,8 @@ namespace model {
 			Poco::SharedPtr<Poco::FileStream> getOpenFile();
 			//! \brief very expensive, read in whole file and calculate hash
 			MemoryBin* calculateHash();
+
+			Poco::Timer mTimer;
 
 			Poco::Path   mBlockPath;
 			Poco::UInt32 mBlockNr;

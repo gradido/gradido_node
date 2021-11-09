@@ -14,7 +14,8 @@
 namespace model {
 	namespace files {
 		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
-			: mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
+			: mTimer(0, ServerGlobals::g_TimeoutCheck),
+			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);
 			sprintf(fileName, "blk%08d.dat", blockNr);
@@ -24,12 +25,12 @@ namespace model {
 				file.createFile();
 			}
 
-			TimeoutManager::getInstance()->registerTimeout(this);
+			Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
+			mTimer.start(callback);
 		}
 
 		Block::~Block()
-		{
-			TimeoutManager::getInstance()->unregisterTimeout(this);
+		{			
 		}
 
 		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()
@@ -47,7 +48,7 @@ namespace model {
 			return mBlockFile;
 		}
 
-		void Block::checkTimeout()
+		void Block::checkTimeout(Poco::Timer& timer)
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {

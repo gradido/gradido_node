@@ -10,25 +10,23 @@
 
 namespace controller {
 	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
-		: mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+		: mTimer(0, ServerGlobals::g_TimeoutCheck),
+		  mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
 		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias)
 	{
-		TimeoutManager::getInstance()->registerTimeout(this);
+		Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
+		mTimer.start(callback);
+
 		mBlockIndex->loadFromFile();
 	}
 
 	Block::~Block()
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		TimeoutManager::getInstance()->unregisterTimeout(this);
-
-		/*for (auto it = mSerializedTransactions.begin(); it != mSerializedTransactions.end(); it++) {
-			delete it->second;
-		}*/
-
-		mSerializedTransactions.clear();
-
+		
+		checkTimeout(mTimer);
+		mSerializedTransactions.clear();		
 	}
 
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
@@ -92,7 +90,7 @@ namespace controller {
 		return 0;
 	}
 
-	void Block::checkTimeout()
+	void Block::checkTimeout(Poco::Timer& timer)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
