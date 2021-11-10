@@ -49,8 +49,16 @@ int IotaMessageToTransactionTask::run()
         
     } else {		
 		// if it is a cross group transaction we store both in Ordering Manager for easy access for validation
-		if (transaction->getTransactionBody()->isTransfer() && transaction->getTransactionBody()->getTransfer()->isCrossGroupTransfer()) {
+        auto transactionBody = transaction->getTransactionBody();
+		if (transactionBody->isTransfer() && transactionBody->getTransfer()->isCrossGroupTransfer()) {
 			OrderingManager::getInstance()->pushPairedTransaction(transaction);
+            // we need also the other pair
+            auto pairGroupAlias = transactionBody->getTransfer()->getOtherGroup();
+            auto pairGroup = gm->findGroup(pairGroupAlias);
+            // we usually not listen on this group so we must do it temporally for validation
+            if (pairGroup.isNull()) {
+                OrderingManager::getInstance()->checkExternGroupForPairedTransactions(pairGroupAlias);
+            }
 		}
         // check if transaction already exist
         // if this transaction doesn't belong to us, we can quit here 

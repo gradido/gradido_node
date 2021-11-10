@@ -12,8 +12,10 @@
 
 #include "../model/transactions/GradidoTransaction.h"
 #include "../iota/MessageValidator.h"
+#include "../iota/MessageListener.h"
 #include <map>
 #include "Poco/ExpireCache.h"
+#include "Poco/AccessExpireCache.h"
 
 //! MAGIC NUMBER: how many minutes every mPairedTransactions entry should be stored in cache
 //! depends how long the node server needs to process cross group transactions
@@ -42,6 +44,7 @@ public:
     void pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction);
     //! \param outbound if true return outbound transaction, if false return inbound transaction
     Poco::AutoPtr<model::GradidoTransaction> findPairedTransaction(Poco::Timestamp pairedTransactionId, bool outbound);
+    void checkExternGroupForPairedTransactions(const std::string& groupAlias);
 
     inline iota::MessageValidator* getIotaMessageValidator() { return &mMessageValidator; }
 
@@ -86,6 +89,9 @@ protected:
     // all paired transactions for validation which other group belong to this node
     Poco::ExpireCache<int64_t, CrossGroupTransactionPair> mPairedTransactions;
     Poco::FastMutex mPairedTransactionMutex;
+    // message listener for groups on which this node normally isn't listening but which are needed for validate cross group transactions
+    Poco::AccessExpireCache<std::string, iota::MessageListener> mUnlistenedPairGroups;
+    Poco::FastMutex mUnlistenedPairGroupsMutex;
 
     Poco::FastMutex mFinishMilestoneTaskMutex;
 };

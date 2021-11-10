@@ -187,6 +187,8 @@ int OrderingManager::pushTransaction(Poco::AutoPtr<model::GradidoTransaction> tr
     return 0;
 }
 
+
+
 void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction)
 {
     Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
@@ -215,3 +217,15 @@ Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(
     return nullptr;
 }
 
+void OrderingManager::checkExternGroupForPairedTransactions(const std::string& groupAlias)
+{
+    mUnlistenedPairGroupsMutex.lock();
+    if (!mUnlistenedPairGroups.has(groupAlias)) {
+        mUnlistenedPairGroups.add(groupAlias, new iota::MessageListener(groupAlias));
+    }
+    else {
+        // get reset the timeout for removing it from access expire cache
+        mUnlistenedPairGroups.get(groupAlias);
+    }
+    mUnlistenedPairGroupsMutex.unlock();
+}
