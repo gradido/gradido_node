@@ -76,6 +76,7 @@ Document JsonRequest::GET(const char* methodName, ErrorList* errors/* = nullptr*
 			if (errors) {
 				errors->addError(new ParamError(functionName, "error parsing request answer", result.GetParseError()));
 				errors->addError(new ParamError(functionName, "position of last parsing error", result.GetErrorOffset()));
+				errors->addError(new ParamError(functionName, "result from server", responseStringStream.str().data()));
 			}
 			else {
 				log.error("[%s] error parsing request answer: %s on position: %d", functionName, result.GetParseError(), result.GetErrorOffset());
