@@ -63,7 +63,7 @@ namespace UniLib {
 #endif
 				}
 				catch (Poco::NullPointerException& e) {
-					printf("[CPUShedulerThread] null pointer exception for task type: %s", mWaitingTask->getResourceType());
+					printf("[CPUShedulerThread] null pointer exception for task type: %s\n", mWaitingTask->getResourceType());
 #ifdef _UNI_LIB_DEBUG
 					printf("task name: %s\n", name.data());
 #endif

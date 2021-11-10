@@ -29,6 +29,7 @@ namespace controller {
 	* @author Dario Rekowski
 	* @date 2020-02-06
 	* @brief Main entry point for adding and searching for transactions
+	* TODO: validate transaction on startup
 	*/
 
 	class Group : public ControllerBase
@@ -86,7 +87,7 @@ namespace controller {
 		void fillSignatureCacheOnStartup();
 
 		TaskObserver mTaskObserver;
-		iota::MessageListener mIotaMessageListener;
+		iota::MessageListener* mIotaMessageListener;
 		std::string mGroupAlias;
 		Poco::Path mFolderPath;
 		Poco::SharedPtr<AddressIndex> mAddressIndex;

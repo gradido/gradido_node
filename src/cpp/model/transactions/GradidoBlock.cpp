@@ -109,7 +109,13 @@ namespace model {
 			mm->releaseMemory(hash);
 			return false;
 		}
+
 		mm->releaseMemory(hash);
+
+		if (previousTransaction->getReceivedSeconds() > getReceivedSeconds()) {
+			addError(new Error(__FUNCTION__, "previous transaction has an bigger timestamp"));
+		}
+		
 		return true;
 	}
 

@@ -20,9 +20,9 @@ namespace iota
         // main loop, called regulary in separate thread
         static const char* function_name = "MessageListener::listener";
 
-        auto skipped = timer.skipped();
+        int skipped = timer.skipped();
         if(skipped) {
-            mErrorLog.error("[%s] %d calls skipped, function needs to much time %d", function_name, skipped, 0);
+            mErrorLog.error("[%s] %d calls skipped, function needs to much time", std::string(function_name), skipped);
         }
         Profiler timeUsed;
         // collect message ids for index from iota

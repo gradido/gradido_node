@@ -13,7 +13,7 @@
 namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath)
-		: mIotaMessageListener("GRADIDO." + groupAlias), mGroupAlias(groupAlias),
+		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60))
@@ -33,6 +33,9 @@ namespace controller {
 
 	Group::~Group()
 	{
+		if (mIotaMessageListener) {
+			delete mIotaMessageListener;
+		}
 		mLastAddressIndex = mAddressIndex->getLastIndex();
 		mGroupState.setKeyValue("lastAddressIndex", std::to_string(mLastAddressIndex));
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
@@ -42,6 +45,7 @@ namespace controller {
 	bool Group::init()
 	{
 		fillSignatureCacheOnStartup();
+		mIotaMessageListener = new iota::MessageListener("GRADIDO." + mGroupAlias);
 		return true;
 	}
 
@@ -163,13 +167,19 @@ namespace controller {
 		if (!newTransaction->validate(level)) {
 			return false;
 		}
-
+		auto lastTransaction = getLastTransaction();
 		uint32_t receivedSeconds = static_cast<uint32_t>(iotaMilestoneTimestamp);
+
+		if (lastTransaction && lastTransaction->getReceivedSeconds() > receivedSeconds) {
+			newTransaction->addError(new Error(__FUNCTION__, "previous transaction is not older than this transaction!"));
+		}
+
+		
 		Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(
 			receivedSeconds,
 			std::string((const char*)&iotaMilestoneId, sizeof(uint32_t)),
 			newTransaction,
-			getLastTransaction()
+			lastTransaction
 		));
 
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);

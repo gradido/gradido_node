@@ -20,6 +20,11 @@
 //! if number is to small, transaction cannot be validated and can be get lost
 //! TODO: Find a better approach to prevent loosing transactions through timeout
 #define MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES 10
+//! MAGIC NUMBER: how old a milestone from iota should be at least before we process it and his transaction
+//! to prevent loosing transaction which came after through a delay
+//! important if iota or the node server is running to slow because to many requests
+//! TODO: Make value higher if a delay was detected
+#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 1000
 
 class FinishMilestoneTask;
 class OrderingManager
@@ -29,10 +34,10 @@ public:
     ~OrderingManager();
     static OrderingManager* getInstance();
     
-    void pushMilestoneTaskObserver(int32_t milestoneId, int64_t milestoneTimestamp);
+    void pushMilestoneTaskObserver(int32_t milestoneId);
     void popMilestoneTaskObserver(int32_t milestoneId);
 
-    int pushTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction, int32_t milestoneId);
+    int pushTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction, int32_t milestoneId, uint64_t timestamp);
 
     void pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction);
     //! \param outbound if true return outbound transaction, if false return inbound transaction
@@ -88,8 +93,14 @@ protected:
 class FinishMilestoneTask : public UniLib::controller::CPUTask
 {
 public:
-    FinishMilestoneTask(int32_t milestoneId) : mMilestoneId(milestoneId) {};
+    FinishMilestoneTask(int32_t milestoneId) : mMilestoneId(milestoneId) {
+#ifdef _UNI_LIB_DEBUG
+        setName(std::to_string(milestoneId).data());
+#endif
+    };
     ~FinishMilestoneTask() {};
+
+    virtual const char* getResourceType() const { return "FinishMilestoneTask"; };
 
     int run() { OrderingManager::getInstance()->finishedMilestone(mMilestoneId); return 0; }
 protected:

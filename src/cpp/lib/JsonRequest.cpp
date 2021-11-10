@@ -67,6 +67,7 @@ Document JsonRequest::GET(const char* methodName, ErrorList* errors/* = nullptr*
 		for (std::string line; std::getline(response_stream, line); ) {
 			responseStringStream << line << std::endl;
 		}
+		//printf("response: %s\n", responseStringStream.str().data());
 		std::string method_name(methodName);
 
 		// extract parameter from request

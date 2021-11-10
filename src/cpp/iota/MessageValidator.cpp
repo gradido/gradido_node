@@ -2,6 +2,7 @@
 #include "../task/IotaMessageToTransactionTask.h"
 #include "../SingletonManager/MemoryManager.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
 #include "sodium.h"
 #include "HTTPApi.h"
@@ -67,6 +68,8 @@ namespace iota {
                 auto milestoneId = getMessageMilestoneId(messageId);
                 // if messages was already confirmed from iota
                 if (milestoneId) {
+                    // pop will be called in IotaMessageToTransactionTask
+                    OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneId);
                     notConfirmedCount = 0;
                     // check if other messages for this milestone exist and the milestone loading was started
                     { // scoped lock mConfirmedMessages

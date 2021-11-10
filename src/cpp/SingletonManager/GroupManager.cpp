@@ -32,12 +32,14 @@ int GroupManager::init(const char* groupIndexFileName)
 
 	mGroupIndex = new controller::GroupIndex(new model::files::GroupIndex(groupIndexFileName));
 	mGroupIndex->update();
+
+	mInitalized = true;
 	auto groups = mGroupIndex->listGroupAliases();
 	for (auto it = groups.begin(); it != groups.end(); it++) {
 		// load all groups to start iota message listener from all groups
 		findGroup(*it);
 	}
-	mInitalized = true;
+	
 
 	return 0;
 }

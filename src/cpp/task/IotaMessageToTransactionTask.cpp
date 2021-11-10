@@ -19,7 +19,7 @@ IotaMessageToTransactionTask::IotaMessageToTransactionTask(
 #ifdef _UNI_LIB_DEBUG
     setName(messageId.toHex().data());
 #endif
-    OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneIndex, mTimestamp);
+ 
 }
 
 IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
@@ -49,18 +49,24 @@ int IotaMessageToTransactionTask::run()
         
     } else {		
 		// if it is a cross group transaction we store both in Ordering Manager for easy access for validation
-		if (transaction->getTransactionBody()->isTransfer()) {
+		if (transaction->getTransactionBody()->isTransfer() && transaction->getTransactionBody()->getTransfer()->isCrossGroupTransfer()) {
 			OrderingManager::getInstance()->pushPairedTransaction(transaction);
 		}
         // check if transaction already exist
         // if this transaction doesn't belong to us, we can quit here 
+        // also if we already have this transaction
         if (group.isNull() || group->isSignatureInCache(transaction)) {
             return 0;
         }       
+        auto lastTransaction = group->getLastTransaction();
+        if (lastTransaction && lastTransaction->getReceivedSeconds() > mTimestamp) {
+            // this transaction seems to be from the past, a transaction which happen after this was already added
+            return 0;
+        }
         
         // hand over to OrderingManager
         std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
-        OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex);
+        OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex, mTimestamp);
     }
 
     return 0;
