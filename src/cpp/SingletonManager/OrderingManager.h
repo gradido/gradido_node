@@ -10,10 +10,8 @@
  * Additional check for cross-group transactions
  */
 
-#include "../iota/MilestoneListener.h"
-#include "../iota/Message.h"
 #include "../model/transactions/GradidoTransaction.h"
-#include "../task/IotaMessageToTransactionTask.h"
+#include "../iota/MessageValidator.h"
 #include <map>
 #include "Poco/ExpireCache.h"
 
@@ -39,6 +37,8 @@ public:
     void pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction);
     //! \param outbound if true return outbound transaction, if false return inbound transaction
     Poco::AutoPtr<model::GradidoTransaction> findPairedTransaction(Poco::Timestamp pairedTransactionId, bool outbound);
+
+    inline iota::MessageValidator* getIotaMessageValidator() { return &mMessageValidator; }
 
 protected:
     OrderingManager();
@@ -69,8 +69,9 @@ protected:
         Poco::AutoPtr<model::GradidoTransaction> mOutboundTransaction;
         Poco::AutoPtr<model::GradidoTransaction> mInboundTransaction;
     };
-    
-    iota::MilestoneListener mIotaMilestoneListener;
+
+    iota::MessageValidator mMessageValidator;
+
     std::map<int32_t, int32_t*> mMilestoneTaskObserver;
     Poco::FastMutex mMilestoneTaskObserverMutex;
 

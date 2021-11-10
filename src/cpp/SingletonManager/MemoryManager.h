@@ -77,7 +77,6 @@ public:
 	void releaseMemory(MemoryBin* memory);
 	
 protected:
-
 	Poco::Int8 getMemoryStackIndex(Poco::UInt16 size);
 
 	MemoryManager();

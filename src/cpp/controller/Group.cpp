@@ -3,7 +3,6 @@
 #include "../ServerGlobals.h"
 
 #include "../SingletonManager/GroupManager.h"
-#include "../iota/MilestoneListener.h"
 
 #include "../lib/DataTypeConverter.h"
 
@@ -14,10 +13,10 @@
 namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath)
-		: mGroupAlias(groupAlias),
+		: mIotaMessageListener("GRADIDO." + groupAlias), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
-		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MILESTONES_BOOTSTRAP_COUNT * 3 * 1000 * 60))
+		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60))
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -364,7 +363,7 @@ namespace controller {
 		int transactionNr = mLastTransactionId;
 
 		Poco::AutoPtr<model::GradidoBlock> transaction;
-		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MILESTONES_BOOTSTRAP_COUNT * 3 * 60, 0);
+		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
 
 		do {
 			if (transactionNr <= 0) break;

@@ -12,11 +12,15 @@
 
 #include "../model/files/State.h"
 
+#include "../iota/MessageListener.h"
+
 #include "Poco/Path.h"
 #include "Poco/AutoPtr.h"
 #include "Poco/AccessExpireCache.h"
 #include "Poco/ExpireCache.h"
 
+// MAGIC NUMBER: how long signatures should be cached to prevent processing transactions more than once
+#define MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES 10
 
 namespace controller {
 
@@ -82,6 +86,7 @@ namespace controller {
 		void fillSignatureCacheOnStartup();
 
 		TaskObserver mTaskObserver;
+		iota::MessageListener mIotaMessageListener;
 		std::string mGroupAlias;
 		Poco::Path mFolderPath;
 		Poco::SharedPtr<AddressIndex> mAddressIndex;

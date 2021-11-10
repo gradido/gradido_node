@@ -4,6 +4,8 @@
 #include "../lib/BinTextConverter.h"
 #include <stdexcept>
 
+#include "rapidjson/pointer.h"
+
 using namespace rapidjson;
 
 namespace iota {
@@ -20,7 +22,7 @@ namespace iota {
             result.version = data["version"].GetString(); // testet with 1.0.5
             result.isHealthy = data["isHealthy"].GetBool();
             result.messagesPerSecond = data["messagesPerSecond"].GetFloat();
-            result.confirmedMilestoneIndex = data["confirmedMilestoneIndex"].GetInt();
+            result.confirmedMilestoneIndex = data["confirmedMilestoneIndex"].GetUint();
             result.lastMilestoneIndex = data["latestMilestoneIndex"].GetInt();
             result.lastMilestoneTimestamp = data["latestMilestoneTimestamp"].GetInt64();
         }
@@ -54,6 +56,21 @@ namespace iota {
         return result;
     }
 
+    uint64_t getMilestoneTimestamp(int32_t milestoneIndex)
+    {
+		// api/v1/milestones/909039
+		std::stringstream ss;
+		ss << "milestones/" << std::to_string(milestoneIndex);
+		auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+		if (!json.IsObject() || json.FindMember("data") == json.MemberEnd()) return 0;
+	
+		Value& data = json["data"];
+        if (!data.HasMember("timestamp")) {
+            return 0;
+        }
+		return data["timestamp"].GetUint64();
+    }
+
     Document getMessageJson(MessageId messageId)
     {
 		// GET /api/v1/messages/{messageId} 
@@ -61,6 +78,34 @@ namespace iota {
 		ss << "messages/" << messageId.toHex();
 
 		return ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+    }
+
+    std::pair<std::string, std::string> getIndexiationMessageDataIndex(MessageId messageId)
+    {
+        auto json = getMessageJson(messageId);
+        if (!json.IsObject() || json.FindMember("data") == json.MemberEnd()) return { "", "" };
+		auto payload = Pointer("/data/payload").Get(json);
+		if (!payload->HasMember("data") || !payload->HasMember("index")) {
+            return { "", "" };
+		}
+        return { (*payload)["data"].GetString(), convertHexToBin((*payload)["index"].GetString()) };
+    }
+
+    uint32_t getMessageMilestoneId(iota::MessageId messageId)
+    {
+		// GET /api/v1/messages/{messageId}/metadata
+		std::stringstream ss;
+		ss << "messages/" << messageId.toHex() << "/metadata";
+        auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
+
+        if (!json.IsObject() || json.FindMember("data") == json.MemberEnd()) return 0;
+        Value& data = json["data"];
+        auto referencedByMilestoneIt = data.FindMember("referencedByMilestoneIndex");
+        if (referencedByMilestoneIt != data.MemberEnd()) {
+            return referencedByMilestoneIt->value.GetUint();
+        }
+        return 0;
+		
     }
 
     std::vector<MessageId> findByIndex(std::string index)
@@ -72,19 +117,17 @@ namespace iota {
         std::vector<MessageId> result;
 
         auto json = ServerGlobals::g_IotaRequestHandler->GET(ss.str().data());
-        if (!json.IsObject()) return result;
-        try {
-            Value& data = json["data"];
-            auto messageIds = data["messageIds"].GetArray();
-			for (auto it = messageIds.Begin(); it != messageIds.End(); ++it) {
-				MessageId messageId;
-				messageId.fromHex(it->GetString());
-				result.push_back(messageId);
-			}
-        }
-        catch (std::exception& e) {
-            throw new std::runtime_error("iota find by index message result changed!");
-        }
+        if (!json.IsObject() || !json.HasMember("data")) return result;
+        
+        Value& data = json["data"];
+        if(!data.HasMember("messageIds") || !data["messageIds"].IsArray()) return result;
+        auto messageIds = data["messageIds"].GetArray();
+		for (auto it = messageIds.Begin(); it != messageIds.End(); ++it) {
+			MessageId messageId;
+			messageId.fromHex(it->GetString());
+			result.push_back(messageId);
+		}
+        
         return result;
     }
 }

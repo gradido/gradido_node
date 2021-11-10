@@ -5,7 +5,7 @@
 
 
 OrderingManager::OrderingManager() 
-: mIotaMilestoneListener(), mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES)
+:mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES)
 {
 }
 
