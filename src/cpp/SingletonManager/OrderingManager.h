@@ -3,9 +3,9 @@
 
 /*!
  * @author: einhornimmond
- * 
+ *
  * @date: 20.10.2021
- * 
+ *
  * @brief: Get transactions unordered form iota but with information to put them into order into blockchain
  * Additional check for cross-group transactions
  */
@@ -32,10 +32,10 @@ class FinishMilestoneTask;
 class OrderingManager
 {
     friend class FinishMilestoneTask;
-public: 
+public:
     ~OrderingManager();
     static OrderingManager* getInstance();
-    
+
     void pushMilestoneTaskObserver(int32_t milestoneId);
     void popMilestoneTaskObserver(int32_t milestoneId);
 
@@ -52,7 +52,7 @@ protected:
     OrderingManager();
     void finishedMilestone(int32_t milestoneId);
 
-    struct MilestoneTransactions 
+    struct MilestoneTransactions
     {
         MilestoneTransactions(int32_t _milestoneId, int64_t _milestoneTimestamp)
             : milestoneId(_milestoneId), milestoneTimestamp(_milestoneTimestamp) {}
@@ -108,7 +108,13 @@ public:
 
     virtual const char* getResourceType() const { return "FinishMilestoneTask"; };
 
-    int run() { OrderingManager::getInstance()->finishedMilestone(mMilestoneId); return 0; }
+    int run()
+    {
+    	printf("[FinishMilestoneTask::run]\n");
+    	OrderingManager::getInstance()->finishedMilestone(mMilestoneId);
+		printf("[FinishMilestoneTask::run] end\n");
+    	return 0;
+    }
 protected:
     int32_t mMilestoneId;
 };

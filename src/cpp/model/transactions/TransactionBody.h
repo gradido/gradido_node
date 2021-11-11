@@ -30,6 +30,7 @@ namespace model {
 		inline bool isTransfer() const { return TRANSACTION_TRANSFER == mTransactionType; }
 		inline bool isMemberUpdate() const { return TRANSACTION_MEMBER_UPDATE == mTransactionType; }
 		inline uint32_t getCreatedSeconds() { return mProtoTransactionBody.created().seconds(); }
+		inline const std::string& getMemo() { return mProtoTransactionBody.memo(); }
 		inline TransactionCreation* getCreation() { return dynamic_cast<TransactionCreation*>(mTransactionSpecific); }
 		inline TransactionTransfer* getTransfer() { return dynamic_cast<TransactionTransfer*>(mTransactionSpecific); }
 

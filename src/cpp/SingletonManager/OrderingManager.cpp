@@ -4,7 +4,7 @@
 #include "../controller/Group.h"
 
 
-OrderingManager::OrderingManager() 
+OrderingManager::OrderingManager()
 :mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES)
 {
 }
@@ -43,6 +43,7 @@ OrderingManager* OrderingManager::getInstance()
 
 void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
 {
+	printf("[OrderingManager::pushMilestoneTaskObserver] push: %d\n", milestoneId);
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it == mMilestoneTaskObserver.end()) {
@@ -54,6 +55,7 @@ void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
 }
 void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 {
+	printf("[OrderingManager::popMilestoneTaskObserver] pop: %d\n", milestoneId);
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it != mMilestoneTaskObserver.end()) {
@@ -71,13 +73,17 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 void OrderingManager::finishedMilestone(int32_t milestoneId)
 {
     // exit task if another is already running, because he will go one as long there is something to work on
-    // TODO: make own thread for this, because to keep transactions in order only one thread is allowed to run 
+    // TODO: make own thread for this, because to keep transactions in order only one thread is allowed to run
     // TODO: put transactions in queues per group and work on this per group base to reduce the impact of malicious transactions
     // for the whole node (cross group transactions with missing pair)
-    if (!mFinishMilestoneTaskMutex.tryLock()) return;
+    if (!mFinishMilestoneTaskMutex.tryLock()) {
+    	printf("[OrderingManager::finishedMilestone] cannot be locked\n");
+    	return;
+    }
     mFinishMilestoneTaskMutex.unlock();
     // enforce that the finishing milestone tasks must wait on each other
-    Poco::ScopedLock<Poco::FastMutex> _lockRoot(mFinishMilestoneTaskMutex);
+    //Poco::ScopedLock<Poco::FastMutex> _lockRoot(mFinishMilestoneTaskMutex);
+    mFinishMilestoneTaskMutex.lock();
 
     // now every message and transaction belonging to this milestone should be finished
     { // scoped lock
@@ -85,6 +91,8 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
 		for (auto it = mMilestoneTaskObserver.begin(); it != mMilestoneTaskObserver.end(); it++) {
             // if a milestone before us wasn't processed, skip
 			if (it->first < milestoneId) {
+				printf("[OrderingManager::finishedMilestone] before us: %d, we are: %d, skipped\n", it->first, milestoneId);
+				mFinishMilestoneTaskMutex.unlock();
                 return;
             }
             else if (it->first >= milestoneId) {
@@ -94,7 +102,7 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
 		}
 
     } // end scoped lock
-    
+
     mMilestonesWithTransactionsMutex.lock();
     auto it = mMilestonesWithTransactions.find(milestoneId);
     mMilestonesWithTransactionsMutex.unlock();
@@ -111,6 +119,9 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
             mMilestoneTaskObserverMutex.unlock();
             if (oldestMilestoneTaskObserved < milestoneId) {
                 // it seems that an older timestamp was missing and was put into map while we are sleeping
+                printf("[OrderingManager::finishedMilestone] we where sleeping: %d ms and now the oldest milestone task observer: %d is smaller than we: %d\n",
+                		sleepMilliSeconds, oldestMilestoneTaskObserved, milestoneId);
+                mFinishMilestoneTaskMutex.unlock();
                 return;
             }
         }
@@ -147,21 +158,28 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
     }
     // after finish
     { // scoped lock
-        Poco::ScopedLock<Poco::FastMutex> _lock1(mMilestoneTaskObserverMutex);
-        Poco::ScopedLock<Poco::FastMutex> _lock2(mMilestonesWithTransactionsMutex);
         // remove not longer needed milestone transactions entry
         // Inserting into std::map does not invalidate existing iterators.
         // Q: https://stackoverflow.com/questions/4343220/does-insertion-to-stl-map-invalidate-other-existing-iterator
+        mMilestonesWithTransactionsMutex.lock();
         if (it != mMilestonesWithTransactions.end()) {
             mMilestonesWithTransactions.erase(it);
         }
 
         auto workSetIt = mMilestonesWithTransactions.begin();
+        mMilestonesWithTransactionsMutex.unlock();
+
         if (workSetIt == mMilestonesWithTransactions.end()) {
+	        printf("[OrderingManager::finishedMilestone] no work set left in milestones with transactions\n");
+	        mFinishMilestoneTaskMutex.unlock();
             return;
         }
+        mMilestoneTaskObserverMutex.lock();
         auto taskObserverIt = mMilestoneTaskObserver.find(workSetIt->first);
-        
+        mMilestoneTaskObserverMutex.unlock();
+
+		mFinishMilestoneTaskMutex.unlock();
+
 		if (taskObserverIt == mMilestoneTaskObserver.end()) {
             // if a milestone after us is ready for processing (and exist), process him, maybe he was waiting of us
 			finishedMilestone(workSetIt->first);
@@ -198,7 +216,7 @@ void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransact
     if (!mPairedTransactions.has(pairedTransactionId)) {
         mPairedTransactions.add(pairedTransactionId, new CrossGroupTransactionPair);
     }
-    auto pair = mPairedTransactions.get(pairedTransactionId);    
+    auto pair = mPairedTransactions.get(pairedTransactionId);
     pair->setTransaction(transaction);
 }
 

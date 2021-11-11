@@ -174,7 +174,7 @@ namespace controller {
 			newTransaction->addError(new Error(__FUNCTION__, "previous transaction is not older than this transaction!"));
 		}
 
-		
+
 		Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(
 			receivedSeconds,
 			std::string((const char*)&iotaMilestoneId, sizeof(uint32_t)),
@@ -197,6 +197,7 @@ namespace controller {
 			// TODO: move call to better place
 			updateLastAddressIndex(mAddressIndex->getLastIndex());
 			addSignatureToCache(newTransaction);
+			std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
 		}
 		return result;
 	}

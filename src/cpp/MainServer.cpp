@@ -166,7 +166,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		uint8_t io_worker_count = config().getInt("io.workerCount", 2);
 		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
 		ServerGlobals::g_WriteFileCPUScheduler = new UniLib::controller::CPUSheduler(io_worker_count, "IO Worker");
-		ServerGlobals::g_IotaRequestCPUScheduler = new UniLib::controller::CPUSheduler(8, "Iota Worker");
+		ServerGlobals::g_IotaRequestCPUScheduler = new UniLib::controller::CPUSheduler(2, "Iota Worker");
 
 		GroupManager::getInstance()->init("group.index");
 		OrderingManager::getInstance();
@@ -192,7 +192,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		printf("[Gradido_Node::main] started in %s, jsonrpc on port: %d\n", usedTime.string().data(), jsonrpc_port);
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
-		
+
 
 		// Stop the HTTPServer
 		//srv.stop();
@@ -205,7 +205,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		// TODO: make sure that pending transaction are still write out to storage
 		ServerGlobals::g_CPUScheduler->stop();
 		ServerGlobals::g_WriteFileCPUScheduler->stop();
-		ServerGlobals::g_IotaRequestCPUScheduler->stop();		
+		ServerGlobals::g_IotaRequestCPUScheduler->stop();
 
 		// Optional:  Delete all global objects allocated by libprotobuf.
 		google::protobuf::ShutdownProtobufLibrary();
