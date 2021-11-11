@@ -65,6 +65,7 @@ namespace iota
 			}
 			else {
 				// add if not exist
+				printf("[MessageListener::updateStoredMessages] add message: %s\n", messageId.toHex().data());
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);

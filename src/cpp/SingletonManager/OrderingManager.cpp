@@ -112,7 +112,8 @@ void OrderingManager::finishedMilestone(int32_t milestoneId)
         MilestoneTransactions* mt = it->second;
         Poco::Timestamp now;
         int64_t sleepMilliSeconds = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS - (now.epochMicroseconds() / 1000 - mt->milestoneTimestamp * 1000);
-        if (sleepMilliSeconds > 0) {
+
+        if (sleepMilliSeconds > 0 && sleepMilliSeconds < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS) {
             Poco::Thread::sleep(sleepMilliSeconds);
             mMilestoneTaskObserverMutex.lock();
             auto oldestMilestoneTaskObserved = mMilestoneTaskObserver.begin()->first;
