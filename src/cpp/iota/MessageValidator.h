@@ -24,6 +24,9 @@ namespace iota {
      * For every new message check if they already exist in one of the confirmed milestones
      * For every new milestone check if already pending messages are included in them and therefore confirmed
      * Put confirmed messages into blockchain
+     * TODO: Refactor to that it works even if many transaction are incoming at once and the buffer time from OrderingManager isn't enough
+     * Wait with calling popMilestone until the whole list of unconfirmend transaction was checked
+     * 
      */
     //! MAGIC NUMBER: how many milestones in list allowed before deleting the oldest, count of older milestones which are loaded on startup
     //! TODO: try it out to guess best number
