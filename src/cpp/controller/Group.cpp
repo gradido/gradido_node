@@ -156,7 +156,7 @@ namespace controller {
 				level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_PAIRED);
 				printf("is inbound\n");
 			}
-			else {
+			else if(newTransaction->getTransactionBody()->getTransfer()->isOutbound()) {
 				printf("is outbound\n");
 			}
 			break;

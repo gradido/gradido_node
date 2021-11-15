@@ -13,6 +13,7 @@
 #include "../model/transactions/GradidoTransaction.h"
 #include "../iota/MessageValidator.h"
 #include "../iota/MessageListener.h"
+#include "../task/Thread.h"
 #include <map>
 #include "Poco/ExpireCache.h"
 #include "Poco/AccessExpireCache.h"
@@ -29,7 +30,7 @@
 #define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 1000
 
 class FinishMilestoneTask;
-class OrderingManager
+class OrderingManager : public UniLib::lib::Thread
 {
     friend class FinishMilestoneTask;
 public:
@@ -48,9 +49,13 @@ public:
 
     inline iota::MessageValidator* getIotaMessageValidator() { return &mMessageValidator; }
 
+    
+
 protected:
     OrderingManager();
-    void finishedMilestone(int32_t milestoneId);
+   
+	// called from thread
+    int ThreadFunction();
 
     struct MilestoneTransactions
     {
@@ -94,29 +99,6 @@ protected:
     Poco::FastMutex mUnlistenedPairGroupsMutex;
 
     Poco::FastMutex mFinishMilestoneTaskMutex;
-};
-
-class FinishMilestoneTask : public UniLib::controller::CPUTask
-{
-public:
-    FinishMilestoneTask(int32_t milestoneId) : mMilestoneId(milestoneId) {
-#ifdef _UNI_LIB_DEBUG
-        setName(std::to_string(milestoneId).data());
-#endif
-    };
-    ~FinishMilestoneTask() {};
-
-    virtual const char* getResourceType() const { return "FinishMilestoneTask"; };
-
-    int run()
-    {
-    	printf("[FinishMilestoneTask::run]\n");
-    	OrderingManager::getInstance()->finishedMilestone(mMilestoneId);
-		printf("[FinishMilestoneTask::run] end\n");
-    	return 0;
-    }
-protected:
-    int32_t mMilestoneId;
 };
 
 #endif //__GRADIDO_NODE_SINGLETON_MANAGER_ORDERING_MANAGER

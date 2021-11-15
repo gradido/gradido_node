@@ -64,11 +64,13 @@ int IotaMessageToTransactionTask::run()
         // if this transaction doesn't belong to us, we can quit here 
         // also if we already have this transaction
         if (group.isNull() || group->isSignatureInCache(transaction)) {
+            printf("[%s] transaction skipped because it cames from other group or was found in cache, messageId: %s\n", __FUNCTION__, mMessageId.toHex().data());
             return 0;
         }       
         auto lastTransaction = group->getLastTransaction();
         if (lastTransaction && lastTransaction->getReceivedSeconds() > mTimestamp) {
             // this transaction seems to be from the past, a transaction which happen after this was already added
+            printf("[%s] transaction skipped because it cames from the past, messageId: %s\n", __FUNCTION__, mMessageId.toHex().data());
             return 0;
         }
         

@@ -49,9 +49,15 @@ namespace iota {
     {
         // thread loop, waiting on condition
         while(true) {
-            // will be triggered if a new milestone was added or exit was called
+            // if at least one unconfirmed message exist, check every MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 
+            // if it has get a milestone (was confirmed) else wait on the next unconfirmed message which will notify the condition
             mWorkMutex.lock();
-            mCondition.wait(mWorkMutex);
+            if (mPendingMessages.size() > 0) {
+                mCondition.tryWait(mWorkMutex, MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS);
+            }
+            else {
+                mCondition.wait(mWorkMutex);
+            }
             mExitMutex.lock();
 
             if(mExitCalled) {
@@ -103,9 +109,10 @@ namespace iota {
                 }
                 else {
                     ++notConfirmedCount;
+                    mPendingMessages.push(messageId);
                 }
 
-                if (notConfirmedCount > MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE) break;
+                if (notConfirmedCount > mPendingMessages.size() || notConfirmedCount > MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE) break;
             }
             mWorkMutex.unlock();
         }

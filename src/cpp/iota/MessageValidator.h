@@ -35,6 +35,8 @@ namespace iota {
     // but just in case we check more than one
 #define MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE 3
 
+#define MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 500 
+
     class MessageValidator: public Poco::Runnable
     {
     public:
