@@ -5,7 +5,7 @@
 
 
 OrderingManager::OrderingManager()
-    : UniLib::lib::Thread("order"), mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES)
+    : UniLib::lib::Thread("order"), mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES), mUnlistenedPairGroups()
 {
 
 }
@@ -198,7 +198,9 @@ void OrderingManager::checkExternGroupForPairedTransactions(const std::string& g
 {
     mUnlistenedPairGroupsMutex.lock();
     if (!mUnlistenedPairGroups.has(groupAlias)) {
-        mUnlistenedPairGroups.add(groupAlias, new iota::MessageListener(groupAlias));
+        std::string iotaIndex = "GRADIDO.";
+        iotaIndex += groupAlias;
+        mUnlistenedPairGroups.add(groupAlias, new iota::MessageListener(iotaIndex));
     }
     else {
         // get reset the timeout for removing it from access expire cache

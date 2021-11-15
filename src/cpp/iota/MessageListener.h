@@ -26,6 +26,7 @@ namespace iota
     public:
         //! \param index should be something like GRADIDO.gdd1
         MessageListener(const std::string& index, long intervalMilliseconds = 1000);
+        ~MessageListener();
         
         virtual void listener(Poco::Timer& timer);
     protected:

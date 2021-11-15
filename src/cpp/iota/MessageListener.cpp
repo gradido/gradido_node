@@ -15,9 +15,17 @@ namespace iota
 
     }
 
+	MessageListener::~MessageListener()
+	{
+		lock();
+		mListenerTimer.stop();
+		unlock();
+	}
+
     void MessageListener::listener(Poco::Timer& timer)
     {
         // main loop, called regulary in separate thread
+		lock();
         static const char* function_name = "MessageListener::listener";
 
         int skipped = timer.skipped();
@@ -31,6 +39,7 @@ namespace iota
 		if (messageIds.size()) {
 			updateStoredMessages(messageIds);
 		}
+		unlock();
     }
 
     void MessageListener::updateStoredMessages(const std::vector<MessageId>& currentMessageIds)
