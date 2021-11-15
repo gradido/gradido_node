@@ -37,15 +37,17 @@ namespace iota {
 
 #define MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 500 
 
-    class MessageValidator: public Poco::Runnable
+    class MessageValidator : public Poco::Runnable
     {
     public:
         MessageValidator();
         ~MessageValidator();
 
-        void pushMessageId(const iota::MessageId& messageId);
+        inline void pushMessageId(const iota::MessageId& messageId) { mPendingMessages.push(messageId); }
         void run();
         void pushMilestone(int32_t id, int64_t timestamp);
+
+        inline void signal() { mCondition.signal(); }
 
     protected:
 

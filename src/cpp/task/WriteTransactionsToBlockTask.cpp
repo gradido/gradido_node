@@ -17,10 +17,14 @@ int WriteTransactionsToBlockTask::run()
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
 	// sort in ascending order by transaction nr
-	mTransactions.sort();
+	mTransactions.sort([](Poco::SharedPtr<model::TransactionEntry> a, Poco::SharedPtr<model::TransactionEntry> b) {
+		return a->getTransactionNr() < b->getTransactionNr();
+	});
 	std::vector<std::string> lines;
 	lines.reserve(mTransactions.size());
+
 	int lastTransactionNr = 0;
+
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
 		auto transactionEntry = *it;
 		lines.push_back(transactionEntry->getSerializedTransaction());

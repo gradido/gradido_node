@@ -118,12 +118,6 @@ namespace iota {
         }
     }
 
-    void MessageValidator::pushMessageId(const MessageId& messageId)
-    {
-        mPendingMessages.push(messageId);
-        mCondition.signal();
-    }
-
     void MessageValidator::pushMilestone(int32_t id, int64_t timestamp)
     {
         Poco::ScopedLock<Poco::FastMutex> lock(mConfirmedMessagesMutex);

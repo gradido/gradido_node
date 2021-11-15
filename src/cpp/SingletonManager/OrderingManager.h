@@ -23,11 +23,11 @@
 //! if number is to small, transaction cannot be validated and can be get lost
 //! TODO: Find a better approach to prevent loosing transactions through timeout
 #define MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES 10
-//! MAGIC NUMBER: how old a milestone from iota should be at least before we process it and his transaction
-//! to prevent loosing transaction which came after through a delay
+//! MAGIC NUMBER: how long we know about a milestone from iota at least before we process it and his transaction
+//! to prevent loosing transaction which came after through a delay or to less delay in the race between threads
 //! important if iota or the node server is running to slow because to many requests
 //! TODO: Make value higher if a delay was detected
-#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 1000
+#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 450
 
 class FinishMilestoneTask;
 class OrderingManager : public UniLib::lib::Thread
@@ -64,6 +64,7 @@ protected:
 
         int32_t milestoneId;
         int64_t milestoneTimestamp;
+        Poco::Timestamp entryCreationTime;
         std::list<Poco::AutoPtr<model::GradidoTransaction>> transactions;
         Poco::FastMutex mutex;
     };
@@ -85,7 +86,7 @@ protected:
 
     iota::MessageValidator mMessageValidator;
 
-    std::map<int32_t, int32_t*> mMilestoneTaskObserver;
+    std::map<int32_t, int32_t> mMilestoneTaskObserver;
     Poco::FastMutex mMilestoneTaskObserverMutex;
 
     std::map<int32_t, MilestoneTransactions*> mMilestonesWithTransactions;

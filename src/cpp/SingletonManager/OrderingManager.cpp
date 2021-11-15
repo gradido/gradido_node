@@ -13,9 +13,7 @@ OrderingManager::OrderingManager()
 OrderingManager::~OrderingManager()
 {
     mMilestoneTaskObserverMutex.lock();
-    for (auto it = mMilestoneTaskObserver.begin(); it != mMilestoneTaskObserver.end(); it++) {
-        delete it->second;
-    }
+    
     mMilestoneTaskObserver.clear();
     mMilestoneTaskObserverMutex.unlock();
 
@@ -48,10 +46,10 @@ void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it == mMilestoneTaskObserver.end()) {
-        mMilestoneTaskObserver.insert({ milestoneId, new int32_t(1) });
+        mMilestoneTaskObserver.insert({ milestoneId, 1 });
     }
     else {
-        (*it->second)++;
+        it->second++;
     }
 }
 void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
@@ -60,9 +58,8 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it != mMilestoneTaskObserver.end()) {
-        (*it->second)--;
-        if (*it->second <= 0) {
-            delete it->second;
+        it->second--;
+        if (it->second <= 0) {
             mMilestoneTaskObserver.erase(it);
             condSignal();
         }
@@ -94,10 +91,15 @@ int OrderingManager::ThreadFunction()
         // for more information see MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS
 		MilestoneTransactions* mt = workSetIt->second;
 		Poco::Timestamp now;
-		int64_t sleepMilliSeconds = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS - (now.epochMicroseconds() / 1000 - mt->milestoneTimestamp * 1000);
+        // Poco Timediff has a resolution of microseconds
+		int64_t sleepMilliSeconds = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS - (now - mt->entryCreationTime) / 1000;
 
 		if (sleepMilliSeconds > 0 && sleepMilliSeconds < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS) {
 			Poco::Thread::sleep(sleepMilliSeconds);
+            // check if our workSet is still the first
+            if (workSetIt != mMilestonesWithTransactions.begin()) {
+                continue;
+            }
 		}
 
         // check if the oldest milestone which has running task came after current milestone

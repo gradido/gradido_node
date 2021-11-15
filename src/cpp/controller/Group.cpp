@@ -171,7 +171,8 @@ namespace controller {
 		uint32_t receivedSeconds = static_cast<uint32_t>(iotaMilestoneTimestamp);
 
 		if (lastTransaction && lastTransaction->getReceivedSeconds() > receivedSeconds) {
-			newTransaction->addError(new Error(__FUNCTION__, "previous transaction is not older than this transaction!"));
+			newTransaction->addError(new Error(__FUNCTION__, "previous transaction is younger than this transaction!"));
+			return false;
 		}
 
 

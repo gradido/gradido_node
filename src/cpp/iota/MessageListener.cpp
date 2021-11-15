@@ -54,6 +54,7 @@ namespace iota
 		}
 
 		// compare with existing
+		bool atLeastOneNewMessagePushed = false;
 		for (auto it = currentMessageIds.begin(); it != currentMessageIds.end(); it++)
 		{
 			// check if it exist
@@ -69,7 +70,12 @@ namespace iota
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);
+				atLeastOneNewMessagePushed = true;
 			}
+		}
+		// signal condition separate to make sure that by loading from the past, all known messages are in list before processing start
+		if (atLeastOneNewMessagePushed) {
+			validator->signal();
 		}
     }
 }
