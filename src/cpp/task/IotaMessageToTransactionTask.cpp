@@ -75,7 +75,7 @@ int IotaMessageToTransactionTask::run()
         }
         
         // hand over to OrderingManager
-        std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
+        //std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
         OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex, mTimestamp);
     }
 

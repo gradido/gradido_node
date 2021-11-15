@@ -198,7 +198,11 @@ namespace controller {
 			// TODO: move call to better place
 			updateLastAddressIndex(mAddressIndex->getLastIndex());
 			addSignatureToCache(newTransaction);
-			std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
+			//std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
+			printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
+				__FUNCTION__, mLastTransaction->getID(), mGroupAlias.data(), mLastTransaction->getMessageIdHex().data(), 
+				mLastTransaction->getReceivedSeconds(), mLastTransaction->getGradidoTransaction()->getJson().data()
+			);
 		}
 		return result;
 	}

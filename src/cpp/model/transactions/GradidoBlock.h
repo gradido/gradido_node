@@ -7,7 +7,7 @@
 #include "gradido/GradidoBlock.pb.h"
 
 #include "../../SingletonManager/MemoryManager.h"
-
+#include "../../lib/BinTextConverter.h"
 #define GRADIDO_PROTOCOL_VERSION 1
 
 namespace model {
@@ -26,6 +26,8 @@ namespace model {
 
 		inline GradidoTransaction* getGradidoTransaction() { return mGradidoTransaction; }
 		inline std::string getSerialized() { return mProtoGradidoBlock.SerializeAsString(); }
+
+		inline std::string getMessageIdHex() { return convertBinToHex(mProtoGradidoBlock.message_id()); }
 
 		void setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot);
 
