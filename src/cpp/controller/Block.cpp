@@ -22,7 +22,7 @@ namespace controller {
 	Block::~Block()
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		
+		mTimer.stop();
 		checkTimeout(mTimer);
 		mSerializedTransactions.clear();		
 	}

@@ -30,7 +30,8 @@ namespace model {
 		}
 
 		Block::~Block()
-		{			
+		{
+			mTimer.stop();
 		}
 
 		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()

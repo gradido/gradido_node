@@ -62,10 +62,16 @@ Document JsonRequest::GET(const char* methodName, ErrorList* errors/* = nullptr*
 		std::istream& response_stream = clientSession->receiveResponse(response);
 
 		// debugging answer
-
 		std::stringstream responseStringStream;
 		for (std::string line; std::getline(response_stream, line); ) {
 			responseStringStream << line << std::endl;
+		}
+		if (responseStringStream.str() == "Service Unavailable") {
+			if (errors) {
+				errors->addError(new Error(functionName, "Service Unavailable"));
+			}
+			
+			return result;
 		}
 		//printf("response: %s\n", responseStringStream.str().data());
 		std::string method_name(methodName);
@@ -80,8 +86,11 @@ Document JsonRequest::GET(const char* methodName, ErrorList* errors/* = nullptr*
 				errors->addError(new ParamError(functionName, "result from server", responseStringStream.str().data()));
 			}
 			else {
-				log.error("[%s] error parsing request answer: %s on position: %d", functionName, result.GetParseError(), result.GetErrorOffset());
+				std::string functionNameString = functionName;
+				log.error("[%s] error parsing request answer: %s on position: %d", functionNameString, result.GetParseError(), result.GetErrorOffset());
 			}
+			printf("response: %s\n", responseStringStream.str().data());
+			
 		}
 	
 	}
