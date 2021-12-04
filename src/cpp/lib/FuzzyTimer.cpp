@@ -65,6 +65,7 @@ namespace UniLib {
 			if (exit) return false;
 			
 			auto it = mRegisteredAtTimer.begin();
+			if (it == mRegisteredAtTimer.end()) return true;
 
 			Poco::Timestamp now;
 			auto nowMilliseconds = (now.epochMicroseconds() / 1000);
