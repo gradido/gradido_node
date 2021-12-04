@@ -61,6 +61,7 @@ namespace iota
 			updateStoredMessages(messageIds);
 		}
 		unlock();
+		return UniLib::lib::GO_ON;
 	}
 
     void MessageListener::updateStoredMessages(const std::vector<MessageId>& currentMessageIds)
