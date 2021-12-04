@@ -4,6 +4,7 @@
 #include "Poco/Timer.h"
 #include "Poco/Logger.h"
 #include "../lib/MultithreadContainer.h"
+#include "../lib/FuzzyTimer.h"
 
 #include "MessageId.h"
 
@@ -21,7 +22,7 @@ namespace iota
      */
     // TODO: put into GroupManager
     
-    class MessageListener : public UniLib::lib::MultithreadContainer
+    class MessageListener : public UniLib::lib::MultithreadContainer, public UniLib::lib::TimerCallback
     {
     public:
         //! \param index should be something like GRADIDO.gdd1
@@ -29,12 +30,16 @@ namespace iota
         ~MessageListener();
         
         virtual void listener(Poco::Timer& timer);
+
+		UniLib::lib::TimerReturn callFromTimer();
+		const char* getResourceType() const { return "iota::MessageListener"; };
+
     protected:
 
         void updateStoredMessages(const std::vector<MessageId>& currentMessageIds);
 
         std::string mIndex; 
-        Poco::Timer mListenerTimer;
+        //Poco::Timer mListenerTimer;
         Poco::Logger& mErrorLog;
 
         enum MessageState 

@@ -51,7 +51,7 @@ namespace UniLib {
 		enum TimerReturn;
 #endif
 
-		class TimerCallback : public Poco::RefCountedObject
+		class TimerCallback
 		{
 		public:
 			virtual TimerReturn callFromTimer() = 0;

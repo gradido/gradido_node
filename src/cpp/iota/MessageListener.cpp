@@ -1,6 +1,7 @@
 #include "MessageListener.h"
 
 #include "../SingletonManager/OrderingManager.h"
+#include "../SingletonManager/CacheManager.h"
 #include "../lib/Profiler.h"
 #include "HTTPApi.h"
 
@@ -8,18 +9,20 @@ namespace iota
 {
     MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 2000*/)
     : mIndex(index),
-      mListenerTimer(0, intervalMilliseconds), mErrorLog(Poco::Logger::get("errorLog"))
+      //mListenerTimer(0, intervalMilliseconds), 
+		mErrorLog(Poco::Logger::get("errorLog"))
     {
-        Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
-	    mListenerTimer.start(callback);
-
+        //Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
+	    //mListenerTimer.start(callback);
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, intervalMilliseconds, -1);
     }
 
 	MessageListener::~MessageListener()
 	{
-		printf("[iota::~MessageListener]\n");
+		//printf("[iota::~MessageListener]\n");
 		lock();
-		mListenerTimer.stop();
+		CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
+		//mListenerTimer.stop();
 		unlock();
 	}
 
@@ -42,6 +45,23 @@ namespace iota
 		}
 		unlock();
     }
+
+	UniLib::lib::TimerReturn MessageListener::callFromTimer()
+	{
+		// main loop, called regulary in separate thread
+		if (!tryLock()) return UniLib::lib::GO_ON;
+		//lock();
+		static const char* function_name = "MessageListener::listener";
+
+		Profiler timeUsed;
+		// collect message ids for index from iota
+		auto messageIds = findByIndex(mIndex);
+		//printf("called getMessageIdsForIndexiation and get %d message ids %s\n", messageIds.size(), timeUsed.string().data());
+		if (messageIds.size()) {
+			updateStoredMessages(messageIds);
+		}
+		unlock();
+	}
 
     void MessageListener::updateStoredMessages(const std::vector<MessageId>& currentMessageIds)
     {

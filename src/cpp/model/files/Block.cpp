@@ -2,6 +2,7 @@
 
 #include "../../SingletonManager/FileLockManager.h"
 #include "../../SingletonManager/LoggerManager.h"
+#include "../../SingletonManager/CacheManager.h"
 #include "../../ServerGlobals.h"
 #include "../../lib/Profiler.h"
 
@@ -14,7 +15,7 @@
 namespace model {
 	namespace files {
 		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
-			: mTimer(0, ServerGlobals::g_TimeoutCheck),
+			: //mTimer(0, ServerGlobals::g_TimeoutCheck),
 			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);
@@ -25,15 +26,17 @@ namespace model {
 				file.createFile();
 			}
 
-			Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
-			mTimer.start(callback);
+			//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
+			//mTimer.start(callback);
+			CacheManager::getInstance()->getFuzzyTimer()->addTimer(mBlockPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
 		}
 
 		Block::~Block()
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
-			printf("[model::files::~Block]\n");
-			mTimer.stop();
+			CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mBlockPath.toString());
+			//printf("[model::files::~Block]\n");
+			//mTimer.stop();
 		}
 
 		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()
@@ -50,15 +53,25 @@ namespace model {
 			mLastUsed = Poco::Timestamp();
 			return mBlockFile;
 		}
-
+		/*
 		void Block::checkTimeout(Poco::Timer& timer)
 		{
-			Poco::FastMutex::ScopedLock lock(mFastMutex);
+			if (!mFastMutex.tryLock()) return;
 			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
+			mFastMutex.unlock();
 		}
-
+		*/
+		UniLib::lib::TimerReturn Block::callFromTimer()
+		{
+			if (!mFastMutex.tryLock()) return UniLib::lib::GO_ON;
+			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
+				mBlockFile = nullptr;
+			}
+			mFastMutex.unlock();
+		}
+		
 		int Block::readLine(Poco::UInt32 startReading, std::string& resultString)
 		{
 			// set also mCurrentFileSize
