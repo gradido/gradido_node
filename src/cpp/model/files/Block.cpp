@@ -31,6 +31,8 @@ namespace model {
 
 		Block::~Block()
 		{
+			Poco::FastMutex::ScopedLock lock(mFastMutex);
+			printf("[model::files::~Block]\n");
 			mTimer.stop();
 		}
 

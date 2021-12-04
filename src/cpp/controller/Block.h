@@ -8,10 +8,12 @@
 #include "../model/files/Block.h"
 #include "../model/TransactionEntry.h"
 
+#include "../lib/FuzzyTimer.h"
+
 #include "../task/WriteTransactionsToBlockTask.h"
 
 #include "Poco/AccessExpireCache.h"
-#include "Poco/Timer.h"
+
 
 //#include "../SingletonManager/FileLockManager.h"
 class TaskObserver;
@@ -26,7 +28,7 @@ namespace controller {
 	 * @brief interface for adding and getting transactions from specific block
 	 */
 
-	class Block : public ControllerBase
+	class Block : public ControllerBase, public UniLib::lib::TimerCallback
 	{
 		friend model::files::Block;
 	public:
@@ -47,12 +49,15 @@ namespace controller {
 
 		inline bool hasSpaceLeft() { return mBlockFile->getCurrentFileSize() + 32 < 128 * 1024 * 1024; }
 
+		UniLib::lib::TimerReturn callFromTimer();
+		const char* getResourceType() const { return "controller::Block"; };
+
 			
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
 		bool addTransaction(const std::string& serializedTransaction, int32_t fileCursor);
 
-		Poco::Timer mTimer;
+		//Poco::Timer mTimer;
 		
 		uint32_t mBlockNr;		
 

@@ -17,6 +17,7 @@ namespace iota
 
 	MessageListener::~MessageListener()
 	{
+		printf("[iota::~MessageListener]\n");
 		lock();
 		mListenerTimer.stop();
 		unlock();

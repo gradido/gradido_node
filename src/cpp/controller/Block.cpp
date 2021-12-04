@@ -5,25 +5,32 @@
 
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../SingletonManager/CacheManager.h"
 
 namespace controller {
 	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
-		: mTimer(0, ServerGlobals::g_TimeoutCheck),
+		: //mTimer(0, ServerGlobals::g_TimeoutCheck),
 		  mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
 		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias)
 	{
-		Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
-		mTimer.start(callback);
-
+		//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
+		//mTimer.start(callback);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(groupFolderPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
 		mBlockIndex->loadFromFile();
 	}
 
 	Block::~Block()
 	{
+		//printf("[model::controller::~Block]\n");
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		mTimer.stop();
-		checkTimeout(mTimer);
+		CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mBlockFile->getBlockPath());
+		// deadlock, because it is triggered from expire cache?
+		//mTimer.stop();
+		//printf("after timer stop\n");
+		//checkTimeout(mTimer);
+		//printf("after call checkTimeout\n");
 		mSerializedTransactions.clear();		
 	}
 
@@ -100,6 +107,24 @@ namespace controller {
 				mTransactionWriteTask = nullptr;
 			}
 		}
+	}
+
+	UniLib::lib::TimerReturn Block::callFromTimer()
+	{
+		// if called from timer, while deconstruct was called, prevent dead lock
+		if (!mWorkingMutex.tryLock()) UniLib::lib::GO_ON;
+		//Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+
+		if (!mTransactionWriteTask.isNull()) {
+			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
+				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
+				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
+				mTransactionWriteTask = nullptr;
+			}
+		}
+		mWorkingMutex.unlock();
+		return UniLib::lib::GO_ON;
 	}
 
 }
