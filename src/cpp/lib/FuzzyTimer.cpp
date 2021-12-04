@@ -70,18 +70,25 @@ namespace UniLib {
 			auto nowMilliseconds = (now.epochMicroseconds() / 1000);
 
 			if (it->first <= nowMilliseconds) {
-				TimerReturn ret = it->second.callback->callFromTimer();
-				if (it->second.nextLoop() && ret == GO_ON) {
-					mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));
+				try {
+					TimerReturn ret = it->second.callback->callFromTimer();
+					if (it->second.nextLoop() && ret == GO_ON) {
+						mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));
+					}
+
+					if (ret == REPORT_ERROR) {
+						LoggerManager::getInstance()->mErrorLogging.error(
+							"[Timer::move] timer run report error: timer type: %s, timer name: %s",
+							std::string(it->second.callback->getResourceType()), it->second.name);
+						//LOG_ERROR("report error from timer callback", DR_ERROR);
+					}
+					mRegisteredAtTimer.erase(it);
 				}
-				
-				if (ret == REPORT_ERROR) {
-					LoggerManager::getInstance()->mErrorLogging.error(
-						"[Timer::move] timer run report error: timer type: %s, timer name: %s",
-						std::string(it->second.callback->getResourceType()), it->second.name);
-					//LOG_ERROR("report error from timer callback", DR_ERROR);
+				catch (std::exception& ex) {
+					printf("[FuzzyTimer::move] exception: %s\n", ex.what());
+					printf("name: %s\n", it->second.name.data());
+					printf("type: %s\n", it->second.callback->getResourceType());
 				}
-				mRegisteredAtTimer.erase(it);
 			}
 
 			return true;
