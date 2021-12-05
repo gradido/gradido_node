@@ -213,4 +213,24 @@ namespace controller {
 		return false;
 	}
 
+	std::pair<uint16_t, uint8_t> BlockIndex::getOldestYearMonth()
+	{
+		if (!mYearMonthAddressIndexEntrys.size()) {
+			return { 0,0 };
+		}
+		auto firstEntry = mYearMonthAddressIndexEntrys.begin();
+		assert(firstEntry->second.size());
+		return { firstEntry->first, firstEntry->second.begin()->first };
+	}
+	std::pair<uint16_t, uint8_t> BlockIndex::getNewestYearMonth()
+	{
+		if (!mYearMonthAddressIndexEntrys.size()) {
+			return { 0,0 };
+		}
+		auto lastEntry = std::prev(mYearMonthAddressIndexEntrys.end());
+		assert(lastEntry->second.size());
+		auto lastMonthEntry = std::prev(lastEntry->second.end());
+		return { lastEntry->first, lastMonthEntry->first };
+	}
+
 }

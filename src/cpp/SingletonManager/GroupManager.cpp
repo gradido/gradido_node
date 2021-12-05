@@ -81,3 +81,17 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;
 }
+
+std::vector<Poco::SharedPtr<controller::Group>> GroupManager::findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey)
+{
+	Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
+	std::vector<Poco::SharedPtr<controller::Group>> results;
+	results.reserve(mGroupMap.size());
+	for (auto it = mGroupMap.begin(); it != mGroupMap.end(); it++) {
+		if (it->second->getAddressIndex()->getIndexForAddress(pubkey)) {
+			results.push_back(it->second);
+		}
+	}
+
+	return results;
+}

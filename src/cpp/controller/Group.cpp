@@ -267,6 +267,7 @@ namespace controller {
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
+		throw std::runtime_error("not fully implemented yet");
 
 		return transactions;
 	}
@@ -294,10 +295,34 @@ namespace controller {
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
+		auto gm = GroupManager::getInstance();
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
-		int zahl = 0;
+		
+		auto group = gm->findGroup(mGroupAlias);
+
+		int blockCursor = mLastBlockNr;
+		while (blockCursor > 0) {
+			auto block = getBlock(blockCursor);
+			auto blockIndex = block->getBlockIndex();
+			auto transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
+			if (transactionNrs.size()) {
+				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
+					std::string serializedTransaction;
+					block->getTransaction(*it, serializedTransaction);
+					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));
+				}
+			}
+			else {
+				auto newestYearMonth = blockIndex->getNewestYearMonth();
+				if ((newestYearMonth.first < year) ||
+				    (newestYearMonth.first == year && newestYearMonth.second < month)) {
+					break;
+				}
+			}
+			blockCursor--;
+		}
 
 		return transactions;
 	}

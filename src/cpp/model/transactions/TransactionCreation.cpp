@@ -4,6 +4,8 @@
 
 #include "../../lib/BinTextConverter.h"
 
+#include "../../SingletonManager/GroupManager.h"
+
 namespace model {
 	TransactionCreation::TransactionCreation(
 		const proto::gradido::GradidoCreation& transaction,
@@ -15,6 +17,8 @@ namespace model {
 
 	bool TransactionCreation::validate(TransactionValidationLevel level)
 	{
+		auto gm = GroupManager::getInstance();
+
 		// single
 		auto receiverPubkey = mProtoCreation.recipiant().pubkey();
 		auto sigPairs = mSignatureMap.sigpair();
@@ -32,10 +36,10 @@ namespace model {
 		
 		if ((level & TRANSACTION_VALIDATION_DATE_RANGE) == TRANSACTION_VALIDATION_DATE_RANGE) {
 			
-			Poco::DateTime targetDate = Poco::Timestamp(mProtoCreation.target_date().seconds());
+			Poco::DateTime targetDate = Poco::Timestamp(mProtoCreation.target_date().seconds() * Poco::Timestamp::resolution());
 				
 			auto pubkey = mProtoCreation.recipiant().pubkey();
-			auto groups = getGroups();
+			auto groups = gm->findAllGroupsWhichHaveTransactionsForPubkey(pubkey);
 			uint64_t sum = mProtoCreation.recipiant().amount();
 			for (auto it = groups.begin(); it != groups.end(); it++) {
 				sum += (*it)->calculateCreationSum(pubkey, targetDate.month(), targetDate.year());

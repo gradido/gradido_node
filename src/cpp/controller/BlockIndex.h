@@ -59,6 +59,9 @@ namespace controller {
 		inline uint64_t getMaxTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);  return mMaxTransactionNr; }
 		inline uint64_t getMinTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return mMinTransactionNr; }
 
+		std::pair<uint16_t, uint8_t> getOldestYearMonth();
+		std::pair<uint16_t, uint8_t> getNewestYearMonth();
+
 	protected:
 
 		//! \brief called from model::files::BlockIndex while reading file
