@@ -28,7 +28,7 @@ namespace iota
 		unlock();
 	}
 
-    void MessageListener::listener(Poco::Timer& timer)
+    /*void MessageListener::listener(Poco::Timer& timer)
     {
         // main loop, called regulary in separate thread
 		lock();
@@ -47,7 +47,7 @@ namespace iota
 		}
 		unlock();
     }
-
+	*/
 	UniLib::lib::TimerReturn MessageListener::callFromTimer()
 	{
 		// main loop, called regulary in separate thread

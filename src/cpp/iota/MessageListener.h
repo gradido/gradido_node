@@ -29,7 +29,7 @@ namespace iota
         MessageListener(const std::string& index, long intervalMilliseconds = 1000);
         ~MessageListener();
         
-        virtual void listener(Poco::Timer& timer);
+        //virtual void listener(Poco::Timer& timer);
 
 		UniLib::lib::TimerReturn callFromTimer();
 		const char* getResourceType() const { return "iota::MessageListener"; };
