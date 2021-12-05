@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_IOTA_MESSAGE_LISTENER_
 #define __GRADIDO_NODE_IOTA_MESSAGE_LISTENER_
 
-#include "Poco/Timer.h"
+//#include "Poco/Timer.h"
 #include "Poco/Logger.h"
 #include "../lib/MultithreadContainer.h"
 #include "../lib/FuzzyTimer.h"

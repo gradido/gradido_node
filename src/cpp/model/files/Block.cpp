@@ -72,6 +72,7 @@ namespace model {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
+			return UniLib::lib::GO_ON;
 		}
 		
 		int Block::readLine(Poco::UInt32 startReading, std::string& resultString)
