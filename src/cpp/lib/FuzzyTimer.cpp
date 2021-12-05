@@ -71,7 +71,12 @@ namespace UniLib {
 			auto nowMilliseconds = (now.epochMicroseconds() / 1000);
 
 			if (it->first <= nowMilliseconds) {
-				try {
+				if (!it->second.callback) {
+					printf("[FuzzyTimer::move] empty callback\n");
+					printf("name: %s\n", it->second.name.data());
+					printf("type: %s\n", it->second.callback->getResourceType());
+				}
+				else {
 					TimerReturn ret = it->second.callback->callFromTimer();
 					if (it->second.nextLoop() && ret == GO_ON) {
 						mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));
@@ -83,13 +88,8 @@ namespace UniLib {
 							std::string(it->second.callback->getResourceType()), it->second.name);
 						//LOG_ERROR("report error from timer callback", DR_ERROR);
 					}
-					mRegisteredAtTimer.erase(it);
 				}
-				catch (std::exception& ex) {
-					printf("[FuzzyTimer::move] exception: %s\n", ex.what());
-					printf("name: %s\n", it->second.name.data());
-					printf("type: %s\n", it->second.callback->getResourceType());
-				}
+				mRegisteredAtTimer.erase(it);					
 			}
 
 			return true;

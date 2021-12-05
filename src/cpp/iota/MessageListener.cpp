@@ -21,7 +21,9 @@ namespace iota
 	{
 		//printf("[iota::~MessageListener]\n");
 		lock();
-		CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
+		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex) != 1) {
+			throw std::runtime_error("error by removing timer");
+		}
 		//mListenerTimer.stop();
 		unlock();
 	}
