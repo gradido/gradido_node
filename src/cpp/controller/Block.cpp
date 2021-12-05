@@ -23,10 +23,10 @@ namespace controller {
 
 	Block::~Block()
 	{
-		//printf("[model::controller::~Block]\n");
+		//printf("[controller::~Block]\n");
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mBlockFile->getBlockPath()) != 1) {
-			throw std::runtime_error("error removing timer");
+			printf("[controller::~Block]] error removing timer\n");
 		}
 		// deadlock, because it is triggered from expire cache?
 		//mTimer.stop();

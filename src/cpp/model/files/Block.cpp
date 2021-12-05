@@ -35,7 +35,7 @@ namespace model {
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mBlockPath.toString()) != 1) {
-				throw std::runtime_error("error removing timer");
+				printf("[model::files::~Block]] error removing timer\n");
 			}
 			//printf("[model::files::~Block]\n");
 			//mTimer.stop();
