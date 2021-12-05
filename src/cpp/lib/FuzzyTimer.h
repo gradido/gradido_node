@@ -24,7 +24,6 @@
 #ifndef __UNIVERSUM_LIB_LIB_TIMER__
 #define __UNIVERSUM_LIB_LIB_TIMER__
 
-#include "Poco/RefCountedObject.h"
 #include "Poco/Mutex.h"
 #include "Poco/Thread.h"
 #include <string>

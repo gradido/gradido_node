@@ -22,6 +22,10 @@ namespace controller {
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
 		// TODO: sanity check, compare with block size
 		mLastTransactionId = mGroupState.getInt32ValueForKey("lastTransactionId", mLastTransactionId);
+		auto lastBlock = getBlock(mLastBlockNr);
+		if (lastBlock->getBlockIndex()->getMaxTransactionNr() > mLastTransactionId) {
+			updateLastTransactionId(lastBlock->getBlockIndex()->getMaxTransactionNr());
+		}
 
 		std::clog << "[Group " << groupAlias << "] "
 			<< "loaded from state: last address index : " << std::to_string(mLastAddressIndex)
