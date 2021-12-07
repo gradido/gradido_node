@@ -28,13 +28,13 @@ namespace model {
 
 			//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
 			//mTimer.start(callback);
-			CacheManager::getInstance()->getFuzzyTimer()->addTimer(mBlockPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
+			CacheManager::getInstance()->getFuzzyTimer()->addTimer("model::file::" + mBlockPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
 		}
 
 		Block::~Block()
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
-			if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mBlockPath.toString()) != 1) {
+			if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("model::file::" + mBlockPath.toString()) != 1) {
 				printf("[model::files::~Block]] error removing timer\n");
 			}
 			//printf("[model::files::~Block]\n");

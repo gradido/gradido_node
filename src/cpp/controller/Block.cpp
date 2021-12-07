@@ -17,7 +17,7 @@ namespace controller {
 		//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
 		//mTimer.start(callback);
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		CacheManager::getInstance()->getFuzzyTimer()->addTimer(groupFolderPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer("controller::" + mBlockFile->getBlockPath(), this, ServerGlobals::g_TimeoutCheck, -1);
 		mBlockIndex->loadFromFile();
 	}
 
@@ -25,7 +25,7 @@ namespace controller {
 	{
 		//printf("[controller::~Block]\n");
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mBlockFile->getBlockPath()) != 1) {
+		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath()) != 1) {
 			printf("[controller::~Block]] error removing timer\n");
 		}
 		// deadlock, because it is triggered from expire cache?
