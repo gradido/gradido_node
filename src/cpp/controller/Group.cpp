@@ -3,6 +3,7 @@
 #include "../ServerGlobals.h"
 
 #include "../SingletonManager/GroupManager.h"
+#include "../SingletonManager/LoggerManager.h"
 
 #include "../lib/DataTypeConverter.h"
 
@@ -166,11 +167,7 @@ namespace controller {
 			break;
 		}
 
-		// intern validation
-		printf("validate with level: %d\n", level);
-		if (!newTransaction->validate(level)) {
-			return false;
-		}
+		
 		auto lastTransaction = getLastTransaction();
 		uint32_t receivedSeconds = static_cast<uint32_t>(iotaMilestoneTimestamp);
 
@@ -179,13 +176,20 @@ namespace controller {
 			return false;
 		}
 
-
 		Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(
 			receivedSeconds,
 			std::string((const char*)&iotaMilestoneId, sizeof(uint32_t)),
 			newTransaction,
 			lastTransaction
 		));
+
+		
+		// intern validation
+		newTransaction->setGradidoBlock(gradidoBlock.get());
+		printf("validate with level: %d\n", level);
+		if (!newTransaction->validate(level)) {
+			return false;
+		}
 
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto block = getCurrentBlock();
@@ -211,14 +215,32 @@ namespace controller {
 		return result;
 	}
 
-	uint64_t Group::calculateCreationSum(const std::string& address, int month, int year)
+	uint64_t Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received)
 	{
 		uint64_t sum = 0;
+		std::vector<Poco::AutoPtr<model::GradidoBlock>> allTransactions;
+		// received = max
+		// received - 2 month = min
+		Poco::DateTime searchDate = received;
+		for (int i = 0; i < 3; i++) {
+			auto transactions = findTransactions(address, searchDate.month(), searchDate.year());
+			// https://stackoverflow.com/questions/201718/concatenating-two-stdvectors
+			allTransactions.insert(
+				allTransactions.end(),
+				std::make_move_iterator(transactions.begin()),
+				std::make_move_iterator(transactions.end())
+			);
+			searchDate -= Poco::Timespan(Poco::DateTime::daysOfMonth(searchDate.year(), searchDate.month()), 0, 0, 0, 0);
+		}
 		auto transactions = findTransactions(address, month, year);
 		for (auto it = transactions.begin(); it != transactions.end(); it++) {
 			auto body = (*it)->getGradidoTransaction()->getTransactionBody();
 			if (body->getType() == model::TRANSACTION_CREATION) {
 				auto creation = body->getCreation();
+				auto targetDate = creation->getTargetDate();
+				if (targetDate.month() != month || targetDate.year() != year) {
+					continue;
+				}
 				sum += creation->getRecipiantAmount();
 			}
 		}
@@ -264,10 +286,33 @@ namespace controller {
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
+		auto gm = GroupManager::getInstance();
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
-		throw std::runtime_error("not fully implemented yet");
+
+		auto group = gm->findGroup(mGroupAlias);
+
+		int blockCursor = mLastBlockNr;
+		while (blockCursor > 0) {
+			auto block = getBlock(blockCursor);
+			auto blockIndex = block->getBlockIndex();
+			auto transactionNrs = blockIndex->findTransactionsForAddress(index);
+			if (transactionNrs.size()) {
+				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
+					std::string serializedTransaction;
+					auto result = block->getTransaction(*it, serializedTransaction);
+					if(!serializedTransaction.size()) {
+						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
+							*it, mGroupAlias, result);
+						std::abort();
+					}
+					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));
+				}
+			}
+			blockCursor--;
+		}
 
 		return transactions;
 	}
@@ -310,7 +355,13 @@ namespace controller {
 			if (transactionNrs.size()) {
 				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
 					std::string serializedTransaction;
-					block->getTransaction(*it, serializedTransaction);
+					auto result = block->getTransaction(*it, serializedTransaction);
+					if (!serializedTransaction.size()) {
+						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
+							*it, mGroupAlias, result);
+						std::abort();
+					}
 					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));
 				}
 			}

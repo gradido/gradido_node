@@ -67,7 +67,7 @@ namespace controller {
 
 		//! \brief Search for creation transactions from specific month and add balances together.
 		//! \param address User account public key.
-		uint64_t calculateCreationSum(const std::string& address, int month, int year);
+		uint64_t calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received);
 
 		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 

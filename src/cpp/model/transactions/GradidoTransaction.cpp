@@ -41,6 +41,13 @@ namespace model {
 			mTransactionBody->setGroupRoot(groupRoot);
 		}
 	}
+	void GradidoTransaction::setGradidoBlock(GradidoBlock* gradidoBlock)
+	{
+		mGradidoBlock = gradidoBlock;
+		if (mTransactionBody) {
+			mTransactionBody->setGradidoBlock(gradidoBlock);
+		}
+	}
 
     bool GradidoTransaction::validate(TransactionValidationLevel level /*= TRANSACTION_VALIDATION_SINGLE*/)
     {

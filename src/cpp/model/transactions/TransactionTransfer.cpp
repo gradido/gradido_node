@@ -43,7 +43,25 @@ namespace model {
 		}
 
 		if ((level & TRANSACTION_VALIDATION_SINGLE_PREVIOUS) == TRANSACTION_VALIDATION_SINGLE_PREVIOUS) {
-			// TODO: check if enough gradidos exist on account of user
+			// TODO: use state variable instead of go through all transactions from the user every time
+			// check if enough gradidos exist on account of user
+			if (!mGroupRoot.isNull()) {
+				auto transactions = mGroupRoot->findTransactions(transfer.sender().pubkey());
+				printf("[TransactionTransfer::validate] %d previous transactions found\n", (int)transactions.size());
+				int64_t gradidos = 0;
+				for (auto it = transactions.begin(); it != transactions.end(); it++) {
+					auto transactionBody = (*it)->getGradidoTransaction()->getTransactionBody();
+					if (transactionBody->isTransfer()) {
+						auto otherTransfer = transactionBody->getTransfer();
+						// TODO: add decay
+						gradidos += otherTransfer->getGradidoDeltaForUser(transfer.sender().pubkey());
+					}
+				}
+				if (gradidos < transfer.sender().amount()) {
+					addError(new Error(__FUNCTION__, "user hasn't enough gradidos to spend"));
+					return false;
+				}
+			}
 		}
 
 		if ((level & TRANSACTION_VALIDATION_PAIRED) == TRANSACTION_VALIDATION_PAIRED) {
@@ -198,6 +216,18 @@ namespace model {
 			return false;
 		}
 		return true;
+	}
+
+	int64_t TransactionTransfer::getGradidoDeltaForUser(const std::string& pubkey)
+	{
+		auto transfer = getTransfer();
+		if (transfer.sender().pubkey() == pubkey) {
+			return -transfer.sender().amount();
+		}
+		else if (transfer.recipiant() == pubkey) {
+			return transfer.sender().amount();
+		}
+		return 0;
 	}
 
 }

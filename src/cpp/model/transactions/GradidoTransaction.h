@@ -27,6 +27,7 @@ namespace model {
 		}
 
 		void setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot);
+		void setGradidoBlock(GradidoBlock* gradidoBlock);
 
 	protected:
 		proto::gradido::GradidoTransaction mProtoGradidoTransaction;

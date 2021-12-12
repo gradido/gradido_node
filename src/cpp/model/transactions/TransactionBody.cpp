@@ -36,6 +36,7 @@ namespace model {
 
 	bool TransactionBody::validate(TransactionValidationLevel level)
 	{
+		// TODO: check if memo is encrypted, than the limit changes
 		if (mProtoTransactionBody.memo().size() > 150) {
 			addError(new Error(__FUNCTION__, "memo is to big"));
 			return false;

@@ -47,6 +47,11 @@ namespace controller {
 		//! \brief find transaction nrs for address index in specific month and year
 		//! \return empty vector in case nothing found
 		std::vector<uint64_t> findTransactionsForAddressMonthYear(uint32_t addressIndex, uint16_t year, uint8_t month);
+
+		//! \brief find transaction nrs for address index
+		//! \return empty vector in case nothing found
+		//! TODO: profile and if to slow on big data amounts, update 
+		std::vector<uint64_t> findTransactionsForAddress(uint32_t addressIndex);
 		//! \brief find transaction nrs from specific month and year
 		//! \return empty shared ptr if nothing found
 		Poco::SharedPtr<std::vector<uint64_t>> findTransactionsForMonthYear(uint16_t year, uint8_t month);

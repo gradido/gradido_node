@@ -17,6 +17,8 @@ namespace model {
 		inline const std::string& getRecipiantPubkey() const { return mProtoCreation.recipiant().pubkey(); }
 		inline google::protobuf::int64 getRecipiantAmount() const { return mProtoCreation.recipiant().amount(); }
 
+		inline Poco::DateTime getTargetDate() const { return Poco::Timestamp(mProtoCreation.target_date().seconds() * Poco::Timestamp::resolution()); }
+
 		std::vector<uint32_t> getInvolvedAddressIndices(Poco::SharedPtr<controller::AddressIndex> addressIndexContainer);
 
 

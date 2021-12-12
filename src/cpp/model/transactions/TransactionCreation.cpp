@@ -37,25 +37,14 @@ namespace model {
 		if ((level & TRANSACTION_VALIDATION_DATE_RANGE) == TRANSACTION_VALIDATION_DATE_RANGE) {
 			
 			Poco::DateTime targetDate = Poco::Timestamp(mProtoCreation.target_date().seconds() * Poco::Timestamp::resolution());
-				
-			auto pubkey = mProtoCreation.recipiant().pubkey();
-			auto groups = gm->findAllGroupsWhichHaveTransactionsForPubkey(pubkey);
-			uint64_t sum = mProtoCreation.recipiant().amount();
-			for (auto it = groups.begin(); it != groups.end(); it++) {
-				sum += (*it)->calculateCreationSum(pubkey, targetDate.month(), targetDate.year());
-			}
-			// TODO: replace with variable, state transaction for group
-			if (sum > 10000000) {
-				addError(new Error(__FUNCTION__, "creation more than 1.000 GDD per month not allowed"));
-				return false;
-			}
 
 			if (mGradidoBlock) {
 				Poco::DateTime received = mGradidoBlock->getReceived();
+
 				if (targetDate.year() == received.year())
 				{
-					if (targetDate.month() + 3 < received.month()) {
-						addError(new Error(__FUNCTION__, "year is the same, target date month is more than 3 month in past"));
+					if (targetDate.month() + 2 < received.month()) {
+						addError(new Error(__FUNCTION__, "year is the same, target date month is more than 2 month in past"));
 						return false;
 					}
 					if (targetDate.month() > received.month()) {
@@ -76,10 +65,27 @@ namespace model {
 				else
 				{
 					// target_date.year +1 == now.year
-					if (targetDate.month() + 3 < received.month() + 12) {
-						addError(new Error(__FUNCTION__, "target date is more than 3 month in past"));
+					if (targetDate.month() + 2 < received.month() + 12) {
+						addError(new Error(__FUNCTION__, "target date is more than 2 month in past"));
 						return false;
 					}
+				}
+
+				auto pubkey = mProtoCreation.recipiant().pubkey();
+				auto groups = gm->findAllGroupsWhichHaveTransactionsForPubkey(pubkey);
+				uint64_t sum = mProtoCreation.recipiant().amount();
+				for (auto it = groups.begin(); it != groups.end(); it++) {
+					try {
+						sum += (*it)->calculateCreationSum(pubkey, targetDate.month(), targetDate.year(), received);
+					}
+					catch (std::exception& ex) {
+						printf("exception: %s\n", ex.what());
+					}
+				}
+				// TODO: replace with variable, state transaction for group
+				if (sum > 10000000) {
+					addError(new Error(__FUNCTION__, "creation more than 1.000 GDD per month not allowed"));
+					return false;
 				}
 			}
 		}

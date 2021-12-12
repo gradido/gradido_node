@@ -48,7 +48,16 @@ int IotaMessageToTransactionTask::run()
         }
         
     } else {		
-		// if it is a cross group transaction we store both in Ordering Manager for easy access for validation
+        // if simple validation already failed, we can stop here
+        if (!transaction->validate(model::TRANSACTION_VALIDATION_SINGLE)) {
+			auto errors = transaction->getErrorsArray();
+			errorLog.error("Error by validating transaction");
+			for (auto it = errors.begin(); it != errors.end(); it++) {
+				errorLog.error(*it);
+			}
+            return 0;
+        }
+        // if it is a cross group transaction we store both in Ordering Manager for easy access for validation
         auto transactionBody = transaction->getTransactionBody();
 		if (transactionBody->isTransfer() && transactionBody->getTransfer()->isCrossGroupTransfer()) {
 			OrderingManager::getInstance()->pushPairedTransaction(transaction);

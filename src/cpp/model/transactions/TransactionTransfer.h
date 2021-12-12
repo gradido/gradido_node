@@ -34,6 +34,8 @@ namespace model {
 		Poco::Timestamp getPairedTransactionId() const;
 		// for checking if a paired transaction belong really to this transaction (same amount, sender and recipiant, other group)
 		bool isBelongTo(const TransactionTransfer* paired) const;
+
+		int64_t getGradidoDeltaForUser(const std::string& pubkey);
 	
 	protected:
 		const proto::gradido::LocalTransfer getTransfer() const;

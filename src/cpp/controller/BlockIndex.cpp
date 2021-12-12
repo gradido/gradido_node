@@ -31,6 +31,9 @@ namespace controller {
 	bool BlockIndex::writeIntoFile()
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		if (!mYearMonthAddressIndexEntrys.size() || !mTransactionNrsFileCursors.size()) {
+			int zahl = 1;
+		}
 		assert(mYearMonthAddressIndexEntrys.size() && mTransactionNrsFileCursors.size());
 
 		mBlockIndexFile.reset();
@@ -183,6 +186,23 @@ namespace controller {
 		result.reserve(transactionNrIndices.size());
 		for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
 			result.push_back((*addressIndexEntry->transactionNrs)[*it]);
+		}
+		return result;
+	}
+	std::vector<uint64_t> BlockIndex::findTransactionsForAddress(uint32_t addressIndex)
+	{
+		std::vector<uint64_t> result;
+		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		for (auto yearIt = mYearMonthAddressIndexEntrys.begin(); yearIt != mYearMonthAddressIndexEntrys.end(); yearIt++) {
+			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); monthIt++) {
+				AddressIndexEntry* addressIndexEntry = &monthIt->second;
+				for (auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.begin(); addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end(); addressIndexIt++) {
+					auto transactionNrIndices = addressIndexIt->second;
+					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
+						result.push_back((*addressIndexEntry->transactionNrs)[*it]);
+					}
+				}
+			}
 		}
 		return result;
 	}
