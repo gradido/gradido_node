@@ -37,25 +37,25 @@ namespace UniLib {
 
 		int FuzzyTimer::removeTimer(std::string name)
 		{
+			printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
 			Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 			if (exit) return -1;
 
 			size_t eraseCount = 0;
-			bool somethingErased = false;
-			do {
-				somethingErased = false;
-				for (auto it = mRegisteredAtTimer.begin(); it != mRegisteredAtTimer.end(); it++)
+				
+			for (auto it = mRegisteredAtTimer.begin(); it != mRegisteredAtTimer.end();)
+			{
+				if (name == it->second.name)
 				{
-					if (name == it->second.name)
-					{
-						mRegisteredAtTimer.erase(it);
-						eraseCount++;
-						somethingErased = true;
-						break;
-					}
+					it->second.callback = nullptr;
+					it = mRegisteredAtTimer.erase(it);
+					eraseCount++;
 				}
-			} while (somethingErased);
-
+				else {
+					it++;
+				}
+			}
+			printf("removed %d timer with name: %s\n", eraseCount, name.data());
 			return eraseCount;
 		}
 
@@ -74,7 +74,7 @@ namespace UniLib {
 				if (!it->second.callback) {
 					printf("[FuzzyTimer::move] empty callback\n");
 					printf("name: %s\n", it->second.name.data());
-					printf("type: %s\n", it->second.callback->getResourceType());
+					//printf("type: %s\n", it->second.callback->getResourceType());
 				}
 				else {
 					TimerReturn ret = it->second.callback->callFromTimer();
