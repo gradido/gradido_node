@@ -51,7 +51,7 @@ namespace model {
 				int64_t gradidos = 0;
 				for (auto it = transactions.begin(); it != transactions.end(); it++) {
 					auto transactionBody = (*it)->getGradidoTransaction()->getTransactionBody();
-					if (transactionBody->isTransfer()) {
+					if (transactionBody->isTransfer() && (!mGradidoBlock || (*it)->getID() != mGradidoBlock->getID())) {
 						auto otherTransfer = transactionBody->getTransfer();
 						// TODO: add decay
 						gradidos += otherTransfer->getGradidoDeltaForUser(transfer.sender().pubkey());

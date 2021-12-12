@@ -19,6 +19,7 @@ public:
 
 	Poco::Logger&		  mErrorLogging;
 	Poco::Logger&		  mSpeedLogging;
+	Poco::Logger&		  mTransactionLog;
 protected:
 	
 

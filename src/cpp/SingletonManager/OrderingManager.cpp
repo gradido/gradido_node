@@ -42,7 +42,7 @@ OrderingManager* OrderingManager::getInstance()
 
 void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
 {
-    printf("[OrderingManager::pushMilestoneTaskObserver] push: %d\n", milestoneId);
+    //printf("[OrderingManager::pushMilestoneTaskObserver] push: %d\n", milestoneId);
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it == mMilestoneTaskObserver.end()) {
@@ -54,7 +54,7 @@ void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
 }
 void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 {
-    printf("[OrderingManager::popMilestoneTaskObserver] pop: %d\n", milestoneId);
+    //printf("[OrderingManager::popMilestoneTaskObserver] pop: %d\n", milestoneId);
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it != mMilestoneTaskObserver.end()) {
@@ -111,31 +111,32 @@ int OrderingManager::ThreadFunction()
             return 0;
         }        
         
-		if (mt->transactions.size())
-		{
+        
+        if (mt->transactions.size())
+        {
             // sort transaction after creation date if more than one was processed with this milestone
-			mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
-				return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
-			});
+            mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
+                return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
+                });
 
-			printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
+            printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
 
-			for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
-				auto type = (*itTransaction)->getTransactionBody()->getType();
-				auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
-				printf("transaction type: %d, created: %d\n", type, seconds);
+            for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
+                auto type = (*itTransaction)->getTransactionBody()->getType();
+                auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
+                printf("transaction type: %d, created: %d\n", type, seconds);
 
-				Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
+                Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
                 assert(!transaction->getGroupRoot().isNull());
 
                 // put transaction to blockchain
-		   		bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
-				if (!result) {
-					transaction->addError(new Error(__FUNCTION__, "couldn't add transaction"));
-                    transaction->addError(new ParamError(__FUNCTION__, "transaction", transaction->getJson()));
-				}
-			}
-		}
+                bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
+                if (!result) {
+                    transaction->addError(new Error(__FUNCTION__, "couldn't add transaction"));
+                }
+            }
+        }
+
         // remove not longer needed milestone transactions entry
         mMilestonesWithTransactionsMutex.lock();
         mMilestonesWithTransactions.erase(workSetIt);

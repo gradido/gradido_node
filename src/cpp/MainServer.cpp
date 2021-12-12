@@ -88,6 +88,17 @@ void MainServer::createConsoleFileAsyncLogger(std::string name, std::string file
 	log.setLevel("information");
 }
 
+void MainServer::createFileAsyncLogger(std::string name, std::string filePath)
+{
+	Poco::AutoPtr<Poco::SimpleFileChannel> logFileChannel(new Poco::SimpleFileChannel(filePath));
+	logFileChannel->setProperty("rotation", "500 K");
+	Poco::AutoPtr<Poco::AsyncChannel> logAsyncChannel(new Poco::AsyncChannel(logFileChannel));
+
+	Poco::Logger& log = Poco::Logger::get(name);
+	log.setChannel(logAsyncChannel);
+	log.setLevel("information");
+}
+
 int MainServer::main(const std::vector<std::string>& args)
 {
 	Profiler usedTime;
@@ -127,9 +138,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		createConsoleFileAsyncLogger("errorLog", log_Path + "errorLog.txt");
 		Poco::Logger& errorLog = Poco::Logger::get("errorLog");
 
-		// messages which aren't found in milestones, will put here as json
-		createConsoleFileAsyncLogger("droppedMessages", log_Path + "droppedMessages.txt");
-
+		createFileAsyncLogger("logTransactions", log_Path + "receivedTransactions.txt");
 
 		// *************** load from config ********************************************
 
@@ -148,6 +157,10 @@ int MainServer::main(const std::vector<std::string>& args)
 		ServerGlobals::g_CacheTimeout = config().getUInt("CacheTimeout", ServerGlobals::g_CacheTimeout);
 		ServerGlobals::g_TimeoutCheck = config().getUInt("TimeoutChecks", ServerGlobals::g_TimeoutCheck);
 		ServerGlobals::g_WriteToDiskTimeout = config().getUInt("WriteToDiskTimeout", ServerGlobals::g_WriteToDiskTimeout);
+		ServerGlobals::g_LogTransactions = config().getBool("LogTransactions", ServerGlobals::g_LogTransactions);
+		if (ServerGlobals::g_LogTransactions) {
+			Poco::Logger::get("logTransactions").setLevel("information");
+		}
 
 		ServerGlobals::g_FilesPath = Poco::Path::home() + ".gradido";
 		Poco::File homeFolder(ServerGlobals::g_FilesPath);

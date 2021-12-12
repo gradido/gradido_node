@@ -98,31 +98,40 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 		stateError("group not known");
 		return;
 	}
-	printf("group found and loaded\n");
+	//printf("group found and loaded\n");
 	auto transactions = group->findTransactionsSerialized(fromTransactionId);
 	printf("%d transactions for group: %s found\n", transactions.size(), groupAlias.data());
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
 	Value jsonTransactionArray(kArrayType);
-	//Poco::AutoPtr<model::GradidoBlock> prevTransaction;
+	Poco::AutoPtr<model::GradidoBlock> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		if (it->size() > 0) {
-			jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
-			// check for tx hash error
-			/*
+			// check for tx hash error			
 			Profiler time;
 			Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(*it, group));
-			printf("time unserialize: %s\n", time.string().data());
-
+			//printf("time unserialize: %s\n", time.string().data());
+			model::TransactionValidationLevel level = static_cast<model::TransactionValidationLevel>(model::TRANSACTION_VALIDATION_DATE_RANGE | model::TRANSACTION_VALIDATION_SINGLE | model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);
+			auto validationResult = gradidoBlock->validate(level);
+			
 			if (!prevTransaction.isNull()) {
 				time.reset();
 				if (!gradidoBlock->validate(prevTransaction)) {
-
+					printf("error validating transaction with prev transaction\n");
+					gradidoBlock->printErrors();
 				}
-				printf("time validate tx hash: %s\n", time.string().data());
+				//printf("time validate tx hash: %s\n", time.string().data());
 			}
 			prevTransaction = gradidoBlock;
-			*/
+			if (!validationResult) {
+				printf("error validating transaction\n");
+				gradidoBlock->printErrors();
+				//break;
+			}
+			//*/
+			jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
+			auto base64 = DataTypeConverter::binToBase64(*it);
+			//printf("base 64: %s\n", base64.data());
 		}
 	}
 	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);

@@ -28,6 +28,7 @@ namespace ServerGlobals {
 	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
 	extern JsonRequest* g_IotaRequestHandler;
 	extern Poco::AtomicCounter              g_NumberExistingTasks;
+	extern bool								g_LogTransactions;
 
 	void clearMemory();
 	bool initSSLClientContext();

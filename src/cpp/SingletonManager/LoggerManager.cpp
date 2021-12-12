@@ -2,7 +2,7 @@
 
 
 LoggerManager::LoggerManager()
-	: mErrorLogging(Poco::Logger::get("errorLog")), mSpeedLogging(Poco::Logger::get("SpeedLog"))
+	: mErrorLogging(Poco::Logger::get("errorLog")), mSpeedLogging(Poco::Logger::get("SpeedLog")), mTransactionLog(Poco::Logger::get("logTransactions"))
 {
 
 }

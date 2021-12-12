@@ -28,6 +28,7 @@ namespace ServerGlobals {
 	Context::Ptr g_SSL_CLient_Context = nullptr;
 	JsonRequest* g_IotaRequestHandler = nullptr;
 	Poco::AtomicCounter              g_NumberExistingTasks;
+	bool								g_LogTransactions = false;
 
 	void clearMemory()
 	{

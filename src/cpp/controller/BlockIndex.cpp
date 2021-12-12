@@ -84,7 +84,6 @@ namespace controller {
 	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
-
 		if (transactionNr > mMaxTransactionNr) {
 			mMaxTransactionNr = transactionNr;
 		}
@@ -108,6 +107,7 @@ namespace controller {
 			monthIt->second.transactionNrs = new std::vector<uint64_t>;
 		}
 		auto addressIndexEntry = &monthIt->second;
+		// TODO: doubletten Check
 		addressIndexEntry->transactionNrs->push_back(transactionNr);
 		uint32_t transactionNrIndex = addressIndexEntry->transactionNrs->size() - 1;
 
@@ -196,11 +196,12 @@ namespace controller {
 		for (auto yearIt = mYearMonthAddressIndexEntrys.begin(); yearIt != mYearMonthAddressIndexEntrys.end(); yearIt++) {
 			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); monthIt++) {
 				AddressIndexEntry* addressIndexEntry = &monthIt->second;
-				for (auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.begin(); addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end(); addressIndexIt++) {
+				auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.find(addressIndex);
+				if (addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end()) {
 					auto transactionNrIndices = addressIndexIt->second;
 					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
 						result.push_back((*addressIndexEntry->transactionNrs)[*it]);
-					}
+					}				
 				}
 			}
 		}

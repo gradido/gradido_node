@@ -48,6 +48,8 @@ int IotaMessageToTransactionTask::run()
         }
         
     } else {		
+        Poco::Logger& transactionLog = LoggerManager::getInstance()->mTransactionLog;
+        transactionLog.information("%d %d %s\n%s", (int)mMilestoneIndex, (int)mTimestamp, dataIndex.second, transaction->getJson());
         // if simple validation already failed, we can stop here
         if (!transaction->validate(model::TRANSACTION_VALIDATION_SINGLE)) {
 			auto errors = transaction->getErrorsArray();

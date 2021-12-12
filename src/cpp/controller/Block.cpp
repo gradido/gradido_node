@@ -56,8 +56,8 @@ namespace controller {
 		auto group = gm->findGroup(mGroupAlias);
 		try {
 			Poco::SharedPtr<model::TransactionEntry> transactionEntry(new model::TransactionEntry(serializedTransaction, fileCursor, group));
+			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 			mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
-			mBlockIndex->addIndicesForTransaction(transactionEntry);
 			return true;
 		}
 		catch (Poco::Exception& e) {
@@ -71,11 +71,21 @@ namespace controller {
 	int Block::getTransaction(uint64_t transactionNr, std::string& serializedTransaction)
 	{
 		if (transactionNr == 0) return -1;
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
 		if (transactionEntry.isNull()) {
 			// read from file system
 			int32_t fileCursor = 0;
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
+				// maybe it was already deleted from cache but not written to file yet, especially happen while debugging
+				if (!mTransactionWriteTask.isNull()) {
+					transactionEntry = mTransactionWriteTask->getTransaction(transactionNr);
+					if (!transactionEntry.isNull()) {
+						serializedTransaction = transactionEntry->getSerializedTransaction();
+						return 0;
+					}
+				}
 				return -2;
 			}
 			std::string blockLine;

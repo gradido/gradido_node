@@ -43,6 +43,9 @@ public:
 		mBlockIndex->addIndicesForTransaction(transaction);
 	}
 
+	//! return transaction by nr
+	Poco::SharedPtr<model::TransactionEntry> getTransaction(uint64_t nr);
+
 	//! \brief collect all transaction nrs from transactions
 	std::vector<uint64_t> getTransactionNrs();
 

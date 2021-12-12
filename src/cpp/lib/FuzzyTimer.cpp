@@ -40,6 +40,7 @@ namespace UniLib {
 			printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
 			Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 			if (exit) return -1;
+			printf("mRegisteredAtTimer size: %d\n", mRegisteredAtTimer.size());
 
 			size_t eraseCount = 0;
 				
@@ -52,10 +53,12 @@ namespace UniLib {
 					eraseCount++;
 				}
 				else {
+					printf("not removed: %s\n", it->second.name.data());
 					it++;
 				}
 			}
 			printf("removed %d timer with name: %s\n", eraseCount, name.data());
+			printf("mRegisteredAtTimer size: %d\n", mRegisteredAtTimer.size());
 			return eraseCount;
 		}
 

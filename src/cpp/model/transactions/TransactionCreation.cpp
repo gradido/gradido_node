@@ -82,6 +82,15 @@ namespace model {
 						printf("exception: %s\n", ex.what());
 					}
 				}
+				auto id = mGradidoBlock->getID();
+				int lastId = 0;
+				if (!mGroupRoot.isNull() && mGroupRoot->getLastTransaction()) {
+					lastId = mGroupRoot->getLastTransaction()->getID();
+				}
+				if (mGradidoBlock->getID() <= lastId) {
+					// this transaction was already added to blockchain and therefor also added in calculateCreationSum
+					sum -= mProtoCreation.recipiant().amount();
+				}
 				// TODO: replace with variable, state transaction for group
 				if (sum > 10000000) {
 					addError(new Error(__FUNCTION__, "creation more than 1.000 GDD per month not allowed"));

@@ -232,8 +232,8 @@ namespace controller {
 			);
 			searchDate -= Poco::Timespan(Poco::DateTime::daysOfMonth(searchDate.year(), searchDate.month()), 0, 0, 0, 0);
 		}
-		auto transactions = findTransactions(address, month, year);
-		for (auto it = transactions.begin(); it != transactions.end(); it++) {
+		printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
+		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
 			auto body = (*it)->getGradidoTransaction()->getTransactionBody();
 			if (body->getType() == model::TRANSACTION_CREATION) {
 				auto creation = body->getCreation();
@@ -241,6 +241,7 @@ namespace controller {
 				if (targetDate.month() != month || targetDate.year() != year) {
 					continue;
 				}
+				printf("added from transaction: %d \n", (*it)->getID());
 				sum += creation->getRecipiantAmount();
 			}
 		}
@@ -265,6 +266,7 @@ namespace controller {
 		// but if someone ask for zero he gets all
 		if (!transactionIdCursor) transactionIdCursor = 1;
 		Poco::SharedPtr<Block> block;
+
 		printf("[Group::findTransactionsSerialized] asked transactionId: %d, last: %d\n", fromTransactionId, mLastTransactionId);
 		while (transactionIdCursor <= mLastTransactionId) {
 			if (block.isNull() || !block->getBlockIndex()->hasTransactionNr(transactionIdCursor)) {
@@ -305,7 +307,7 @@ namespace controller {
 					if(!serializedTransaction.size()) {
 						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
-							*it, mGroupAlias, result);
+							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
 					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));
@@ -359,7 +361,7 @@ namespace controller {
 					if (!serializedTransaction.size()) {
 						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
-							*it, mGroupAlias, result);
+							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
 					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));

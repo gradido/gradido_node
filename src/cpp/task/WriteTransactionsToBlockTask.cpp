@@ -71,3 +71,13 @@ std::vector<uint64_t> WriteTransactionsToBlockTask::getTransactionNrs()
 	}
 	return transactionNrs;
 }
+
+Poco::SharedPtr<model::TransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
+{
+	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
+		if ((*it)->getTransactionNr() == nr) {
+			return *it;
+		}
+	}
+	return nullptr;
+}
