@@ -56,6 +56,10 @@ namespace model {
 						// TODO: add decay
 						gradidos += otherTransfer->getGradidoDeltaForUser(transfer.sender().pubkey());
 					}
+					else if (transactionBody->isCreation()) {
+						// TODO: add decay
+						gradidos += transactionBody->getCreation()->getRecipiantAmount();
+					}
 				}
 				if (gradidos < transfer.sender().amount()) {
 					addError(new Error(__FUNCTION__, "user hasn't enough gradidos to spend"));
