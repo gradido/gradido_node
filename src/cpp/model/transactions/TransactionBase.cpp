@@ -6,21 +6,15 @@
 namespace model {
 
 	TransactionBase::TransactionBase()
-		: mReferenceCount(1), mGroupRoot(nullptr), mGradidoBlock(nullptr)
+		: mGroupRoot(nullptr), mGradidoBlock(nullptr)
 	{
 
 	}
 
 	TransactionBase::TransactionBase(Poco::SharedPtr<controller::Group> groupRoot)
-		: mReferenceCount(1), mGroupRoot(groupRoot), mGradidoBlock(nullptr)
+		: mGroupRoot(groupRoot), mGradidoBlock(nullptr)
 	{
 
-	}
-
-	void TransactionBase::duplicate()
-	{
-		Poco::Mutex::ScopedLock lock(mAutoPtrMutex);
-		mReferenceCount++;
 	}
 
 	void TransactionBase::setGroupRoot(Poco::SharedPtr<controller::Group> groupRoot)
@@ -33,17 +27,6 @@ namespace model {
 		mGradidoBlock = gradidoBlock;
 	}
 
-	void TransactionBase::release()
-	{
-		Poco::Mutex::ScopedLock lock(mAutoPtrMutex);
-		mReferenceCount--;
-		//printf("[Task::release] new value: %d\n", mReferenceCount);
-		if (0 == mReferenceCount) {
-			//mReferenceMutex.unlock();
-			delete this;
-			return;
-		}
-	}
 
 	void TransactionBase::addGroupAliases(TransactionBase* parent)
 	{

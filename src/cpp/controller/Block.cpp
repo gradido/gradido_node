@@ -28,7 +28,6 @@ namespace controller {
 		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath()) != 1) {
 			printf("[controller::~Block]] error removing timer\n");
 		}
-		printf("[controller::~Block] block file ref count: %d\n", mBlockFile->referenceCount());
 		// deadlock, because it is triggered from expire cache?
 		//mTimer.stop();
 		//printf("after timer stop\n");

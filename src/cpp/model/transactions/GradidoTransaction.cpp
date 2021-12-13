@@ -24,7 +24,6 @@ namespace model {
 			mTransactionBody = nullptr;
 		}
 		mTransactionBody->setGroupRoot(groupRoot);
-		duplicate();
     }
     GradidoTransaction::~GradidoTransaction()
     {

@@ -32,11 +32,12 @@ namespace model {
 
 	class GradidoBlock;
 
-	class TransactionBase : public ErrorList
+	class TransactionBase : public ErrorList, public Poco::RefCountedObject
 	{
 	public:
 		TransactionBase();
 		TransactionBase(Poco::SharedPtr<controller::Group> groupRoot);
+		virtual ~TransactionBase() {};
 
 		virtual bool validate(TransactionValidationLevel level = TRANSACTION_VALIDATION_SINGLE) = 0;
 
@@ -49,22 +50,16 @@ namespace model {
 
 		inline Poco::SharedPtr<controller::Group> getGroupRoot() { return mGroupRoot; }
 
-		// for poco auto ptr
-		void duplicate();
-		void release();
 	protected:
-
+		
 		std::list<controller::Group*> getGroups();
 		void collectGroups(std::vector<std::string> groupAliases, std::list<controller::Group*>& container);
 
 		Poco::Mutex mWorkingMutex;
-		Poco::Mutex mAutoPtrMutex;
 
 		Poco::SharedPtr<controller::Group> mGroupRoot;
 		GradidoBlock* mGradidoBlock;
 		std::vector<std::string> mGroupAliases;
-
-		int mReferenceCount;
 	};
 }
 
