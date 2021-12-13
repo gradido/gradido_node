@@ -108,7 +108,7 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		if (it->size() > 0) {
 			// check for tx hash error			
-			Profiler time;
+			/*Profiler time;
 			Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(*it, group));
 			//printf("time unserialize: %s\n", time.string().data());
 			model::TransactionValidationLevel level = static_cast<model::TransactionValidationLevel>(model::TRANSACTION_VALIDATION_DATE_RANGE | model::TRANSACTION_VALIDATION_SINGLE | model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);

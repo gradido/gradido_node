@@ -5,6 +5,7 @@
 #include "../../controller/AddressIndex.h"
 #include "../../lib/BinTextConverter.h"
 #include "../../lib/DataTypeConverter.h"
+#include "../../lib/Profiler.h"
 #include "../../SingletonManager/OrderingManager.h"
 #include "../../SingletonManager/GroupManager.h"
 #include <stdexcept>
@@ -46,8 +47,8 @@ namespace model {
 			// TODO: use state variable instead of go through all transactions from the user every time
 			// check if enough gradidos exist on account of user
 			if (!mGroupRoot.isNull()) {
+				Profiler timeUsed;
 				auto transactions = mGroupRoot->findTransactions(transfer.sender().pubkey());
-				printf("[TransactionTransfer::validate] %d previous transactions found\n", (int)transactions.size());
 				int64_t gradidos = 0;
 				for (auto it = transactions.begin(); it != transactions.end(); it++) {
 					auto transactionBody = (*it)->getGradidoTransaction()->getTransactionBody();
@@ -61,6 +62,7 @@ namespace model {
 						gradidos += transactionBody->getCreation()->getRecipiantAmount();
 					}
 				}
+				printf("[TransactionTransfer::validate] %d previous transactions found, time needed for checking: %s\n", (int)transactions.size(), timeUsed.string().data());
 				if (gradidos < transfer.sender().amount()) {
 					addError(new Error(__FUNCTION__, "user hasn't enough gradidos to spend"));
 					return false;
