@@ -3,20 +3,20 @@
 
 #include "Poco/Path.h"
 #include "Poco/Mutex.h"
+#include "Poco/RefCountedObject.h"
 
 #include "../../lib/ErrorList.h"
 
 namespace model {
 	namespace files {
-		class FileBase : public ErrorList
+		class FileBase : public ErrorList, public Poco::RefCountedObject
 		{
 		public:
 			FileBase(): mRefCount(1) {}
-
-			//! for poco auto ptr
-			void duplicate();
-			void release();
+			
 		protected:
+			//! important, that deconstructor from derived classes is called on release
+			virtual ~FileBase() {}
 			Poco::FastMutex mFastMutex;
 			Poco::FastMutex mReferenceMutex;
 

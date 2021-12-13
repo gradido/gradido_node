@@ -4,7 +4,7 @@
 
 namespace controller {
 	AddressIndex::AddressIndex(Poco::Path path, uint32_t lastIndex)
-		: mGroupPath(path), mLastIndex(lastIndex), mAddressIndicesCache(ServerGlobals::g_CacheTimeout * 1000)
+		: mGroupPath(path), mLastIndex(lastIndex), mAddressIndicesCache(ServerGlobals::g_CacheTimeout)
 	{
 
 	}

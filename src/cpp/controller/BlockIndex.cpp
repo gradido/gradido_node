@@ -31,8 +31,9 @@ namespace controller {
 	bool BlockIndex::writeIntoFile()
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
-		if (!mYearMonthAddressIndexEntrys.size() || !mTransactionNrsFileCursors.size()) {
-			int zahl = 1;
+		if (!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size() && !mMaxTransactionNr && !mMinTransactionNr) {
+			// we haven't anything to save
+			return true;
 		}
 		assert(mYearMonthAddressIndexEntrys.size() && mTransactionNrsFileCursors.size());
 

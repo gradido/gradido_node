@@ -5,7 +5,9 @@
 
 
 OrderingManager::OrderingManager()
-    : UniLib::lib::Thread("order"), mPairedTransactions(1000 * 1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES), mUnlistenedPairGroups()
+    : UniLib::lib::Thread("order"), 
+    mPairedTransactions(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES),
+    mUnlistenedPairGroups(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES * 2)
 {
 
 }

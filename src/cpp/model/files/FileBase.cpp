@@ -2,6 +2,7 @@
 
 namespace model {
 	namespace files {
+		/*
 		void FileBase::duplicate()
 		{
 			Poco::FastMutex::ScopedLock lock(mReferenceMutex);
@@ -16,5 +17,12 @@ namespace model {
 				delete this;
 			}
 		}
+
+		int FileBase::getRefCount()
+		{
+			Poco::FastMutex::ScopedLock lock(mReferenceMutex);
+			return mRefCount;
+		}
+		*/
 	}
 }
