@@ -202,7 +202,8 @@ int MainServer::main(const std::vector<std::string>& args)
 		// start the json server
 		jsonrpc_srv.start();
 
-		printf("[Gradido_Node::main] started in %s, jsonrpc on port: %d\n", usedTime.string().data(), jsonrpc_port);
+		std::clog << "[Gradido_Node::main] started in " << usedTime.string().data() << ", jsonrpc on port: " << jsonrpc_port << std::endl;
+		//printf("[Gradido_Node::main] started in %s, jsonrpc on port: %d\n", usedTime.string().data(), jsonrpc_port);
 		// wait for CTRL-C or kill
 		waitForTerminationRequest();
 

@@ -69,7 +69,7 @@ namespace ServerGlobals {
 			g_SSL_CLient_Context = new Context(Context::CLIENT_USE, "cacert.pem", Context::VERIFY_RELAXED, Context::OPT_DEFAULTS);
 #else
 
-			g_SSL_CLient_Context = new Context(Context::CLIENT_USE, "", "", Poco::Path::config() + "grd_login/cacert.pem", Context::VERIFY_RELAXED, 9, true, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
+			g_SSL_CLient_Context = new Context(Context::CLIENT_USE, "", "", Poco::Path::home() + ".gradido/cacert.pem", Context::VERIFY_RELAXED, 9, true, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
 #endif
 		}
 		catch (Poco::Exception& ex) {
