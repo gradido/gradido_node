@@ -14,7 +14,7 @@ namespace model {
 
 			// clear block file at first, because appending
 			removeFile(std::string("blockTest/blk00000001.index"));
-			
+
 			controller::MockBlockIndex blockIndexController;
 			auto blockIndexModelFile = new model::files::BlockIndex("blockTest/", 1);
 			blockIndexModelFile->addYearBlock(2020);
@@ -22,9 +22,9 @@ namespace model {
 			std::vector<uint32_t> addressIndices1 = { 2192, 1223, 1234, 3432 };
 			std::vector<uint32_t> addressIndices2 = { 2192, 785, 1234, 121 };
 
-			blockIndexModelFile->addDataBlock(1210, addressIndices1);
+			blockIndexModelFile->addDataBlock(1210, 0, addressIndices1);
 			blockIndexModelFile->addMonthBlock(7);
-			blockIndexModelFile->addDataBlock(119, addressIndices2);
+			blockIndexModelFile->addDataBlock(119, 128, addressIndices2);
 			EXPECT_EQ(blockIndexModelFile->writeToFile(), true);
 
 			EXPECT_EQ(blockIndexModelFile->readFromFile(&blockIndexController), true);

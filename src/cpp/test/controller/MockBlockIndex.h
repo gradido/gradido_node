@@ -10,7 +10,7 @@ namespace controller {
 	class MockBlockIndex : public model::files::IBlockIndexReceiver {
 	public:
 
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const uint32_t* addressIndices, uint8_t addressIndiceCount) {
+		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) {
 
 			mTransactionEntrys.push_back(new model::TransactionEntry(
 				transactionNr, month, year, addressIndices, addressIndiceCount

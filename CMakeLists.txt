@@ -204,14 +204,7 @@ add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_MODEL} ${TEST_MODE
 target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
 #add_test(main Gradido_Node_Test)
 
-target_link_libraries(Gradido_Node_Test libprotobuf leveldb ${CONAN_LIBS})
-
-if(WIN32)
-	
-else()
-	target_link_libraries(Gradido_Node_Test ${POCO_LIBS} -pthread)
-	#PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
-endif()
-
+target_link_libraries(Gradido_Node_Test libprotobuf leveldb sodium)
+target_link_libraries(Gradido_Node_Test ${POCO_LIBS} -pthread gtest) 
 target_link_libraries(Gradido_Node_Test gtest)
 
