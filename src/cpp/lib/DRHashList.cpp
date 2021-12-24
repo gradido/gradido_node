@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <cstring>
+#include <cstdlib>
 
 using namespace std;
 
