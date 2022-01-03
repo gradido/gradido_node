@@ -32,7 +32,7 @@ public:
 	~JsonRequest();
 
 	rapidjson::Document GET(const char* methodName, ErrorList* errors = nullptr);
-	
+	rapidjson::Document PATCH(ErrorList* errors = nullptr);
 
 protected:
 	int mServerPort;

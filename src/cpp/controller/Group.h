@@ -9,13 +9,14 @@
 
 #include "../model/transactions/GradidoBlock.h"
 #include "../model/transactions/GradidoTransaction.h"
-
 #include "../model/files/State.h"
 
+#include "../lib/JsonRequest.h"
 #include "../iota/MessageListener.h"
 
 #include "Poco/Path.h"
 #include "Poco/AutoPtr.h"
+#include "Poco/URI.h"
 #include "Poco/AccessExpireCache.h"
 #include "Poco/ExpireCache.h"
 
@@ -76,6 +77,8 @@ namespace controller {
 		inline const std::string& getGroupAlias() { return mGroupAlias; }
 
 		bool isSignatureInCache(Poco::AutoPtr<model::GradidoTransaction> transaction);
+
+		void setListeningCommunityServer(Poco::URI uri);
 
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
@@ -141,7 +144,8 @@ namespace controller {
 		};
 		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
 		Poco::FastMutex mSignatureCacheMutex;
-
+		// Community Server listening on new blocks for his group
+		JsonRequest* mCommunityServer;
 		bool mExitCalled;
 	};
 }

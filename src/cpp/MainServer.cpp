@@ -182,10 +182,13 @@ int MainServer::main(const std::vector<std::string>& args)
 		ServerGlobals::g_WriteFileCPUScheduler = new UniLib::controller::CPUSheduler(io_worker_count, "IO Worker");
 		ServerGlobals::g_IotaRequestCPUScheduler = new UniLib::controller::CPUSheduler(2, "Iota Worker");
 
-		if (GroupManager::getInstance()->init("group.index")) {
+		auto gm = GroupManager::getInstance();
+		if (GroupManager::getInstance()->init("group.index", config())) {
 			std::clog << "Error loading group, please try to delete group folders and try again!" << std::endl;
 			return Application::EXIT_DATAERR;
 		}
+		
+
 		OrderingManager::getInstance();
 
 		// HTTP Interface Server

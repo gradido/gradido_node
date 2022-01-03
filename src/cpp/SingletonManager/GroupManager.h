@@ -8,6 +8,7 @@
 
 #include "Poco/Mutex.h"
 #include "Poco/AccessExpireCache.h"
+#include "Poco/Util/LayeredConfiguration.h"
 
 #include <unordered_map>
 
@@ -30,7 +31,7 @@ public:
 	static GroupManager* getInstance();
 
 	//! load group index file and fill hash list with group public key = folder name pairs
-	int init(const char* groupIndexFileName);
+	int init(const char* groupIndexFileName, Poco::Util::LayeredConfiguration& config);
 
 	//! \brief getting group object from Poco::AccessExpireCache or create if not in cache and put in cache
 	//!

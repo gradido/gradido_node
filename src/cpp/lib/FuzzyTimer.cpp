@@ -41,7 +41,7 @@ namespace UniLib {
 		int FuzzyTimer::removeTimer(std::string name)
 		{
 			//printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
-			if (mMutex.tryLock()) {
+			if (mMutex.tryLock(100)) {
 				mMutex.unlock();
 			}
 			else {

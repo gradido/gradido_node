@@ -12,13 +12,19 @@
 
 #include <inttypes.h>
 
+#include "rapidjson/document.h"
+#include "rapidjson/prettywriter.h"
+
+using namespace rapidjson;
+
 namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath)
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout),
-		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)), mExitCalled(false)
+		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
+		mCommunityServer(nullptr), mExitCalled(false)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -46,6 +52,9 @@ namespace controller {
 		mGroupState.setKeyValue("lastAddressIndex", std::to_string(mLastAddressIndex));
 		mGroupState.setKeyValue("lastBlockNr", std::to_string(mLastBlockNr));
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
+		if (mCommunityServer) {
+			delete mCommunityServer;
+		}
 	}
 
 	bool Group::init()
@@ -53,6 +62,15 @@ namespace controller {
 		fillSignatureCacheOnStartup();
 		mIotaMessageListener = new iota::MessageListener("GRADIDO." + mGroupAlias);
 		return true;
+	}
+
+	void Group::setListeningCommunityServer(Poco::URI uri)
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		if (mCommunityServer) {
+			delete mCommunityServer;
+		}
+		mCommunityServer = new JsonRequest(uri.getHost(), uri.getPort(), uri.getPathAndQuery());
 	}
 
 	void Group::exit()
@@ -231,6 +249,21 @@ namespace controller {
 				__FUNCTION__, mLastTransaction->getID(), mGroupAlias.data(), mLastTransaction->getMessageIdHex().data(), 
 				mLastTransaction->getReceivedSeconds(), mLastTransaction->getGradidoTransaction()->getJson().data()
 			);
+			// say community server that a new transaction awaits him
+			if (mCommunityServer) {
+				ErrorList errors;
+				auto result = mCommunityServer->PATCH(&errors);
+				if (!errors.errorCount()) {
+					StringBuffer buffer;
+					PrettyWriter<StringBuffer> writer(buffer);
+					result.Accept(writer);
+
+					printf(buffer.GetString());
+				}
+				else {
+					errors.printErrors();
+				}
+			}
 		}
 		return result;
 	}

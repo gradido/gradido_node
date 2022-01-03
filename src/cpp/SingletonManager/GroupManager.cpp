@@ -22,7 +22,7 @@ GroupManager::~GroupManager()
 	mInitalized = false;
 }
 
-int GroupManager::init(const char* groupIndexFileName)
+int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfiguration& config)
 {
 	Poco::File groupIndexFile(Poco::Path(Poco::Path(ServerGlobals::g_FilesPath), groupIndexFileName));
 
@@ -41,7 +41,11 @@ int GroupManager::init(const char* groupIndexFileName)
 	for (auto it = groups.begin(); it != groups.end(); it++) {
 		// load all groups to start iota message listener from all groups
 		try {
-			findGroup(*it);
+			auto group = findGroup(*it);
+			std::string communityNewBlockUri = "community." + *it + ".newBlockUri";
+			if (config.has(communityNewBlockUri)) {
+				group->setListeningCommunityServer(Poco::URI(config.getString(communityNewBlockUri)));
+			}
 		}
 		catch (TransactionLoadingException& ex) {
 			printf("group: %s, %s: transaction nr: %s, error: %d\n",
