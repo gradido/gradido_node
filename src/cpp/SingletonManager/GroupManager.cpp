@@ -44,8 +44,8 @@ int GroupManager::init(const char* groupIndexFileName)
 			findGroup(*it);
 		}
 		catch (TransactionLoadingException& ex) {
-			printf("%s: transaction nr: %s, error: %d\n",
-				ex.name(), ex.message().data(), ex.code()
+			printf("group: %s, %s: transaction nr: %s, error: %d\n",
+				it->data(), ex.name(), ex.message().data(), ex.code()
 			);
 			return -1;
 		}

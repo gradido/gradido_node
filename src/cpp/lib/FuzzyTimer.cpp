@@ -10,12 +10,12 @@ namespace UniLib {
 		{
 			mThread.setName("FuzzyTimer");
 			mThread.start(*this);
-			printf("FuzzyTimer::FuzzyTimer\n");
+			//printf("FuzzyTimer::FuzzyTimer\n");
 		}
 
 		FuzzyTimer::~FuzzyTimer()
 		{
-			printf("FuzzyTimer::~FuzzyTimer\n");
+			//printf("FuzzyTimer::~FuzzyTimer\n");
 			mMutex.lock();
 			exit = true;
 			mMutex.unlock();
@@ -27,7 +27,7 @@ namespace UniLib {
 
 		bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount/* = -1*/)
 		{
-			printf("FuzzyTimer::addTimer: %s\n", name.data());
+			//printf("FuzzyTimer::addTimer: %s\n", name.data());
 			Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 			if (exit) return false;
 
@@ -40,7 +40,7 @@ namespace UniLib {
 
 		int FuzzyTimer::removeTimer(std::string name)
 		{
-			printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
+			//printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
 			if (mMutex.tryLock()) {
 				mMutex.unlock();
 			}
@@ -73,7 +73,7 @@ namespace UniLib {
 
 		bool FuzzyTimer::move()
 		{
-			printf("FuzzyTimer::move\n");
+			//printf("FuzzyTimer::move\n");
 			Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 			if (exit) return false;
 			
