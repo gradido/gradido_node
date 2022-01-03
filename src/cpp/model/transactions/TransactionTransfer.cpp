@@ -25,10 +25,22 @@ namespace model {
 
 		if (transfer.sender().amount() <= 0) {
 			addError(new Error(__FUNCTION__, "invalid sender amount"));
+			return false;
 		}
 		if (transfer.sender().pubkey() == transfer.recipiant()) {
 			addError(new Error(__FUNCTION__, "sender is recipiant"));
+			return false;
 		}
+		std::string zeroPubkey(32, 0);
+		if (transfer.sender().pubkey() == zeroPubkey) {
+			addError(new Error(__FUNCTION__, "sender pubkey is zero"));
+			return false;
+		}
+		if (transfer.recipiant() == zeroPubkey) {
+			addError(new Error(__FUNCTION__, "recipiant pubkey is zero"));
+			return false;
+		}
+
 
 		auto sigpairs = mSignatureMap.sigpair();
 		bool sender_pubkey_found = false;

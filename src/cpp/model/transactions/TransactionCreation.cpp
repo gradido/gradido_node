@@ -20,11 +20,16 @@ namespace model {
 		auto gm = GroupManager::getInstance();
 
 		// single
-		auto receiverPubkey = mProtoCreation.recipiant().pubkey();
+		auto recipiantPubkey = mProtoCreation.recipiant().pubkey();
+		std::string zeroPubkey(32, 0);
+		if (recipiantPubkey == zeroPubkey) {
+			addError(new Error(__FUNCTION__, "recipiant pubkey is zero"));
+			return false;
+		}
 		auto sigPairs = mSignatureMap.sigpair();
 		for (auto it = sigPairs.begin(); it != sigPairs.end(); it++) {
-			if (receiverPubkey == it->pubkey()) {
-				addError(new Error(__FUNCTION__, "receiver don't allow to sign creation transaction"));
+			if (recipiantPubkey == it->pubkey()) {
+				addError(new Error(__FUNCTION__, "recipiant don't allow to sign creation transaction"));
 				return false;
 			}
 		}
