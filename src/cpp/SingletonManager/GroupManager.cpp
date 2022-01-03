@@ -4,6 +4,7 @@
 #include "Poco/File.h"
 
 #include "../ServerGlobals.h"
+#include "../lib/Exceptions.h"
 
 GroupManager::GroupManager()
 	: mInitalized(false), mGroupIndex(nullptr)
@@ -39,11 +40,28 @@ int GroupManager::init(const char* groupIndexFileName)
 	auto groups = mGroupIndex->listGroupAliases();
 	for (auto it = groups.begin(); it != groups.end(); it++) {
 		// load all groups to start iota message listener from all groups
-		findGroup(*it);
+		try {
+			findGroup(*it);
+		}
+		catch (TransactionLoadingException& ex) {
+			printf("%s: transaction nr: %s, error: %d\n",
+				ex.name(), ex.message().data(), ex.code()
+			);
+			return -1;
+		}
 	}
 
-
 	return 0;
+}
+
+void GroupManager::exit()
+{
+	Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
+	mInitalized = false;
+	for (auto it = mGroupMap.begin(); it != mGroupMap.end(); it++) {
+		it->second->exit();
+	}
+	mGroupMap.clear();
 }
 
 GroupManager* GroupManager::getInstance()

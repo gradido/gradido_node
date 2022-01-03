@@ -7,7 +7,7 @@ CacheManager::CacheManager()
 
 CacheManager::~CacheManager()
 {
-
+	int zahl = 0;
 }
 
 CacheManager* CacheManager::getInstance()

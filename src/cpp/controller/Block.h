@@ -35,6 +35,8 @@ namespace controller {
 		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias);
 		~Block();
 
+		void exit();
+
 		//! \brief put new transaction to cache and file system
 		bool pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction);
 		
@@ -68,6 +70,7 @@ namespace controller {
 		Poco::AutoPtr<model::files::Block> mBlockFile;
 		Poco::AutoPtr<WriteTransactionsToBlockTask> mTransactionWriteTask;
 		std::string mGroupAlias;
+		bool mExitCalled;
 	};
 }
 

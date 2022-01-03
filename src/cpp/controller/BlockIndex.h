@@ -68,9 +68,7 @@ namespace controller {
 		std::pair<uint16_t, uint8_t> getNewestYearMonth();
 
 	protected:
-
 		//! \brief called from model::files::BlockIndex while reading file
-
 
 		model::files::BlockIndex mBlockIndexFile;
 		uint64_t				 mMaxTransactionNr;
@@ -86,7 +84,6 @@ namespace controller {
 		};
 
 		std::map<uint16_t, std::map<uint8_t, AddressIndexEntry>> mYearMonthAddressIndexEntrys;
-
 
 		Poco::Mutex mSlowWorkingMutex;
 

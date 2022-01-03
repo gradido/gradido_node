@@ -12,7 +12,8 @@ namespace controller {
 		: //mTimer(0, ServerGlobals::g_TimeoutCheck),
 		  mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
-		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias)
+		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias),
+   		  mExitCalled(false)
 	{
 		//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
 		//mTimer.start(callback);
@@ -36,10 +37,21 @@ namespace controller {
 		mSerializedTransactions.clear();		
 	}
 
+	void Block::exit()
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		mExitCalled = true;
+		if (!mTransactionWriteTask.isNull()) {
+			mTransactionWriteTask->run();
+			mTransactionWriteTask = nullptr;
+		}
+	}
+
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
 	bool Block::pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		if (mExitCalled) return false;
 	
 		if (mTransactionWriteTask.isNull()) {
 			mTransactionWriteTask = new WriteTransactionsToBlockTask(mBlockFile, mBlockIndex);
@@ -110,6 +122,11 @@ namespace controller {
 	void Block::checkTimeout(Poco::Timer& timer)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		
+		if (mExitCalled) {
+			timer.restart(0);
+			return;
+		}
 
 		if (!mTransactionWriteTask.isNull()) {
 			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
@@ -125,6 +142,10 @@ namespace controller {
 	{
 		// if called from timer, while deconstruct was called, prevent dead lock
 		if (!mWorkingMutex.tryLock()) UniLib::lib::GO_ON;
+		if (mExitCalled) {
+			mWorkingMutex.unlock();
+			return UniLib::lib::REMOVE_ME;
+		}
 		//Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
 		if (!mTransactionWriteTask.isNull()) {

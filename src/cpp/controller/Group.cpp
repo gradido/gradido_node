@@ -6,6 +6,7 @@
 #include "../SingletonManager/LoggerManager.h"
 
 #include "../lib/DataTypeConverter.h"
+#include "../lib/Exceptions.h"
 
 #include "Block.h"
 
@@ -17,7 +18,7 @@ namespace controller {
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout),
-		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60))
+		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)), mExitCalled(false)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -52,6 +53,20 @@ namespace controller {
 		fillSignatureCacheOnStartup();
 		mIotaMessageListener = new iota::MessageListener("GRADIDO." + mGroupAlias);
 		return true;
+	}
+
+	void Group::exit()
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		mExitCalled = true;
+		if (mIotaMessageListener) {
+			delete mIotaMessageListener;
+			mIotaMessageListener = nullptr;
+		}
+		auto keys = mCachedBlocks.getAllKeys();
+		for (auto it = keys.begin(); it != keys.end(); it++) {
+			mCachedBlocks.get(*it)->exit();
+		}
 	}
 
 	void Group::updateLastAddressIndex(int lastAddressIndex)
@@ -137,6 +152,11 @@ namespace controller {
 
 	bool Group::addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
 	{
+		{
+			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+			if (mExitCalled) return false;
+		}
+		
 		//printf("[Group::addTransactionFromIota] milestone: %d\n", iotaMilestoneId);
 		model::TransactionValidationLevel level = model::TRANSACTION_VALIDATION_SINGLE;
 
@@ -475,7 +495,8 @@ namespace controller {
 				continue;
 			}
 			else if (0 != getTransationResult) {
-				throw std::runtime_error("[Group::fillSignatureCacheOnStartup] couldnt load transaction: " + std::to_string(transactionNr));
+				throw TransactionLoadingException(std::to_string(transactionNr), getTransationResult);
+				//throw std::runtime_error("[Group::fillSignatureCacheOnStartup] couldn't load transaction: " + std::to_string(transactionNr));
 			}
 			transaction = new model::GradidoBlock(serializedTransaction, nullptr);
 			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();

@@ -41,6 +41,8 @@ namespace controller {
 
 		// initialize, fill cache
 		bool init();
+		// clean up group, stopp all running processes
+		void exit();
 
 		//! \brief Put new transaction to block chain, if valid.
 		//! \return True if valid, else false.
@@ -140,6 +142,7 @@ namespace controller {
 		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
 		Poco::FastMutex mSignatureCacheMutex;
 
+		bool mExitCalled;
 	};
 }
 

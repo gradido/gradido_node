@@ -39,6 +39,8 @@ public:
 
 	std::vector<Poco::SharedPtr<controller::Group>> findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey);
 
+	void exit();
+
 protected:
 	// load 
 	GroupManager();
