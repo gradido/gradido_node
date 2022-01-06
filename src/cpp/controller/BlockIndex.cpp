@@ -35,6 +35,7 @@ namespace controller {
 			// we haven't anything to save
 			return true;
 		}
+		// TODO: Change, this function is called in deconstructor and it isn't a good idea to assert while in deconstructor
 		assert(mYearMonthAddressIndexEntrys.size() && mTransactionNrsFileCursors.size());
 
 		mBlockIndexFile.reset();

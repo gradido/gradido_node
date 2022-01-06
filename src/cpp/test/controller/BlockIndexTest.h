@@ -26,6 +26,11 @@ namespace controller {
 			mTestTransactions.push_back(new model::TransactionEntry(75, 6, 2018, mTestAddressIndices[2].data(), 1));
 			mTestTransactions.push_back(new model::TransactionEntry(76, 6, 2017, mTestAddressIndices[3].data(), 2));
 
+			// add random file cursor positions
+			for (auto it = mTestTransactions.begin(); it != mTestTransactions.end(); it++) {
+				(*it)->setFileCursor(rand());
+			}
+
 		}
 
 		~BlockIndexTest() override {
