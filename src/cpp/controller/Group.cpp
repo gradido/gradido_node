@@ -226,6 +226,7 @@ namespace controller {
 		newTransaction->setGradidoBlock(gradidoBlock.get());
 		printf("validate with level: %d\n", level);
 		if (!newTransaction->validate(level)) {
+			printf("failed: %s\n", newTransaction->getJson().data());
 			return false;
 		}
 

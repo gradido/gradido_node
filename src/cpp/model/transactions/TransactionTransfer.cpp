@@ -58,7 +58,7 @@ namespace model {
 		if ((level & TRANSACTION_VALIDATION_SINGLE_PREVIOUS) == TRANSACTION_VALIDATION_SINGLE_PREVIOUS) {
 			// TODO: use state variable instead of go through all transactions from the user every time
 			// check if enough gradidos exist on account of user
-			if (!mGroupRoot.isNull()) {
+			if (!mGroupRoot.isNull() && !isInbound()) {
 				Profiler timeUsed;
 				auto transactions = mGroupRoot->findTransactions(transfer.sender().pubkey());
 				int64_t gradidos = 0;
