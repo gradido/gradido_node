@@ -12,7 +12,9 @@
 namespace iota {
     MessageValidator::MessageValidator()
     : mExitCalled(false),
-      mCountErrorsFetchingMilestone(0)
+      mCountErrorsFetchingMilestone(0),
+      mMessageListenerFirstRunCount(0),
+        mWaitOnEmptyQueue(0)
     {
         mThread.setName("messVal");
         mThread.start(*this);
@@ -65,7 +67,7 @@ namespace iota {
                 mWorkMutex.unlock();
                 return;
             }
-            mExitMutex.unlock();
+            mExitMutex.unlock();            
 
             MessageId messageId;
             int notConfirmedCount = 0;
@@ -114,6 +116,7 @@ namespace iota {
 
                 if (notConfirmedCount > mPendingMessages.size() || notConfirmedCount > MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE) break;
             }
+            mWaitOnEmptyQueue = 0;
             mWorkMutex.unlock();
         }
     }

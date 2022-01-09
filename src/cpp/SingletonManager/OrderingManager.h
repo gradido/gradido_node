@@ -27,7 +27,12 @@
 //! to prevent loosing transaction which came after through a delay or to less delay in the race between threads
 //! important if iota or the node server is running to slow because to many requests
 //! TODO: Make value higher if a delay was detected
-#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 450
+#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 900
+
+//! MAGIC NUMBER: if current milestone is this diff or more away from last milestone from network,
+//! we take extra care and wait MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS before we proceed
+//! maybe we are starting up this node and then we need more time
+#define MAGIC_NUMBER_MILESTONE_ID_EXTRA_BUFFER_WAIT 10
 
 class FinishMilestoneTask;
 class OrderingManager : public UniLib::lib::Thread

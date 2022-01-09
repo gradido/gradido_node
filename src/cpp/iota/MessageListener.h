@@ -49,7 +49,7 @@ namespace iota
             MESSAGE_EXIST, // already in list
             MESSAGE_REMOVED // not longer returned from iota
         };
-
+        bool mFirstRun;
         std::map<MessageId, MessageState> mStoredMessageIds;            
     };
 }

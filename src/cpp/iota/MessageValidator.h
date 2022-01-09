@@ -46,6 +46,10 @@ namespace iota {
         MessageValidator();
         ~MessageValidator();
 
+        inline void firstRunStart() { mMessageListenerFirstRunCount++; }
+        inline void firstRunFinished() { mMessageListenerFirstRunCount--; mWaitOnEmptyQueue++; }
+        int getFirstRunCount() { return mMessageListenerFirstRunCount.value() + mWaitOnEmptyQueue.value(); }
+
         inline void pushMessageId(const iota::MessageId& messageId) { mPendingMessages.push(messageId); }
         void run();
         void pushMilestone(int32_t id, int64_t timestamp);
@@ -70,7 +74,8 @@ namespace iota {
         Poco::FastMutex mConfirmedMessagesMutex;
 
         UniLib::lib::MultithreadQueue<MessageId> mPendingMessages;
-        
+        Poco::AtomicCounter mMessageListenerFirstRunCount;
+        Poco::AtomicCounter mWaitOnEmptyQueue;
 
     };
 

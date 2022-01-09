@@ -24,6 +24,7 @@ namespace controller {
 
 	Block::~Block()
 	{
+		exit();
 		//printf("[controller::~Block]\n");
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath()) != 1) {

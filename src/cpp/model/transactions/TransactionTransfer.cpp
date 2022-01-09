@@ -98,8 +98,10 @@ namespace model {
 			while (Poco::Timestamp() < timeout) {
 				pairTransaction = om->findPairedTransaction(pairedTransactionId, !isOutbound());
 				if (!pairTransaction.isNull()) break;
+				printf("\rtime to wait left: %d milliseconds", Poco::Timespan(timeout - Poco::Timestamp()).totalMilliseconds());
 				Poco::Thread::sleep(MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SLEEPTIME_MILLISECONDS);
 			}
+			printf("\n");
 			// after timeout we don't get the paired transaction so it was maybe a hoax (the other half doesn't exist), 
 			// we decide the transaction is invalid
 			// TODO: give it a second chance if iota should be once really badly delay maybe it is possible to find it out with iota node info

@@ -10,7 +10,8 @@ namespace iota
     MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 2000*/)
     : mIndex(index),
       //mListenerTimer(0, intervalMilliseconds), 
-		mErrorLog(Poco::Logger::get("errorLog"))
+		mErrorLog(Poco::Logger::get("errorLog")),
+		mFirstRun(true)
     {
         //Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
 	    //mListenerTimer.start(callback);
@@ -70,7 +71,9 @@ namespace iota
     {
 		auto om = OrderingManager::getInstance();
 		auto validator = om->getIotaMessageValidator();
-
+		if (mFirstRun) {
+			validator->firstRunStart();
+		}
 		// set existing all on remove and change if exist, else they can be deleted
 		// remove which set on remove from last run
 		for (auto it = mStoredMessageIds.begin(); it != mStoredMessageIds.end(); it++) {
@@ -99,7 +102,7 @@ namespace iota
 			}
 			else {
 				// add if not exist
-				printf("[MessageListener::updateStoredMessages] add message: %s\n", messageId.toHex().data());
+				printf("[MessageListener::updateStoredMessages] %s add message: %s\n",  mIndex.data(), messageId.toHex().data());
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);
@@ -107,6 +110,10 @@ namespace iota
 			}
 		}
 		// signal condition separate to make sure that by loading from the past, all known messages are in list before processing start
+		if (mFirstRun) {
+			validator->firstRunFinished();
+			mFirstRun = false;
+		}
 		if (atLeastOneNewMessagePushed) {
 			validator->signal();
 		}

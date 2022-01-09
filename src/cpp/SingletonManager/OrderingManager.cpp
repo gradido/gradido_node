@@ -1,5 +1,6 @@
 #include "OrderingManager.h"
 #include "LoggerManager.h"
+#include "GlobalStateManager.h"
 #include <stdexcept>
 #include "../controller/Group.h"
 
@@ -74,7 +75,10 @@ int OrderingManager::ThreadFunction()
     while (true) {
         // we can only work on the lowest known milestone if no task with this milestone is running
         // the milestone must be processed in order to keep transactions in order and this is essential!
-
+        // if node is starting up, wait until all existing messages are loaded from iota to prevent missing out one
+        while (mMessageValidator.getFirstRunCount() > 0) {
+            Poco::Thread::sleep(100);
+        }
         // get first not processed milestone
         mMilestonesWithTransactionsMutex.lock();
         auto workSetIt = mMilestonesWithTransactions.begin();
@@ -177,20 +181,24 @@ void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransact
     auto transfer = transaction->getTransactionBody()->getTransfer();
     auto pairedTransactionId = transfer->getPairedTransactionId().raw();
     auto pairedTransactionIdString = Poco::DateTimeFormatter::format(transfer->getPairedTransactionId(), "%dd %H:%M:%S.%i");
-    std::string groupAlias = "<unknown>";
-    auto group = transfer->getGroupRoot();
-    if (!group.isNull()) {
-        groupAlias = group->getGroupAlias();
-    }
-    else {
-        auto jsonString = transaction->getJson();
-        printf("group alias unknown, details of transaction: \n%s", jsonString.data());
-    }
-    printf("[OrderingManager::pushPairedTransaction] inbound: %d, outbound: %d, paired id: %s, other group: %s, group: %s\n", 
-        transfer->isInbound(), transfer->isOutbound(), pairedTransactionIdString.data(), transfer->getOtherGroup().data(), groupAlias.data());
 
     if (!mPairedTransactions.has(pairedTransactionId)) {
         mPairedTransactions.add(pairedTransactionId, new CrossGroupTransactionPair);
+
+        // DEBUG
+		std::string groupAlias = "<unknown>";
+		auto group = transfer->getGroupRoot();
+		if (!group.isNull()) {
+			groupAlias = group->getGroupAlias();
+		}
+
+		printf("[OrderingManager::pushPairedTransaction] inbound: %d, outbound: %d, paired id: %s, other group: %s, group: %s\n",
+			transfer->isInbound(), transfer->isOutbound(), pairedTransactionIdString.data(), transfer->getOtherGroup().data(), groupAlias.data());
+        if (group.isNull()) {
+			auto jsonString = transaction->getJson();
+			printf("[OrderingManager::pushPairedTransaction] group alias unknown, details of transaction: \n%s", jsonString.data());
+        }
+        // DEBUG end
     }
     auto pair = mPairedTransactions.get(pairedTransactionId);
     pair->setTransaction(transaction);
