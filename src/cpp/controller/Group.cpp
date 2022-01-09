@@ -171,6 +171,13 @@ namespace controller {
 	bool Group::addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
 	{
 		{
+			if (!mWorkingMutex.tryLock(100)) {
+				printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->getJson().data());
+			}
+			else{
+				mWorkingMutex.unlock();
+			}
+			
 			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 			if (mExitCalled) return false;
 		}

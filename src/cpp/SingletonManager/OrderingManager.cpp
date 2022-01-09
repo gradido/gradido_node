@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "../controller/Group.h"
 
+#include "Poco/DateTimeFormatter.h"
 
 OrderingManager::OrderingManager()
     : UniLib::lib::Thread("order"), 
@@ -175,6 +176,19 @@ void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransact
     assert(transaction->getTransactionBody()->isTransfer());
     auto transfer = transaction->getTransactionBody()->getTransfer();
     auto pairedTransactionId = transfer->getPairedTransactionId().raw();
+    auto pairedTransactionIdString = Poco::DateTimeFormatter::format(transfer->getPairedTransactionId(), "%dd %H:%M:%S.%i");
+    std::string groupAlias = "<unknown>";
+    auto group = transfer->getGroupRoot();
+    if (!group.isNull()) {
+        groupAlias = group->getGroupAlias();
+    }
+    else {
+        auto jsonString = transaction->getJson();
+        printf("group alias unknown, details of transaction: \n%s", jsonString.data());
+    }
+    printf("[OrderingManager::pushPairedTransaction] inbound: %d, outbound: %d, paired id: %s, other group: %s, group: %s\n", 
+        transfer->isInbound(), transfer->isOutbound(), pairedTransactionIdString.data(), transfer->getOtherGroup().data(), groupAlias.data());
+
     if (!mPairedTransactions.has(pairedTransactionId)) {
         mPairedTransactions.add(pairedTransactionId, new CrossGroupTransactionPair);
     }
