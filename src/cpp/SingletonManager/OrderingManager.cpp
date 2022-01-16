@@ -221,6 +221,7 @@ Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(
 
 void OrderingManager::checkExternGroupForPairedTransactions(const std::string& groupAlias)
 {
+    printf("[OrderingManager::checkExternGroupForPairedTransactions] %s\n", groupAlias.data());
     mUnlistenedPairGroupsMutex.lock();
     if (!mUnlistenedPairGroups.has(groupAlias)) {
         std::string iotaIndex = "GRADIDO.";

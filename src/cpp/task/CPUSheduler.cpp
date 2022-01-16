@@ -51,6 +51,7 @@ namespace UniLib {
 				t->setNewTask(task);
 			} else {
 				// else put task to pending queue
+				printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
 				mPendingTasksMutex.lock();
 				mPendingTasks.push_back(task);
 				mPendingTasksMutex.unlock();

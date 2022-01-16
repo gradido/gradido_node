@@ -90,6 +90,7 @@ namespace UniLib {
 					//printf("type: %s\n", it->second.callback->getResourceType());
 				}
 				else {
+					printf("[FuzzyTimer::move] about to call: %s\n", it->second.name.data());
 					TimerReturn ret = it->second.callback->callFromTimer();
 					if (it->second.nextLoop() && ret == GO_ON) {
 						mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));

@@ -16,11 +16,12 @@ namespace iota
         //Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
 	    //mListenerTimer.start(callback);
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, intervalMilliseconds, -1);
+		printf("[MessageListener::MessageListener] %s\n", index.data());
     }
 
 	MessageListener::~MessageListener()
 	{
-		//printf("[iota::~MessageListener]\n");
+		printf("[iota::~MessageListener] %s\n", mIndex.data());
 		lock();
 		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex) != 1) {
 			printf("[iota::~MessageListener] error removing timer\n");
