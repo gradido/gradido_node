@@ -7,7 +7,7 @@
 
 namespace iota
 {
-    MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 2000*/)
+    MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 1000*/)
     : mIndex(index),
       //mListenerTimer(0, intervalMilliseconds), 
 		mErrorLog(Poco::Logger::get("errorLog")),
@@ -21,10 +21,12 @@ namespace iota
 
 	MessageListener::~MessageListener()
 	{
+
 		printf("[iota::~MessageListener] %s\n", mIndex.data());
 		lock();
-		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex) != 1) {
-			printf("[iota::~MessageListener] error removing timer\n");
+		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
+		if (removedTimer != 1) {
+			printf("[iota::~MessageListener] error removing timer, acutally removed timer count: %d\n", removedTimer);
 		}
 		//mListenerTimer.stop();
 		unlock();

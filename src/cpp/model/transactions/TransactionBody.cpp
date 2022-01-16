@@ -36,24 +36,24 @@ namespace model {
 
 	bool TransactionBody::validate(TransactionValidationLevel level)
 	{
-		printf("TransactionBody::validate level: %d\n", level);
+		//printf("TransactionBody::validate level: %d\n", level);
 		// TODO: check if memo is encrypted, than the limit changes
 		if (mProtoTransactionBody.memo().size() > 150) {
 			addError(new Error(__FUNCTION__, "memo is to big"));
-			printf("TransactionBody::validate end\n");
+			//printf("TransactionBody::validate end\n");
 			return false;
 		}
 		if (!mTransactionSpecific) {
 			addError(new Error(__FUNCTION__, "error no specific transaction found/recognized"));
-			printf("TransactionBody::validate end\n");
+			//printf("TransactionBody::validate end\n");
 			return false;
 		}
 		if (!mTransactionSpecific->validate(level)) {
 			getErrors(mTransactionSpecific);
-			printf("TransactionBody::validate end\n");
+			//printf("TransactionBody::validate end\n");
 			return false;
 		}
-		printf("TransactionBody::validate end\n");
+		//printf("TransactionBody::validate end\n");
 
 		return true;
 	}

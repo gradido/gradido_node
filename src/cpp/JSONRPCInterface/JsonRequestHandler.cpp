@@ -38,7 +38,7 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 	std::istream& request_stream = request.stream();
 
 	int id = 0;
-	
+	// TODO: put group name in request url to keep function calls as similar as possible to bitcoin and co
 	Document rapidjson_params;
 	if (method == "POST" || method == "PUT") {
 		// extract parameter from request

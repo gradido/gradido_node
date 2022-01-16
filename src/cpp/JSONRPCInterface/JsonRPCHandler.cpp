@@ -44,6 +44,7 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 		stateSuccess();
 		mResponseResult.AddMember("transaction", "", alloc);
 	}
+	// TODO: rename to listsinceblock
 	else if (method == "getTransactions") {
 		printf("getTransactions called\n");
 		if(!params.IsObject()) {
@@ -56,6 +57,30 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 		if(!getUInt64Parameter(params, "fromTransactionId", transactionId)) return;
 		printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
 		getTransactions(transactionId, groupAlias);
+	}
+	else if (method == "getaddressbalance") {
+		stateError("not implemented yet");
+	}
+	else if (method == "getaddresstxids") {
+		stateError("not implemented yet");
+	}
+	else if (method == "getblock") {
+		stateError("not implemented yet");
+	}
+	else if (method == "getblockcount") {
+		stateError("not implemented yet");
+	}
+	else if (method == "getblockhash") {
+		stateError("not implemented yet");
+	}
+	else if (method == "getreceivedbyaddress") {
+		stateError("not implemented yet");
+	}
+	else if (method == "gettransaction") {
+		stateError("not implemented yet");
+	}
+	else if (method == "listtransactions") {
+		stateError("not implemented yet");
 	}
 	else {
 		stateError("method not known");

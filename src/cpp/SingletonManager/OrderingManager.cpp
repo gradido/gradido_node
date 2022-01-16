@@ -9,6 +9,7 @@
 OrderingManager::OrderingManager()
     : UniLib::lib::Thread("order"), 
     mPairedTransactions(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES),
+    //mUnlistenedPairGroups(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES * 2)
     mUnlistenedPairGroups(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES * 2)
 {
 
@@ -73,6 +74,9 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 int OrderingManager::ThreadFunction()
 {
     while (true) {
+        // check regulary if an entry was timeout
+        mUnlistenedPairGroups.forceReplace();
+
         // we can only work on the lowest known milestone if no task with this milestone is running
         // the milestone must be processed in order to keep transactions in order and this is essential!
         // if node is starting up, wait until all existing messages are loaded from iota to prevent missing out one
@@ -194,9 +198,8 @@ void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransact
 
 		printf("[OrderingManager::pushPairedTransaction] inbound: %d, outbound: %d, paired id: %s, other group: %s, group: %s\n",
 			transfer->isInbound(), transfer->isOutbound(), pairedTransactionIdString.data(), transfer->getOtherGroup().data(), groupAlias.data());
-        if (group.isNull()) {
-			auto jsonString = transaction->getJson();
-			printf("[OrderingManager::pushPairedTransaction] group alias unknown, details of transaction: \n%s", jsonString.data());
+        if (group.isNull()) {          
+			printf("[OrderingManager::pushPairedTransaction] group alias unknown, memo of transaction: %s\n", transaction->getTransactionBody()->getMemo().data());
         }
         // DEBUG end
     }
@@ -221,12 +224,21 @@ Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(
 
 void OrderingManager::checkExternGroupForPairedTransactions(const std::string& groupAlias)
 {
-    printf("[OrderingManager::checkExternGroupForPairedTransactions] %s\n", groupAlias.data());
+    //printf("[OrderingManager::checkExternGroupForPairedTransactions] %s\n", groupAlias.data());
     mUnlistenedPairGroupsMutex.lock();
+    
     if (!mUnlistenedPairGroups.has(groupAlias)) {
+		// important because cache update only on function call and if long not called
+	    // will remove expired entries on add call
+	    // but my timer are attached inside construct and removed in deconstruct by name index
+	    // so if an old entry with this alias exist, the new entry will created, a new timer attached and then on deconstruct old
+	    // both timer will be removed
+		mUnlistenedPairGroups.forceReplace();
+
         std::string iotaIndex = "GRADIDO.";
         iotaIndex += groupAlias;
-        mUnlistenedPairGroups.add(groupAlias, new iota::MessageListener(iotaIndex));
+        Poco::SharedPtr<iota::MessageListener> messageListener(new iota::MessageListener(iotaIndex));
+        mUnlistenedPairGroups.add(groupAlias, messageListener);
     }
     else {
         // get reset the timeout for removing it from access expire cache
