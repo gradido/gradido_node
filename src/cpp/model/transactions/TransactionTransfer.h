@@ -11,9 +11,9 @@
 // as long we wait, we block the processing of further transactions
 // we shouldn't wait to long, because hacker can use this to easily block the node (for the specific group) with invalid cross group transactions
 // we shouldn't wait to short because a delay in Iota can break or block chain 
-#define MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SECONDS 1 //60 * 2
+#define MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SECONDS 60 * 2
 // MAGIC NUMBER: we don't need to wait all to long between calls, because the check call is really fast: mutex lock + map lookup 
-#define MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SLEEPTIME_MILLISECONDS 15
+#define MAGIC_NUMBER_TRANSFER_CROSS_GROUP_WAIT_ON_PAIR_SLEEPTIME_MILLISECONDS 150
 
 namespace model {
 	class TransactionTransfer : public TransactionBase
