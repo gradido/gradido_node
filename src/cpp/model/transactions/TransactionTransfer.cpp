@@ -126,7 +126,12 @@ namespace model {
 				addError(new Error(__FUNCTION__, "pair transaction isn't valid"));
 				return false;
 			}
-			if (!pairTransaction->getTransactionBody()->getTransfer()->isBelongTo(this)) {
+			auto pairTransfer = pairTransaction->getTransactionBody()->getTransfer();
+			if (pairTransfer->getOtherGroup() == getOtherGroup()) {
+				addError(new ParamError(__FUNCTION__, "pair transaction has the same other group as we have", getOtherGroup()));
+				return false;
+			}
+			if (!pairTransfer->isBelongTo(this)) {
 				addError(new Error(__FUNCTION__, "pair transaction don't belong to us"));
 				printf("istOutbound: %d, other is Outbound: %d\n", isOutbound(), pairTransaction->getTransactionBody()->getTransfer()->isOutbound());
 				return false;
