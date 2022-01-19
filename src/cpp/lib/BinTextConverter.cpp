@@ -53,7 +53,7 @@ std::string convertHexToBin(const std::string& hexString)
 
 	The sodium_hex2bin() function parses a hexadecimal string hex and converts it to a byte sequence.
 
-	hex does not have to be nul terminated, as the number of characters to parse is supplied via the hex_len parameter.
+	hex does not have to be null terminated, as the number of characters to parse is supplied via the hex_len parameter.
 
 	ignore is a string of characters to skip. For example, the string ": " allows columns and spaces to be present at any locations in the hexadecimal string. These characters will just be ignored. As a result, "69:FC", "69 FC", "69 : FC" and "69FC" will be valid inputs, and will produce the same output.
 

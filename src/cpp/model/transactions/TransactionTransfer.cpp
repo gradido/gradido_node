@@ -37,7 +37,12 @@ namespace model {
 			return false;
 		}
 		if (transfer.recipiant() == zeroPubkey) {
-			addError(new Error(__FUNCTION__, "recipiant pubkey is zero"));
+			addError(new Error(__FUNCTION__, "recipient pubkey is zero"));
+			return false;
+		}
+
+		if (!mGroupRoot.isNull() && getOtherGroup() == mGroupRoot->getGroupAlias()) {
+			addError(new ParamError(__FUNCTION__, "transaction is on wrong chain, other group == group chain", getOtherGroup()));
 			return false;
 		}
 
@@ -77,6 +82,7 @@ namespace model {
 				printf("[TransactionTransfer::validate] %d previous transactions found, time needed for checking: %s\n", (int)transactions.size(), timeUsed.string().data());
 				if (gradidos < transfer.sender().amount()) {
 					addError(new Error(__FUNCTION__, "user hasn't enough gradidos to spend"));
+					addError(new ParamError(__FUNCTION__, "user gradido amounts", gradidos));
 					return false;
 				}
 			}

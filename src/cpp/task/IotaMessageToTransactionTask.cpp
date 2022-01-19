@@ -27,6 +27,7 @@ IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
     OrderingManager::getInstance()->popMilestoneTaskObserver(mMilestoneIndex);
 }
 
+// TODO: has thrown a null pointer exception
 int IotaMessageToTransactionTask::run()
 {
     static const char* function_name = "IotaMessageToTransactionTask::run";
