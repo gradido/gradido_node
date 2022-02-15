@@ -23,7 +23,9 @@ namespace model {
 			delete mTransactionBody;
 			mTransactionBody = nullptr;
 		}
-		mTransactionBody->setGroupRoot(groupRoot);
+		else {
+			mTransactionBody->setGroupRoot(groupRoot);
+		}
     }
     GradidoTransaction::~GradidoTransaction()
     {
@@ -97,6 +99,9 @@ namespace model {
 
 	std::string GradidoTransaction::getJson()
 	{
+		if (!mTransactionBody) {
+			return "transaction body is empty";
+		}
 		static const char* function_name = "GradidoTransaction::getJson";
 		std::string json;
 		google::protobuf::util::JsonPrintOptions options;
