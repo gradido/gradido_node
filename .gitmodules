@@ -1,6 +1,3 @@
-[submodule "src/proto"]
-	path = src/proto
-	url = https://github.com/gradido/gradido_protocol.git
 [submodule "dependencies/jsonrpcpp"]
 	path = dependencies/jsonrpcpp
 	url = https://github.com/badaix/jsonrpcpp.git
@@ -13,12 +10,12 @@
 [submodule "dependencies/googletest"]
 	path = dependencies/googletest
 	url = https://github.com/google/googletest.git
-[submodule "dependencies/protobuf"]
-	path = dependencies/protobuf
-	url = https://github.com/protocolbuffers/protobuf.git
 [submodule "dependencies/rapidjson"]
 	path = dependencies/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
 [submodule "dependencies/poco"]
 	path = dependencies/poco
 	url = https://github.com/pocoproject/poco.git
+[submodule "dependencies/gradido_blockchain"]
+	path = dependencies/gradido_blockchain
+	url = git@github.com:gradido/gradido_blockchain.git
