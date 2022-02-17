@@ -9,9 +9,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"
-	"dependencies/protobuf/src"
 	"build/proto"
 	"dependencies/rapidjson/include"
+	"dependencies/gradido_blockchain/include"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
@@ -28,90 +28,32 @@ IF(UNIX)
 	)
 ENDIF()
 
-############################## find protobuf  #########################################
-# prevent problems with two libs including googletest 
-option(protobuf_BUILD_TESTS "Build tests" OFF)
-add_subdirectory(dependencies/protobuf/cmake)
+FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
+FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
+FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
+FILE(GLOB HTTPInterface "src/HTTPInterface/*.h" "src/HTTPInterface/*.cpp")
+FILE(GLOB JSONRPCInterface "src/JSONRPCInterface/*.h" "src/JSONRPCInterface/*.cpp")
+FILE(GLOB LIB_SRC "src/lib/*.h" "src/lib/*.cpp" "src/lib/*.c")
+FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
+FILE(GLOB MODEL_FILES "src/model/files/*.h" "src/model/files/*.cpp")
+FILE(GLOB SINGLETON_MANAGER "src/SingletonManager/*.h" "src/SingletonManager/*.cpp")
+FILE(GLOB TASK "src/task/*.cpp" "src/task/*.h")
+FILE(GLOB TCP_SERVER "src/TCPServer/*.cpp" "src/TCPServer/*.h")
+FILE(GLOB VALIDATION "src/validation/*.h" "src/validation/*.cpp")
+FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
-############################## parse protobuf files ###################################
-
-FILE(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/proto GRADIDO_PROTO_MODEL_PATH)
-FILE(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/build/proto PROTOBINDING_PATH)
-file(MAKE_DIRECTORY ${PROTOBINDING_PATH})
-file(MAKE_DIRECTORY ${PROTOBINDING_PATH}/gradido)
-
-FILE(GLOB DATAMODEL_GRADIDO_PROTOS "${GRADIDO_PROTO_MODEL_PATH}/gradido/*.proto")
-
-IF(WIN32)
-	set(PROTOC_BIN_PATH "build/dependencies/protobuf/cmake/bin")
-	find_program(PROTOBUF_PROTOC_EXECUTABLE protoc PATHS "${PROTOC_BIN_PATH}/Debug" )
-	find_program(PROTOBUF_PROTOC_EXECUTABLE protoc PATHS "${PROTOC_BIN_PATH}/Release" )
-ELSE()
-	find_program(PROTOBUF_PROTOC_EXECUTABLE protoc PATHS "build/dependencies/protobuf/cmake/bin" )
-ENDIF()
-FILE(TO_NATIVE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/protobuf/src GOOGLE_PROTOBUF_INCLUDES)
-MESSAGE("protoc: ${PROTOBUF_PROTOC_EXECUTABLE} in build/dependencies/protobuf/bin/${CMAKE_BUILD_TYPE}")
-FOREACH(proto ${DATAMODEL_GRADIDO_PROTOS})
-   FILE(TO_NATIVE_PATH ${proto} proto_native)
-   get_filename_component(proto_parsed ${proto} NAME_WLE)
-   FILE(TO_NATIVE_PATH ${PROTOBINDING_PATH}/gradido/${proto_parsed}.pb.h proto_parsed_native)
-   
-   IF(${proto_native} IS_NEWER_THAN ${proto_parsed_native})
-		EXECUTE_PROCESS(
-			COMMAND 
-			${PROTOBUF_PROTOC_EXECUTABLE} 
-			--proto_path=${GRADIDO_PROTO_MODEL_PATH} 
-			--cpp_out=${PROTOBINDING_PATH} 
-			${proto_native}
-			RESULT_VARIABLE rv
-		)
-		# Optional, but that can show the user if something have gone wrong with the proto generation 
-		IF(${rv})
-			MESSAGE("Generation of data model returned ${rv} for proto ${proto_native}")
-		ELSE()
-			MESSAGE("Parsed: src/proto/gradido/${proto_parsed}.proto")
-		ENDIF()
-   ENDIF()
-
-ENDFOREACH(proto)
-
-
-
-FILE(GLOB CONTAINER, "src/cpp/container/*.h" "src/cpp/container/*.cpp")
-FILE(GLOB CONTROLLER "src/cpp/controller/*.cpp" "src/cpp/controller/*.h")
-FILE(GLOB IOTA "src/cpp/iota/*.cpp" "src/cpp/iota/*.h")
-FILE(GLOB HTTPInterface "src/cpp/HTTPInterface/*.h" "src/cpp/HTTPInterface/*.cpp")
-FILE(GLOB JSONRPCInterface "src/cpp/JSONRPCInterface/*.h" "src/cpp/JSONRPCInterface/*.cpp")
-FILE(GLOB LIB_SRC "src/cpp/lib/*.h" "src/cpp/lib/*.cpp" "src/cpp/lib/*.c")
-FILE(GLOB MODEL "src/cpp/model/*.h" "src/cpp/model/*.cpp")
-FILE(GLOB MODEL_FILES "src/cpp/model/files/*.h" "src/cpp/model/files/*.cpp")
-FILE(GLOB MODEL_TRANSACTIONS "src/cpp/model/transactions/*.h" "src/cpp/model/transactions/*.cpp")
-FILE(GLOB PROTO_GRADIDO "build/proto/gradido/*.cc" "build/proto/gradido/*.h")
-FILE(GLOB SINGLETON_MANAGER "src/cpp/SingletonManager/*.h" "src/cpp/SingletonManager/*.cpp")
-FILE(GLOB TASK "src/cpp/task/*.cpp" "src/cpp/task/*.h")
-FILE(GLOB TCP_SERVER "src/cpp/TCPServer/*.cpp" "src/cpp/TCPServer/*.h")
-FILE(GLOB VALIDATION "src/cpp/validation/*.h" "src/cpp/validation/*.cpp")
-FILE(GLOB MAIN "src/cpp/*.cpp" "src/cpp/*.c"  "src/cpp/*.h")
-
-# used only for test project 
-FILE(GLOB TEST "src/cpp/test/*.cpp" "src/cpp/test/*.h")
-FILE(GLOB TEST_LIB "src/cpp/test/lib/*.cpp" "src/cpp/test/lib/*.h")
-FILE(GLOB TEST_MODEL "src/cpp/test/model/*.cpp" "src/cpp/test/model/*.h")
-FILE(GLOB TEST_MODEL_FILES "src/cpp/test/model/files/*.cpp" "src/cpp/test/model/files/*.h")
-FILE(GLOB TEST_CONTROLLER "src/cpp/test/controller/*.cpp" "src/cpp/test/controller/*.h")
 
 SET(LOCAL_SRCS 
 	${CONTAINER} ${CONTROLLER} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
-	${MODEL} ${MODEL_FILES} ${MODEL_TRANSACTIONS}
-	${PROTO_GRADIDO}
+	${MODEL} ${MODEL_FILES} 
 	${SINGLETON_MANAGER}
 	${TASK} ${TCP_SERVER}
 	${VALIDATION}
 	${MAIN}
 )
-aux_source_directory("src/cpp" LOCAL_SRCS)
+#aux_source_directory("src/cpp" LOCAL_SRCS)
 
 if(MSVC)
 # src
@@ -122,9 +64,7 @@ source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
 source_group("model\\files" FILES ${MODEL_FILES})
-source_group("model\\transactions" FILES ${MODEL_TRANSACTIONS})
 source_group("model" FILES ${MODEL})
-source_group("proto" FILES ${PROTO_GRADIDO})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})
 source_group("tcp-server" FILES ${TCP_SERVER})
@@ -146,6 +86,11 @@ add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
+add_subdirectory("dependencies/gradido_blockchain")
+
+if(NOT BUILD_SHARED_LIBS)
+	add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf")
+endif()
 
 ############################## config and add poco ###################################
 #SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
@@ -180,8 +125,10 @@ set(INSTALL_PLUGINDIR "bin")
 endif(WIN32)
 
 
-target_link_libraries(Gradido_Node leveldb libprotobuf )
-
+target_link_libraries(Gradido_Node leveldb GradidoBlockchain)
+if(NOT BUILD_SHARED_LIBS)
+	target_link_libraries(Gradido_Node libprotobuf)
+endif()
 if(WIN32)
 	target_link_libraries(Gradido_Node ${CONAN_LIBS})
 	target_link_libraries(Gradido_Node optimized Shlwapi)
@@ -196,21 +143,6 @@ if(UNIX)
 install(TARGETS Gradido_Node RUNTIME DESTINATION /usr/local/bin)
 endif(UNIX)
 
-enable_testing()
-
-#  ----------------------    Test -----------------------------------------
-
-add_subdirectory("dependencies/googletest")
-
-add_executable(Gradido_Node_Test ${LOCAL_SRCS} ${TEST} ${TEST_LIB} ${TEST_MODEL} ${TEST_MODEL_FILES} ${TEST_CONTROLLER})
-target_compile_definitions(Gradido_Node_Test PUBLIC "_TEST_BUILD")
-#add_test(main Gradido_Node_Test)
-if(WIN32)
-	target_link_libraries(Gradido_Node_Test ${CONAN_LIBS})
-else()
-	target_link_libraries(Gradido_Node_Test ${CONAN_LIBS} sodium) 
-endif()
-target_link_libraries(Gradido_Node_Test libprotobuf leveldb)
-target_link_libraries(Gradido_Node_Test ${POCO_LIBS} -pthread gtest) 
-target_link_libraries(Gradido_Node_Test gtest)
-
+# add test
+include(CTest)
+#add_subdirectory(test)
