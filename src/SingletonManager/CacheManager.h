@@ -11,12 +11,12 @@ public:
 
 	static CacheManager* getInstance();
 
-	inline UniLib::lib::FuzzyTimer* getFuzzyTimer() { return &mFuzzyTimer; }
+	inline FuzzyTimer* getFuzzyTimer() { return &mFuzzyTimer; }
 
 protected:
 	CacheManager();
 
-	UniLib::lib::FuzzyTimer mFuzzyTimer;
+	FuzzyTimer mFuzzyTimer;
 	
 };
 

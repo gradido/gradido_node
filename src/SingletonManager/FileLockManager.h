@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include "Poco/Mutex.h"
 
-#include "../lib/ErrorList.h"
 
 class FileLockManager
 {
@@ -15,7 +14,7 @@ public:
 	bool tryLock(const std::string& file);
 	void unlock(const std::string& file);
 
-	bool tryLockTimeout(const std::string& file, int tryCount, ErrorList* errorReciver = nullptr);
+	bool tryLockTimeout(const std::string& file, int tryCount);
 
 	static FileLockManager* getInstance();
 protected:

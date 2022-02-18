@@ -28,7 +28,7 @@ bool TaskObserver::addBlockWriteTask(Poco::AutoPtr<WriteTransactionsToBlockTask>
 	return true;
 }
 
-bool TaskObserver::removeTask(UniLib::controller::Task* task)
+bool TaskObserver::removeTask(task::Task* task)
 {
 	auto ressourceType = task->getResourceType();
 	if (strcmp("WriteTransactionsToBlockTask", ressourceType) == 0) {

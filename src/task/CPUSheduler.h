@@ -41,55 +41,54 @@
 
 #include "Poco/AutoPtr.h"
 
-#include "../lib/MultithreadQueue.h"
+#include "gradido_blockchain/lib/MultithreadQueue.h"
 
-namespace UniLib {
-    namespace controller {
+namespace task {
+    
+	class Task;
+	typedef Poco::AutoPtr<Task> TaskPtr;
 
-		class Task;
-		typedef Poco::AutoPtr<Task> TaskPtr;
+	class CPUShedulerThread;
 
-		class CPUShedulerThread;
-
-        class CPUSheduler 
-        {
-        public: 
-			// \param threadCount how many threads should be used
-			// \param name name for threads (only first 7 chars are used for thread name)
-            CPUSheduler(uint8_t threadCount, const char* name);			
-            virtual ~CPUSheduler();
+    class CPUSheduler 
+    {
+    public: 
+		// \param threadCount how many threads should be used
+		// \param name name for threads (only first 7 chars are used for thread name)
+        CPUSheduler(uint8_t threadCount, const char* name);			
+        virtual ~CPUSheduler();
 			
-			int sheduleTask(TaskPtr task); 
-			void checkPendingTasks();
-			void stop();
+		int sheduleTask(TaskPtr task); 
+		void checkPendingTasks();
+		void stop();
 #ifdef _UNI_LIB_DEBUG
-			CPUShedulerThread** getThreads(uint8_t& count) {count = mThreadCount; return mThreads;};
+		CPUShedulerThread** getThreads(uint8_t& count) {count = mThreadCount; return mThreads;};
 #endif
-			// called from scheduler thread if he wants a new task to do
-			// return null if no task pending, putting thread in wait queue,
-			// to inform him if a new task is ready for him
-			TaskPtr getNextUndoneTask(CPUShedulerThread* Me);
+		// called from scheduler thread if he wants a new task to do
+		// return null if no task pending, putting thread in wait queue,
+		// to inform him if a new task is ready for him
+		TaskPtr getNextUndoneTask(CPUShedulerThread* Me);
 
-			inline uint8_t getThreadCount() { return mThreadCount; }
-        protected:
+		inline uint8_t getThreadCount() { return mThreadCount; }
+    protected:
 			
 			
-		private: 
-			// worker threads
-			CPUShedulerThread** mThreads;
-			uint8_t			 mThreadCount;
-			std::string	 mName;
-			// free worker
-			lib::MultithreadQueue<CPUShedulerThread*> mFreeWorkerThreads;
-			// work to do
-			//lib::MultithreadQueue<TaskPtr> mPendingTasks;
-			std::list<TaskPtr> mPendingTasks;
-			lib::MultithreadContainer mPendingTasksMutex;
-			bool mStopped;
-			Poco::FastMutex mCheckStopMutex;
+	private: 
+		// worker threads
+		CPUShedulerThread** mThreads;
+		uint8_t			 mThreadCount;
+		std::string	 mName;
+		// free worker
+		MultithreadQueue<CPUShedulerThread*> mFreeWorkerThreads;
+		// work to do
+		//lib::MultithreadQueue<TaskPtr> mPendingTasks;
+		std::list<TaskPtr> mPendingTasks;
+		MultithreadContainer mPendingTasksMutex;
+		bool mStopped;
+		Poco::FastMutex mCheckStopMutex;
 
-        };
-    }
+    };
+    
 }
 
 #endif //__DR_UNIVERSUM_LIB_CONTROLLER_CPU_SHEDULER_H__

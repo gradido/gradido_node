@@ -2,7 +2,8 @@
 
 #include <cassert>
 #include "Poco/Mutex.h"
-
+#include "Poco/Thread.h"
+#include "../../lib/LevelDBExceptions.h"
 #include "../../SingletonManager/LoggerManager.h"
 
 namespace model {
@@ -64,22 +65,8 @@ namespace model {
 			if (value == "<not found>") {
 				return defaultValue;
 			}
-			try {
-				return std::atoi(value.data());
-			}
-			catch (const std::invalid_argument& ia) {
-				addError(new ParamError(__FUNCTION__, "Invalid Argument", ia.what()));
-			}
-			catch (const std::out_of_range& oor) {
-				addError(new ParamError(__FUNCTION__, "Out of Range Error", oor.what()));
-			}
-			catch (const std::logic_error & ler) {
-				addError(new ParamError(__FUNCTION__, "Logical Error", ler.what()));
-			}
-			catch (...) {
-				addError(new Error(__FUNCTION__, "Unknown error"));
-			}
-			return defaultValue;
+			
+			return std::atoi(value.data());
 		}
 
 		bool State::addKeyValue(const std::string& key, const std::string& value)
@@ -90,28 +77,23 @@ namespace model {
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 
 			if (result != "<not found>") {
-				addError(new Error(__FUNCTION__, "key already exist"));
-				return false;
+				throw LevelDBKeyAlreadyExistException("key already exist", key, value);
 			}
 
 			leveldb::Status s = mLevelDB->Put(leveldb::WriteOptions(), key, value);
-			if (s.ok()) {
-				return true;
-			} 
-			addError(new Error(__FUNCTION__, "cannot put to level db"));
-
-			return false;
+			if (!s.ok()) {
+				throw LevelDBPutException("cannot put to level db", s);
+			}
+			return true;
 		}
 		bool State::setKeyValue(const std::string& key, const std::string& value)
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			leveldb::Status s = mLevelDB->Put(leveldb::WriteOptions(), key, value);
-			if (s.ok()) {
-				return true;
+			if (!s.ok()) {
+				throw LevelDBPutException("cannot put to level db", s);
 			}
-			addError(new Error(__FUNCTION__, "cannot put to level db"));
-
-			return false;
+			return true;
 		}
 
 	}

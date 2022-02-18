@@ -13,8 +13,8 @@
 #include "Poco/Mutex.h"
 #include "Poco/AutoPtr.h"
 
-#include "../lib/DRHashList.h"
-#include "../lib/MultithreadContainer.h"
+#include "gradido_blockchain/lib/DRHashList.h"
+#include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "../task/Task.h"
 
 
@@ -37,7 +37,7 @@ enum TaskObserverType {
 
 class WriteTransactionsToBlockTask;
 
-class TaskObserver : public UniLib::lib::MultithreadContainer
+class TaskObserver : public MultithreadContainer
 {
 public:
 	TaskObserver();
@@ -53,7 +53,7 @@ public:
 
 	//! \brief remove Tasks
 	//! \return return false if task not found or unknown type, else true
-	bool removeTask(UniLib::controller::Task* task);
+	bool removeTask(task::Task* task);
 	
 	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
 	//! \return true if transaction is pending and false if not
@@ -71,12 +71,12 @@ protected:
 	
 };
 
-class TaskObserverFinishCommand : public UniLib::controller::Command
+class TaskObserverFinishCommand : public task::Command
 {
 public:
 	TaskObserverFinishCommand(TaskObserver* taskObserver) : mTaskObserver(taskObserver) {}
 
-	int taskFinished(UniLib::controller::Task* task) { mTaskObserver->removeTask(task); return 0; }
+	int taskFinished(task::Task* task) { mTaskObserver->removeTask(task); return 0; }
 
 protected:
 	TaskObserver* mTaskObserver;

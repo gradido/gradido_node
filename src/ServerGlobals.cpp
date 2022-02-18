@@ -13,13 +13,13 @@ using Poco::SharedPtr;
 #include "ServerGlobals.h"
 
 #include "iota/HTTPApi.h"
-#include "lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
 
 namespace ServerGlobals {
 
-	UniLib::controller::CPUSheduler* 	g_CPUScheduler = nullptr;
-	UniLib::controller::CPUSheduler* 	g_WriteFileCPUScheduler = nullptr;
-	UniLib::controller::CPUSheduler*    g_IotaRequestCPUScheduler = nullptr;
+	task::CPUSheduler* 	g_CPUScheduler = nullptr;
+	task::CPUSheduler* 	g_WriteFileCPUScheduler = nullptr;
+	task::CPUSheduler*    g_IotaRequestCPUScheduler = nullptr;
 	controller::GroupIndex* 			g_GroupIndex = nullptr;
 	std::string							g_FilesPath;
 	Poco::UInt16						g_CacheTimeout = 600;

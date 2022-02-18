@@ -5,11 +5,10 @@
 #include "Poco/Mutex.h"
 #include "Poco/RefCountedObject.h"
 
-#include "../../lib/ErrorList.h"
 
 namespace model {
 	namespace files {
-		class FileBase : public ErrorList, public Poco::RefCountedObject
+		class FileBase : public Poco::RefCountedObject
 		{
 		public:
 			FileBase(): mRefCount(1) {}

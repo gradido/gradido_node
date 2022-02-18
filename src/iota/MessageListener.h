@@ -3,7 +3,7 @@
 
 //#include "Poco/Timer.h"
 #include "Poco/Logger.h"
-#include "../lib/MultithreadContainer.h"
+#include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "../lib/FuzzyTimer.h"
 
 #include "MessageId.h"
@@ -22,7 +22,7 @@ namespace iota
      */
     // TODO: put into GroupManager
     
-    class MessageListener : public UniLib::lib::MultithreadContainer, public UniLib::lib::TimerCallback
+    class MessageListener : public MultithreadContainer, public TimerCallback
     {
     public:
         //! \param index should be something like GRADIDO.gdd1
@@ -31,7 +31,7 @@ namespace iota
         
         //virtual void listener(Poco::Timer& timer);
 
-		UniLib::lib::TimerReturn callFromTimer();
+		TimerReturn callFromTimer();
 		const char* getResourceType() const { return "iota::MessageListener"; };
 
     protected:

@@ -1,12 +1,12 @@
 #include "Group.h"
 #include "sodium.h"
 #include "../ServerGlobals.h"
+#include "../BlockchainOrderExceptions.h"
 
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
 
-#include "../lib/DataTypeConverter.h"
-#include "../lib/Exceptions.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include "Block.h"
 
@@ -103,51 +103,23 @@ namespace controller {
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
 	}
 
-	bool Group::addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction)
+	bool Group::addTransaction(std::shared_ptr<model::gradido::GradidoBlock> newTransaction)
 	{
-		// intern validation
-		if (!newTransaction->validate()) {
-			return false;
-		}
-
 		// check previous transaction
 		if (newTransaction->getID() > 1)
 		{
 			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 			if (mLastTransaction->getID() + 1 != newTransaction->getID()) {
-				newTransaction->addError(new Error(__FUNCTION__, "Last transaction is not previous transaction"));
-				return false;
-			}
-			// validate tx hash
-			if (!newTransaction->validate(mLastTransaction)) {
-				return false;
+				throw BlockchainOrderException("last transaction isn't previous transaction");
 			}
 		}
-
-		// validate specific
-		auto transactionBody = newTransaction->getGradidoTransaction()->getTransactionBody();
-		auto type = transactionBody->getType();
-		model::TransactionBase* specificTransaction = nullptr;
-
-		model::TransactionValidationLevel level = model::TRANSACTION_VALIDATION_SINGLE;
-
-
-		switch (type) {
-		case model::TRANSACTION_CREATION:
-			// check if address has get maximal 1.000 GDD creation in the month
-			specificTransaction = transactionBody->getCreation();
-			level = model::TRANSACTION_VALIDATION_DATE_RANGE;
-			//uint64_t sum = calculateCreationSum()
-			break;
-		case model::TRANSACTION_TRANSFER:
-			// check if send address(es) have enough GDD
-			specificTransaction = transactionBody->getTransfer();
-			level = model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS;
-			break;
-		}
-		if (!specificTransaction->validate(level)) {
-			return false;
-		}
+		
+		// throw exception on error
+		newTransaction->validate(model::gradido::TransactionValidationLevel(
+			model::gradido::TRANSACTION_VALIDATION_SINGLE | // sanity check
+			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE | // check if address has get maximal 1.000 GDD creation in the month on creation transaction
+			model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS // check if send address(es) have enough GDD on transfer, check tx hash
+		), this);
 
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		mLastTransaction = newTransaction;
@@ -168,7 +140,7 @@ namespace controller {
 		//return true;
 	}
 
-	bool Group::addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
+	bool Group::addTransactionFromIota(Poco::AutoPtr<model::gradido::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
 	{
 		{
 			if (!mWorkingMutex.tryLock(100)) {
@@ -193,17 +165,17 @@ namespace controller {
 		auto type = newTransaction->getTransactionBody()->getType();
 
 		switch (type) {
-		case model::TRANSACTION_CREATION:
+		case model::gradido::TRANSACTION_CREATION:
 			// check if address has get maximal 1.000 GDD creation in the month
-			level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_DATE_RANGE);
+			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_DATE_RANGE);
 			//uint64_t sum = calculateCreationSum()
 			break;
-		case model::TRANSACTION_TRANSFER:
+		case model::gradido::TRANSACTION_TRANSFER:
 			// check if send address(es) have enough GDD
-			level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);
+			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);
 			// check if outbound transaction also exist
 			if (newTransaction->getTransactionBody()->getTransfer()->isInbound()) {
-				level = (model::TransactionValidationLevel)(level | model::TRANSACTION_VALIDATION_PAIRED);
+				level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_PAIRED);
 				printf("is inbound\n");
 			}
 			else if(newTransaction->getTransactionBody()->getTransfer()->isOutbound()) {
@@ -221,7 +193,7 @@ namespace controller {
 			return false;
 		}
 
-		Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(
+		Poco::AutoPtr<model::gradido::GradidoBlock> gradidoBlock(new model::gradido::GradidoBlock(
 			receivedSeconds,
 			std::string((const char*)&iotaMilestoneId, sizeof(uint32_t)),
 			newTransaction,
@@ -279,7 +251,7 @@ namespace controller {
 	uint64_t Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received)
 	{
 		uint64_t sum = 0;
-		std::vector<Poco::AutoPtr<model::GradidoBlock>> allTransactions;
+		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> allTransactions;
 		// received = max
 		// received - 2 month = min
 		Poco::DateTime searchDate = received;
@@ -296,7 +268,7 @@ namespace controller {
 		printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
 		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
 			auto body = (*it)->getGradidoTransaction()->getTransactionBody();
-			if (body->getType() == model::TRANSACTION_CREATION) {
+			if (body->getType() == model::gradido::TRANSACTION_CREATION) {
 				auto creation = body->getCreation();
 				auto targetDate = creation->getTargetDate();
 				if (targetDate.month() != month || targetDate.year() != year) {
@@ -309,13 +281,13 @@ namespace controller {
 		return sum;
 	}
 
-	Poco::AutoPtr<model::GradidoBlock> Group::findLastTransaction(const std::string& address)
+	Poco::AutoPtr<model::gradido::GradidoBlock> Group::findLastTransaction(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto index = mAddressIndex->getIndexForAddress(address);
-		if (!index) { return Poco::AutoPtr<model::GradidoBlock>(); }
+		if (!index) { return Poco::AutoPtr<model::gradido::GradidoBlock>(); }
 
-		return Poco::AutoPtr<model::GradidoBlock>();
+		return Poco::AutoPtr<model::gradido::GradidoBlock>();
 	}
 
 	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
@@ -345,10 +317,10 @@ namespace controller {
 		return transactionsSerialized;
 	}
 
-	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address)
+	std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> Group::findTransactions(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
+		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> transactions;
 		auto gm = GroupManager::getInstance();
 
 		auto index = mAddressIndex->getIndexForAddress(address);
@@ -371,7 +343,7 @@ namespace controller {
 							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
-					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));
+					transactions.push_back(new model::gradido::GradidoBlock(serializedTransaction, group));
 				}
 			}
 			blockCursor--;
@@ -380,29 +352,29 @@ namespace controller {
 		return transactions;
 	}
 
-	Poco::AutoPtr<model::GradidoBlock> Group::getLastTransaction()
+	std::shared_ptr<model::gradido::GradidoBlock> Group::getLastTransaction()
 	{
-		if (!mLastTransaction.isNull()) {
+		if (mLastTransaction) {
 			return mLastTransaction;
 		}
 		if (!mLastTransactionId) {
 			return nullptr;
 		}
 		auto block = getBlock(mLastBlockNr);
-		std::string serializedTransaction;
-		if (block->getTransaction(mLastTransactionId, serializedTransaction)) {
+		std::unique_ptr<std::string> serializedTransaction(new std::string);
+		if (block->getTransaction(mLastTransactionId, serializedTransaction.get())) {
 			return nullptr;
 		}
 		// call group manager to get shared ptr for this group, maybe replace with auto ptr
 		// but the good thing is the group cache will be updated
-		mLastTransaction = new model::GradidoBlock(serializedTransaction, GroupManager::getInstance()->findGroup(mGroupAlias));
+		mLastTransaction = std::make_shared<model::gradido::GradidoBlock>(new model::gradido::GradidoBlock(std::move(serializedTransaction)));
 		return mLastTransaction;
 	}
 
-	std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(const std::string& address, int month, int year)
+	std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> Group::findTransactions(const std::string& address, int month, int year)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::AutoPtr<model::GradidoBlock>> transactions;
+		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> transactions;
 		auto gm = GroupManager::getInstance();
 
 		auto index = mAddressIndex->getIndexForAddress(address);
@@ -425,7 +397,7 @@ namespace controller {
 							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
-					transactions.push_back(new model::GradidoBlock(serializedTransaction, group));
+					transactions.push_back(new model::gradido::GradidoBlock(serializedTransaction, group));
 				}
 			}
 			else {
@@ -491,7 +463,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	bool Group::isTransactionAlreadyExist(Poco::AutoPtr<model::GradidoTransaction> transaction)
+	bool Group::isTransactionAlreadyExist(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
 	{
 		HalfSignature transactionSign(transaction);
 
@@ -503,13 +475,13 @@ namespace controller {
 		return false;
 	}
 
-	void Group::addSignatureToCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
+	void Group::addSignatureToCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		mCachedSignatures.add(HalfSignature(transaction), nullptr);
 	}
 
-	bool Group::isSignatureInCache(Poco::AutoPtr<model::GradidoTransaction> transaction)
+	bool Group::isSignatureInCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		return mCachedSignatures.has(HalfSignature(transaction));
@@ -521,7 +493,7 @@ namespace controller {
 		int blockNr = mLastBlockNr;
 		int transactionNr = mLastTransactionId;
 
-		Poco::AutoPtr<model::GradidoBlock> transaction;
+		Poco::AutoPtr<model::gradido::GradidoBlock> transaction;
 		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
 
 		do {
@@ -539,7 +511,7 @@ namespace controller {
 				throw TransactionLoadingException(std::to_string(transactionNr), getTransationResult);
 				//throw std::runtime_error("[Group::fillSignatureCacheOnStartup] couldn't load transaction: " + std::to_string(transactionNr));
 			}
-			transaction = new model::GradidoBlock(serializedTransaction, nullptr);
+			transaction = new model::gradido::GradidoBlock(serializedTransaction, nullptr);
 			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();
 			if (sigPairs.size()) {
 				auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());

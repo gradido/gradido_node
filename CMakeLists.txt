@@ -12,6 +12,7 @@ include_directories(
 	"build/proto"
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
+	"dependencies/gradido_blockchain/build/proto"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )

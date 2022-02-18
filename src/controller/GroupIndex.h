@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_CONTROLLER_GROUP_INDEX_H
 
 #include "../model/files/GroupIndex.h"
-#include "../lib/DRHashList.h"
+#include "gradido_blockchain/lib/DRHashList.h"
 
 #include "Poco/Path.h"
 

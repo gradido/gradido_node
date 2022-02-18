@@ -10,8 +10,7 @@
 #include "CPUTask.h"
 #include "../model/TransactionEntry.h"
 #include "../model/files/Block.h"
-#include "../lib/MultithreadQueue.h"
-#include "../lib/ErrorList.h"
+#include "gradido_blockchain/lib/MultithreadQueue.h"
 
 #include "../controller/BlockIndex.h"
 
@@ -23,7 +22,7 @@
  * @brief Task for collecting new transactions for block and write down to disk after timeout
  */
 
-class WriteTransactionsToBlockTask : public UniLib::controller::CPUTask, public ErrorList
+class WriteTransactionsToBlockTask : public task::CPUTask
 {
 public:
 	WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex);

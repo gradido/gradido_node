@@ -81,7 +81,7 @@ namespace controller {
 		return false;
 	}
 
-	int Block::getTransaction(uint64_t transactionNr, std::string& serializedTransaction)
+	int Block::getTransaction(uint64_t transactionNr, std::string* serializedTransaction)
 	{
 		if (transactionNr == 0) return -1;
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
@@ -139,13 +139,13 @@ namespace controller {
 		}
 	}
 
-	UniLib::lib::TimerReturn Block::callFromTimer()
+	TimerReturn Block::callFromTimer()
 	{
 		// if called from timer, while deconstruct was called, prevent dead lock
-		if (!mWorkingMutex.tryLock()) UniLib::lib::GO_ON;
+		if (!mWorkingMutex.tryLock()) GO_ON;
 		if (mExitCalled) {
 			mWorkingMutex.unlock();
-			return UniLib::lib::REMOVE_ME;
+			return REMOVE_ME;
 		}
 		//Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
@@ -158,7 +158,7 @@ namespace controller {
 			}
 		}
 		mWorkingMutex.unlock();
-		return UniLib::lib::GO_ON;
+		return GO_ON;
 	}
 
 }

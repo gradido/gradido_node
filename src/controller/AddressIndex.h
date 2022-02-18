@@ -40,12 +40,14 @@ namespace controller {
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
 		//! \return Index or 0 if address didn't exist.
 		uint32_t getIndexForAddress(const std::string& address);
-
+		
 		//! \brief Get or add index if not exist in cache or file, maybe I/O read.
 		//! \param address User public key.
 		//! \param lastIndex Last knowing index for group.
 		//! \return Index for address.
 		uint32_t getOrAddIndexForAddress(const std::string& address);
+
+		std::vector<uint32_t> getOrAddIndicesForAddresses(std::vector<MemoryBin*>& publicKeys, bool clearMemoryBin = false);
 
 		//! \brief Add index, maybe I/O read, I/O write if index is new.
 		//! \param address User public key.
@@ -60,6 +62,7 @@ namespace controller {
 		//!  Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n
 		//!  ./94/93.index
 		static Poco::Path getAddressIndexFilePathForAddress(const std::string& address);
+		static Poco::Path getAddressIndexFilePathForAddress(const MemoryBin* address);
 
 
 	protected:
@@ -67,6 +70,7 @@ namespace controller {
 		//!
 		//! Can need some time if file must at first load from disk, maybe I/O read.
 		Poco::SharedPtr<model::files::AddressIndex> getAddressIndex(const std::string& address);
+		Poco::SharedPtr<model::files::AddressIndex> getAddressIndex(const MemoryBin* address);
 
 		Poco::Path mGroupPath;
 		uint32_t   mLastIndex;

@@ -64,11 +64,23 @@ namespace controller {
 						transactionTransactionIndices[*itTrNrIndex].push_back(addressIndex);
 					}
 				}
+				// reverse coin color				
+				std::vector<uint32_t> coinColorsForTransactionNrs;
+				coinColorsForTransactionNrs.reserve(addressIndexEntry.transactionNrs->size());
+				auto coinColorTranInd = &addressIndexEntry.coinColorTransactionNrIndices;
+				for (auto itCoinColorInd = coinColorTranInd->begin(); itCoinColorInd != coinColorTranInd->end(); itCoinColorInd++) {
+					// first = coin color
+					// second = vector with transaction nr indices
+					for (auto itTranInd = itCoinColorInd->second.begin(); itTranInd != itCoinColorInd->second.end(); itTranInd++) {
+						coinColorsForTransactionNrs[*itTranInd] = itCoinColorInd->first;
+					}
+				}
+
 				// put into file object
 				int index = 0;
 				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
 					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
-					mBlockIndexFile.addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], transactionTransactionIndices[index]);
+					mBlockIndexFile.addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinColorsForTransactionNrs[index], transactionTransactionIndices[index]);
 					index++;
 				}
 			}
@@ -78,12 +90,12 @@ namespace controller {
 		//return true;
 	}
 	
-	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
+	bool BlockIndex::addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
 	{
-		return addIndicesForTransaction(year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
+		return addIndicesForTransaction(coinColor, year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
 	}
 
-	bool BlockIndex::addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+	bool BlockIndex::addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		if (transactionNr > mMaxTransactionNr) {
@@ -121,11 +133,20 @@ namespace controller {
 			auto addressIndexEntry = addressIndexTrans->find(value);
 			if (addressIndexEntry == addressIndexTrans->end()) {
 				//uint32_t, std::vector<uint32_t>
-				addressIndexTrans->insert(std::pair<uint32_t, std::vector<uint32_t>>(value, { transactionNrIndex }));
+				addressIndexTrans->insert({ value, { transactionNrIndex } });
 			}
 			else {
 				addressIndexEntry->second.push_back(transactionNrIndex);
 			}
+		}
+		// coin color 
+		auto coinColorIndexTrans = &addressIndexEntry->coinColorTransactionNrIndices;
+		auto coinColorIt = coinColorIndexTrans->find(coinColor);
+		if (coinColorIt == coinColorIndexTrans->end()) {
+			coinColorIndexTrans->insert({ coinColor, {transactionNrIndex} });
+		}
+		else {
+			coinColorIt->second.push_back(transactionNrIndex);
 		}
 		addFileCursorForTransaction(transactionNr, fileCursor);
 		
@@ -150,6 +171,7 @@ namespace controller {
 		}
 
 		return addIndicesForTransaction(
+			transactionEntry->getCoinColor(),
 			transactionEntry->getYear(),
 			transactionEntry->getMonth(),
 			transactionNr,
@@ -191,7 +213,7 @@ namespace controller {
 		}
 		return result;
 	}
-	std::vector<uint64_t> BlockIndex::findTransactionsForAddress(uint32_t addressIndex)
+	std::vector<uint64_t> BlockIndex::findTransactionsForAddress(uint32_t addressIndex, uint32_t coinColor/* = 0*/)
 	{
 		std::vector<uint64_t> result;
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
@@ -199,10 +221,26 @@ namespace controller {
 			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); monthIt++) {
 				AddressIndexEntry* addressIndexEntry = &monthIt->second;
 				auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.find(addressIndex);
+				auto traIndForCoinColor = addressIndexEntry->coinColorTransactionNrIndices.find(coinColor);
+				if (coinColor && traIndForCoinColor == addressIndexEntry->coinColorTransactionNrIndices.end()) {
+					continue;
+				}
 				if (addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end()) {
 					auto transactionNrIndices = addressIndexIt->second;
 					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
-						result.push_back((*addressIndexEntry->transactionNrs)[*it]);
+						bool skip = false;
+						if (coinColor) {
+							skip = true;
+							for (auto itTransactionIndex = traIndForCoinColor->second.begin(); itTransactionIndex != traIndForCoinColor->second.end(); itTransactionIndex++) {
+								if (*it == *itTransactionIndex) {
+									skip = false;
+									break;
+								}
+							}
+						}
+						if (!skip) {
+							result.push_back((*addressIndexEntry->transactionNrs)[*it]);
+						}
 					}				
 				}
 			}

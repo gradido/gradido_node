@@ -38,80 +38,77 @@
 // the time between move calls depends on needed accuracy and timer calls per seconds
 #define MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS_MILLISECONDS 100
 
-namespace UniLib {
-	namespace lib {
 
-		enum TimerReturn {
-			GO_ON = 0,
-			REMOVE_ME = 1,
-			REPORT_ERROR = 2
-		};
+enum TimerReturn {
+	GO_ON = 0,
+	REMOVE_ME = 1,
+	REPORT_ERROR = 2
+};
 #if (_MSC_VER >= 1200 && _MSC_VER < 1310)
-		enum TimerReturn;
+enum TimerReturn;
 #endif
 
-		class TimerCallback
-		{
-		public:
-			virtual TimerReturn callFromTimer() = 0;
-			virtual const char* getResourceType() const { return "TimerCallback"; };
-		};
+class TimerCallback
+{
+public:
+	virtual TimerReturn callFromTimer() = 0;
+	virtual const char* getResourceType() const { return "TimerCallback"; };
+};
 
-		class FuzzyTimer : public Poco::Runnable
-		{
-		public:
-			FuzzyTimer();
-			~FuzzyTimer();
+class FuzzyTimer : public Poco::Runnable
+{
+public:
+	FuzzyTimer();
+	~FuzzyTimer();
 
-			/*!
-				add timer callback object
-				\param timeIntervall intervall in milliseconds
-				\param loopCount 0 for one call, -1 for loop
-			*/
-			bool addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount = -1);
+	/*!
+		add timer callback object
+		\param timeIntervall intervall in milliseconds
+		\param loopCount 0 for one call, -1 for loop
+	*/
+	bool addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount = -1);
 
-			/*!
-				\brief remove all timer with name
-				function is not really fast, because all appended timerCallback will be checked
+	/*!
+		\brief remove all timer with name
+		function is not really fast, because all appended timerCallback will be checked
 
-				\return removed timer, or -1 by error
-			*/
-			int removeTimer(std::string name);
+		\return removed timer, or -1 by error
+	*/
+	int removeTimer(std::string name);
 
-			/*
-				\brief update timer map, maybe call timer... (only one per frame)
-			*/
-			bool move();
+	/*
+		\brief update timer map, maybe call timer... (only one per frame)
+	*/
+	bool move();
 
-			void run();
-		private:
-			struct TimerEntry {
-				// functions
-				TimerEntry(TimerCallback* _callback, uint64_t _timeIntervall, int _loopCount, std::string _name)
-					: callback(_callback), timeIntervall(_timeIntervall), initLoopCount(_loopCount), currentLoopCount(0), name(_name) {}
-				~TimerEntry() {}
-				// \return true if we can run once again
-				bool nextLoop() {
-					currentLoopCount++;
-					if (initLoopCount < 0 || initLoopCount - 1 > currentLoopCount) return true;
-					return false;
-				}
+	void run();
+private:
+	struct TimerEntry {
+		// functions
+		TimerEntry(TimerCallback* _callback, uint64_t _timeIntervall, int _loopCount, std::string _name)
+			: callback(_callback), timeIntervall(_timeIntervall), initLoopCount(_loopCount), currentLoopCount(0), name(_name) {}
+		~TimerEntry() {}
+		// \return true if we can run once again
+		bool nextLoop() {
+			currentLoopCount++;
+			if (initLoopCount < 0 || initLoopCount - 1 > currentLoopCount) return true;
+			return false;
+		}
 
-				// variables
-				TimerCallback* callback;
-				uint64_t timeIntervall;
-				int initLoopCount;
-				int currentLoopCount;
-				std::string name;
-			};
-			// int key = time since programm start to run
-			std::multimap<uint64_t, TimerEntry> mRegisteredAtTimer;
-			typedef std::pair<uint64_t, TimerEntry> TIMER_TIMER_ENTRY;
-			Poco::Mutex mMutex;
-			bool		exit;
-			Poco::Thread mThread;
-		};
-	}
-}
+		// variables
+		TimerCallback* callback;
+		uint64_t timeIntervall;
+		int initLoopCount;
+		int currentLoopCount;
+		std::string name;
+	};
+	// int key = time since programm start to run
+	std::multimap<uint64_t, TimerEntry> mRegisteredAtTimer;
+	typedef std::pair<uint64_t, TimerEntry> TIMER_TIMER_ENTRY;
+	Poco::Mutex mMutex;
+	bool		exit;
+	Poco::Thread mThread;
+};
+
 
 #endif //__UNIVERSUM_LIB_LIB_TIMER__

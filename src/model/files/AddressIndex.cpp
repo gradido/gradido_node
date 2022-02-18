@@ -1,4 +1,5 @@
 #include "AddressIndex.h"
+#include "FileExceptions.h"
 #include "sodium.h"
 #include <map>
 
@@ -54,7 +55,7 @@ namespace model {
 			auto fl = FileLockManager::getInstance();
 			int timeoutRounds = 100;
 			auto filePath = mFilePath.toString();
-			if (!fl->tryLockTimeout(filePath, timeoutRounds, this)) {
+			if (!fl->tryLockTimeout(filePath, timeoutRounds)) {
 				return false;
 			}
 
@@ -80,7 +81,7 @@ namespace model {
 		MemoryBin* AddressIndex::calculateHash(const std::map<int, std::string>& sortedMap)
 		{
 			auto mm = MemoryManager::getInstance();
-			auto hash = mm->getFreeMemory(crypto_generichash_BYTES);
+			auto hash = mm->getMemory(crypto_generichash_BYTES);
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
@@ -97,7 +98,7 @@ namespace model {
 
 		void AddressIndex::writeToFile()
 		{
-			if (checkFile() || errorCount()) {
+			if (checkFile()) {
 				// current file seems containing address indices 
 				mFileWritten = true;
 				return;
@@ -107,7 +108,7 @@ namespace model {
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			std::map<int, std::string> sortedMap;
 			auto filePath = mFilePath.toString();
-			if (!fl->tryLockTimeout(filePath, 100, this)) {
+			if (!fl->tryLockTimeout(filePath, 100)) {
 				return;
 			}
 			// check if dir exist, if not create it
@@ -121,12 +122,9 @@ namespace model {
 			for (auto it = mAddressesIndices.begin(); it != mAddressesIndices.end(); it++) {
 				auto inserted = sortedMap.insert(std::pair<int, std::string>(it->second, it->first));
 				if (!inserted.second) {
-					addError(new Error(__FUNCTION__, "inserting index address pair failed, index already exist!"));
 					std::string currentPair = std::to_string(it->second) + ": " + it->first;
-					addError(new ParamError(__FUNCTION__, "current pair", currentPair.data()));
 					std::string lastPair = std::to_string(inserted.first->first) + ": " + inserted.first->second;
-					addError(new ParamError(__FUNCTION__, "last pair", lastPair.data()));
-					throw new Poco::Exception("[model::files::AddressIndex] inserting index address pair failed, index already exist!");
+					throw IndexAddressPairAlreadyExistException("AddressIndex::writeToFile", currentPair, lastPair);
 				}
 				file.write(it->first.data(), 32);
 				file.write((const char*)&it->second, sizeof(int32_t));
@@ -145,7 +143,7 @@ namespace model {
 			auto mm = MemoryManager::getInstance();
 			int timeoutRounds = 100;
 			auto filePath = mFilePath.toString();
-			if (!fl->tryLockTimeout(filePath, timeoutRounds, this)) {
+			if (!fl->tryLockTimeout(filePath, timeoutRounds)) {
 				return false;
 			}
 			Poco::File file(filePath);
@@ -157,7 +155,7 @@ namespace model {
 			auto fileSize = file.getSize();
 			auto readedSize = 0;
 			Poco::FileInputStream fileStream(filePath);
-			auto hash = mm->getFreeMemory(32);
+			auto hash = mm->getMemory(32);
 			uint32_t index = 0;
 			std::map<int, std::string> sortedMap;
 
@@ -184,8 +182,7 @@ namespace model {
 			mm->releaseMemory(compareHash);
 
 			if (compareResult != 0) {
-				addError(new ParamError(__FUNCTION__, "file hash mismatch", filePath.data()));
-				return false;
+				throw HashMismatchException("file hash mismatch");
 			}
 
 			return true;

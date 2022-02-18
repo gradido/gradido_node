@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_IOTA_MESSAGE_ID
 
 #include <cassert>
-#include "../SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 
 namespace iota
 {

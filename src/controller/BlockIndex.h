@@ -6,6 +6,7 @@
 #include <map>
 
 #include "Poco/Path.h"
+#include "Poco/SharedPtr.h"
 
 #include "../model/files/BlockIndex.h"
 
@@ -35,9 +36,9 @@ namespace controller {
 		bool writeIntoFile();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry);
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
+		bool addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
 		// implement from model::files::IBlockIndexReceiver, called by loading block index from file
-		bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		bool addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
@@ -49,9 +50,10 @@ namespace controller {
 		std::vector<uint64_t> findTransactionsForAddressMonthYear(uint32_t addressIndex, uint16_t year, uint8_t month);
 
 		//! \brief find transaction nrs for address index
+		//! \param coinColor ignore if value is zero
 		//! \return empty vector in case nothing found
 		//! TODO: profile and if to slow on big data amounts, update 
-		std::vector<uint64_t> findTransactionsForAddress(uint32_t addressIndex);
+		std::vector<uint64_t> findTransactionsForAddress(uint32_t addressIndex, uint32_t coinColor = 0);
 		//! \brief find transaction nrs from specific month and year
 		//! \return empty shared ptr if nothing found
 		Poco::SharedPtr<std::vector<uint64_t>> findTransactionsForMonthYear(uint16_t year, uint8_t month);
@@ -81,6 +83,7 @@ namespace controller {
 		{
 			Poco::SharedPtr<std::vector<uint64_t>> transactionNrs;
 			std::map<uint32_t, std::vector<uint32_t>> addressIndicesTransactionNrIndices;
+			std::map<uint32_t, std::vector<uint32_t>> coinColorTransactionNrIndices;
 		};
 
 		std::map<uint16_t, std::map<uint8_t, AddressIndexEntry>> mYearMonthAddressIndexEntrys;

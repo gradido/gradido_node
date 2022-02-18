@@ -28,7 +28,7 @@ namespace controller {
 	 * @brief interface for adding and getting transactions from specific block
 	 */
 
-	class Block : public ControllerBase, public UniLib::lib::TimerCallback
+	class Block : public ControllerBase, public TimerCallback
 	{
 		friend model::files::Block;
 	public:
@@ -41,7 +41,7 @@ namespace controller {
 		bool pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction);
 		
 		//! \brief load transaction from cache or file system
-		int getTransaction(uint64_t transactionNr, std::string& serializedTransaction);
+		int getTransaction(uint64_t transactionNr, std::string* serializedTransaction);
 
 		//! \brief called from timeout manager for scheduling WriteTransactionsToBlockTask 
 		void checkTimeout(Poco::Timer& timer);
@@ -51,7 +51,7 @@ namespace controller {
 
 		inline bool hasSpaceLeft() { return mBlockFile->getCurrentFileSize() + 32 < 128 * 1024 * 1024; }
 
-		UniLib::lib::TimerReturn callFromTimer();
+		TimerReturn callFromTimer();
 		const char* getResourceType() const { return "controller::Block"; };
 
 			

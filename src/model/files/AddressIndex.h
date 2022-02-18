@@ -2,9 +2,9 @@
 #define __GRADIDO_NODE_MODEL_FILES_ADDRESS_INDEX_H
 
 #include "FileBase.h"
-#include "../../SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 #include <unordered_map>
-
+#include <map>
 
 
 namespace model {

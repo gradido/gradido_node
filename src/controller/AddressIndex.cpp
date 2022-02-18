@@ -33,6 +33,7 @@ namespace controller {
 		return index;
 	}
 
+	
 	uint32_t AddressIndex::getOrAddIndexForAddress(const std::string& address)
 	{
 		auto addressIndex = getAddressIndex(address);
@@ -43,6 +44,23 @@ namespace controller {
 			addressIndex->add(address, index);
 		}
 		return index;
+	}
+
+	std::vector<uint32_t> AddressIndex::getOrAddIndicesForAddresses(std::vector<MemoryBin*>& publicKeys, bool clearMemoryBin/* = false*/)
+	{
+		auto mm = MemoryManager::getInstance();
+		std::vector<uint32_t> results;
+		results.reserve(publicKeys.size());
+		for (auto it = publicKeys.begin(); it != publicKeys.end(); it++) {
+			results.push_back(getOrAddIndexForAddress(*(*it)->copyAsString().get()));
+			if (clearMemoryBin) {
+				mm->releaseMemory(*it);
+			}
+		}
+		if (clearMemoryBin) {
+			publicKeys.clear();
+		}
+		return results;
 	}
 
 	Poco::SharedPtr<model::files::AddressIndex> AddressIndex::getAddressIndex(const std::string& address)
@@ -64,12 +82,44 @@ namespace controller {
 		return entry;
 	}
 
+	Poco::SharedPtr<model::files::AddressIndex> AddressIndex::getAddressIndex(const MemoryBin* address)
+	{
+		uint16_t firstBytes = 0;
+		memcpy(&firstBytes, address, sizeof(uint16_t));
+		auto entry = mAddressIndicesCache.get(firstBytes);
+
+		if (entry.isNull()) {
+
+			Poco::Path addressIndexPath(mGroupPath);
+			addressIndexPath.append(getAddressIndexFilePathForAddress(address));
+
+			Poco::SharedPtr<model::files::AddressIndex> newAddressIndex(new model::files::AddressIndex(addressIndexPath));
+			mAddressIndicesCache.add(firstBytes, newAddressIndex);
+			return newAddressIndex;
+		}
+	}
+
 	Poco::Path AddressIndex::getAddressIndexFilePathForAddress(const std::string& address)
 	{
 		Poco::Path addressIndexPath;
 		char firstBytesHex[5]; memset(firstBytesHex, 0, 5);
 		sodium_bin2hex(firstBytesHex, 5, (const unsigned char*)address.data(), 2);
 		//printf("bytes %x\n", firstBytes);
+		std::string firstBytesString = firstBytesHex;
+		addressIndexPath.pushDirectory("pubkeys");
+		addressIndexPath.pushDirectory("_" + firstBytesString.substr(0, 2));
+		std::string file = "_" + firstBytesString.substr(2, 2);
+		file += ".index";
+		addressIndexPath.append(file);
+
+		return addressIndexPath;
+	}
+
+	Poco::Path AddressIndex::getAddressIndexFilePathForAddress(const MemoryBin* address)
+	{
+		Poco::Path addressIndexPath;
+		char firstBytesHex[5]; memset(firstBytesHex, 0, 5);
+		sodium_bin2hex(firstBytesHex, 5, *address, 2);
 		std::string firstBytesString = firstBytesHex;
 		addressIndexPath.pushDirectory("pubkeys");
 		addressIndexPath.pushDirectory("_" + firstBytesString.substr(0, 2));

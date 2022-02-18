@@ -6,7 +6,7 @@
 #include "Poco/DateTime.h"
 
 #include "../controller/Group.h"
-#include "transactions/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 
 #include <vector>
 
@@ -27,15 +27,15 @@ namespace model {
 			: mTransactionNr(0), mFileCursor(0) {}
 
 		//! \brief init entry object from serialized transaction, deserialize transaction to get infos
-		TransactionEntry(std::string _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot);
+		TransactionEntry(std::unique_ptr<std::string> _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot);
 
-		TransactionEntry(Poco::AutoPtr<GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
+		TransactionEntry(Poco::AutoPtr<gradido::GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
 
 		//! \brief init entry object from details e.g. by loading from file
-		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 		//! \brief init entry object without indices
-		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year);
+		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor);
 
 
 		//! \brief operator for sorting by mTransactionNr in ascending order
@@ -48,17 +48,18 @@ namespace model {
 		inline std::vector<uint32_t> getAddressIndices() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mAddressIndices; }
 
 		inline uint64_t getTransactionNr() { return mTransactionNr; }
-		inline std::string getSerializedTransaction() { return mSerializedTransaction; }
+		inline const std::string* getSerializedTransaction() { return mSerializedTransaction.get(); }
 		inline uint8_t getMonth() { return mMonth; }
 		inline uint16_t getYear() { return mYear; }
-
+		inline uint32_t getCoinColor() { return mCoinColor; }
 
 	protected:
 		uint64_t mTransactionNr;
-		std::string mSerializedTransaction;
+		std::unique_ptr<std::string> mSerializedTransaction;
 		int32_t mFileCursor;
 		uint8_t mMonth;
 		uint16_t mYear;
+		uint32_t mCoinColor;
 		Poco::FastMutex mFastMutex;
 		std::vector<uint32_t> mAddressIndices;
 	};

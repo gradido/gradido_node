@@ -7,11 +7,11 @@
 #include "BlockIndex.h"
 #include "TaskObserver.h"
 
-#include "../model/transactions/GradidoBlock.h"
-#include "../model/transactions/GradidoTransaction.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "../model/files/State.h"
 
-#include "../lib/JsonRequest.h"
+#include "gradido_blockchain/http/JsonRequest.h"
 #include "../iota/MessageListener.h"
 
 #include "Poco/Path.h"
@@ -19,6 +19,8 @@
 #include "Poco/URI.h"
 #include "Poco/AccessExpireCache.h"
 #include "Poco/ExpireCache.h"
+
+#include "gradido_blockchain/model/IGradidoBlockchain.h"
 
 // MAGIC NUMBER: how long signatures should be cached to prevent processing transactions more than once
 #define MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES 10
@@ -33,7 +35,7 @@ namespace controller {
 	* TODO: validate transaction on startup
 	*/
 
-	class Group : public ControllerBase
+	class Group : public ControllerBase, public model::IGradidoBlockchain
 	{
 	public:
 		//! \brief Load group states via model::files::GroupState.
@@ -47,26 +49,27 @@ namespace controller {
 
 		//! \brief Put new transaction to block chain, if valid.
 		//! \return True if valid, else false.
-		bool addTransaction(Poco::AutoPtr<model::GradidoBlock> newTransaction);
+		bool addTransaction(std::shared_ptr<model::gradido::GradidoBlock> newTransaction);
 
+		
 		//! \brief add transaction from iota into blockchain, important! must be called in correct order
-		bool addTransactionFromIota(Poco::AutoPtr<model::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp);
+		bool addTransactionFromIota(std::shared_ptr<model::gradido::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp);
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
-		Poco::AutoPtr<model::GradidoBlock> findLastTransaction(const std::string& address);
+		Poco::AutoPtr<model::gradido::GradidoBlock> findLastTransaction(const std::string& address);
 
-		Poco::AutoPtr<model::GradidoBlock> getLastTransaction();
+		std::shared_ptr<model::gradido::GradidoBlock> getLastTransaction();
 
 		std::vector<std::string> findTransactionsSerialized(uint64_t fromTransactionId);
 		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 		//!
 		//! Use with care, can need some time and return huge amount of data.
 		//! \param address Address = user account public key.
-		std::vector<Poco::AutoPtr<model::GradidoBlock>> findTransactions(const std::string& address);
+		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> findTransactions(const std::string& address);
 		//! \brief Find transactions of account in memory or block chain from a specific month.
 		//! \param address User account public key.
-		std::vector<Poco::AutoPtr<model::GradidoBlock>> findTransactions(const std::string& address, int month, int year);
+		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> findTransactions(const std::string& address, int month, int year);
 
 		//! \brief Search for creation transactions from specific month and add balances together.
 		//! \param address User account public key.
@@ -76,7 +79,7 @@ namespace controller {
 
 		inline const std::string& getGroupAlias() { return mGroupAlias; }
 
-		bool isSignatureInCache(Poco::AutoPtr<model::GradidoTransaction> transaction);
+		bool isSignatureInCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
 
 		void setListeningCommunityServer(Poco::URI uri);
 
@@ -85,8 +88,8 @@ namespace controller {
 		void updateLastBlockNr(int lastBlockNr);
 		void updateLastTransactionId(int lastTransactionId);
 
-		bool isTransactionAlreadyExist(Poco::AutoPtr<model::GradidoTransaction> transaction);
-		void addSignatureToCache(Poco::AutoPtr<model::GradidoTransaction> transaction);
+		bool isTransactionAlreadyExist(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
+		void addSignatureToCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		void fillSignatureCacheOnStartup();
@@ -98,7 +101,7 @@ namespace controller {
 		Poco::SharedPtr<AddressIndex> mAddressIndex;
 		model::files::State mGroupState;
 
-		Poco::AutoPtr<model::GradidoBlock> mLastTransaction;
+		std::shared_ptr<model::gradido::GradidoBlock> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;
@@ -118,8 +121,8 @@ namespace controller {
 			HalfSignature(const char* signature) {
 				memcpy(&sign, signature, 32);
 			}
-			HalfSignature(Poco::AutoPtr<model::GradidoTransaction> transaction) {
-				auto sigPairs = transaction->getProto().sig_map().sigpair();
+			HalfSignature(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction) {
+				auto sigPairs = transaction->getSigMap().sigpair();
 				if (sigPairs.size() == 0) {
 					throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
 				}

@@ -37,35 +37,33 @@
 
 #include "Poco/AutoPtr.h"
 
-namespace UniLib {
-    namespace controller {
+namespace task {
 
-        class CPUTask;
-        typedef Poco::AutoPtr<CPUTask> CPUTaskPtr;
+    class CPUTask;
+    typedef Poco::AutoPtr<CPUTask> CPUTaskPtr;
 
-		class CPUSheduler;
+	class CPUSheduler;
 
-        class CPUTask : public Task
-        {
-        public: 
-            CPUTask(CPUSheduler* cpuSheduler, size_t taskDependenceCount);			
-			CPUTask(CPUSheduler* cpuScheduler);	
-			CPUTask(size_t taskDependenceCount = 0);
-            virtual ~CPUTask();
+    class CPUTask : public Task
+    {
+    public: 
+        CPUTask(CPUSheduler* cpuSheduler, size_t taskDependenceCount);			
+		CPUTask(CPUSheduler* cpuScheduler);	
+		CPUTask(size_t taskDependenceCount = 0);
+        virtual ~CPUTask();
 
-			virtual const char* getResourceType() const {return "CPUTask";};
-			//! \brief return true if task has finished, else false
-			//! automatic scheduling of task if he isn't finished and sheduled yet
+		virtual const char* getResourceType() const {return "CPUTask";};
+		//! \brief return true if task has finished, else false
+		//! automatic scheduling of task if he isn't finished and sheduled yet
 			
 
-			virtual void scheduleTask(TaskPtr own);
-        protected:
-			void triggerSheduler() { mScheduler->checkPendingTasks(); }
+		virtual void scheduleTask(TaskPtr own);
+    protected:
+		void triggerSheduler() { mScheduler->checkPendingTasks(); }
 			
-		private: 
-			CPUSheduler* mScheduler;
-        };
-    }
+	private: 
+		CPUSheduler* mScheduler;
+    };
 }
 
 #endif //__DR_UNIVERSUM_LIB_CONTROLLER_CPU_TASK_H__

@@ -1,35 +1,40 @@
 #include "TransactionEntry.h"
 
-#include "../model/transactions/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 
 namespace model {
 
-
-	TransactionEntry::TransactionEntry(std::string _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot)
-		: mTransactionNr(0), mSerializedTransaction(_serializedTransaction), mFileCursor(fileCursor)
+	TransactionEntry::TransactionEntry(std::unique_ptr<std::string> _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot)
+		: mTransactionNr(0), mSerializedTransaction(std::move(_serializedTransaction)), mFileCursor(fileCursor)
 	{
-		Poco::AutoPtr<model::GradidoBlock> transaction(new model::GradidoBlock(_serializedTransaction, groupRoot));
-		if (transaction->errorCount() > 0) {
-			throw Poco::Exception("TransactionEntry::TransactionEntry error by loading from serialized transaction");
-		}
+		Poco::AutoPtr<model::gradido::GradidoBlock> transaction(new model::gradido::GradidoBlock(mSerializedTransaction.get()));
+
 		mTransactionNr = transaction->getID();
 		mMonth = transaction->getReceived().month();
 		mYear = transaction->getReceived().year();
+		mCoinColor = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase()->getCoinColor();
 
-		mAddressIndices = transaction->getInvolvedAddressIndices(groupRoot->getAddressIndex());
+		auto addresses = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase()->getInvolvedAddresses();
+		if (addresses.size()) {
+			mAddressIndices = groupRoot->getAddressIndex()->getOrAddIndicesForAddresses(addresses);
+		}
 	}
 
-	TransactionEntry::TransactionEntry(Poco::AutoPtr<GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex)
+	TransactionEntry::TransactionEntry(Poco::AutoPtr<gradido::GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex)
 		: mTransactionNr(transaction->getID()), mSerializedTransaction(transaction->getSerialized()), mFileCursor(-10)
 	{
 		auto received = transaction->getReceived();
 		mMonth = received.month();
 		mYear = received.year();
-		mAddressIndices = transaction->getInvolvedAddressIndices(addressIndex);
+		mCoinColor = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase()->getCoinColor();
+		auto addresses = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase()->getInvolvedAddresses();
+		if (addresses.size()) {
+			mAddressIndices = addressIndex->getOrAddIndicesForAddresses(addresses);
+		}
 	}
 
-	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const uint32_t* addressIndices, uint8_t addressIndiceCount)
-		: TransactionEntry(transactionNr, month, year)
+	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+		: TransactionEntry(transactionNr, month, year, coinColor)
 	{
 		mAddressIndices.reserve(addressIndiceCount);
 		for (int i = 0; i < addressIndiceCount; i++) {
@@ -37,8 +42,8 @@ namespace model {
 		}
 	}
 
-	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year)
-		: mTransactionNr(transactionNr), mFileCursor(-10), mMonth(month), mYear(year)
+	TransactionEntry::TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor)
+		: mTransactionNr(transactionNr), mFileCursor(-10), mMonth(month), mYear(year), mCoinColor(coinColor)
 	{
 
 	}

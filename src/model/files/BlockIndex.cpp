@@ -20,6 +20,7 @@ namespace model {
 
 			vFile->write(&transactionNr, sizeof(uint64_t));
 			vFile->write(&fileCursor, sizeof(int32_t));
+			vFile->write(&coinColor, sizeof(uint32_t));
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
@@ -33,6 +34,7 @@ namespace model {
 			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
 			if (!vFile->read(&fileCursor, sizeof(int32_t))) return false;
+			if (!vFile->read(&coinColor, sizeof(uint32_t))) return false;
 			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
@@ -49,6 +51,7 @@ namespace model {
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));		
 			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(int32_t));
+			crypto_generichash_update(state, (const unsigned char*)&coinColor, sizeof(uint32_t));
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
 
 			// second part
@@ -59,7 +62,7 @@ namespace model {
 		{
 			// TransactionEntry(uint64_t transactionNr, int32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
 			auto transactionEntry = new TransactionEntry(
-				transactionNr, month, year, addressIndices, addressIndicesCount
+				transactionNr, month, year, coinColor, addressIndices, addressIndicesCount
 			);
 			transactionEntry->setFileCursor(fileCursor);
 			return transactionEntry;
@@ -112,7 +115,7 @@ namespace model {
 		{
 			auto mm = MemoryManager::getInstance();
 
-			auto hash = mm->getFreeMemory(crypto_generichash_BYTES);
+			auto hash = mm->getMemory(crypto_generichash_BYTES);
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
@@ -150,8 +153,8 @@ namespace model {
 			}
 
 			auto mm = MemoryManager::getInstance();
-			auto hashFromFile = mm->getFreeMemory(crypto_generichash_BYTES);
-			auto hashCalculated = mm->getFreeMemory(crypto_generichash_BYTES);
+			auto hashFromFile = mm->getMemory(crypto_generichash_BYTES);
+			auto hashCalculated = mm->getMemory(crypto_generichash_BYTES);
 			crypto_generichash_state state;
 
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);

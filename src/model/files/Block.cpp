@@ -4,7 +4,7 @@
 #include "../../SingletonManager/LoggerManager.h"
 #include "../../SingletonManager/CacheManager.h"
 #include "../../ServerGlobals.h"
-#include "../../lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
 
 #include "../../lib/BinTextConverter.h"
 
@@ -65,14 +65,14 @@ namespace model {
 			mFastMutex.unlock();
 		}
 		*/
-		UniLib::lib::TimerReturn Block::callFromTimer()
+		TimerReturn Block::callFromTimer()
 		{
-			if (!mFastMutex.tryLock()) return UniLib::lib::GO_ON;
+			if (!mFastMutex.tryLock()) return GO_ON;
 			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
-			return UniLib::lib::GO_ON;
+			return GO_ON;
 		}
 		
 		int Block::readLine(Poco::UInt32 startReading, std::string& resultString)
@@ -136,7 +136,7 @@ namespace model {
 			auto fileStream = getOpenFile();
 
 			// read current hash
-			auto hash = mm->getFreeMemory(crypto_generichash_KEYBYTES);
+			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
 			memset(*hash, 0, crypto_generichash_KEYBYTES);
 			if (mCurrentFileSize > 0) {
 				fileStream->seekg(mCurrentFileSize);
@@ -197,7 +197,7 @@ namespace model {
 				return nullptr;
 			}
 
-			auto vfile = mm->getFreeMemory(mCurrentFileSize);
+			auto vfile = mm->getMemory(mCurrentFileSize);
 			if (!vfile) {
 				fl->unlock(filePath);
 				lm->mErrorLogging.error("[%s] error reserve memory: %d", std::string(__FUNCTION__), mCurrentFileSize);
@@ -210,7 +210,7 @@ namespace model {
 
 			fl->unlock(filePath);
 
-			auto hash = mm->getFreeMemory(crypto_generichash_KEYBYTES);
+			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
 			memset(*hash, 0, hash->size());
 			size_t cursor = 0;
 			const unsigned char* vfilep = *vfile;
@@ -247,7 +247,7 @@ namespace model {
 			auto fileStream = getOpenFile();
 			fileStream->seekg(mCurrentFileSize);
 
-			auto hash = mm->getFreeMemory(crypto_generichash_KEYBYTES);
+			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
 			fileStream->read(*hash, crypto_generichash_KEYBYTES);
 
 			fl->unlock(filePath);
@@ -267,7 +267,7 @@ namespace model {
 		// *********************** TASKS ***********************************
 
 		BlockAppendLineTask::BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<std::string> lines)
-			: UniLib::controller::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mTargetBlock(block), mLines(lines)
+			: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mTargetBlock(block), mLines(lines)
 		{
 
 		}

@@ -8,15 +8,15 @@
 #include "Poco/AtomicCounter.h"
 
 #include "task/CPUSheduler.h"
-#include "lib/JsonRequest.h"
+#include "gradido_blockchain/http/JsonRequest.h"
 
 #include "controller/GroupIndex.h"
 
 namespace ServerGlobals {
 
-	extern UniLib::controller::CPUSheduler* g_CPUScheduler;
-	extern UniLib::controller::CPUSheduler* g_WriteFileCPUScheduler;
-	extern UniLib::controller::CPUSheduler* g_IotaRequestCPUScheduler;
+	extern task::CPUSheduler* g_CPUScheduler;
+	extern task::CPUSheduler* g_WriteFileCPUScheduler;
+	extern task::CPUSheduler* g_IotaRequestCPUScheduler;
 	extern controller::GroupIndex*			g_GroupIndex;
 	extern std::string						g_FilesPath;
 	//! cache timeout in seconds, default 10 minutes

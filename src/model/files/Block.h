@@ -8,7 +8,7 @@
 #include "Poco/Timestamp.h"
 #include "Poco/Timer.h"
 
-#include "../../SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 
 #include "../../lib/FuzzyTimer.h"
 
@@ -16,7 +16,7 @@
 
 namespace model {
 	namespace files {
-		class Block : public FileBase, public UniLib::lib::TimerCallback
+		class Block : public FileBase, public TimerCallback
 		{
 		public:
 			Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
@@ -27,7 +27,7 @@ namespace model {
 			//! called from timer
 			//void checkTimeout(Poco::Timer& timer);
 
-			UniLib::lib::TimerReturn callFromTimer();
+			TimerReturn callFromTimer();
 			const char* getResourceType() const { return "model::files::Block"; }
 
 			//! \return -1 error locking file for reading
@@ -69,7 +69,7 @@ namespace model {
 
 		};
 
-		class BlockAppendLineTask : UniLib::controller::CPUTask
+		class BlockAppendLineTask : task::CPUTask
 		{
 		public:
 			BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<std::string> lines);

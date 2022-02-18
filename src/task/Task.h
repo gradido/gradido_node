@@ -40,97 +40,93 @@
 #include <assert.h>
 
 
-namespace UniLib {
-    namespace controller {
-	
-		
-        class Task;
-        typedef Poco::AutoPtr<Task> TaskPtr;
+namespace task {
+    class Task;
+    typedef Poco::AutoPtr<Task> TaskPtr;
 
-		class Command {
-		public:
-			virtual int taskFinished(Task* task) = 0;
-		};
+	class Command {
+	public:
+		virtual int taskFinished(Task* task) = 0;
+	};
 
 
-        class Task
-        {
-        public:
-            Task();
-            Task(size_t parentTaskPointerArraySize);
-            virtual ~Task();
+	class Task
+	{
+	public:
+		Task();
+		Task(size_t parentTaskPointerArraySize);
+		virtual ~Task();
 
-			virtual bool isReady() { return isAllParentsReady(); }
-            // called from scheduler
-            //! \brief return true if all parent task finished or return false and schedule not already finished parent tasks
-            bool isAllParentsReady();
-            //! \brief return true if task has finished, else false
-            //! automatic scheduling of task if he isn't finished and sheduled yet
-			virtual bool isTaskFinished() { lock(); bool ret = mFinished; unlock(); return ret; }
-            //! \brief called from task scheduler, maybe from another thread
-			//! \return if return 0, mark task as finished
-            virtual int run() = 0;
+		virtual bool isReady() { return isAllParentsReady(); }
+		// called from scheduler
+		//! \brief return true if all parent task finished or return false and schedule not already finished parent tasks
+		bool isAllParentsReady();
+		//! \brief return true if task has finished, else false
+		//! automatic scheduling of task if he isn't finished and sheduled yet
+		virtual bool isTaskFinished() { lock(); bool ret = mFinished; unlock(); return ret; }
+		//! \brief called from task scheduler, maybe from another thread
+		//! \return if return 0, mark task as finished
+		virtual int run() = 0;
 
-			
 
-			void lock();
-			inline void unlock() {mWorkingMutex.unlock();}
 
-            inline void setParentTaskPtrInArray(TaskPtr task, size_t index)
-            {
-                assert(index < mParentTaskPtrArraySize);
-                mParentTaskPtrArray[index] = task;
-            }
+		void lock();
+		inline void unlock() { mWorkingMutex.unlock(); }
+
+		inline void setParentTaskPtrInArray(TaskPtr task, size_t index)
+		{
+			assert(index < mParentTaskPtrArraySize);
+			mParentTaskPtrArray[index] = task;
+		}
 		/*	inline void setParentTaskPtrInArray(DRResourcePtrHolder* resourceHolder, size_t index) {
-                assert(index < mParentTaskPtrArraySize);
-                mParentTaskPtrArray[index] = resourceHolder;
-            }*/
+				assert(index < mParentTaskPtrArraySize);
+				mParentTaskPtrArray[index] = resourceHolder;
+			}*/
 
-			inline void setFinishCommand(Command* command) {mFinishCommand = command;}
+		inline void setFinishCommand(Command* command) { mFinishCommand = command; }
 
-			// from parent
-			virtual const char* getResourceType() const {return "Task";};
+		// from parent
+		virtual const char* getResourceType() const { return "Task"; };
 #ifdef _UNI_LIB_DEBUG
-			virtual const char* getName() const { return mName.data(); }
-			inline void setName(const char* name) { mName = name; }
+		virtual const char* getName() const { return mName.data(); }
+		inline void setName(const char* name) { mName = name; }
 #else
-			virtual const char* getName() const { return ""; }
+		virtual const char* getName() const { return ""; }
 #endif
 
-			// type check
+		// type check
 
-			virtual void scheduleTask(TaskPtr own) = 0;
+		virtual void scheduleTask(TaskPtr own) = 0;
 
-			// for poco auto ptr
-			void duplicate();
-			void release();
-			int getReferenceCount();
+		// for poco auto ptr
+		void duplicate();
+		void release();
+		int getReferenceCount();
 
-			void setTaskFinished();
-        protected:
-			// scheduling only once
-			inline bool isTaskSheduled() {return mTaskScheduled;}
-			inline void taskScheduled() {mTaskScheduled = true;}
-			
-			TaskPtr getParent(int index);
+		void setTaskFinished();
+	protected:
+		// scheduling only once
+		inline bool isTaskSheduled() { return mTaskScheduled; }
+		inline void taskScheduled() { mTaskScheduled = true; }
 
-			bool mTaskScheduled;
-			Command*	mFinishCommand;
-        private:
-            TaskPtr* mParentTaskPtrArray;
-            size_t   mParentTaskPtrArraySize; 
-            Poco::Mutex mWorkingMutex;
-			Poco::FastMutex mReferenceMutex;
-            bool     mDeleted;
-			bool     mFinished;
-			// for poco auto ptr
-			int mReferenceCount;
+		TaskPtr getParent(int index);
+
+		bool mTaskScheduled;
+		Command* mFinishCommand;
+	private:
+		TaskPtr* mParentTaskPtrArray;
+		size_t   mParentTaskPtrArraySize;
+		Poco::Mutex mWorkingMutex;
+		Poco::FastMutex mReferenceMutex;
+		bool     mDeleted;
+		bool     mFinished;
+		// for poco auto ptr
+		int mReferenceCount;
 #ifdef _UNI_LIB_DEBUG
-			std::string mName;
+		std::string mName;
 #endif
-			
-        };
-    }
+
+	};
 }
 
 #endif //__DR_UNIVERSUM_LIB_CONTROLLER_TASK_H__

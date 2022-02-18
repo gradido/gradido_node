@@ -1,6 +1,10 @@
 #include "FileLockManager.h"
 #include <assert.h>
 
+#include "Poco/Thread.h"
+
+#include "../model/files/FileExceptions.h"
+
 FileLockManager::FileLockManager()
 {
 
@@ -48,7 +52,7 @@ bool FileLockManager::tryLock(const std::string& file)
 	return true;
 }
 
-bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount, ErrorList* errorReciver/* = nullptr*/)
+bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 {
 	int timeoutRounds = tryCount;
 	bool fileLocked = false;
@@ -60,9 +64,7 @@ bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount, Erro
 	}
 
 	if (!fileLocked) {
-		if (errorReciver) {
-			errorReciver->addError(new ParamError(__FUNCTION__, "couldn't lock file, waiting 1 sec", file.data()));
-		}
+		throw model::files::LockException("couldn't lock file", file.data());
 		return false;
 	}
 	return true;

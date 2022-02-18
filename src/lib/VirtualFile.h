@@ -13,7 +13,7 @@
 #ifndef __GRADIDO_NODE_LIB_VIRTUAL_FILE
 #define __GRADIDO_NODE_LIB_VIRTUAL_FILE
 
-#include "../SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 #include <assert.h>
 
 class VirtualFile
