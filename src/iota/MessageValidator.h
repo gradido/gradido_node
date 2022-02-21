@@ -4,7 +4,7 @@
 #include "Poco/Thread.h"
 #include "Poco/Condition.h"
 #include "Poco/Logger.h"
-#include "../lib/MultithreadQueue.h"
+#include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "../task/CPUTask.h"
 #include "MessageId.h"
 
@@ -14,20 +14,7 @@
 #include <assert.h>
 
 namespace iota {
-    /*!
-     * @author: einhornimmond
-     * 
-     * @date: 20.10.2021
-     * 
-     * @brief: get messages and milestones from listener and check if messages where confirmed
-     * Get iota milestones and message containing gradido transactions from listener.
-     * For every new message check if they already exist in one of the confirmed milestones
-     * For every new milestone check if already pending messages are included in them and therefore confirmed
-     * Put confirmed messages into blockchain
-     * TODO: Refactor to that it works even if many transaction are incoming at once and the buffer time from OrderingManager isn't enough
-     * Wait with calling popMilestone until the whole list of unconfirmend transaction was checked
-     * 
-     */
+
     //! MAGIC NUMBER: how many milestones in list allowed before deleting the oldest, count of older milestones which are loaded on startup
     //! TODO: try it out to guess best number
     //! TODO: Put it into Config
@@ -36,9 +23,67 @@ namespace iota {
     // we assume that the oldest message are most likely to get confirmed as first
     // so if the oldest not confirmed we don't need to check the newer
     // but just in case we check more than one
-#define MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE 3
+    #define MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE 3
 
-#define MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 500 
+    #define MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 500 
+
+    /*!
+		@author einhornimmond
+
+		@date 20.10.2021
+
+		@brief get messages and milestones from listener and check if messages where confirmed
+
+		Get iota milestones and message containing gradido transactions from MessageListener.
+		For every new message check if they already exist in one of the confirmed milestones
+		For every new milestone check if already pending messages are included in them and therefore confirmed
+		Put confirmed messages into blockchain via OrderingManager
+		TODO: Refactor to that it works even if many transaction are incoming at once and the buffer time from OrderingManager isn't enough
+		Wait with calling popMilestone until the whole list of unconfirmed transaction was checked
+		Use IotaMessageToTransactionTask for processing all IotaMessages for loaded Milestones
+		Use MilestoneLoadingTask for loading Milestones from Iota      
+
+		\startuml
+		(*top) --> ===LOOP_START===
+		--> "Wait on Pending Messages"
+		note top
+            get new messageIDs
+            from MessageListener
+        end note
+        --> if "new messageIds" then 
+			->[arrived] "Call Iota API:\nask for milestoneId for message"
+			if "milestoneId" then
+                -->[not null ]===VALID_MILESTONE===
+				--> "Observe Milestone"
+				note bottom
+                    OrderingManager keep track
+                    of all milestones 
+                    for which messages are processing
+                end note
+
+				===VALID_MILESTONE=== if "messages for this milestone" then
+				->[where already queued] "put message to:\nConfirmedMessage map"
+				--> ===LOOP_START===
+				else
+                    if "milestone is" then
+				    ->[finished with loading] "start IotaMessageToTransactionTask task for milestone"
+				    --> ===LOOP_START===
+                    else
+				        --->[else] "queue first message for this milestone"
+				        --> "start MilestoneLoadingTask"
+                        --> ===LOOP_START===
+                    endif
+                endif
+            else 
+                ->[null]===LOOP_START===
+			endif
+        else
+            ->[not arrived]===LOOP_START===
+        endif
+	    \enduml
+    */
+
+    
 
     class MessageValidator : public Poco::Runnable
     {
@@ -73,14 +118,14 @@ namespace iota {
         std::unordered_map<uint32_t, std::list<MessageId>> mConfirmedMessages;
         Poco::FastMutex mConfirmedMessagesMutex;
 
-        UniLib::lib::MultithreadQueue<MessageId> mPendingMessages;
+        MultithreadQueue<MessageId> mPendingMessages;
         Poco::AtomicCounter mMessageListenerFirstRunCount;
         Poco::AtomicCounter mWaitOnEmptyQueue;
 
     };
 
     // **********************  Milestone Loading Task ****************************
-    class MilestoneLoadingTask : public UniLib::controller::CPUTask
+    class MilestoneLoadingTask : public task::CPUTask
     {
     public:
         MilestoneLoadingTask(int32_t milestoneId, MessageValidator* messageValidator);

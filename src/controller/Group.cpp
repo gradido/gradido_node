@@ -1,4 +1,5 @@
 #include "Group.h"
+#include "RemoteGroup.h"
 #include "sodium.h"
 #include "../ServerGlobals.h"
 #include "../BlockchainOrderExceptions.h"
@@ -7,6 +8,7 @@
 #include "../SingletonManager/LoggerManager.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/model/TransactionFactory.h"
 
 #include "Block.h"
 
@@ -103,48 +105,11 @@ namespace controller {
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
 	}
 
-	bool Group::addTransaction(std::shared_ptr<model::gradido::GradidoBlock> newTransaction)
-	{
-		// check previous transaction
-		if (newTransaction->getID() > 1)
-		{
-			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-			if (mLastTransaction->getID() + 1 != newTransaction->getID()) {
-				throw BlockchainOrderException("last transaction isn't previous transaction");
-			}
-		}
-		
-		// throw exception on error
-		newTransaction->validate(model::gradido::TransactionValidationLevel(
-			model::gradido::TRANSACTION_VALIDATION_SINGLE | // sanity check
-			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE | // check if address has get maximal 1.000 GDD creation in the month on creation transaction
-			model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS // check if send address(es) have enough GDD on transfer, check tx hash
-		), this);
-
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		mLastTransaction = newTransaction;
-		auto block = getCurrentBlock();
-		if (block.isNull()) {
-			newTransaction->addError(new Error(__FUNCTION__, "didn't get valid block"));
-			return false;
-		}
-		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
-		Poco::SharedPtr<model::TransactionEntry> transactionEntry = new model::TransactionEntry(newTransaction, mAddressIndex);
-		updateLastAddressIndex(mAddressIndex->getLastIndex());
-		return block->pushTransaction(transactionEntry);
-
-		// TODO: collect all indices for addresses in this block
-		// after writing to block file, adding to block index
-		// mAddressIndex.getOrAddIndexForAddress()
-
-		//return true;
-	}
-
-	bool Group::addTransactionFromIota(Poco::AutoPtr<model::gradido::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp)
+	bool Group::addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp)
 	{
 		{
 			if (!mWorkingMutex.tryLock(100)) {
-				printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->getJson().data());
+				printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->toJson().data());
 			}
 			else{
 				mWorkingMutex.unlock();
@@ -154,58 +119,47 @@ namespace controller {
 			if (mExitCalled) return false;
 		}
 		
-		//printf("[Group::addTransactionFromIota] milestone: %d\n", iotaMilestoneId);
-		model::TransactionValidationLevel level = model::TRANSACTION_VALIDATION_SINGLE;
-
-		if (isTransactionAlreadyExist(newTransaction)) {
-			printf("skip because transaction already exist\n");
-			return false;
+		if (isTransactionAlreadyExist(newTransaction.get())) {
+			throw GradidoBlockchainTransactionAlreadyExistException("[Group::addTransaction] skip because already exist");
 		}
-
-		auto type = newTransaction->getTransactionBody()->getType();
-
-		switch (type) {
-		case model::gradido::TRANSACTION_CREATION:
-			// check if address has get maximal 1.000 GDD creation in the month
-			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_DATE_RANGE);
-			//uint64_t sum = calculateCreationSum()
-			break;
-		case model::gradido::TRANSACTION_TRANSFER:
-			// check if send address(es) have enough GDD
-			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);
-			// check if outbound transaction also exist
-			if (newTransaction->getTransactionBody()->getTransfer()->isInbound()) {
-				level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_PAIRED);
-				printf("is inbound\n");
-			}
-			else if(newTransaction->getTransactionBody()->getTransfer()->isOutbound()) {
-				printf("is outbound\n");
-			}
-			break;
-		}
-
-		
+				
 		auto lastTransaction = getLastTransaction();
-		uint32_t receivedSeconds = static_cast<uint32_t>(iotaMilestoneTimestamp);
-
-		if (lastTransaction && lastTransaction->getReceivedSeconds() > receivedSeconds) {
-			newTransaction->addError(new Error(__FUNCTION__, "previous transaction is younger than this transaction!"));
-			return false;
+		uint64_t id = 1;
+		if (lastTransaction) {
+			id = lastTransaction->getID() + 1;
 		}
+		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
+		if (newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
+			throw BlockchainOrderException("previous transaction is younger");
+		}
+		// calculate final balance
+		calculateFinalBalance(newGradidoBlock);
 
-		Poco::AutoPtr<model::gradido::GradidoBlock> gradidoBlock(new model::gradido::GradidoBlock(
-			receivedSeconds,
-			std::string((const char*)&iotaMilestoneId, sizeof(uint32_t)),
-			newTransaction,
-			lastTransaction
-		));
-
-		
 		// intern validation
-		newTransaction->setGradidoBlock(gradidoBlock.get());
+		model::gradido::TransactionValidationLevel level = (model::gradido::TransactionValidationLevel)(
+			model::gradido::TRANSACTION_VALIDATION_SINGLE |
+			model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS |
+			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
+			model::gradido::TRANSACTION_VALIDATION_PAIRED
+			);
+
 		printf("validate with level: %d\n", level);
-		if (!newTransaction->validate(level)) {
-			printf("failed: %s\n", newTransaction->getJson().data());
+		auto otherGroup = newGradidoBlock->getGradidoTransaction()->getTransactionBody()->getOtherGroup();
+		model::IGradidoBlockchain* otherBlockchain = nullptr;
+		std::unique_ptr<RemoteGroup> mOtherGroupRemote;
+		if (otherGroup.size()) {
+			auto otherGroupPtr = GroupManager::getInstance()->findGroup(otherGroup);
+			if (!otherGroupPtr.isNull()) {
+				otherBlockchain = otherGroupPtr.get();
+			}
+			else {
+				// we don't usually listen on this group blockchain
+				mOtherGroupRemote = std::make_unique<RemoteGroup>(otherGroup);
+				otherBlockchain = mOtherGroupRemote.get();
+			}
+		}
+		if (!newGradidoBlock->validate(level, this, otherBlockchain)) {
+			printf("failed: %s\n", newTransaction->toJson().data());
 			return false;
 		}
 
@@ -463,7 +417,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	bool Group::isTransactionAlreadyExist(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
+	bool Group::isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction) 
 	{
 		HalfSignature transactionSign(transaction);
 
@@ -522,6 +476,11 @@ namespace controller {
 			transactionNr--;
 			//printf("compare received: %" PRId64 " with border : %" PRId64 "\n", transaction->getReceived().timestamp().raw(), border.timestamp().raw());
 		} while (!transaction.isNull() && transaction->getReceived() > border);
+
+	}
+
+	void Group::calculateFinalBalance(Poco::SharedPtr<model::gradido::GradidoBlock> newGradidoBlock)
+	{
 
 	}
 }

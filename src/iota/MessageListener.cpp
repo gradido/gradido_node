@@ -2,7 +2,7 @@
 
 #include "../SingletonManager/OrderingManager.h"
 #include "../SingletonManager/CacheManager.h"
-#include "../lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
 #include "HTTPApi.h"
 
 namespace iota
@@ -52,14 +52,13 @@ namespace iota
 		unlock();
     }
 	*/
-	UniLib::lib::TimerReturn MessageListener::callFromTimer()
+	TimerReturn MessageListener::callFromTimer()
 	{
-		// main loop, called regulary in separate thread
-		if (!tryLock()) return UniLib::lib::GO_ON;
+		// main loop, called regularly in separate thread
+		if (!tryLock()) return GO_ON;
 		//lock();
 		static const char* function_name = "MessageListener::listener";
 
-		Profiler timeUsed;
 		// collect message ids for index from iota
 		auto messageIds = findByIndex(mIndex);
 		//printf("called getMessageIdsForIndexiation and get %d message ids %s\n", messageIds.size(), timeUsed.string().data());
@@ -67,7 +66,7 @@ namespace iota
 			updateStoredMessages(messageIds);
 		}
 		unlock();
-		return UniLib::lib::GO_ON;
+		return GO_ON;
 	}
 
     void MessageListener::updateStoredMessages(const std::vector<MessageId>& currentMessageIds)

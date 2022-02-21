@@ -5,7 +5,8 @@
 #include "gradido/TransactionBody.pb.h"
 #include <sodium.h>
 #include <exception>
-#include "lib/Profiler.h"
+#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/Decay.h"
 
 #include "ServerGlobals.h"
 
@@ -20,6 +21,8 @@ int main(int argc, char** argv)
 		printf("error initing sodium, early exit\n");
 		return -1;
 	}
+	initDefaultDecayFactors();
+
 	
 	MainServer app;
 	int result = 0;
@@ -28,13 +31,16 @@ int main(int argc, char** argv)
 	}
 	catch (Poco::Exception& ex) {
 		printf("Poco Exception while init: %s\n", ex.displayText().data());
+		unloadDefaultDecayFactors();
 		return -1;
 	}
 	catch (std::exception& ex) {
 		printf("std exception while init: %s\n", ex.what());
+		unloadDefaultDecayFactors();
 		return -2;
 	}
 	ServerGlobals::clearMemory();
+	unloadDefaultDecayFactors();
 	return result;
 }
 #endif

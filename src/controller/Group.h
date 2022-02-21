@@ -47,13 +47,9 @@ namespace controller {
 		// clean up group, stopp all running processes
 		void exit();
 
-		//! \brief Put new transaction to block chain, if valid.
-		//! \return True if valid, else false.
-		bool addTransaction(std::shared_ptr<model::gradido::GradidoBlock> newTransaction);
-
 		
 		//! \brief add transaction from iota into blockchain, important! must be called in correct order
-		bool addTransactionFromIota(std::shared_ptr<model::gradido::GradidoTransaction> newTransaction, uint32_t iotaMilestoneId, uint64_t iotaMilestoneTimestamp);
+		bool addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp);
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
@@ -88,11 +84,13 @@ namespace controller {
 		void updateLastBlockNr(int lastBlockNr);
 		void updateLastTransactionId(int lastTransactionId);
 
-		bool isTransactionAlreadyExist(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
+		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
 		void addSignatureToCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		void fillSignatureCacheOnStartup();
+
+		void calculateFinalBalance(Poco::SharedPtr<model::gradido::GradidoBlock> newGradidoBlock);
 
 		TaskObserver mTaskObserver;
 		iota::MessageListener* mIotaMessageListener;
@@ -121,7 +119,7 @@ namespace controller {
 			HalfSignature(const char* signature) {
 				memcpy(&sign, signature, 32);
 			}
-			HalfSignature(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction) {
+			HalfSignature(const model::gradido::GradidoTransaction* transaction) {
 				auto sigPairs = transaction->getSigMap().sigpair();
 				if (sigPairs.size() == 0) {
 					throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
@@ -146,7 +144,7 @@ namespace controller {
 			int64_t sign[4];
 		};
 		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
-		Poco::FastMutex mSignatureCacheMutex;
+		mutable Poco::FastMutex mSignatureCacheMutex;
 		// Community Server listening on new blocks for his group
 		JsonRequest* mCommunityServer;
 		bool mExitCalled;

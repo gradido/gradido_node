@@ -1,6 +1,6 @@
 #include "MessageValidator.h"
 #include "../task/IotaMessageToTransactionTask.h"
-#include "../SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
@@ -54,7 +54,7 @@ namespace iota {
             // if at least one unconfirmed message exist, check every MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 
             // if it has get a milestone (was confirmed) else wait on the next unconfirmed message which will notify the condition
             mWorkMutex.lock();
-            if (mPendingMessages.size() > 0) {
+            if (!mPendingMessages.empty()) {
                 mCondition.tryWait(mWorkMutex, MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS);
             }
             else {

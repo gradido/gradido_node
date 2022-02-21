@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_TASK_IOTA_MESSAGE_TO_TRANSACTION_TASK
 
 #include "CPUTask.h"
-#include "../model/transactions/GradidoTransaction.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "../iota/MessageId.h"
 /*!
  * @author: einhornimmond
@@ -18,7 +18,7 @@
  */
 
 
-class IotaMessageToTransactionTask : public UniLib::controller::CPUTask
+class IotaMessageToTransactionTask : public task::CPUTask
 {
 public:
     IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, iota::MessageId message);
@@ -35,7 +35,7 @@ protected:
     uint32_t mMilestoneIndex;
     uint64_t mTimestamp;
     iota::MessageId mMessageId;
-    Poco::AutoPtr<model::GradidoTransaction> mTransaction;
+    Poco::AutoPtr<model::gradido::GradidoTransaction> mTransaction;
 };
 
 #endif //__GRADIDO_NODE_TASK_IOTA_MESSAGE_TO_TRANSACTION_TASK

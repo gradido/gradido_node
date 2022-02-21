@@ -1,6 +1,7 @@
 [requires]
 poco/1.9.4
 libsodium/1.0.18
+mpfr/4.1.0
 
 [options]
 poco:enable_json=False
