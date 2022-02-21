@@ -1,0 +1,4 @@
+<map id="controller::Block::addTransaction" name="controller::Block::addTransaction">
+<area shape="rect" id="node1" title="add transaction from Block File, called by Block File, adding to cache and index" alt="" coords="177,5,301,47"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_block.html#aebf036aea9d902c0bee9673659cb737d" title="load transaction from cache or file system" alt="" coords="5,5,129,47"/>
+</map>

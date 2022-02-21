@@ -1,0 +1,6 @@
+<map id="controller::Group::getCurrentBlock" name="controller::Group::getCurrentBlock">
+<area shape="rect" id="node1" title="get current block to write more transactions in it" alt="" coords="5,39,132,80"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a2c4c4112f1d284eff307cb73d324e73f" title=" " alt="" coords="183,5,309,47"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group.html#a9c5730fd4a775de7001947369ef2d9c8" title=" " alt="" coords="180,71,312,112"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_state.html#a4d8631a2bf4fcc4dd95b563f9b204c02" title=" " alt="" coords="360,71,487,112"/>
+</map>

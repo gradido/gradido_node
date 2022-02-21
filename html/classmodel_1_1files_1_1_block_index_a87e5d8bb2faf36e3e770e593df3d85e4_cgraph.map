@@ -1,0 +1,6 @@
+<map id="model::files::BlockIndex::writeToFile" name="model::files::BlockIndex::writeToFile">
+<area shape="rect" id="node1" title="replace Index File with new one, clear blocks after writing into file" alt="" coords="5,23,165,65"/>
+<area shape="rect" id="node2" href="$class_virtual_file.html#ab6f997f913811412a1c85310ff7dd792" title="copy to buffer from src, move cursor" alt="" coords="231,5,346,32"/>
+<area shape="rect" id="node3" href="$class_virtual_file.html#ae43cf874b04266d94e578b500c432e34" title="write memory bin content to file, until cursor position" alt="" coords="213,56,364,83"/>
+<area shape="rect" id="node4" href="$class_file_lock_manager.html#a8399a835b02b2013283423050efa52ba" title=" " alt="" coords="412,56,608,83"/>
+</map>

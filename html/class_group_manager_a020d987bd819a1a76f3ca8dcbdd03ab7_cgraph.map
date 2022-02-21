@@ -1,0 +1,9 @@
+<map id="GroupManager::init" name="GroupManager::init">
+<area shape="rect" id="node1" title="load group index file and fill hash list with group public key = folder name pairs" alt="" coords="5,71,137,98"/>
+<area shape="rect" id="node2" href="$class_group_manager.html#ac42a491ca23c0fec6a46f5cf9bee8a99" title="getting group object from Poco::AccessExpireCache or create if not in cache and put in cache" alt="" coords="185,13,356,39"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_group_index.html#a15cb9709b6cf4cc522b312b551ee02d1" title="collect all froup aliases from unordered map (not the fastest operation from unordered map)" alt="" coords="196,64,345,105"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_group_index.html#ad3221f7b287c384f9942c98ad131fd5e" title="clear and refill hash list and doublet&#39;s vector from mModel protected with fast mutex" alt="" coords="196,129,345,171"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group_index.html#a1cdd2b99d1d916c582200cae9545dd2e" title="get full folder path for group public key if the hash from groupPublicKey exist multiple time,..." alt="" coords="411,5,560,47"/>
+<area shape="rect" id="node6" href="$classcontroller_1_1_group_index.html#a3b95071f1707657968efc8eb60260bc6" title="clear hash list and doublet&#39;s vector" alt="" coords="411,100,560,141"/>
+<area shape="rect" id="node7" href="$classmodel_1_1files_1_1_group_index.html#a657138be96e3fef79390f01e2955b01b" title=" " alt="" coords="404,165,567,207"/>
+</map>

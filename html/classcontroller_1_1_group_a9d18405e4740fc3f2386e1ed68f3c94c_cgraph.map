@@ -1,0 +1,16 @@
+<map id="controller::Group::addTransaction" name="controller::Group::addTransaction">
+<area shape="rect" id="node1" title="add transaction from iota into blockchain, important! must be called in correct order" alt="" coords="5,247,132,288"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a43e1e6d2ed6060d7b652e052f6e2bc37" title=" " alt="" coords="197,5,346,47"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group.html#a7c80fa6a0de211d3228f41f6360848ef" title=" " alt="" coords="197,71,346,112"/>
+<area shape="rect" id="node4" href="$class_group_manager.html#ac42a491ca23c0fec6a46f5cf9bee8a99" title="getting group object from Poco::AccessExpireCache or create if not in cache and put in cache" alt="" coords="186,137,357,163"/>
+<area shape="rect" id="node6" href="$classcontroller_1_1_group.html#a4a20b0f19b33b91503ecc8132cff4da9" title="get current block to write more transactions in it" alt="" coords="208,188,335,229"/>
+<area shape="rect" id="node10" href="$class_group_manager.html#a023ecd32edba5827e65a8228298fdffc" title=" " alt="" coords="180,254,363,281"/>
+<area shape="rect" id="node11" href="$classcontroller_1_1_group.html#a59aa216bd418564b8c56480a88ad5481" title=" " alt="" coords="205,305,337,347"/>
+<area shape="rect" id="node12" href="$classcontroller_1_1_group.html#a97c851d1f29d3fc1071603a70738ba09" title=" " alt="" coords="185,371,358,412"/>
+<area shape="rect" id="node13" href="$classcontroller_1_1_group.html#a0a2547c0b67e7a5b274595b132fb2fd8" title=" " alt="" coords="411,415,576,456"/>
+<area shape="rect" id="node14" href="$classcontroller_1_1_group.html#a8450d18527db451b8ab35ac9c3d0b8f7" title=" " alt="" coords="412,480,575,521"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_group_index.html#a1cdd2b99d1d916c582200cae9545dd2e" title="get full folder path for group public key if the hash from groupPublicKey exist multiple time,..." alt="" coords="419,129,568,171"/>
+<area shape="rect" id="node7" href="$classcontroller_1_1_group.html#a2c4c4112f1d284eff307cb73d324e73f" title=" " alt="" coords="430,295,557,336"/>
+<area shape="rect" id="node8" href="$classcontroller_1_1_group.html#a9c5730fd4a775de7001947369ef2d9c8" title=" " alt="" coords="427,217,559,259"/>
+<area shape="rect" id="node9" href="$classmodel_1_1files_1_1_state.html#a4d8631a2bf4fcc4dd95b563f9b204c02" title=" " alt="" coords="624,415,751,456"/>
+</map>

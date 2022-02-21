@@ -1,0 +1,7 @@
+<map id="task::CPUTask::scheduleTask" name="task::CPUTask::scheduleTask">
+<area shape="rect" id="node1" title="return true if task has finished, else false automatic scheduling of task if he isn&#39;t finished and sh..." alt="" coords="5,64,204,91"/>
+<area shape="rect" id="node2" href="$classtask_1_1_task.html#ac99ce2eb5ddab8f15e0d733abd774491" title=" " alt="" coords="252,5,435,32"/>
+<area shape="rect" id="node3" href="$classtask_1_1_c_p_u_sheduler.html#a48a6a79bed1a3bd44fed61bcffdb287b" title=" " alt="" coords="273,57,414,98"/>
+<area shape="rect" id="node5" href="$classtask_1_1_task.html#ad7551b38fb01a85a24f5bc0eb38398be" title=" " alt="" coords="255,123,432,149"/>
+<area shape="rect" id="node4" href="$classtask_1_1_c_p_u_sheduler.html#ab85c18ac001362cabcb6d3688980cb80" title=" " alt="" coords="483,57,624,98"/>
+</map>

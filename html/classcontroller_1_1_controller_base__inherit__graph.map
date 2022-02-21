@@ -1,0 +1,8 @@
+<map id="controller::ControllerBase" name="controller::ControllerBase">
+<area shape="rect" id="node1" title=" " alt="" coords="476,5,644,83"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_address_index.html" title="Manage address indices for user accounts." alt="" coords="5,314,224,582"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_block.html" title="interface for adding and getting transactions from specific block" alt="" coords="249,285,423,611"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_block_index.html" title="store block index in memory for fast finding transactions" alt="" coords="448,292,672,604"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_group.html" title="Main entry point for adding and searching for transactions TODO: validate transaction on startup." alt="" coords="697,131,917,765"/>
+<area shape="rect" id="node6" href="$classcontroller_1_1_group_index.html" title="storing group folder name in memory in hash list for fast access" alt="" coords="941,365,1091,531"/>
+</map>

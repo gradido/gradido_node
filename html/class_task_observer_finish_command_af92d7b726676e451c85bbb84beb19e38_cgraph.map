@@ -1,0 +1,7 @@
+<map id="TaskObserverFinishCommand::taskFinished" name="TaskObserverFinishCommand::taskFinished">
+<area shape="rect" id="node1" title=" " alt="" coords="5,5,200,47"/>
+<area shape="rect" id="node2" href="$class_task_observer.html#aa0951519dd1424eaa6c1983fb186eb8f" title="remove Tasks" alt="" coords="248,13,427,39"/>
+<area shape="rect" id="node3" href="$class_task_observer.html#abb99f67e09fb4ef4144e983699e51bca" title="remove WriteTransactionsToBlockTask from map and transactions" alt="" coords="475,5,657,47"/>
+<area shape="rect" id="node4" href="$class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9" title="collect all transaction nrs from transactions" alt="" coords="705,5,880,47"/>
+<area shape="rect" id="node5" href="$classtask_1_1_task.html#ae035d934c5935b5414ef6da14a265efd" title=" " alt="" coords="928,13,1043,39"/>
+</map>

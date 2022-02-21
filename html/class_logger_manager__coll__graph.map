@@ -1,0 +1,3 @@
+<map id="LoggerManager" name="LoggerManager">
+<area shape="rect" id="node1" title="hold logger instance in memory for program&#45;wide accesses" alt="" coords="5,5,144,141"/>
+</map>

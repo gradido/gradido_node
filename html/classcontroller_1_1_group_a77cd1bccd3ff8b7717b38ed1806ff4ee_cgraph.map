@@ -1,0 +1,6 @@
+<map id="controller::Group::findTransactions" name="controller::Group::findTransactions">
+<area shape="rect" id="node1" title="Find transactions of account in memory or block chain from a specific month." alt="" coords="5,64,132,105"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a2c4c4112f1d284eff307cb73d324e73f" title=" " alt="" coords="210,5,337,47"/>
+<area shape="rect" id="node3" href="$class_group_manager.html#a023ecd32edba5827e65a8228298fdffc" title=" " alt="" coords="182,71,365,98"/>
+<area shape="rect" id="node4" href="$class_logger_manager.html#a88f5ea1c5a1bf96ccb17ffabc3fd9a9b" title=" " alt="" coords="180,122,367,149"/>
+</map>

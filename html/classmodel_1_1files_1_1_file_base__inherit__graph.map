@@ -1,0 +1,8 @@
+<map id="model::files::FileBase" name="model::files::FileBase">
+<area shape="rect" id="node1" title=" " alt="" coords="326,131,473,252"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_address_index.html" title="File for storing account address indices." alt="" coords="5,351,180,575"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block.html" title=" " alt="" coords="204,300,395,627"/>
+<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_block_index.html" title="Store Block Index Data in binary file." alt="" coords="419,359,579,568"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_state.html" title=" " alt="" coords="603,388,766,539"/>
+<area shape="rect" id="node2" title=" " alt="" coords="317,5,482,83"/>
+</map>

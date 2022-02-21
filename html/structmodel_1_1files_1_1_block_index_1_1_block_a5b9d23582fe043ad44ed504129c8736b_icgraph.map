@@ -1,0 +1,8 @@
+<map id="model::files::BlockIndex::Block::updateHash" name="model::files::BlockIndex::Block::updateHash">
+<area shape="rect" id="node1" title=" " alt="" coords="424,104,584,145"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block_index.html#ae197b4a43d106d58b23a102f2598ca0c" title="read from file, put content into receiver" alt="" coords="208,5,368,47"/>
+<area shape="rect" id="node4" href="$structmodel_1_1files_1_1_block_index_1_1_year_block.html#a9781ad453ea6929dfc08863064ec64b4" title=" " alt="" coords="205,71,371,112"/>
+<area shape="rect" id="node5" href="$structmodel_1_1files_1_1_block_index_1_1_month_block.html#acb90a61d145458d80ddcce57804fd059" title=" " alt="" coords="200,136,376,177"/>
+<area shape="rect" id="node6" href="$structmodel_1_1files_1_1_block_index_1_1_data_block.html#a0dafb095bffca3bb439bddddf9cb3140" title=" " alt="" coords="205,201,371,243"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_block_index.html#a09afd2785b550c464e1173a4bb6e1bb7" title="loading block index from file (or at least try to load)" alt="" coords="5,5,152,47"/>
+</map>

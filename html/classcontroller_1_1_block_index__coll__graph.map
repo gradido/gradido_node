@@ -1,0 +1,8 @@
+<map id="controller::BlockIndex" name="controller::BlockIndex">
+<area shape="rect" id="node1" title="store block index in memory for fast finding transactions" alt="" coords="181,575,405,872"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_controller_base.html" title=" " alt="" coords="5,369,173,446"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_i_block_index_receiver.html" title=" " alt="" coords="198,361,389,453"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block_index.html" title="Store Block Index Data in binary file." alt="" coords="413,303,573,512"/>
+<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_file_base.html" title=" " alt="" coords="420,132,567,253"/>
+<area shape="rect" id="node6" title=" " alt="" coords="411,5,576,83"/>
+</map>
