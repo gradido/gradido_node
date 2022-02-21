@@ -34,14 +34,14 @@ namespace iota {
 
 		@brief get messages and milestones from listener and check if messages where confirmed
 
-		Get iota milestones and message containing gradido transactions from MessageListener.
-		For every new message check if they already exist in one of the confirmed milestones
-		For every new milestone check if already pending messages are included in them and therefore confirmed
-		Put confirmed messages into blockchain via OrderingManager
-		TODO: Refactor to that it works even if many transaction are incoming at once and the buffer time from OrderingManager isn't enough
-		Wait with calling popMilestone until the whole list of unconfirmed transaction was checked
-		Use IotaMessageToTransactionTask for processing all IotaMessages for loaded Milestones
-		Use MilestoneLoadingTask for loading Milestones from Iota      
+		Get iota milestones and message containing gradido transactions from MessageListener.<br>
+		For every new message check if they already exist in one of the confirmed milestones<br>
+		For every new milestone check if already pending messages are included in them and therefore confirmed<br>
+		Put confirmed messages into blockchain via OrderingManager<br>
+		TODO: Refactor to that it works even if many transaction are incoming at once and the buffer time from OrderingManager isn't enough<br>
+		Wait with calling popMilestone until the whole list of unconfirmed transaction was checked<br>
+		Use IotaMessageToTransactionTask for processing all IotaMessages for loaded Milestones<br>
+		Use MilestoneLoadingTask for loading Milestones from Iota.<br>
 
 		\startuml
 		(*top) --> ===LOOP_START===
