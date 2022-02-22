@@ -63,27 +63,19 @@ namespace controller {
 
 	}
 
-	bool Block::addTransaction(const std::string& serializedTransaction, int32_t fileCursor)
+	void Block::addTransaction(std::unique_ptr<std::string> serializedTransaction, int32_t fileCursor)
 	{
 		auto gm = GroupManager::getInstance();
 		auto group = gm->findGroup(mGroupAlias);
-		try {
-			Poco::SharedPtr<model::TransactionEntry> transactionEntry(new model::TransactionEntry(serializedTransaction, fileCursor, group));
-			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-			mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
-			return true;
-		}
-		catch (Poco::Exception& e) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Block::addTransactio] couldn't load Transaction from serialized data, fileCursor: %d", fileCursor);
-			return false;
-		}
-
-		return false;
+		
+		Poco::SharedPtr<model::TransactionEntry> transactionEntry(new model::TransactionEntry(std::move(serializedTransaction), fileCursor, group));
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}
 
-	int Block::getTransaction(uint64_t transactionNr, std::string* serializedTransaction)
+	Poco::SharedPtr<model::TransactionEntry> Block::getTransaction(uint64_t transactionNr)
 	{
-		if (transactionNr == 0) return -1;
+		assert(transactionNr);
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
@@ -93,31 +85,17 @@ namespace controller {
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
 				// maybe it was already deleted from cache but not written to file yet, especially happen while debugging
 				if (!mTransactionWriteTask.isNull()) {
-					transactionEntry = mTransactionWriteTask->getTransaction(transactionNr);
-					if (!transactionEntry.isNull()) {
-						serializedTransaction = transactionEntry->getSerializedTransaction();
-						return 0;
-					}
+					return mTransactionWriteTask->getTransaction(transactionNr);
 				}
-				return -2;
+				throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
 			}
-			std::string blockLine;
-			auto readResult = mBlockFile->readLine(fileCursor, blockLine);
-			if (readResult) {
-				LoggerManager::getInstance()->mErrorLogging.error("[Block::getTransaction] error reading line from block file: %d, fileCursor: %d", readResult, fileCursor);
-				return -3;
-			}
-			if (!addTransaction(blockLine, fileCursor)) {
-				return -4;
-			}
-			transactionEntry = mSerializedTransactions.get(transactionNr);
+			auto blockLine = mBlockFile->readLine(fileCursor);			
+			addTransaction(std::move(blockLine), fileCursor);
+			return mSerializedTransactions.get(transactionNr);
 		}
-		if (transactionEntry.isNull()) {
-			return -1;
+		else {
+			return transactionEntry;
 		}
-
-		serializedTransaction = transactionEntry->getSerializedTransaction();
-		return 0;
 	}
 
 	void Block::checkTimeout(Poco::Timer& timer)

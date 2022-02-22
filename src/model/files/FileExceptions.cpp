@@ -50,5 +50,43 @@ namespace model {
 		{
 			return what();
 		}
+
+		// ********************** File Hash Missing **************************************
+		HashMissingException::HashMissingException(const char* what, const char* filename) noexcept
+			: GradidoBlockchainException(what), mFilename(filename)
+		{
+
+		}
+
+		std::string HashMissingException::getFullString() const
+		{
+			std::string resultString;
+			size_t resultSize = strlen(what()) + mFilename.size() + 2 + 8;
+			resultString.reserve(resultSize);
+			resultString = what();
+			resultString += ", file: " + mFilename;
+			return resultString;
+		}
+
+		// *********************** End Reached Exception ****************************
+		EndReachingException::EndReachingException(const char* what, const char* filename, int readCursor, size_t blockSize) noexcept
+			: GradidoBlockchainException(what), mFilename(filename), mReadCursor(readCursor), mBlockSize(blockSize)
+		{
+
+		}
+
+		std::string EndReachingException::getFullString() const
+		{
+			std::string resultString;
+			std::string readCursorString = std::to_string(mReadCursor);
+			std::string blockSizeString = std::to_string(mBlockSize);
+			size_t resultSize = strlen(what()) + mFilename.size() + readCursorString.size() + blockSizeString.size() + 2 + 8 + 27;
+			resultString.reserve(resultSize);
+
+			resultString = what();
+			resultString += ", file: " + mFilename;
+			resultString += ", try to read from " + readCursorString + ", " + blockSizeString + " bytes";
+			return resultString;
+		}
 	}
 }

@@ -41,7 +41,7 @@ namespace controller {
 		bool pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction);
 		
 		//! \brief load transaction from cache or file system
-		int getTransaction(uint64_t transactionNr, std::string* serializedTransaction);
+		Poco::SharedPtr<model::TransactionEntry> getTransaction(uint64_t transactionNr);
 
 		//! \brief called from timeout manager for scheduling WriteTransactionsToBlockTask 
 		void checkTimeout(Poco::Timer& timer);
@@ -57,7 +57,7 @@ namespace controller {
 			
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
-		bool addTransaction(const std::string& serializedTransaction, int32_t fileCursor);
+		void addTransaction(std::unique_ptr<std::string> serializedTransaction, int32_t fileCursor);
 
 		//Poco::Timer mTimer;
 		

@@ -14,6 +14,9 @@
 
 #include "../../task/CPUTask.h"
 
+//! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
+#define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
+
 namespace model {
 	namespace files {
 		class Block : public FileBase, public TimerCallback
@@ -34,7 +37,7 @@ namespace model {
 			//! \return -2 error invalid size (greater as file size)
 			//! \return -3 error if startReading is greater than mCurrentFileSize
 			//! \return 0 ok
-			int readLine(Poco::UInt32 startReading, std::string& resultString);
+			std::unique_ptr<std::string> readLine(Poco::UInt32 startReading);
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)

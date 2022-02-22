@@ -1,4 +1,5 @@
 #include "Block.h"
+#include "FileExceptions.h"
 
 #include "../../SingletonManager/FileLockManager.h"
 #include "../../SingletonManager/LoggerManager.h"
@@ -75,14 +76,16 @@ namespace model {
 			return GO_ON;
 		}
 		
-		int Block::readLine(Poco::UInt32 startReading, std::string& resultString)
+		std::unique_ptr<std::string> Block::readLine(Poco::UInt32 startReading)
 		{
 			// set also mCurrentFileSize
 			auto fileStream = getOpenFile();
-
-			if (mCurrentFileSize <= (sizeof(Poco::UInt16) + 25)) return -4;
-			if (startReading > mCurrentFileSize - (sizeof(Poco::UInt16) + 25)) {
-				return -3;
+			auto minimalFileSize = sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
+			if (mCurrentFileSize <= minimalFileSize) {
+				throw EndReachingException("file is smaller than minimal block size", mBlockPath.toString().data(), 0, minimalFileSize);
+			}
+			if (startReading > mCurrentFileSize - minimalFileSize) {
+				throw EndReachingException("file is to small for read request", mBlockPath.toString().data(), startReading, minimalFileSize);
 			}
 			Profiler timeUsed;
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
@@ -90,7 +93,7 @@ namespace model {
 			auto mm = MemoryManager::getInstance();
 			std::string filePath = mBlockPath.toString();
 			if (!fl->tryLockTimeout(filePath, 100)) {
-				return -1;
+				throw LockException("cannot lock file for reading", filePath.data());
 			}
 			
 			Poco::UInt16 transactionSize = 0;
@@ -98,16 +101,14 @@ namespace model {
 			fileStream->read((char*)&transactionSize, sizeof(Poco::UInt16));
 			if (startReading + transactionSize > mCurrentFileSize) {
 				fl->unlock(filePath);
-				return -2;
+				throw EndReachingException("file is to small for transaction size", mBlockPath.toString().data(), startReading, transactionSize);
 			}
-			std::vector<char> lineVector(transactionSize);
-			fileStream->read(lineVector.data(), transactionSize);
-			
-
+			std::unique_ptr<std::string> resultString(new std::string);
+			resultString->reserve(transactionSize);
+			fileStream->read(resultString->data(), transactionSize);			
 			fl->unlock(filePath);
 
-			resultString = std::string(lineVector.begin(), lineVector.end());
-			return 0;
+			return std::move(resultString);
 		}
 
 

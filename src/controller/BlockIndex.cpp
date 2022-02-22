@@ -250,7 +250,7 @@ namespace controller {
 		return result;
 	}
 
-	uint64_t BlockIndex::findLastTransactionForAddress(uint32_t addressIndex, uint32_t coinColor = 0)
+	uint64_t BlockIndex::findLastTransactionForAddress(uint32_t addressIndex, uint32_t coinColor/* = 0*/)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		std::vector<uint64_t> result;
