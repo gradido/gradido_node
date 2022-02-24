@@ -12,8 +12,8 @@ using Poco::SharedPtr;
 
 #include "ServerGlobals.h"
 
-#include "iota/HTTPApi.h"
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/http/IotaRequest.h"
 
 namespace ServerGlobals {
 
@@ -26,7 +26,7 @@ namespace ServerGlobals {
 	Poco::UInt16						g_TimeoutCheck = 60;
 	Poco::UInt16						g_WriteToDiskTimeout = 10;
 	Context::Ptr g_SSL_CLient_Context = nullptr;
-	JsonRequest* g_IotaRequestHandler = nullptr;
+	IotaRequest* g_IotaRequestHandler = nullptr;
 	Poco::AtomicCounter              g_NumberExistingTasks;
 	bool								g_LogTransactions = false;
 
@@ -90,7 +90,7 @@ namespace ServerGlobals {
 		// mainnet:
 		// chrysalis-nodes.iota.org
         int iota_port = cfg.getInt("iota.port", 443);
-		g_IotaRequestHandler = new JsonRequest(iota_host, iota_port, "/api/v1/");
+		g_IotaRequestHandler = new IotaRequest(iota_host, iota_port, "/api/v1/");
 
         return true;
 	}

@@ -2,7 +2,9 @@
 #include "RemoteGroup.h"
 #include "sodium.h"
 #include "../ServerGlobals.h"
-#include "../BlockchainOrderExceptions.h"
+
+#include "../SystemExceptions.h"
+#include "ControllerExceptions.h"
 
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
@@ -72,7 +74,7 @@ namespace controller {
 		if (mCommunityServer) {
 			delete mCommunityServer;
 		}
-		mCommunityServer = new JsonRequest(uri.getHost(), uri.getPort(), uri.getPathAndQuery());
+		mCommunityServer = new JsonRequest(uri);
 	}
 
 	void Group::exit()
@@ -109,6 +111,7 @@ namespace controller {
 	{
 		{
 			if (!mWorkingMutex.tryLock(100)) {
+				// TODO: use exception
 				printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->toJson().data());
 			}
 			else{
@@ -158,45 +161,52 @@ namespace controller {
 				otherBlockchain = mOtherGroupRemote.get();
 			}
 		}
-		if (!newGradidoBlock->validate(level, this, otherBlockchain)) {
-			printf("failed: %s\n", newTransaction->toJson().data());
-			return false;
-		}
+		// if something went wrong, it throws an exception
+		newGradidoBlock->validate(level, this, otherBlockchain);		
 
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto block = getCurrentBlock();
 		if (block.isNull()) {
-			newTransaction->addError(new Error(__FUNCTION__, "didn't get valid block"));
-			return false;
+			throw BlockNotLoadedException("don't get a valid current block", mGroupAlias, mLastBlockNr);
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
-		Poco::SharedPtr<model::TransactionEntry> transactionEntry = new model::TransactionEntry(gradidoBlock, mAddressIndex);
+		Poco::SharedPtr<model::TransactionEntry> transactionEntry = new model::TransactionEntry(newGradidoBlock, mAddressIndex);
 		bool result = block->pushTransaction(transactionEntry);
 		if (result) {
-			mLastTransaction = gradidoBlock;
-			updateLastTransactionId(gradidoBlock->getID());
+			mLastTransaction = newGradidoBlock;
+			updateLastTransactionId(newGradidoBlock->getID());
 			// TODO: move call to better place
 			updateLastAddressIndex(mAddressIndex->getLastIndex());
-			addSignatureToCache(newTransaction);
+			addSignatureToCache(newGradidoBlock);
+			
 			//std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
 			printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
 				__FUNCTION__, mLastTransaction->getID(), mGroupAlias.data(), mLastTransaction->getMessageIdHex().data(), 
-				mLastTransaction->getReceivedSeconds(), mLastTransaction->getGradidoTransaction()->getJson().data()
+				mLastTransaction->getReceived(), mLastTransaction->getGradidoTransaction()->toJson().data()
 			);
 			// say community server that a new transaction awaits him
 			if (mCommunityServer) {
-				ErrorList errors;
-				auto result = mCommunityServer->PATCH(&errors);
-				if (!errors.errorCount()) {
-					StringBuffer buffer;
-					PrettyWriter<StringBuffer> writer(buffer);
-					result.Accept(writer);
+				Value params(kObjectType);
+				auto alloc = mCommunityServer->getJsonAllocator();
+				auto transactionBase64 = DataTypeConverter::binToBase64(mLastTransaction->getSerialized());
+				params.AddMember("transactionBase64", Value(transactionBase64.get()->data(), alloc), alloc);
+				try {
+					auto result = mCommunityServer->postRequest(params);
+					if (result.IsObject()) {
+						StringBuffer buffer;
+						PrettyWriter<StringBuffer> writer(buffer);
+						result.Accept(writer);
 
-					printf(buffer.GetString());
+						printf(buffer.GetString());
+					}
 				}
-				else {
-					errors.printErrors();
+				catch (RapidjsonParseErrorException& ex) {
+					printf("[Group::addTransaction] Result Json Exception: %s\n", ex.getFullString().data());
 				}
+				catch (Poco::Exception& ex) {
+					printf("[Group::addTransaction] Poco Exception: %s\n", ex.displayText().data());
+				}
+				
 			}
 		}
 		return result;
@@ -222,14 +232,14 @@ namespace controller {
 		printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
 		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
 			auto body = (*it)->getGradidoTransaction()->getTransactionBody();
-			if (body->getType() == model::gradido::TRANSACTION_CREATION) {
-				auto creation = body->getCreation();
+			if (body->getTransactionType() == model::gradido::TRANSACTION_CREATION) {
+				auto creation = body->getCreationTransaction();
 				auto targetDate = creation->getTargetDate();
 				if (targetDate.month() != month || targetDate.year() != year) {
 					continue;
 				}
 				printf("added from transaction: %d \n", (*it)->getID());
-				sum += creation->getRecipiantAmount();
+				sum += creation->getAmount();
 			}
 		}
 		return sum;
@@ -245,9 +255,9 @@ namespace controller {
 	}
 
 	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
-	std::vector<std::string> Group::findTransactionsSerialized(uint64_t fromTransactionId)
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactionsFromXToLast(uint64_t fromTransactionId)
 	{
-		std::vector<std::string> transactionsSerialized;
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactionEntries;
 		uint64_t transactionIdCursor = fromTransactionId;
 		// we cannot handle zero transaction id, starts with one,
 		// but if someone ask for zero he gets all
@@ -262,25 +272,22 @@ namespace controller {
 			if (block.isNull()) {
 				throw std::runtime_error("[Group::findTransactionsSerialized] cannot find block for transaction id: " + std::to_string(transactionIdCursor));
 			}
-			std::string serializedTransaction;
-			block->getTransaction(transactionIdCursor, serializedTransaction);
-			transactionsSerialized.push_back(serializedTransaction);
+			auto transactionEntry = block->getTransaction(transactionIdCursor);
+			// make copy from serialized transactions
+			transactionEntries.push_back(transactionEntry);
 			++transactionIdCursor;
 
 		}
-		return transactionsSerialized;
+		return transactionEntries;
 	}
 
 	std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> Group::findTransactions(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> transactions;
-		auto gm = GroupManager::getInstance();
-
+		
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
-
-		auto group = gm->findGroup(mGroupAlias);
 
 		int blockCursor = mLastBlockNr;
 		while (blockCursor > 0) {
@@ -289,15 +296,15 @@ namespace controller {
 			auto transactionNrs = blockIndex->findTransactionsForAddress(index);
 			if (transactionNrs.size()) {
 				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-					std::string serializedTransaction;
-					auto result = block->getTransaction(*it, serializedTransaction);
-					if(!serializedTransaction.size()) {
+					
+					auto result = block->getTransaction(*it);
+					if(!result->getSerializedTransaction()->size()) {
 						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
 							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
-					transactions.push_back(new model::gradido::GradidoBlock(serializedTransaction, group));
+					transactions.push_back(new model::gradido::GradidoBlock(result->getSerializedTransaction()));
 				}
 			}
 			blockCursor--;
@@ -306,7 +313,7 @@ namespace controller {
 		return transactions;
 	}
 
-	std::shared_ptr<model::gradido::GradidoBlock> Group::getLastTransaction()
+	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction()
 	{
 		if (mLastTransaction) {
 			return mLastTransaction;
@@ -315,13 +322,12 @@ namespace controller {
 			return nullptr;
 		}
 		auto block = getBlock(mLastBlockNr);
-		std::unique_ptr<std::string> serializedTransaction(new std::string);
-		if (block->getTransaction(mLastTransactionId, serializedTransaction.get())) {
-			return nullptr;
-		}
+		// throw an exception if transaction wasn't found
+		auto transaction = block->getTransaction(mLastTransactionId);
+		
 		// call group manager to get shared ptr for this group, maybe replace with auto ptr
 		// but the good thing is the group cache will be updated
-		mLastTransaction = std::make_shared<model::gradido::GradidoBlock>(new model::gradido::GradidoBlock(std::move(serializedTransaction)));
+		mLastTransaction = new model::gradido::GradidoBlock(transaction->getSerializedTransaction());
 		return mLastTransaction;
 	}
 
@@ -329,12 +335,9 @@ namespace controller {
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> transactions;
-		auto gm = GroupManager::getInstance();
-
-		auto index = mAddressIndex->getIndexForAddress(address);
-		if (!index) { return transactions; }
 		
-		auto group = gm->findGroup(mGroupAlias);
+		auto index = mAddressIndex->getIndexForAddress(address);
+		if (!index) { return transactions; }		
 
 		int blockCursor = mLastBlockNr;
 		while (blockCursor > 0) {
@@ -343,15 +346,14 @@ namespace controller {
 			auto transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
 			if (transactionNrs.size()) {
 				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-					std::string serializedTransaction;
-					auto result = block->getTransaction(*it, serializedTransaction);
-					if (!serializedTransaction.size()) {
+					auto result = block->getTransaction(*it);
+					if (!result->getSerializedTransaction()->size()) {
 						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
 							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
-					transactions.push_back(new model::gradido::GradidoBlock(serializedTransaction, group));
+					transactions.push_back(new model::gradido::GradidoBlock(result->getSerializedTransaction()));
 				}
 			}
 			else {
@@ -414,6 +416,7 @@ namespace controller {
 		if (!block.isNull() && block->hasSpaceLeft()) {
 			return block;
 		}
+		// if return nullptr, it seems no space is left on disk or in memory
 		return nullptr;
 	}
 
@@ -429,10 +432,10 @@ namespace controller {
 		return false;
 	}
 
-	void Group::addSignatureToCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
+	void Group::addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
-		mCachedSignatures.add(HalfSignature(transaction), nullptr);
+		mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
 	}
 
 	bool Group::isSignatureInCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
@@ -447,7 +450,7 @@ namespace controller {
 		int blockNr = mLastBlockNr;
 		int transactionNr = mLastTransactionId;
 
-		Poco::AutoPtr<model::gradido::GradidoBlock> transaction;
+		std::unique_ptr<model::gradido::GradidoBlock> transaction;
 		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
 
 		do {
@@ -455,18 +458,14 @@ namespace controller {
 			if (blockNr <= 0) break;
 
 			auto block = getBlock(blockNr);
-			std::string serializedTransaction;
-			auto getTransationResult = block->getTransaction(transactionNr, serializedTransaction);
-			if (-2 == getTransationResult) {
+			if (transactionNr < block->getBlockIndex()->getMinTransactionNr()) {
 				blockNr--;
 				continue;
 			}
-			else if (0 != getTransationResult) {
-				throw TransactionLoadingException(std::to_string(transactionNr), getTransationResult);
-				//throw std::runtime_error("[Group::fillSignatureCacheOnStartup] couldn't load transaction: " + std::to_string(transactionNr));
-			}
-			transaction = new model::gradido::GradidoBlock(serializedTransaction, nullptr);
-			auto sigPairs = transaction->getGradidoTransaction()->getProto().sig_map().sigpair();
+			
+			auto transactionEntry = block->getTransaction(transactionNr);
+			transaction = std::make_unique<model::gradido::GradidoBlock>(new model::gradido::GradidoBlock(transactionEntry->getSerializedTransaction()));
+			auto sigPairs = transaction->getGradidoTransaction()->getProto()->sig_map().sigpair();
 			if (sigPairs.size()) {
 				auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());
 				//printf("[Group::fillSignatureCacheOnStartup] add signature: %s\n", signature.data());
@@ -475,12 +474,13 @@ namespace controller {
 			}
 			transactionNr--;
 			//printf("compare received: %" PRId64 " with border : %" PRId64 "\n", transaction->getReceived().timestamp().raw(), border.timestamp().raw());
-		} while (!transaction.isNull() && transaction->getReceived() > border);
+			
+		} while (transaction && transaction->getReceived() > border);
 
 	}
 
 	void Group::calculateFinalBalance(Poco::SharedPtr<model::gradido::GradidoBlock> newGradidoBlock)
 	{
-
+		throw std::runtime_error("not implemented yet");
 	}
 }

@@ -40,44 +40,40 @@
 #include "Poco/Logger.h"
 #endif
 
-namespace UniLib {
-    namespace controller {
+namespace task {
 
-		class  Task;
-		typedef Poco::AutoPtr<Task> TaskPtr;
-		class CPUSheduler;
+	class  Task;
+	typedef Poco::AutoPtr<Task> TaskPtr;
+	class CPUSheduler;
 
-
-
-        class  CPUShedulerThread : public lib::Thread
-        {
-        public: 
-            CPUShedulerThread(CPUSheduler* parent, const char* name);			
-            virtual ~CPUShedulerThread();
+    class  CPUShedulerThread : public Thread
+    {
+    public: 
+        CPUShedulerThread(CPUSheduler* parent, const char* name);			
+        virtual ~CPUShedulerThread();
 			
-			//! \brief will be called every time from thread, when condSignal was called
-			//! will be called from thread with locked working mutex,<br>
-			//! mutex will be unlock after calling this function
-			//! \return if return isn't 0, thread will exit
-			virtual int ThreadFunction();
+		//! \brief will be called every time from thread, when condSignal was called
+		//! will be called from thread with locked working mutex,<br>
+		//! mutex will be unlock after calling this function
+		//! \return if return isn't 0, thread will exit
+		virtual int ThreadFunction();
 
-			void setNewTask(TaskPtr cpuTask);
+		void setNewTask(TaskPtr cpuTask);
 
 #ifdef _UNI_LIB_DEBUG
-			std::string getName() {return mName;}
+		std::string getName() {return mName;}
 #endif
-        protected:
+    protected:
 #ifdef _UNI_LIB_DEBUG
-			std::string mName;
-			Poco::Logger& mSpeedLog;
+		std::string mName;
+		Poco::Logger& mSpeedLog;
 #endif
 			
-		private: 
-			TaskPtr mWaitingTask;
-			CPUSheduler* mParent;
+	private: 
+		TaskPtr mWaitingTask;
+		CPUSheduler* mParent;
 
-        };
-    }
+    };
 }
 
 #endif //__DR_UNIVERSUM_LIB_CONTROLLER_CPU_SHEDULER_THREAD_H__

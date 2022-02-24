@@ -61,7 +61,7 @@ namespace iota
 
     protected:
 
-        void updateStoredMessages(const std::vector<MessageId>& currentMessageIds);
+        void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
 
         std::string mIndex; 
         //Poco::Timer mListenerTimer;

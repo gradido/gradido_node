@@ -3,7 +3,7 @@
 #include "../SingletonManager/OrderingManager.h"
 #include "../SingletonManager/CacheManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
-#include "HTTPApi.h"
+#include "../ServerGlobals.h"
 
 namespace iota
 {
@@ -60,7 +60,7 @@ namespace iota
 		static const char* function_name = "MessageListener::listener";
 
 		// collect message ids for index from iota
-		auto messageIds = findByIndex(mIndex);
+		auto messageIds = ServerGlobals::g_IotaRequestHandler->findByIndex(mIndex);
 		//printf("called getMessageIdsForIndexiation and get %d message ids %s\n", messageIds.size(), timeUsed.string().data());
 		if (messageIds.size()) {
 			updateStoredMessages(messageIds);
@@ -69,9 +69,10 @@ namespace iota
 		return GO_ON;
 	}
 
-    void MessageListener::updateStoredMessages(const std::vector<MessageId>& currentMessageIds)
+    void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
     {
 		auto om = OrderingManager::getInstance();
+		auto mm = MemoryManager::getInstance();
 		auto validator = om->getIotaMessageValidator();
 		if (mFirstRun) {
 			validator->firstRunStart();
@@ -96,7 +97,9 @@ namespace iota
 		for (auto it = currentMessageIds.begin(); it != currentMessageIds.end(); it++)
 		{
 			// check if it exist
-			const MessageId& messageId = *it;
+			MessageId messageId;
+			messageId.fromMemoryBin(*it);
+			mm->releaseMemory(*it);
 			auto storedIt = mStoredMessageIds.find(messageId);
 			if (storedIt != mStoredMessageIds.end()) {
 				// update status if already exist

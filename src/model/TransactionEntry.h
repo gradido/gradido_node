@@ -29,7 +29,7 @@ namespace model {
 		//! \brief init entry object from serialized transaction, deserialize transaction to get infos
 		TransactionEntry(std::unique_ptr<std::string> _serializedTransaction, int32_t fileCursor, Poco::SharedPtr<controller::Group> groupRoot);
 
-		TransactionEntry(Poco::AutoPtr<gradido::GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
+		TransactionEntry(gradido::GradidoBlock* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex);
 
 		//! \brief init entry object from details e.g. by loading from file
 		TransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor, const uint32_t* addressIndices, uint8_t addressIndiceCount);

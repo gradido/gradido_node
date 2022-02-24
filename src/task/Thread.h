@@ -38,42 +38,40 @@
 #include "Poco/Semaphore.h"
 #include "Poco/Condition.h"
 
-namespace UniLib {
-    namespace lib {
-        class Thread : public Poco::Runnable
-        {
-        public:
-            //! \param threadName used since SDL 1.3, for BeOS max. 32, for Linux max 16, for Visual Studio 6.0 max 9 char
-			//! \param createInConstructor set to false if thread shouldn't create in constructor, for example if SDL isn't loaded yet
-            Thread(const char* threadName = NULL, bool createInConstructor = true);
-            virtual ~Thread();
+namespace task {
+    
+    class Thread : public Poco::Runnable
+    {
+    public:
+        //! \param threadName used since SDL 1.3, for BeOS max. 32, for Linux max 16, for Visual Studio 6.0 max 9 char
+		//! \param createInConstructor set to false if thread shouldn't create in constructor, for example if SDL isn't loaded yet
+        Thread(const char* threadName = NULL, bool createInConstructor = true);
+        virtual ~Thread();
 
-            inline void threadLock() {mutex.lock();}
-			inline void threadUnlock() {mutex.unlock();}
-            // signal data chance, will continue thread, if he is paused
-            int condSignal();
+        inline void threadLock() {mutex.lock();}
+		inline void threadUnlock() {mutex.unlock();}
+        // signal data chance, will continue thread, if he is paused
+        int condSignal();
 
-			//! \param threadName used since SDL 1.3, for BeOS max. 32, for Linux max 16, for Visual Studio 6.0 max 9 char
-			int init(const char* threadName);
+		//! \param threadName used since SDL 1.3, for BeOS max. 32, for Linux max 16, for Visual Studio 6.0 max 9 char
+		int init(const char* threadName);
 
-			void run();
-        protected:
-            //! \brief will be called every time from thread, when condSignal was called
-            //! will be called from thread with locked working mutex,<br>
-            //! mutex will be unlock after calling this function
-            //! \return if return isn't 0, thread will exit
-            virtual int ThreadFunction() = 0;
+		void run();
+    protected:
+        //! \brief will be called every time from thread, when condSignal was called
+        //! will be called from thread with locked working mutex,<br>
+        //! mutex will be unlock after calling this function
+        //! \return if return isn't 0, thread will exit
+        virtual int ThreadFunction() = 0;
 
             
 
-            Poco::Mutex		   mutex;
-            Poco::Thread*      mPocoThread;
-            Poco::Condition	   condition;
-            //Poco::Semaphore	   semaphore;
-            bool               exitCalled;
-        };
-
-    }
+        Poco::Mutex		   mutex;
+        Poco::Thread*      mPocoThread;
+        Poco::Condition	   condition;
+        //Poco::Semaphore	   semaphore;
+        bool               exitCalled;
+    };
 }
 
 

@@ -5,13 +5,12 @@
 #include "Poco/URI.h"
 #include "Poco/Logger.h"
 
-#include "../lib/ErrorList.h"
 #include "rapidjson/document.h"
 
-class JsonRequestHandler : public Poco::Net::HTTPRequestHandler
+class JsonRPCRequestHandler : public Poco::Net::HTTPRequestHandler
 {
 public:
-	JsonRequestHandler();
+	JsonRPCRequestHandler();
 
 	void handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response);
 
@@ -19,7 +18,7 @@ public:
 	//virtual void handle(const jsonrpcpp::Request& request, Json& response) = 0;
 	virtual void handle(std::string method, const rapidjson::Value& params) { };
 
-	void parseJsonWithErrorPrintFile(std::istream& request_stream, rapidjson::Document& rapidParams, ErrorList* errorHandler = nullptr, const char* functionName = nullptr);
+	void parseJsonWithErrorPrintFile(std::istream& request_stream, rapidjson::Document& rapidParams);
 	static bool parseQueryParametersToRapidjson(const Poco::URI& uri, rapidjson::Document& rapidParams);
 
 	bool getIntParameter(const rapidjson::Value& params, const char* fieldName, int& iParameter);
@@ -33,7 +32,6 @@ public:
 	bool checkObjectOrArrayParameter(const rapidjson::Value& params, const char* fieldName);
 
 	void stateError(const char* msg, std::string details = "");
-	void stateError(const char* msg, ErrorList* errorReciver);
 	void customStateError(const char* state, const char* msg, std::string details = "");
 	void stateSuccess();
 	void stateWarning(const char* msg, std::string details = "");

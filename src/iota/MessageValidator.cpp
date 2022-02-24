@@ -5,7 +5,6 @@
 #include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
 #include "sodium.h"
-#include "HTTPApi.h"
 #include <assert.h>
 #include <stdexcept>
 
@@ -73,7 +72,7 @@ namespace iota {
             int notConfirmedCount = 0;
             while (mPendingMessages.pop(messageId))
             {
-                auto milestoneId = getMessageMilestoneId(messageId);
+                auto milestoneId = ServerGlobals::g_IotaRequestHandler->getMessageMilestoneId(messageId.toHex());
                 // if messages was already confirmed from iota
                 if (milestoneId) {
                     // pop will be called in IotaMessageToTransactionTask
@@ -155,7 +154,8 @@ namespace iota {
 
     int MilestoneLoadingTask::run()
     {
-        auto milestoneTimestamp = getMilestoneTimestamp(mMilestoneId);
+        auto milestoneTimestamp = ServerGlobals::g_IotaRequestHandler->getMilestoneTimestamp(mMilestoneId);
+
         if (milestoneTimestamp) {
             mMessageValidator->pushMilestone(mMilestoneId, milestoneTimestamp);
         }

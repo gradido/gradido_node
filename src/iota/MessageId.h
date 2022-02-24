@@ -43,6 +43,7 @@ namespace iota
 
 		void fromByteArray(const char* byteArray);
 		void fromHex(std::string hex);
+		void fromMemoryBin(const MemoryBin* bin);
 		MemoryBin* toMemoryBin();
 		std::string toHex() const;
 		bool isEmpty() const;

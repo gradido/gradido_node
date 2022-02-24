@@ -55,9 +55,10 @@ namespace controller {
 		//! \param address Address = user account public key.
 		Poco::AutoPtr<model::gradido::GradidoBlock> findLastTransaction(const std::string& address);
 
-		std::shared_ptr<model::gradido::GradidoBlock> getLastTransaction();
+		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
 
-		std::vector<std::string> findTransactionsSerialized(uint64_t fromTransactionId);
+		//! \brief return vector with transaction entries from xTransactionId until last known transaction
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactionsFromXToLast(uint64_t xTransactionId);
 		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 		//!
 		//! Use with care, can need some time and return huge amount of data.
@@ -85,7 +86,7 @@ namespace controller {
 		void updateLastTransactionId(int lastTransactionId);
 
 		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
-		void addSignatureToCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
+		void addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		void fillSignatureCacheOnStartup();
@@ -99,7 +100,7 @@ namespace controller {
 		Poco::SharedPtr<AddressIndex> mAddressIndex;
 		model::files::State mGroupState;
 
-		std::shared_ptr<model::gradido::GradidoBlock> mLastTransaction;
+		Poco::SharedPtr<model::gradido::GradidoBlock> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;

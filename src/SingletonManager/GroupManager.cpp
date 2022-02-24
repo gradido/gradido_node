@@ -4,7 +4,7 @@
 #include "Poco/File.h"
 
 #include "../ServerGlobals.h"
-#include "../lib/Exceptions.h"
+
 
 GroupManager::GroupManager()
 	: mInitalized(false), mGroupIndex(nullptr)
@@ -47,9 +47,9 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 				group->setListeningCommunityServer(Poco::URI(config.getString(communityNewBlockUri)));
 			}
 		}
-		catch (TransactionLoadingException& ex) {
-			printf("group: %s, %s: transaction nr: %s, error: %d\n",
-				it->data(), ex.name(), ex.message().data(), ex.code()
+		catch (GradidoBlockchainTransactionNotFoundException& ex) {
+			printf("group: %s, exception: %s\n",
+				it->data(), ex.getFullString().data()
 			);
 			return -1;
 		}

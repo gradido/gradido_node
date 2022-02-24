@@ -8,7 +8,7 @@
 #include "Poco/AtomicCounter.h"
 
 #include "task/CPUSheduler.h"
-#include "gradido_blockchain/http/JsonRequest.h"
+#include "gradido_blockchain/http/IotaRequest.h"
 
 #include "controller/GroupIndex.h"
 
@@ -26,7 +26,7 @@ namespace ServerGlobals {
 	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
 	extern Poco::UInt16						g_WriteToDiskTimeout;
 	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
-	extern JsonRequest* g_IotaRequestHandler;
+	extern IotaRequest* g_IotaRequestHandler;
 	extern Poco::AtomicCounter              g_NumberExistingTasks;
 	extern bool								g_LogTransactions;
 

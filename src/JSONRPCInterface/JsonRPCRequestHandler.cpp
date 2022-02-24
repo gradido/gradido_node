@@ -1,9 +1,10 @@
-#include "JsonRequestHandler.h"
+#include "JsonRPCRequestHandler.h"
 
 #include "Poco/Net/HTTPServerRequest.h"
 #include "Poco/Net/HTTPServerResponse.h"
 
-#include "../lib/DataTypeConverter.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/GradidoBlockchainException.h"
 
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -13,16 +14,17 @@
 
 //#include <exception>
 #include <memory>
+#include <sstream>
 
 using namespace rapidjson;
 
-JsonRequestHandler::JsonRequestHandler()
+JsonRPCRequestHandler::JsonRPCRequestHandler()
 	: mResponseJson(kObjectType), mResponseResult(kObjectType)
 {
 
 }
 
-void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
+void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
 {
 
 	response.setChunkedTransferEncoding(false);
@@ -96,7 +98,7 @@ void JsonRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Po
 }
 
 
-bool JsonRequestHandler::parseQueryParametersToRapidjson(const Poco::URI& uri, Document& rapidParams)
+bool JsonRPCRequestHandler::parseQueryParametersToRapidjson(const Poco::URI& uri, Document& rapidParams)
 {
 	auto queryParameters = uri.getQueryParameters();
 	rapidParams.SetObject();
@@ -115,7 +117,7 @@ bool JsonRequestHandler::parseQueryParametersToRapidjson(const Poco::URI& uri, D
 	return true;
 }
 
-void JsonRequestHandler::parseJsonWithErrorPrintFile(std::istream& request_stream, Document& rapidParams, ErrorList* errorHandler /* = nullptr*/, const char* functionName /* = nullptr*/)
+void JsonRPCRequestHandler::parseJsonWithErrorPrintFile(std::istream& request_stream, Document& rapidParams)
 {
 	// debugging answer
 
@@ -126,23 +128,15 @@ void JsonRequestHandler::parseJsonWithErrorPrintFile(std::istream& request_strea
 
 	rapidParams.Parse(responseStringStream.str().data());
 	if (rapidParams.HasParseError()) {
-		auto error_code = rapidParams.GetParseError();
-		if (errorHandler) {
-			errorHandler->addError(new ParamError(functionName, "error parsing request answer", error_code));
-			errorHandler->addError(new ParamError(functionName, "position of last parsing error", rapidParams.GetErrorOffset()));
-		}
-		std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d_%m_%yT%H_%M_%S");
-		std::string filename = dateTimeString + "_response.html";
-		FILE* f = fopen(filename.data(), "wt");
-		if (f) {
-			std::string responseString = responseStringStream.str();
-			fwrite(responseString.data(), 1, responseString.size(), f);
-			fclose(f);
-		}
+		throw RapidjsonParseErrorException(
+			"JsonRPCRequestHandler::parseJsonWithErrorPrintFile",
+			rapidParams.GetParseError(), 
+			rapidParams.GetErrorOffset()
+		).setRawText(responseStringStream.str());
 	}
 }
 
-void JsonRequestHandler::stateError(const char* msg, std::string details)
+void JsonRPCRequestHandler::stateError(const char* msg, std::string details)
 {
 	auto alloc = mResponseJson.GetAllocator();
 	mResponseResult.AddMember("state", "error", alloc);
@@ -154,26 +148,13 @@ void JsonRequestHandler::stateError(const char* msg, std::string details)
 }
 
 
-void JsonRequestHandler::stateError(const char* msg, ErrorList* errorReciver)
-{
-	auto alloc = mResponseJson.GetAllocator();
-	mResponseResult.AddMember("state", "error", alloc);
-	mResponseResult.AddMember("msg", Value(msg, alloc).Move(), alloc);
-	Value details(kArrayType);
-	auto error_vec = errorReciver->getErrorsArray();
-	for (auto it = error_vec.begin(); it != error_vec.end(); it++) {
-		details.PushBack(Value(it->data(), alloc).Move(), alloc);
-	}
-	mResponseResult.AddMember("details", details.Move(), alloc);
-}
-
-void JsonRequestHandler::stateSuccess()
+void JsonRPCRequestHandler::stateSuccess()
 {
 	mResponseResult.AddMember("state", "success", mResponseJson.GetAllocator());
 }
 
 
-void JsonRequestHandler::customStateError(const char* state, const char* msg, std::string details /* = "" */)
+void JsonRPCRequestHandler::customStateError(const char* state, const char* msg, std::string details /* = "" */)
 {
 	auto alloc = mResponseJson.GetAllocator();
 	mResponseResult.AddMember("state", Value(state, alloc).Move(), alloc);
@@ -185,7 +166,7 @@ void JsonRequestHandler::customStateError(const char* state, const char* msg, st
 }
 
 
-void JsonRequestHandler::stateWarning(const char* msg, std::string details/* = ""*/)
+void JsonRPCRequestHandler::stateWarning(const char* msg, std::string details/* = ""*/)
 {
 	auto alloc = mResponseJson.GetAllocator();
 	mResponseResult.AddMember("state", "warning", alloc);
@@ -198,7 +179,7 @@ void JsonRequestHandler::stateWarning(const char* msg, std::string details/* = "
 
 
 
-bool JsonRequestHandler::getIntParameter(const rapidjson::Value& params, const char* fieldName, int& iParameter)
+bool JsonRPCRequestHandler::getIntParameter(const rapidjson::Value& params, const char* fieldName, int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -216,7 +197,7 @@ bool JsonRequestHandler::getIntParameter(const rapidjson::Value& params, const c
 	return true;
 }
 
-bool JsonRequestHandler::getBoolParameter(const rapidjson::Value& params, const char* fieldName, bool& bParameter)
+bool JsonRPCRequestHandler::getBoolParameter(const rapidjson::Value& params, const char* fieldName, bool& bParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -234,7 +215,7 @@ bool JsonRequestHandler::getBoolParameter(const rapidjson::Value& params, const 
 	return true;
 }
 
-bool JsonRequestHandler::getUIntParameter(const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter)
+bool JsonRPCRequestHandler::getUIntParameter(const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -252,7 +233,7 @@ bool JsonRequestHandler::getUIntParameter(const rapidjson::Value& params, const 
 	return true;
 }
 
-bool JsonRequestHandler::getUInt64Parameter(const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter)
+bool JsonRPCRequestHandler::getUInt64Parameter(const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -269,7 +250,7 @@ bool JsonRequestHandler::getUInt64Parameter(const rapidjson::Value& params, cons
 	iParameter = itr->value.GetUint64();
 	return true;
 }
-bool JsonRequestHandler::getStringParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter)
+bool JsonRPCRequestHandler::getStringParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -287,7 +268,7 @@ bool JsonRequestHandler::getStringParameter(const rapidjson::Value& params, cons
 	return true;
 }
 
-bool JsonRequestHandler::getStringIntParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter)
+bool JsonRPCRequestHandler::getStringIntParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -311,7 +292,7 @@ bool JsonRequestHandler::getStringIntParameter(const rapidjson::Value& params, c
 	return true;
 }
 
-bool JsonRequestHandler::checkArrayParameter(const rapidjson::Value& params, const char* fieldName)
+bool JsonRPCRequestHandler::checkArrayParameter(const rapidjson::Value& params, const char* fieldName)
 {
 
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
@@ -331,7 +312,7 @@ bool JsonRequestHandler::checkArrayParameter(const rapidjson::Value& params, con
 	return true;
 }
 
-bool JsonRequestHandler::checkObjectParameter(const rapidjson::Value& params, const char* fieldName)
+bool JsonRPCRequestHandler::checkObjectParameter(const rapidjson::Value& params, const char* fieldName)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
@@ -350,7 +331,7 @@ bool JsonRequestHandler::checkObjectParameter(const rapidjson::Value& params, co
 	return true;
 }
 
-bool JsonRequestHandler::checkObjectOrArrayParameter(const rapidjson::Value& params, const char* fieldName)
+bool JsonRPCRequestHandler::checkObjectOrArrayParameter(const rapidjson::Value& params, const char* fieldName)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;

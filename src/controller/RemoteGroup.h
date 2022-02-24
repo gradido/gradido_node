@@ -20,9 +20,9 @@ namespace controller {
 	public:
 		RemoteGroup(const std::string& groupAlias);
 
-		std::vector<std::shared_ptr<model::gradido::GradidoBlock>> getAllTransactions(model::gradido::TransactionType type);
-		std::shared_ptr<model::gradido::GradidoBlock> getLastTransaction();
-		std::shared_ptr<model::gradido::GradidoBlock> getTransactionForId(uint64_t transactionId);
+		std::vector<Poco::SharedPtr<model::gradido::GradidoBlock>> getAllTransactions(model::gradido::TransactionType type);
+		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
+		Poco::SharedPtr<model::gradido::GradidoBlock> getTransactionForId(uint64_t transactionId);
 		uint32_t getGroupDefaultCoinColor() const;
 
 	protected:

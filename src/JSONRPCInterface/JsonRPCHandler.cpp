@@ -1,11 +1,13 @@
 #include "JsonRPCHandler.h"
 
 #include "../lib/BinTextConverter.h"
-#include "../lib/DataTypeConverter.h"
-#include "../lib/Profiler.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/lib/Profiler.h"
 #include "../SingletonManager/GroupManager.h"
-#include "../model/transactions/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 #include "Poco/AutoPtr.h"
+
+#include "../model/TransactionEntry.h"
 
 using namespace rapidjson;
 
@@ -13,34 +15,7 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 {
 	auto alloc = mResponseJson.GetAllocator();
 
-	if (method == "puttransaction") {
-		if (!params.IsObject()) {
-			stateError("params not an object");
-			return;
-		}
-		std::string groupString;
-		std::string transactionString;
-		try {
-			 groupString = params["group"].GetString();
-			 transactionString = params["transaction"].GetString();
-		}
-		catch (std::exception& e) {
-			stateError("parameter error");
-			return;
-		}
-
-		auto group = convertBinTransportStringToBin(groupString);
-		printf("transaction: %s\n", groupString.data());
-		auto transaction = convertBinTransportStringToBin(transactionString);
-		if ("" == group || "" == transaction) {
-			stateError("wrong parameter format");
-			return;
-		}
-		else {
-			putTransaction(transaction, group);
-		}
-	}
-	else if (method == "getlasttransaction") {
+	if (method == "getlasttransaction") {
 		stateSuccess();
 		mResponseResult.AddMember("transaction", "", alloc);
 	}
@@ -88,30 +63,6 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 }
 
 
-void JsonRPCHandler::putTransaction(const std::string& transactionBinary, const std::string& groupAlias)
-{
-	Profiler timeUsed;
-	auto alloc = mResponseJson.GetAllocator();
-
-	auto gm = GroupManager::getInstance();
-	auto group = gm->findGroup(groupAlias);
-	Poco::AutoPtr<model::GradidoBlock> transaction(new model::GradidoBlock(transactionBinary, group));
-	transaction->addGroupAlias(groupAlias);
-
-	if (transaction->errorCount() > 0) {
-		stateError("error by parsing transaction", transaction);
-		return;
-	}
-
-	if (!group->addTransaction(transaction)) {
-		stateError("error adding transaction", transaction);
-		return;
-	}
-
-	stateSuccess();
-	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
-}
-
 void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::string& groupAlias)
 {
 	Profiler timeUsed;
@@ -124,14 +75,15 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 		return;
 	}
 	//printf("group found and loaded\n");
-	auto transactions = group->findTransactionsSerialized(fromTransactionId);
+	auto transactions = group->findTransactionsFromXToLast(fromTransactionId);
 	printf("%d transactions for group: %s found\n", transactions.size(), groupAlias.data());
 	stateSuccess();
 	mResponseResult.AddMember("type", "base64", alloc);
 	Value jsonTransactionArray(kArrayType);
-	Poco::AutoPtr<model::GradidoBlock> prevTransaction;
+	Poco::AutoPtr<model::gradido::GradidoBlock> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
-		if (it->size() > 0) {
+		auto transactionSerialized = (*it)->getSerializedTransaction();
+		if (transactionSerialized->size() > 0) {
 			// check for tx hash error			
 			/*Profiler time;
 			Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(*it, group));
@@ -154,9 +106,9 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 				//break;
 			}
 			//*/
-			jsonTransactionArray.PushBack(Value(DataTypeConverter::binToBase64(*it).data(), alloc), alloc);
-			auto base64 = DataTypeConverter::binToBase64(*it);
-			//printf("base 64: %s\n", base64.data());
+			auto base64Transaction = Value(DataTypeConverter::binToBase64(*transactionSerialized).data(), alloc);
+			jsonTransactionArray.PushBack(base64Transaction, alloc);
+			//printf("base 64: %s\n", base64Transaction.GetString());
 		}
 	}
 	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);

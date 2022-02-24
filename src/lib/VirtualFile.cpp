@@ -7,7 +7,7 @@
 #include "../SingletonManager/LoggerManager.h"
 
 VirtualFile::VirtualFile(size_t size)
-	: mBuffer(MemoryManager::getInstance()->getFreeMemory(size)), mCursor(0)
+	: mBuffer(MemoryManager::getInstance()->getMemory(size)), mCursor(0)
 {
 
 }
@@ -88,7 +88,7 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 		auto telled = file.tellg();
 		file.seekg(0, std::ios_base::beg);
 
-		auto fileBuffer = mm->getFreeMemory(telled);
+		auto fileBuffer = mm->getMemory(telled);
 		file.read(*fileBuffer, telled);
 		file.close();
 

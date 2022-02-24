@@ -1,8 +1,9 @@
 #include "MessageId.h"
 
 
-#include "../lib/BinTextConverter.h"
-#include "../lib/DataTypeConverter.h"
+//#include "../lib/BinTextConverter.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "IotaExceptions.h"
 
 namespace iota {
 	MessageId::MessageId() 
@@ -18,13 +19,24 @@ namespace iota {
 
 	void MessageId::fromHex(std::string hex)
 	{
-		auto binString = convertHexToBin(hex);
-		fromByteArray(binString.data());
+		auto bin = DataTypeConverter::hexToBin(hex);// convertHexToBin(hex);
+		if (bin->size() != 4 * sizeof(uint64_t)) {
+			throw MessageIdFormatException("message id hex has wrong size", hex);
+		}
+		memcpy(mMessageId, *bin, 4 * sizeof(uint64_t));
+	}
+
+	void MessageId::fromMemoryBin(const MemoryBin* bin)
+	{
+		if (bin->size() == 4 * sizeof(uint64_t)) {
+			throw MessageIdFormatException("message id as bin has wrong size", DataTypeConverter::binToHex(bin));
+		}
+		memcpy(mMessageId, *bin, 4 * sizeof(uint64_t));
 	}
 
 	MemoryBin* MessageId::toMemoryBin()
 	{
-		auto result = MemoryManager::getInstance()->getFreeMemory(32);
+		auto result = MemoryManager::getInstance()->getMemory(32);
 		memcpy(result->data(), mMessageId, 32);
 		return result;
 	}

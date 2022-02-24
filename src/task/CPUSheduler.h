@@ -40,6 +40,7 @@
 #include <queue>
 
 #include "Poco/AutoPtr.h"
+#include "Poco/Mutex.h"
 
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 

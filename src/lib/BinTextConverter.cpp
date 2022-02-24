@@ -5,7 +5,7 @@
 #include "sodium.h"
 #include "libbase58.h"
 
-#include "../SingletonManager/MemoryManager.h"
+#include "gradido_blockchain/MemoryManager.h"
 
 // additional header for linux
 #include <cstring>
@@ -75,7 +75,7 @@ std::string convertHexToBin(const std::string& hexString)
 	auto mm = MemoryManager::getInstance();
 	size_t hexSize = hexString.size();
 	size_t binSize = (hexSize) / 2;
-	MemoryBin* bin = mm->getFreeMemory(binSize);
+	MemoryBin* bin = mm->getMemory(binSize);
 	memset(*bin, 0, binSize);
 
 	size_t resultBinSize = 0;
@@ -103,7 +103,7 @@ std::string convertBase64ToBin(const std::string& base64String)
 	auto mm = MemoryManager::getInstance();
 	size_t encodedSize = base64String.size();
 	size_t binSize = (encodedSize / 4) * 3;
-	auto bin = mm->getFreeMemory(binSize);
+	auto bin = mm->getMemory(binSize);
 	memset(*bin, 0, binSize);
 
 	size_t resultBinSize = 0;
@@ -133,7 +133,7 @@ std::string convertBase58ToBin(const std::string& base58String)
 	auto mm = MemoryManager::getInstance();
 	size_t encodedSize = base58String.size();
 	size_t binSize = (size_t)ceil(((double)encodedSize / 4.0) * 3.0);
-	auto bin = mm->getFreeMemory(binSize);
+	auto bin = mm->getMemory(binSize);
 	memset(*bin, 0, binSize);
 
 	//size_t resultBinSize = 0;
@@ -155,7 +155,7 @@ std::string convertBinToBase58(const std::string& binString)
 	auto mm = MemoryManager::getInstance();
 	size_t binSize = binString.size();
 	size_t encodedSize = binSize * 138 / 100 + 1;
-	auto encoded = mm->getFreeMemory(encodedSize);
+	auto encoded = mm->getMemory(encodedSize);
 	memset(*encoded, 0, encodedSize);
 
 	if (!b58enc(*encoded, &encodedSize, binString.data(), binSize)) {
@@ -174,7 +174,7 @@ std::string convertBinToBase64(const std::string& binString)
 	size_t binSize = binString.size();
 	size_t encodedSize = sodium_base64_encoded_len(binSize, sodium_base64_VARIANT_ORIGINAL);
 	
-	auto base64 = mm->getFreeMemory(encodedSize);
+	auto base64 = mm->getMemory(encodedSize);
 	memset(*base64, 0, encodedSize);
 
 	size_t resultBinSize = 0;
@@ -194,7 +194,7 @@ std::string convertBinToHex(const std::string& binString)
 	auto mm = MemoryManager::getInstance();
 	size_t hexSize = binString.size() * 2 +1;
 	size_t binSize = binString.size();
-	MemoryBin* hex = mm->getFreeMemory(hexSize);
+	MemoryBin* hex = mm->getMemory(hexSize);
 	memset(*hex, 0, hexSize);
 
 	size_t resultBinSize = 0;

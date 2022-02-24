@@ -1,16 +1,15 @@
 #include "OrderingManager.h"
 #include "LoggerManager.h"
 #include "GlobalStateManager.h"
+#include "GroupManager.h"
 #include <stdexcept>
 #include "../controller/Group.h"
+#include "../controller/ControllerExceptions.h"
 
 #include "Poco/DateTimeFormatter.h"
 
 OrderingManager::OrderingManager()
-    : UniLib::lib::Thread("order"), 
-    mPairedTransactions(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES),
-    //mUnlistenedPairGroups(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES * 2)
-    mUnlistenedPairGroups(1000 * 60 * MAGIC_NUMBER_CROSS_GROUP_TRANSACTION_CACHE_TIMEOUT_MINUTES * 2)
+    : task::Thread("order")
 {
 
 }
@@ -27,15 +26,6 @@ OrderingManager::~OrderingManager()
         delete it->second;
     }
     mMilestonesWithTransactions.clear();
-
-    mPairedTransactionMutex.lock();
-    // print it out on shutdown to see if all transactions are always deleted or
-    // if we need a clear process to check from time to time if there unneeded paired transactions are left over
-    if (mPairedTransactions.size()) {
-        std::clog << "OrderingManager::~OrderingManager" << " left over paired transactions: " << std::to_string(mPairedTransactions.size()) << std::endl;
-    }
-    mPairedTransactionMutex.unlock();
-
     mMilestonesWithTransactionsMutex.unlock();
 }
 
@@ -73,10 +63,9 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 
 int OrderingManager::ThreadFunction()
 {
+    auto gm = GroupManager::getInstance();
     while (true) {
-        // check regulary if an entry was timeout
-        mUnlistenedPairGroups.forceReplace();
-
+        
         // we can only work on the lowest known milestone if no task with this milestone is running
         // the milestone must be processed in order to keep transactions in order and this is essential!
         // if node is starting up, wait until all existing messages are loaded from iota to prevent missing out one
@@ -121,30 +110,28 @@ int OrderingManager::ThreadFunction()
         if (oldestMilestoneTaskObserverIt != mMilestoneTaskObserver.end() && oldestMilestoneTaskObserverIt->first <= milestoneId) {
             return 0;
         }        
-        
-        
+                
         if (mt->transactions.size())
         {
             // sort transaction after creation date if more than one was processed with this milestone
-            mt->transactions.sort([](Poco::AutoPtr<model::GradidoTransaction> a, Poco::AutoPtr<model::GradidoTransaction> b) {
-                return a->getTransactionBody()->getCreatedSeconds() < b->getTransactionBody()->getCreatedSeconds();
+            mt->transactions.sort([](const GradidoTransactionWithGroup& a, const GradidoTransactionWithGroup& b) {
+                return a.transaction->getTransactionBody()->getCreatedSeconds() < b.transaction->getTransactionBody()->getCreatedSeconds();
                 });
 
             printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
 
             for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
-                auto type = (*itTransaction)->getTransactionBody()->getType();
-                auto seconds = (*itTransaction)->getTransactionBody()->getCreatedSeconds();
+                auto transaction = itTransaction->transaction.get();
+                auto type = transaction->getTransactionBody()->getTransactionType();
+                auto seconds = transaction->getTransactionBody()->getCreatedSeconds();
                 printf("transaction type: %d, created: %d\n", type, seconds);
-
-                Poco::AutoPtr<model::GradidoTransaction> transaction = *itTransaction;
-                assert(!transaction->getGroupRoot().isNull());
-
+              
                 // put transaction to blockchain
-                bool result = transaction->getGroupRoot()->addTransactionFromIota(transaction, mt->milestoneId, mt->milestoneTimestamp);
-                if (!result) {
-                    transaction->addError(new Error(__FUNCTION__, "couldn't add transaction"));
+                auto group = gm->findGroup(itTransaction->groupAlias);
+                if (group.isNull()) {
+                    throw controller::GroupNotFoundException("couldn't find group", itTransaction->groupAlias);
                 }
+                bool result = group->addTransaction(std::move(itTransaction->transaction), itTransaction->messageId, mt->milestoneTimestamp);
             }
         }
 
@@ -158,7 +145,10 @@ int OrderingManager::ThreadFunction()
 }
 
 
-int OrderingManager::pushTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction, int32_t milestoneId, uint64_t timestamp)
+int OrderingManager::pushTransaction(
+    std::unique_ptr<model::gradido::GradidoTransaction> transaction, 
+    int32_t milestoneId, uint64_t timestamp, 
+    const std::string& groupAlias, MemoryBin* messageId)
 {
     Poco::ScopedLock<Poco::FastMutex> _lock(mMilestonesWithTransactionsMutex);
     auto it = mMilestonesWithTransactions.find(milestoneId);
@@ -170,79 +160,8 @@ int OrderingManager::pushTransaction(Poco::AutoPtr<model::GradidoTransaction> tr
         it = insertResult.first;
     }
     it->second->mutex.lock();
-    it->second->transactions.push_back(transaction);
+    it->second->transactions.push_back(GradidoTransactionWithGroup(std::move(transaction), groupAlias, messageId));
     it->second->mutex.unlock();
 
     return 0;
-}
-
-
-
-void OrderingManager::pushPairedTransaction(Poco::AutoPtr<model::GradidoTransaction> transaction)
-{
-    Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
-    assert(transaction->getTransactionBody()->isTransfer());
-    auto transfer = transaction->getTransactionBody()->getTransfer();
-    auto pairedTransactionId = transfer->getPairedTransactionId().raw();
-    auto pairedTransactionIdString = Poco::DateTimeFormatter::format(transfer->getPairedTransactionId(), "%dd %H:%M:%S.%i");
-
-    if (!mPairedTransactions.has(pairedTransactionId)) {
-        mPairedTransactions.add(pairedTransactionId, new CrossGroupTransactionPair);
-
-        // DEBUG
-		std::string groupAlias = "<unknown>";
-		auto group = transfer->getGroupRoot();
-		if (!group.isNull()) {
-			groupAlias = group->getGroupAlias();
-		}
-
-		printf("[OrderingManager::pushPairedTransaction] inbound: %d, outbound: %d, paired id: %s, other group: %s, group: %s\n",
-			transfer->isInbound(), transfer->isOutbound(), pairedTransactionIdString.data(), transfer->getOtherGroup().data(), groupAlias.data());
-        if (group.isNull()) {          
-			printf("[OrderingManager::pushPairedTransaction] group alias unknown, memo of transaction: %s\n", transaction->getTransactionBody()->getMemo().data());
-        }
-        // DEBUG end
-    }
-    auto pair = mPairedTransactions.get(pairedTransactionId);
-    pair->setTransaction(transaction);
-}
-
-Poco::AutoPtr<model::GradidoTransaction> OrderingManager::findPairedTransaction(Poco::Timestamp pairedTransactionId, bool outbound)
-{
-    Poco::ScopedLock<Poco::FastMutex> _lock(mPairedTransactionMutex);
-    auto pair = mPairedTransactions.get(pairedTransactionId.raw());
-    if (!pair.isNull()) {
-        if (outbound) {
-            return pair->mOutboundTransaction;
-        }
-        else {
-            return pair->mInboundTransaction;
-        }
-    }
-    return nullptr;
-}
-
-void OrderingManager::checkExternGroupForPairedTransactions(const std::string& groupAlias)
-{
-    //printf("[OrderingManager::checkExternGroupForPairedTransactions] %s\n", groupAlias.data());
-    mUnlistenedPairGroupsMutex.lock();
-    
-    if (!mUnlistenedPairGroups.has(groupAlias)) {
-		// important because cache update only on function call and if long not called
-	    // will remove expired entries on add call
-	    // but my timer are attached inside construct and removed in deconstruct by name index
-	    // so if an old entry with this alias exist, the new entry will created, a new timer attached and then on deconstruct old
-	    // both timer will be removed
-		mUnlistenedPairGroups.forceReplace();
-
-        std::string iotaIndex = "GRADIDO.";
-        iotaIndex += groupAlias;
-        Poco::SharedPtr<iota::MessageListener> messageListener(new iota::MessageListener(iotaIndex));
-        mUnlistenedPairGroups.add(groupAlias, messageListener);
-    }
-    else {
-        // get reset the timeout for removing it from access expire cache
-        mUnlistenedPairGroups.get(groupAlias);
-    }
-    mUnlistenedPairGroupsMutex.unlock();
 }

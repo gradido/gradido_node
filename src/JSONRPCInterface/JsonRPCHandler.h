@@ -1,10 +1,10 @@
 #ifndef __JSON_RPC_INTERFACE_JSON_JSON_RPC_HANDLER_
 #define __JSON_RPC_INTERFACE_JSON_JSON_RPC_HANDLER_
 
-#include "JsonRequestHandler.h"
-#include "../SingletonManager/MemoryManager.h"
+#include "JsonRPCRequestHandler.h"
+#include "gradido_blockchain/MemoryManager.h"
 
-class JsonRPCHandler : public JsonRequestHandler
+class JsonRPCHandler : public JsonRPCRequestHandler
 {
 public:
 	void handle(std::string method, const rapidjson::Value& params);

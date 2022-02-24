@@ -20,14 +20,15 @@ namespace model {
 		}
 	}
 
-	TransactionEntry::TransactionEntry(Poco::AutoPtr<gradido::GradidoBlock> transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex)
+	TransactionEntry::TransactionEntry(gradido::GradidoBlock* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex)
 		: mTransactionNr(transaction->getID()), mSerializedTransaction(transaction->getSerialized()), mFileCursor(-10)
 	{
 		auto received = transaction->getReceived();
 		mMonth = received.month();
 		mYear = received.year();
-		mCoinColor = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase()->getCoinColor();
-		auto addresses = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase()->getInvolvedAddresses();
+		auto transactionBase = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase();
+		mCoinColor = transactionBase->getCoinColor();
+		auto addresses = transactionBase->getInvolvedAddresses();
 		if (addresses.size()) {
 			mAddressIndices = addressIndex->getOrAddIndicesForAddresses(addresses);
 		}

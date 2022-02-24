@@ -89,7 +89,6 @@ namespace controller {
 		auto entry = mAddressIndicesCache.get(firstBytes);
 
 		if (entry.isNull()) {
-
 			Poco::Path addressIndexPath(mGroupPath);
 			addressIndexPath.append(getAddressIndexFilePathForAddress(address));
 
@@ -97,6 +96,7 @@ namespace controller {
 			mAddressIndicesCache.add(firstBytes, newAddressIndex);
 			return newAddressIndex;
 		}
+		return nullptr;
 	}
 
 	Poco::Path AddressIndex::getAddressIndexFilePathForAddress(const std::string& address)
