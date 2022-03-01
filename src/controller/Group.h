@@ -39,8 +39,8 @@ namespace controller {
 	{
 	public:
 		//! \brief Load group states via model::files::GroupState.
-		Group(std::string alias, Poco::Path folderPath);
-		~Group();
+		Group(std::string alias, Poco::Path folderPath, uint32_t coinColor);
+		virtual ~Group();
 
 		// initialize, fill cache
 		bool init();
@@ -49,13 +49,19 @@ namespace controller {
 
 		
 		//! \brief add transaction from iota into blockchain, important! must be called in correct order
-		bool addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp);
+		virtual bool addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp);
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
 		Poco::AutoPtr<model::gradido::GradidoBlock> findLastTransaction(const std::string& address);
 
+		//! \brief return last transaction which was added to this blockchain
 		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
+
+		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
+
+		//! \brief find transaction by messageId, especially used for validate cross group transactions
+		Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly = true);
 
 		//! \brief return vector with transaction entries from xTransactionId until last known transaction
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactionsFromXToLast(uint64_t xTransactionId);
@@ -63,10 +69,13 @@ namespace controller {
 		//!
 		//! Use with care, can need some time and return huge amount of data.
 		//! \param address Address = user account public key.
-		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> findTransactions(const std::string& address);
+		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> findTransactions(const std::string& address);
 		//! \brief Find transactions of account in memory or block chain from a specific month.
 		//! \param address User account public key.
-		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> findTransactions(const std::string& address, int month, int year);
+		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> findTransactions(const std::string& address, int month, int year);
+
+		//! \brief go through all transaction and return transactions
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> getAllTransactions(std::function<bool(model::TransactionEntry*)> filter = nullptr);
 
 		//! \brief Search for creation transactions from specific month and add balances together.
 		//! \param address User account public key.
@@ -75,10 +84,12 @@ namespace controller {
 		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 
 		inline const std::string& getGroupAlias() { return mGroupAlias; }
+		inline uint32_t getGroupDefaultCoinColor() const { return mCoinColor; }
 
 		bool isSignatureInCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
 
 		void setListeningCommunityServer(Poco::URI uri);
+
 
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
@@ -89,7 +100,7 @@ namespace controller {
 		void addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
-		void fillSignatureCacheOnStartup();
+		virtual void fillSignatureCacheOnStartup();
 
 		void calculateFinalBalance(Poco::SharedPtr<model::gradido::GradidoBlock> newGradidoBlock);
 
@@ -104,7 +115,7 @@ namespace controller {
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;
-
+		uint32_t mCoinColor;
 		//std::list<BlockEntry> mBlocks;
 		Poco::AccessExpireCache<Poco::UInt32, Block> mCachedBlocks;
 
@@ -146,6 +157,10 @@ namespace controller {
 		};
 		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
 		mutable Poco::FastMutex mSignatureCacheMutex;
+
+		Poco::ExpireCache<iota::MessageId, uint64_t> mMessageIdTransactionNrCache;
+		mutable Poco::FastMutex mMessageIdTransactionNrCacheMutex;
+
 		// Community Server listening on new blocks for his group
 		JsonRequest* mCommunityServer;
 		bool mExitCalled;

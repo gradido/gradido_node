@@ -6,6 +6,10 @@ SET(CMAKE_CXX_FLAGS "-std=c++17" )
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+IF(WIN32)
+	set(CMAKE_CXX_FLAGS         "/MP")
+ENDIF()
+
 include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"

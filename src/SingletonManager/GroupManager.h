@@ -2,8 +2,7 @@
 #define __GRADIDO_NODE_SINGLETON_MANAGER_GROUP_MANAGER_H
 
 #include "../controller/GroupIndex.h"
-#include "../controller/Group.h"
-
+#include "../controller/GroupRegisterGroup.h"
 
 
 #include "Poco/Mutex.h"

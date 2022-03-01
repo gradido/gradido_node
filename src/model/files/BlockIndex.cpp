@@ -1,7 +1,7 @@
 #include "BlockIndex.h"
 
 #include "Poco/File.h"
-#include "../TransactionEntry.h"
+#include "../NodeTransactionEntry.h"
 #include "../../controller/BlockIndex.h"
 //#include "Poco/FileStream.h"
 
@@ -58,10 +58,10 @@ namespace model {
 			crypto_generichash_update(state, (const unsigned char*)addressIndices, sizeof(uint32_t) * addressIndicesCount);
 		}
 
-		Poco::SharedPtr<TransactionEntry> BlockIndex::DataBlock::createTransactionEntry(uint8_t month, uint16_t year)
+		Poco::SharedPtr<NodeTransactionEntry> BlockIndex::DataBlock::createTransactionEntry(uint8_t month, uint16_t year)
 		{
 			// TransactionEntry(uint64_t transactionNr, int32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
-			auto transactionEntry = new TransactionEntry(
+			auto transactionEntry = new NodeTransactionEntry(
 				transactionNr, month, year, coinColor, addressIndices, addressIndicesCount
 			);
 			transactionEntry->setFileCursor(fileCursor);
@@ -193,7 +193,12 @@ namespace model {
 						auto dataBlock = static_cast<DataBlock*>(block);
 						//receiver->addIndicesForTransaction(dataBlock->createTransactionEntry(monthCursor, yearCursor));
 						//bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices);
-						receiver->addIndicesForTransaction(yearCursor, monthCursor, dataBlock->transactionNr, dataBlock->fileCursor, dataBlock->addressIndices, dataBlock->addressIndicesCount);
+						receiver->addIndicesForTransaction(
+							dataBlock->coinColor,
+							yearCursor, monthCursor, 
+							dataBlock->transactionNr, dataBlock->fileCursor, 
+							dataBlock->addressIndices, dataBlock->addressIndicesCount
+						);
 					}
 
 				}

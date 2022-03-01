@@ -7,7 +7,7 @@
 #include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 #include "Poco/AutoPtr.h"
 
-#include "../model/TransactionEntry.h"
+#include "../model/NodeTransactionEntry.h"
 
 using namespace rapidjson;
 

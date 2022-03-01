@@ -6,7 +6,7 @@
 #include "BlockIndex.h"
 
 #include "../model/files/Block.h"
-#include "../model/TransactionEntry.h"
+#include "../model/NodeTransactionEntry.h"
 
 #include "../lib/FuzzyTimer.h"
 
@@ -38,10 +38,10 @@ namespace controller {
 		void exit();
 
 		//! \brief put new transaction to cache and file system
-		bool pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction);
+		bool pushTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction);
 		
 		//! \brief load transaction from cache or file system
-		Poco::SharedPtr<model::TransactionEntry> getTransaction(uint64_t transactionNr);
+		Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
 
 		//! \brief called from timeout manager for scheduling WriteTransactionsToBlockTask 
 		void checkTimeout(Poco::Timer& timer);
@@ -64,7 +64,7 @@ namespace controller {
 		uint32_t mBlockNr;		
 
 		TaskObserver *mTaskObserver;
-		Poco::AccessExpireCache<uint64_t, model::TransactionEntry> mSerializedTransactions;
+		Poco::AccessExpireCache<uint64_t, model::NodeTransactionEntry> mSerializedTransactions;
 
 		Poco::SharedPtr<BlockIndex> mBlockIndex;
 		Poco::AutoPtr<model::files::Block> mBlockFile;

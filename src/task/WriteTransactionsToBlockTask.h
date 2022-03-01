@@ -8,7 +8,7 @@
  */
 
 #include "CPUTask.h"
-#include "../model/TransactionEntry.h"
+#include "../model/NodeTransactionEntry.h"
 #include "../model/files/Block.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 
@@ -36,14 +36,14 @@ public:
 	//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
 	inline Poco::Timestamp getCreationDate() { return mCreationDate; }
 
-	inline void addSerializedTransaction(Poco::SharedPtr<model::TransactionEntry> transaction) { 
+	inline void addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction) {
 		Poco::FastMutex::ScopedLock lock(mFastMutex);	 
 		mTransactions.push_back(transaction);
 		mBlockIndex->addIndicesForTransaction(transaction);
 	}
 
 	//! return transaction by nr
-	Poco::SharedPtr<model::TransactionEntry> getTransaction(uint64_t nr);
+	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t nr);
 
 	//! \brief collect all transaction nrs from transactions
 	std::vector<uint64_t> getTransactionNrs();
@@ -53,7 +53,7 @@ protected:
 	Poco::SharedPtr<controller::BlockIndex> mBlockIndex;
 	Poco::Timestamp mCreationDate;
 	Poco::FastMutex mFastMutex;
-	std::list<Poco::SharedPtr<model::TransactionEntry>> mTransactions;
+	std::list<Poco::SharedPtr<model::NodeTransactionEntry>> mTransactions;
 };
 
 #endif 

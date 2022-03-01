@@ -24,6 +24,7 @@ namespace controller {
 		std::string mGroupAlias;
 		int			mBlockNr;
 	};
+
 }
 
 #endif //__GRADIDO_NODE_CONTROLLER_CONTROLLER_EXCEPTIONS_H

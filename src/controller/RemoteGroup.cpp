@@ -7,7 +7,7 @@ namespace controller {
 		// get coin color on first connect to remote group
 	}
 
-	std::vector<Poco::SharedPtr<model::gradido::GradidoBlock>> RemoteGroup::getAllTransactions(model::gradido::TransactionType type)
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::getAllTransactions(std::function<bool(model::TransactionEntry*)> filter /*= nullptr*/)
 	{
 		return {};
 	}
@@ -17,7 +17,12 @@ namespace controller {
 		return nullptr;
 	}
 
-	Poco::SharedPtr<model::gradido::GradidoBlock> RemoteGroup::getTransactionForId(uint64_t transactionId)
+	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
+	{
+		return nullptr;
+	}
+
+	Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
 	{
 		return nullptr;
 	}

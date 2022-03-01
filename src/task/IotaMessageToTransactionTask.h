@@ -33,6 +33,7 @@ protected:
     std::string getGradidoGroupAlias(const std::string& iotaIndex) const;
 
     uint32_t mMilestoneIndex;
+    //! seconds
     uint64_t mTimestamp;
     iota::MessageId mMessageId;
     Poco::AutoPtr<model::gradido::GradidoTransaction> mTransaction;

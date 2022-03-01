@@ -3,7 +3,7 @@
 #include "Poco/Logger.h"
 #include "../SingletonManager/LoggerManager.h"
 
-#include "../model/TransactionEntry.h"
+#include "../model/NodeTransactionEntry.h"
 
 namespace controller {
 
@@ -153,7 +153,7 @@ namespace controller {
 		return true;
 	}
 
-	bool BlockIndex::addIndicesForTransaction(Poco::SharedPtr<model::TransactionEntry> transactionEntry)
+	bool BlockIndex::addIndicesForTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry)
 	{
 		auto fileCursor = transactionEntry->getFileCursor();
 		auto transactionNr = transactionEntry->getTransactionNr();

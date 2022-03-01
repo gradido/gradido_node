@@ -23,11 +23,12 @@ using namespace rapidjson;
 
 namespace controller {
 
-	Group::Group(std::string groupAlias, Poco::Path folderPath)
+	Group::Group(std::string groupAlias, Poco::Path folderPath, uint32_t coinColor)
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(folderPath),
-		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout),
+		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCoinColor(coinColor), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
+		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
 		mCommunityServer(nullptr), mExitCalled(false)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
@@ -170,7 +171,7 @@ namespace controller {
 			throw BlockNotLoadedException("don't get a valid current block", mGroupAlias, mLastBlockNr);
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
-		Poco::SharedPtr<model::TransactionEntry> transactionEntry = new model::TransactionEntry(newGradidoBlock, mAddressIndex);
+		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(newGradidoBlock, mAddressIndex);
 		bool result = block->pushTransaction(transactionEntry);
 		if (result) {
 			mLastTransaction = newGradidoBlock;
@@ -178,6 +179,10 @@ namespace controller {
 			// TODO: move call to better place
 			updateLastAddressIndex(mAddressIndex->getLastIndex());
 			addSignatureToCache(newGradidoBlock);
+			mMessageIdTransactionNrCacheMutex.lock();
+			iota::MessageId mid; mid.fromMemoryBin(messageId);
+			mMessageIdTransactionNrCache.add(mid, mLastTransaction->getID());
+			mMessageIdTransactionNrCacheMutex.unlock();
 			
 			//std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
 			printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
@@ -215,7 +220,7 @@ namespace controller {
 	uint64_t Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received)
 	{
 		uint64_t sum = 0;
-		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> allTransactions;
+		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions;
 		// received = max
 		// received - 2 month = min
 		Poco::DateTime searchDate = received;
@@ -231,17 +236,19 @@ namespace controller {
 		}
 		printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
 		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
-			auto body = (*it)->getGradidoTransaction()->getTransactionBody();
+			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());
+			auto body = gradidoBlock->getGradidoTransaction()->getTransactionBody();
 			if (body->getTransactionType() == model::gradido::TRANSACTION_CREATION) {
 				auto creation = body->getCreationTransaction();
 				auto targetDate = creation->getTargetDate();
 				if (targetDate.month() != month || targetDate.year() != year) {
 					continue;
 				}
-				printf("added from transaction: %d \n", (*it)->getID());
+				printf("added from transaction: %d \n", gradidoBlock->getID());
 				sum += creation->getAmount();
 			}
 		}
+		// TODO: if user has moved from another blockchain, get also creation transactions from origin group, recursive
 		return sum;
 	}
 
@@ -281,10 +288,10 @@ namespace controller {
 		return transactionEntries;
 	}
 
-	std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> Group::findTransactions(const std::string& address)
+	std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> Group::findTransactions(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> transactions;
+		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> transactions;
 		
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
@@ -304,7 +311,7 @@ namespace controller {
 							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
-					transactions.push_back(new model::gradido::GradidoBlock(result->getSerializedTransaction()));
+					transactions.push_back(result);
 				}
 			}
 			blockCursor--;
@@ -325,16 +332,58 @@ namespace controller {
 		// throw an exception if transaction wasn't found
 		auto transaction = block->getTransaction(mLastTransactionId);
 		
-		// call group manager to get shared ptr for this group, maybe replace with auto ptr
-		// but the good thing is the group cache will be updated
 		mLastTransaction = new model::gradido::GradidoBlock(transaction->getSerializedTransaction());
 		return mLastTransaction;
 	}
 
-	std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> Group::findTransactions(const std::string& address, int month, int year)
+	Poco::SharedPtr<model::TransactionEntry> Group::getTransactionForId(uint64_t transactionId)
+	{
+		auto blockNr = mLastBlockNr;
+		Poco::SharedPtr<controller::Block> block;
+		do {
+			block = getBlock(blockNr);
+			blockNr--;
+		} while (transactionId < block->getBlockIndex()->getMinTransactionNr() && blockNr > 0);
+		
+		return block->getTransaction(transactionId);
+	}
+
+	Poco::SharedPtr<model::TransactionEntry> Group::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
+	{
+		Poco::ScopedLock _lock(mMessageIdTransactionNrCacheMutex);
+		iota::MessageId mid;
+		mid.fromMemoryBin(messageId);
+		auto it = mMessageIdTransactionNrCache.get(mid);
+		if(!it.isNull()) {
+			return getTransactionForId(*it.get());
+		}
+		if (cachedOnly) {
+			return nullptr;
+		}
+		auto blockNr = mLastBlockNr;
+		do {
+			auto block = getBlock(blockNr);
+			auto blockIndex = block->getBlockIndex();
+			for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
+				auto transactionEntry = block->getTransaction(i);
+				auto transaction = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				iota::MessageId transactionMessageId;
+				auto messageIdMemoryBin = transaction->getMessageId();
+				transactionMessageId.fromMemoryBin(messageIdMemoryBin);
+				MemoryManager::getInstance()->releaseMemory(messageIdMemoryBin);
+				if (transactionMessageId == mid) {
+					return transactionEntry;
+				}
+			}
+			blockNr--;
+		} while (blockNr > 0);
+
+	}
+
+	std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> Group::findTransactions(const std::string& address, int month, int year)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::AutoPtr<model::gradido::GradidoBlock>> transactions;
+		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>>  transactions;
 		
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }		
@@ -345,6 +394,9 @@ namespace controller {
 			auto blockIndex = block->getBlockIndex();
 			auto transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
 			if (transactionNrs.size()) {
+				// sort nr ascending to possible speed up read from block file
+				// TODO: check if there not already perfectly sorted
+				std::sort(std::begin(transactionNrs), std::end(transactionNrs));
 				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
 					auto result = block->getTransaction(*it);
 					if (!result->getSerializedTransaction()->size()) {
@@ -353,7 +405,7 @@ namespace controller {
 							(int)*it, mGroupAlias, result);
 						std::abort();
 					}
-					transactions.push_back(new model::gradido::GradidoBlock(result->getSerializedTransaction()));
+					transactions.push_back(result);
 				}
 			}
 			else {
@@ -366,9 +418,29 @@ namespace controller {
 			blockCursor--;
 		}
 
-		return transactions;
+		return std::move(transactions);
 	}
 
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::getAllTransactions(std::function<bool(model::TransactionEntry*)> filter/* = nullptr*/)
+	{
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> result;
+		auto lastBlock = getBlock(mLastBlockNr);
+		result.reserve(lastBlock->getBlockIndex()->getMaxTransactionNr());
+		int blockCursor = 1;
+		while (blockCursor <= mLastBlockNr)
+		{
+			auto block = getBlock(blockCursor);
+			auto blockIndex = block->getBlockIndex();
+			for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
+				auto transaction = block->getTransaction(i);
+				if (!filter || filter(transaction)) {
+					result.push_back(block->getTransaction(i));
+				}
+			}
+			blockCursor++;
+		}
+		return std::move(result);
+	}
 
 
 	Poco::SharedPtr<Block> Group::getBlock(Poco::UInt32 blockNr)
@@ -462,9 +534,9 @@ namespace controller {
 				blockNr--;
 				continue;
 			}
-			
+			// TODO: reverse order to read in transactions ascending to prevent jumping back in forth in file (seek trigger a new block read from mostly 8K)
 			auto transactionEntry = block->getTransaction(transactionNr);
-			transaction = std::make_unique<model::gradido::GradidoBlock>(new model::gradido::GradidoBlock(transactionEntry->getSerializedTransaction()));
+			transaction = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
 			auto sigPairs = transaction->getGradidoTransaction()->getProto()->sig_map().sigpair();
 			if (sigPairs.size()) {
 				auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());

@@ -18,7 +18,7 @@ namespace controller {
 
 namespace model {
 
-	class TransactionEntry;
+	class NodeTransactionEntry;
 
 	namespace files {
 
@@ -173,7 +173,7 @@ namespace model {
 				virtual bool readFromFile(VirtualFile* vFile);
 				virtual void updateHash(crypto_generichash_state* state);
 
-				Poco::SharedPtr<TransactionEntry> createTransactionEntry(uint8_t month, uint16_t year);
+				Poco::SharedPtr<NodeTransactionEntry> createTransactionEntry(uint8_t month, uint16_t year);
 			};
 
 			std::string mFilename;

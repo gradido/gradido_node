@@ -4,6 +4,13 @@
 #include <unordered_map>
 #include "Poco/Mutex.h"
 
+/*!
+	@author einhornimmond
+
+	@brief For working with files, prevent access from multiple threads at the same time to a file
+
+	TODO: Profile Memory size of mFiles and maybe using a caching to remove entries for longer not used files
+*/
 
 class FileLockManager
 {

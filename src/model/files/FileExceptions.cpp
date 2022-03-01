@@ -24,7 +24,7 @@ namespace model {
 		}
 
 		// ************** File Lock Exception ***************************
-		LockException::LockException(const char* what, const char* filename) noexcept
+		LockException::LockException(const char* what, const std::string& filename) noexcept
 			: GradidoBlockchainException(what), mFileName(filename)
 		{
 

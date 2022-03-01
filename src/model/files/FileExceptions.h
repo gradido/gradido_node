@@ -20,7 +20,7 @@ namespace model {
 		class LockException : public GradidoBlockchainException
 		{
 		public:
-			explicit LockException(const char* what, const char* filename) noexcept;
+			explicit LockException(const char* what, const std::string& filename) noexcept;
 			std::string getFullString() const;
 		protected:
 			std::string mFileName;

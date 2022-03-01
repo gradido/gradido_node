@@ -1,5 +1,6 @@
 #include "WriteTransactionsToBlockTask.h"
 #include "../ServerGlobals.h"
+#include "gradido_blockchain/GradidoBlockchainException.h"
 
 WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex)
 	: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
@@ -20,7 +21,7 @@ int WriteTransactionsToBlockTask::run()
 	mTransactions.sort([](Poco::SharedPtr<model::TransactionEntry> a, Poco::SharedPtr<model::TransactionEntry> b) {
 		return a->getTransactionNr() < b->getTransactionNr();
 	});
-	std::vector<std::string> lines;
+	std::vector<const std::string*> lines;
 	lines.reserve(mTransactions.size());
 
 	int lastTransactionNr = 0;
@@ -29,30 +30,17 @@ int WriteTransactionsToBlockTask::run()
 		auto transactionEntry = *it;
 		lines.push_back(transactionEntry->getSerializedTransaction());
 		if (lastTransactionNr > 0 && lastTransactionNr + 1 != transactionEntry->getTransactionNr()) {
-			addError(new Error(__FUNCTION__, "out of order transaction"));
+			throw BlockchainOrderException("out of order transaction");
 		}
 		lastTransactionNr = transactionEntry->getTransactionNr();
 	}
 
-	auto result = mBlockFile->appendLines(lines);
-	if (result.size() != mTransactions.size()) {
-		addError(new Error(__FUNCTION__, "error by append lines, result vector size didn't match transaction list size"));
-	}
-
+	auto resultingCursorPositions = mBlockFile->appendLines(lines);
+	
 	size_t cursor = 0;
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
-		if (cursor >= result.size()) {
-			addError(new Error(__FUNCTION__, "not enough results"));
-			break;
-		}
-		
-		if (result[cursor] < 0) {
-			addError(new ParamError(__FUNCTION__, "critical, error in append line, result", result[cursor]));
-		}
-		else {
-			(*it)->setFileCursor(result[cursor]);
-			mBlockIndex->addFileCursorForTransaction((*it)->getTransactionNr(), result[cursor]);
-		}
+		(*it)->setFileCursor(resultingCursorPositions[cursor]);
+		mBlockIndex->addFileCursorForTransaction((*it)->getTransactionNr(), resultingCursorPositions[cursor]);
 		cursor++;
 	}
 	// save also block index
@@ -72,7 +60,7 @@ std::vector<uint64_t> WriteTransactionsToBlockTask::getTransactionNrs()
 	return transactionNrs;
 }
 
-Poco::SharedPtr<model::TransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
+Poco::SharedPtr<model::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
 {
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
 		if ((*it)->getTransactionNr() == nr) {

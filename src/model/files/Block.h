@@ -43,8 +43,8 @@ namespace model {
 			//! \return file cursor pos at start from this line in file (0 at start of file)
 			//! \return -1 if block file couldn't locked
 			//! \return -2 if uint32 data type isn't enough anymore
-			Poco::Int32 appendLine(const std::string& line);
-			std::vector<Poco::UInt32> appendLines(const std::vector<std::string>& lines);
+			Poco::Int32 appendLine(const std::string* line);
+			std::vector<Poco::UInt32> appendLines(const std::vector<const std::string*>& lines);
 
 			inline Poco::UInt32 getCurrentFileSize() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mCurrentFileSize; }
 			inline const std::string getBlockPath() const { return mBlockPath.toString(); }
@@ -69,6 +69,7 @@ namespace model {
 			Poco::SharedPtr<Poco::FileStream>	mBlockFile;
 			Poco::FastMutex mFastMutex;
 			Poco::UInt32    mCurrentFileSize;
+			std::streampos  mCurrentFileCursorReadPosition;
 
 		};
 

@@ -49,7 +49,7 @@ namespace controller {
 	}
 
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
-	bool Block::pushTransaction(Poco::SharedPtr<model::TransactionEntry> transaction)
+	bool Block::pushTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mExitCalled) return false;
@@ -67,13 +67,13 @@ namespace controller {
 	{
 		auto gm = GroupManager::getInstance();
 		auto group = gm->findGroup(mGroupAlias);
-		
-		Poco::SharedPtr<model::TransactionEntry> transactionEntry(new model::TransactionEntry(std::move(serializedTransaction), fileCursor, group));
+		auto transaction = std::make_unique<model::gradido::GradidoBlock>(serializedTransaction.get());
+		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry(new model::NodeTransactionEntry(transaction.get(), group->getAddressIndex(), fileCursor));
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> Block::getTransaction(uint64_t transactionNr)
+	Poco::SharedPtr<model::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr)
 	{
 		assert(transactionNr);
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);

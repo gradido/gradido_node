@@ -17,7 +17,7 @@ namespace model {
 	namespace files {
 		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
 			: //mTimer(0, ServerGlobals::g_TimeoutCheck),
-			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
+			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0), mCurrentFileCursorPosition(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);
 			sprintf(fileName, "blk%08d.dat", blockNr);
@@ -52,6 +52,7 @@ namespace model {
 				if (telled && telled > crypto_generichash_KEYBYTES) {
 					mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
 				}
+				mCurrentFileCursorReadPosition = telled;
 			}
 			mLastUsed = Poco::Timestamp();
 			return mBlockFile;
@@ -97,8 +98,25 @@ namespace model {
 			}
 			
 			Poco::UInt16 transactionSize = 0;
-			fileStream->seekg(startReading);
+			// call seek only if it is really necessary 
+			// for example if a block file is read in complete line by line on program startup
+			// https://stackoverflow.com/questions/2438953/how-is-fseek-implemented-in-the-filesystem
+			// "One observation I have made about fseek on Solaris, is that each call to it resets the read buffer of the FILE.The next read will then always read a full block(8K by default)."
+			// https://bytes.com/topic/c/answers/218188-fseek-speed
+			// "However, a side - effect of the fseek is the flushing of the buffer.Without
+			//	the fseek(), your output will(actually, I suppose "can" is correct in the
+			//		general sense) be buffered, and only written when the buffer fille.With
+			//	the fseek(), you are forcing the buffer to be written for every character."
+			// https://stackoverflow.com/questions/9349470/whats-the-difference-between-fseek-lseek-seekg-seekp
+			// "The difference between the various seek functions is just the kind of file/stream objects on which they operate. 
+			//  On Linux, seekg and fseek are probably implemented in terms of lseek."
+			if (mCurrentFileCursorReadPosition != startReading) {
+				fileStream->seekg(startReading);
+				mCurrentFileCursorReadPosition = startReading;
+			}
+			
 			fileStream->read((char*)&transactionSize, sizeof(Poco::UInt16));
+			mCurrentFileCursorReadPosition += sizeof(Poco::UInt16);
 			if (startReading + transactionSize > mCurrentFileSize) {
 				fl->unlock(filePath);
 				throw EndReachingException("file is to small for transaction size", mBlockPath.toString().data(), startReading, transactionSize);
@@ -106,22 +124,23 @@ namespace model {
 			std::unique_ptr<std::string> resultString(new std::string);
 			resultString->reserve(transactionSize);
 			fileStream->read(resultString->data(), transactionSize);			
+			mCurrentFileCursorReadPosition += transactionSize;
 			fl->unlock(filePath);
 
 			return std::move(resultString);
 		}
 
 
-		Poco::Int32 Block::appendLine(const std::string& line)
+		Poco::Int32 Block::appendLine(const std::string* line)
 		{
-			std::vector<std::string> lines(1);
+			std::vector<const std::string*> lines(1);
 			lines[0] = line;
 
 			return appendLines(lines)[0];
 
 		}
 
-		std::vector<Poco::UInt32> Block::appendLines(const std::vector<std::string>& lines)
+		std::vector<Poco::UInt32> Block::appendLines(const std::vector<const std::string*>& lines)
 		{
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
 			auto fl = FileLockManager::getInstance();
@@ -131,8 +150,7 @@ namespace model {
 
 			std::string filePath = mBlockPath.toString();
 			if (!fl->tryLockTimeout(filePath, 100)) {
-				resultingCursorPositions.push_back(-1);
-				return resultingCursorPositions;
+				throw LockException("couldn't lock file in time", filePath.data());
 			}
 			auto fileStream = getOpenFile();
 
@@ -153,23 +171,18 @@ namespace model {
 			{
 				//fileStream->seekp(mCurrentFileSize);
 				Poco::Int32 cursorPos = fileStream->tellp();
-				Poco::UInt16 size = itLines->size();
+				Poco::UInt16 size = (*itLines)->size();
 				// check data type overflow
-				if ((Poco::UInt32)size != itLines->size()) {
-					fl->unlock(filePath);
-					resultingCursorPositions.push_back(-2);
-					mm->releaseMemory(hash);
-					return resultingCursorPositions;
-				}
+				assert((Poco::UInt32)size == (*itLines)->size());
 				resultingCursorPositions.push_back(cursorPos);
 
 				fileStream->write((char*)&size, sizeof(Poco::UInt16));
-				fileStream->write(itLines->data(), itLines->size());
-				mCurrentFileSize += sizeof(Poco::UInt16) + itLines->size();
+				fileStream->write((*itLines)->data(), size);
+				mCurrentFileSize += sizeof(Poco::UInt16) + size;
 
 				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 				crypto_generichash_update(&state, *hash, hash->size());
-				crypto_generichash_update(&state, (const unsigned char*)itLines->data(), itLines->size());				
+				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
 				crypto_generichash_final(&state, *hash, hash->size());
 			}
 

@@ -8,7 +8,10 @@
 #include "../SingletonManager/OrderingManager.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/http/IotaRequestExceptions.h"
 #include "../ServerGlobals.h"
+
+#include "Poco/Util/ServerApplication.h"
 
 //#include "../lib/BinTextConverter.h"
 
@@ -32,14 +35,27 @@ IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
 // TODO: has thrown a null pointer exception
 int IotaMessageToTransactionTask::run()
 {
-    static const char* function_name = "IotaMessageToTransactionTask::run";
     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-    
-    auto dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(mMessageId.toHex());
+    std::pair<std::string, std::unique_ptr<std::string>> dataIndex;
+    try {
+        dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(mMessageId.toHex());
+    }
+    catch (...) {
+        IotaRequest::defaultExceptionHandler(errorLog, false);
+        errorLog.warning("retry once after waiting 100 ms");
+        Poco::Thread::sleep(100);
+		try {
+			dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(mMessageId.toHex());
+		}
+		catch (...) {
+            // terminate application
+            IotaRequest::defaultExceptionHandler(errorLog, true);
+		}
+    }
 
     auto binString = DataTypeConverter::hexToBinString(dataIndex.first);
     auto gm = GroupManager::getInstance();
-    auto group = gm->findGroup(getGradidoGroupAlias(dataIndex.second));
+    auto group = gm->findGroup(getGradidoGroupAlias(*dataIndex.second.get()));
     
     Poco::AutoPtr<model::gradido::GradidoTransaction> transaction(new model::gradido::GradidoTransaction(*binString.get()));
         
@@ -51,10 +67,14 @@ int IotaMessageToTransactionTask::run()
     // if simple validation already failed, we can stop here
     try {
         transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+        if (transaction->getTransactionBody()->isCreation()) {
+            transaction->getTransactionBody()->getCreationTransaction()->validateTargetDate(mTimestamp);
+        }
     } catch(model::gradido::TransactionValidationException& e) {
         errorLog.error(e.getFullString());
         return 0;
     }
+    
     // if it is a cross group transaction we store both in Ordering Manager for easy access for validation
     auto transactionBody = transaction->getTransactionBody();
 	if (transactionBody->isTransfer() && !transactionBody->isLocal()) {

@@ -2,7 +2,6 @@
 
 //#include "Poco/Path.h"
 #include "Poco/File.h"
-
 #include "../ServerGlobals.h"
 
 
@@ -35,6 +34,11 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 	mGroupIndex->update();
 
 	mInitalized = true;
+
+	// load special group 
+	Poco::SharedPtr<controller::Group> group = new controller::GroupRegisterGroup;
+	group->init();
+	mGroupMap.insert({ GROUP_REGISTER_GROUP_ALIAS, group });
 	mWorkMutex.unlock();
 
 	auto groups = mGroupIndex->listGroupAliases();
@@ -96,7 +100,9 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 		mWorkMutex.unlock();
 		return nullptr;
 	}
-	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
+	auto registerGroup = dynamic_cast<controller::GroupRegisterGroup*>(mGroupMap[GROUP_REGISTER_GROUP_ALIAS].get());
+
+	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, registerGroup->findGroup(groupAlias).coinColor);
 	mGroupMap.insert({ groupAlias, group });
 	mWorkMutex.unlock();
 	group->init();
