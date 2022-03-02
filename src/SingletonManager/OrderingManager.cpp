@@ -131,7 +131,13 @@ int OrderingManager::ThreadFunction()
                 if (group.isNull()) {
                     throw controller::GroupNotFoundException("couldn't find group", itTransaction->groupAlias);
                 }
-                bool result = group->addTransaction(std::move(itTransaction->transaction), itTransaction->messageId, mt->milestoneTimestamp);
+                try {
+                    bool result = group->addTransaction(std::move(itTransaction->transaction), itTransaction->messageId, mt->milestoneTimestamp);
+                }
+                catch (GradidoBlockchainException& ex) {
+                    Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+                    errorLog.information("[OrderingManager] transaction not added: ", ex.getFullString());
+                }
             }
         }
 

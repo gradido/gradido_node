@@ -86,7 +86,7 @@ namespace controller {
 		inline const std::string& getGroupAlias() { return mGroupAlias; }
 		inline uint32_t getGroupDefaultCoinColor() const { return mCoinColor; }
 
-		bool isSignatureInCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction);
+		bool isSignatureInCache(const model::gradido::GradidoTransaction* transaction);
 
 		void setListeningCommunityServer(Poco::URI uri);
 

@@ -36,7 +36,7 @@ IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
 int IotaMessageToTransactionTask::run()
 {
     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-    std::pair<std::string, std::unique_ptr<std::string>> dataIndex;
+    std::pair<std::unique_ptr<std::string>, std::unique_ptr<std::string>> dataIndex;
     try {
         dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(mMessageId.toHex());
     }
@@ -53,15 +53,14 @@ int IotaMessageToTransactionTask::run()
 		}
     }
 
-    auto binString = DataTypeConverter::hexToBinString(dataIndex.first);
     auto gm = GroupManager::getInstance();
     auto group = gm->findGroup(getGradidoGroupAlias(*dataIndex.second.get()));
     
-    Poco::AutoPtr<model::gradido::GradidoTransaction> transaction(new model::gradido::GradidoTransaction(*binString.get()));
+    auto transaction = std::make_unique<model::gradido::GradidoTransaction>(*dataIndex.first.get());
         
     Poco::Logger& transactionLog = LoggerManager::getInstance()->mTransactionLog;
     transactionLog.information("%d %d %s %s\n%s", 
-        (int)mMilestoneIndex, (int)mTimestamp, dataIndex.second, mMessageId.toHex(),
+        (int)mMilestoneIndex, (int)mTimestamp, *dataIndex.second.get(), mMessageId.toHex(),
         transaction->toJson()
     );
     // if simple validation already failed, we can stop here
@@ -74,36 +73,73 @@ int IotaMessageToTransactionTask::run()
         errorLog.error(e.getFullString());
         return 0;
     }
-    
-    // if it is a cross group transaction we store both in Ordering Manager for easy access for validation
-    auto transactionBody = transaction->getTransactionBody();
-	if (transactionBody->isTransfer() && !transactionBody->isLocal()) {
-		OrderingManager::getInstance()->pushPairedTransaction(transaction);
-        // we need also the other pair
-        auto pairGroupAlias = transactionBody->getOtherGroup();
-        auto pairGroup = gm->findGroup(pairGroupAlias);
-        // we usually not listen on this group so we must do it temporally for validation
-        if (pairGroup.isNull()) {
-            OrderingManager::getInstance()->checkExternGroupForPairedTransactions(pairGroupAlias);
+   
+    // TODO: Cross Group Check
+    // on inbound
+    // check if we listen to other group 
+    // try to find the pairing transaction with the messageId
+    if (transaction->getTransactionBody()->isInbound()) {
+        auto parentMessageIdHex = transaction->getParentMessageId()->convertToHex();
+        std::unique_ptr<model::gradido::GradidoTransaction> pairingTransaction;
+        auto otherGroup = gm->findGroup(transaction->getTransactionBody()->getOtherGroup());
+        if (!otherGroup.isNull()) {
+            auto transactionEntry = otherGroup->findByMessageId(transaction->getParentMessageId(), true);
+            pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(*transactionEntry->getSerializedTransaction());
         }
-	}
+        // load from iota
+        if (!pairingTransaction) {
+			std::pair<std::unique_ptr<std::string>, std::unique_ptr<std::string>> dataIndex;
+            
+			try {
+				dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(*parentMessageIdHex.get());
+                pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(*dataIndex.first.get());
+			}
+			catch (...) {
+				IotaRequest::defaultExceptionHandler(errorLog, false);
+				errorLog.warning("retry once after waiting 100 ms");
+				Poco::Thread::sleep(100);
+				try {
+					dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(*parentMessageIdHex.get());
+					pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(*dataIndex.first.get());
+				}
+				catch (...) {
+					IotaRequest::defaultExceptionHandler(errorLog, false);                 
+                }
+			}
+        }
+        if (pairingTransaction) {
+            if (!pairingTransaction->isBelongToUs(transaction.get())) {
+                std::string parentMessageIdHexString(*parentMessageIdHex.get());
+				errorLog.information("transaction skipped because pairing transaction wasn't found, messageId: %s, pairing message id: %s",
+					mMessageId.toHex(), *parentMessageIdHex.get()
+                );
+                return 0;
+            }
+        }
+    }
+   
     // check if transaction already exist
     // if this transaction doesn't belong to us, we can quit here 
     // also if we already have this transaction
-    if (group.isNull() || group->isSignatureInCache(transaction)) {
-        printf("[%s] transaction skipped because it cames from other group or was found in cache, messageId: %s\n", __FUNCTION__, mMessageId.toHex().data());
+    if (group.isNull() || group->isSignatureInCache(transaction.get())) {
+        errorLog.information("transaction skipped because it cames from other group or was found in cache, messageId: %s",
+            mMessageId.toHex()
+        );
         return 0;
     }       
     auto lastTransaction = group->getLastTransaction();
     if (lastTransaction && lastTransaction->getReceived() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
-        printf("[%s] transaction skipped because it cames from the past, messageId: %s\n", __FUNCTION__, mMessageId.toHex().data());
+        errorLog.information("transaction skipped because it cames from the past, messageId: %s", 
+            mMessageId.toHex().data());
         return 0;
     }
         
     // hand over to OrderingManager
     //std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
-    OrderingManager::getInstance()->pushTransaction(transaction, mMilestoneIndex, mTimestamp);
+    OrderingManager::getInstance()->pushTransaction(
+        std::move(transaction), mMilestoneIndex,
+        mTimestamp, *dataIndex.second.get(), mMessageId.toMemoryBin());
 
     return 0;
 }

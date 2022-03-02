@@ -510,7 +510,7 @@ namespace controller {
 		mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
 	}
 
-	bool Group::isSignatureInCache(Poco::AutoPtr<model::gradido::GradidoTransaction> transaction)
+	bool Group::isSignatureInCache(const model::gradido::GradidoTransaction* transaction)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		return mCachedSignatures.has(HalfSignature(transaction));
