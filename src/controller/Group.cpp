@@ -536,14 +536,9 @@ namespace controller {
 			}
 			// TODO: reverse order to read in transactions ascending to prevent jumping back in forth in file (seek trigger a new block read from mostly 8K)
 			auto transactionEntry = block->getTransaction(transactionNr);
-			transaction = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
-			auto sigPairs = transaction->getGradidoTransaction()->getProto()->sig_map().sigpair();
-			if (sigPairs.size()) {
-				auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());
-				//printf("[Group::fillSignatureCacheOnStartup] add signature: %s\n", signature.data());
-				HalfSignature transactionSign(sigPairs.Get(0).signature().data());
-				mCachedSignatures.add(transactionSign, nullptr);
-			}
+			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+			mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
+			
 			transactionNr--;
 			//printf("compare received: %" PRId64 " with border : %" PRId64 "\n", transaction->getReceived().timestamp().raw(), border.timestamp().raw());
 			

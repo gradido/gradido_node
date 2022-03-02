@@ -132,11 +132,14 @@ namespace controller {
 				memcpy(&sign, signature, 32);
 			}
 			HalfSignature(const model::gradido::GradidoTransaction* transaction) {
-				auto sigPairs = transaction->getSigMap().sigpair();
+				auto sigPairs = transaction->getSignaturesfromSignatureMap(true);
 				if (sigPairs.size() == 0) {
 					throw std::runtime_error("[Group::addSignatureToCache] empty signatures");
 				}
-				memcpy(&sign, sigPairs.Get(0).signature().data(), 32);
+
+				memcpy(&sign, sigPairs[0]->data(), 32);
+				auto mm = MemoryManager::getInstance();
+				mm->releaseMemory(sigPairs[0]);
 			}
 			bool operator<(const HalfSignature& ob) const {
 				return

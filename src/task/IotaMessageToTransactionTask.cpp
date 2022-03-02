@@ -56,7 +56,7 @@ int IotaMessageToTransactionTask::run()
     auto gm = GroupManager::getInstance();
     auto group = gm->findGroup(getGradidoGroupAlias(*dataIndex.second.get()));
     
-    auto transaction = std::make_unique<model::gradido::GradidoTransaction>(*dataIndex.first.get());
+    auto transaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
         
     Poco::Logger& transactionLog = LoggerManager::getInstance()->mTransactionLog;
     transactionLog.information("%d %d %s %s\n%s", 
@@ -84,7 +84,7 @@ int IotaMessageToTransactionTask::run()
         auto otherGroup = gm->findGroup(transaction->getTransactionBody()->getOtherGroup());
         if (!otherGroup.isNull()) {
             auto transactionEntry = otherGroup->findByMessageId(transaction->getParentMessageId(), true);
-            pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(*transactionEntry->getSerializedTransaction());
+            pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(transactionEntry->getSerializedTransaction());
         }
         // load from iota
         if (!pairingTransaction) {
@@ -92,7 +92,7 @@ int IotaMessageToTransactionTask::run()
             
 			try {
 				dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(*parentMessageIdHex.get());
-                pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(*dataIndex.first.get());
+                pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
 			}
 			catch (...) {
 				IotaRequest::defaultExceptionHandler(errorLog, false);
@@ -100,7 +100,7 @@ int IotaMessageToTransactionTask::run()
 				Poco::Thread::sleep(100);
 				try {
 					dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(*parentMessageIdHex.get());
-					pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(*dataIndex.first.get());
+					pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
 				}
 				catch (...) {
 					IotaRequest::defaultExceptionHandler(errorLog, false);                 

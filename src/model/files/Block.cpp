@@ -17,7 +17,7 @@ namespace model {
 	namespace files {
 		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
 			: //mTimer(0, ServerGlobals::g_TimeoutCheck),
-			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0), mCurrentFileCursorPosition(0)
+			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0), mCurrentFileCursorReadPosition(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);
 			sprintf(fileName, "blk%08d.dat", blockNr);
@@ -280,7 +280,7 @@ namespace model {
 
 		// *********************** TASKS ***********************************
 
-		BlockAppendLineTask::BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<std::string> lines)
+		BlockAppendLineTask::BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<const std::string*> lines)
 			: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mTargetBlock(block), mLines(lines)
 		{
 

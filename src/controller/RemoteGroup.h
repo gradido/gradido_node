@@ -24,6 +24,7 @@ namespace controller {
 		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 		Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly = true);
+		uint64_t calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received);
 		uint32_t getGroupDefaultCoinColor() const;
 
 	protected:

@@ -76,7 +76,7 @@ namespace model {
 		class BlockAppendLineTask : task::CPUTask
 		{
 		public:
-			BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<std::string> lines);
+			BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<const std::string*> lines);
 
 			const char* getResourceType() const { return "BlockAppendLineTask"; };
 
@@ -84,7 +84,7 @@ namespace model {
 
 		protected:
 			Poco::SharedPtr<Block> mTargetBlock;
-			std::vector<std::string> mLines;
+			std::vector<const std::string*> mLines;
 			std::vector<Poco::UInt32> mCursorPositions;
 		};
 	}

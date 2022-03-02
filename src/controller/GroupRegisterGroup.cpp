@@ -34,7 +34,7 @@ namespace controller {
 		Poco::ScopedLock _lock(mWorkingMutex);
 		auto result = Group::addTransaction(std::move(newTransaction), messageId, iotaMilestoneTimestamp);
 		if (result) {
-			auto transaction = std::make_unique<model::gradido::GradidoBlock>(getLastTransaction()->getSerializedTransaction());
+			auto transaction = getLastTransaction();
 			if (!transaction->getGradidoTransaction()->getTransactionBody()->isGlobalGroupAdd()) {
 				throw InvalidTransactionTypeOnBlockchain(
 					"a non global group add was added to GroupRegister blockchain",
@@ -67,16 +67,8 @@ namespace controller {
 			// fill mRegisteredGroups
 			mRegisteredGroups.insert({ globalGroupAdd->getGroupAlias(), GroupEntry(transaction->getID(), globalGroupAdd->getCoinColor()) });
 			// from Group::fillSignatureCacheOnStartup
-			if (transaction->getReceived() > border) 
-			{
-				auto sigPairs = transaction->getGradidoTransaction()->getProto()->sig_map().sigpair();
-				if (sigPairs.size()) 
-				{
-					auto signature = DataTypeConverter::binToHex((const unsigned char*)sigPairs.Get(0).signature().data(), sigPairs.Get(0).signature().size());
-					//printf("[Group::fillSignatureCacheOnStartup] add signature: %s\n", signature.data());
-					HalfSignature transactionSign(sigPairs.Get(0).signature().data());
-					mCachedSignatures.add(transactionSign, nullptr);
-				}
+			if (transaction->getReceived() > border) {
+				mCachedSignatures.add(HalfSignature(transaction->getGradidoTransaction()), nullptr);				
 			}
 		}
 	}

@@ -9,22 +9,27 @@ namespace controller {
 
 	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::getAllTransactions(std::function<bool(model::TransactionEntry*)> filter /*= nullptr*/)
 	{
-		return {};
+		throw std::runtime_error("not implemented yet");
 	}
 
 	Poco::SharedPtr<model::gradido::GradidoBlock> RemoteGroup::getLastTransaction()
 	{
-		return nullptr;
+		throw std::runtime_error("not implemented yet");
 	}
 
 	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
 	{
-		return nullptr;
+		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
+	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
 	{
-		return nullptr;
+		throw std::runtime_error("not implemented yet");
+	}
+
+	uint64_t RemoteGroup::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received)
+	{
+		throw std::runtime_error("not implemented yet");
 	}
 
 	uint32_t RemoteGroup::getGroupDefaultCoinColor() const

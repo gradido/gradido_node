@@ -178,9 +178,9 @@ int MainServer::main(const std::vector<std::string>& args)
 		uint8_t worker_count = Poco::Environment::processorCount() * 2;
 		// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
 		uint8_t io_worker_count = config().getInt("io.workerCount", 2);
-		ServerGlobals::g_CPUScheduler = new UniLib::controller::CPUSheduler(worker_count, "Default Worker");
-		ServerGlobals::g_WriteFileCPUScheduler = new UniLib::controller::CPUSheduler(io_worker_count, "IO Worker");
-		ServerGlobals::g_IotaRequestCPUScheduler = new UniLib::controller::CPUSheduler(2, "Iota Worker");
+		ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
+		ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
+		ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
 
 		auto gm = GroupManager::getInstance();
 		if (GroupManager::getInstance()->init("group.index", config())) {
