@@ -2,7 +2,7 @@
 #include "main.h"
 #include "MainServer.h"
 
-#include "gradido/TransactionBody.pb.h"
+#include "proto/gradido/TransactionBody.pb.h"
 #include <sodium.h>
 #include <exception>
 #include "gradido_blockchain/lib/Profiler.h"

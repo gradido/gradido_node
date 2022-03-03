@@ -27,7 +27,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	uint64_t RemoteGroup::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received)
+	void RemoteGroup::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received, mpfr_ptr sum)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

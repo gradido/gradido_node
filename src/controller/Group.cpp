@@ -10,6 +10,7 @@
 #include "../SingletonManager/LoggerManager.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/lib/Decay.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
 
 #include "Block.h"
@@ -217,13 +218,13 @@ namespace controller {
 		return result;
 	}
 
-	uint64_t Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received)
+	void Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received, mpfr_ptr sum)
 	{
-		uint64_t sum = 0;
 		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions;
 		// received = max
 		// received - 2 month = min
 		Poco::DateTime searchDate = received;
+		auto mm = MemoryManager::getInstance();
 		for (int i = 0; i < 3; i++) {
 			auto transactions = findTransactions(address, searchDate.month(), searchDate.year());
 			// https://stackoverflow.com/questions/201718/concatenating-two-stdvectors
@@ -235,6 +236,7 @@ namespace controller {
 			searchDate -= Poco::Timespan(Poco::DateTime::daysOfMonth(searchDate.year(), searchDate.month()), 0, 0, 0, 0);
 		}
 		printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
+		auto amount = mm->getMathMemory();
 		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
 			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());
 			auto body = gradidoBlock->getGradidoTransaction()->getTransactionBody();
@@ -245,11 +247,13 @@ namespace controller {
 					continue;
 				}
 				printf("added from transaction: %d \n", gradidoBlock->getID());
-				sum += creation->getAmount();
+				mpfr_set_str(amount, creation->getAmount().data(), 10, gDefaultRound);
+				mpfr_add(sum, sum, amount, gDefaultRound);
 			}
 		}
+		mm->releaseMathMemory(amount);
 		// TODO: if user has moved from another blockchain, get also creation transactions from origin group, recursive
-		return sum;
+		
 	}
 
 	Poco::AutoPtr<model::gradido::GradidoBlock> Group::findLastTransaction(const std::string& address)

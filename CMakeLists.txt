@@ -13,10 +13,9 @@ ENDIF()
 include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"
-	"build/proto"
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
-	"dependencies/gradido_blockchain/build/proto"
+	"dependencies/gradido_blockchain/build"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
