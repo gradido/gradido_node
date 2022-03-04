@@ -12,6 +12,7 @@
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/Decay.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
+#include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "Block.h"
 
@@ -138,7 +139,7 @@ namespace controller {
 			throw BlockchainOrderException("previous transaction is younger");
 		}
 		// calculate final balance
-		calculateFinalBalance(newGradidoBlock);
+		newGradidoBlock->calculateFinalGDD(this);
 
 		// intern validation
 		model::gradido::TransactionValidationLevel level = (model::gradido::TransactionValidationLevel)(
@@ -147,9 +148,13 @@ namespace controller {
 			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
 			model::gradido::TRANSACTION_VALIDATION_PAIRED
 			);
-
+		auto transactionBody = newGradidoBlock->getGradidoTransaction()->getTransactionBody();
+		if (transactionBody->isRegisterAddress()) {
+			// for register address check if address already exist
+			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
+		}
 		printf("validate with level: %d\n", level);
-		auto otherGroup = newGradidoBlock->getGradidoTransaction()->getTransactionBody()->getOtherGroup();
+		auto otherGroup = transactionBody->getOtherGroup();
 		model::IGradidoBlockchain* otherBlockchain = nullptr;
 		std::unique_ptr<RemoteGroup> mOtherGroupRemote;
 		if (otherGroup.size()) {
@@ -253,16 +258,35 @@ namespace controller {
 		}
 		mm->releaseMathMemory(amount);
 		// TODO: if user has moved from another blockchain, get also creation transactions from origin group, recursive
-		
+		// TODO: check also address type, because only for human account creation is allowed
+		// New idea from Bernd: User can be in multiple groups gather creations in different groups in different colors
+		// maybe using a link transaction 
 	}
 
-	Poco::AutoPtr<model::gradido::GradidoBlock> Group::findLastTransaction(const std::string& address)
+	Poco::SharedPtr<model::TransactionEntry> Group::findLastTransactionForAddress(const std::string& address, uint32_t coinColor/* = 0*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto index = mAddressIndex->getIndexForAddress(address);
-		if (!index) { return Poco::AutoPtr<model::gradido::GradidoBlock>(); }
+		
+		// if we don't know the index, we haven't heard from this address at all
+		if (!index) {
+			return nullptr; 
+		}
 
-		return Poco::AutoPtr<model::gradido::GradidoBlock>();
+		auto blockNr = mLastBlockNr;
+		uint64_t transactionNr = 0;
+
+		do {
+			auto block = getBlock(blockNr);
+			auto blockIndex = block->getBlockIndex();
+			transactionNr = blockIndex->findLastTransactionForAddress(index, coinColor);
+			if (transactionNr) {
+				return block->getTransaction(transactionNr);
+			}
+			blockNr--;
+		} while (blockNr > 0);
+
+		return nullptr;
 	}
 
 	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
@@ -338,6 +362,80 @@ namespace controller {
 		
 		mLastTransaction = new model::gradido::GradidoBlock(transaction->getSerializedTransaction());
 		return mLastTransaction;
+	}
+
+	mpfr_ptr Group::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
+	{
+		auto blockNr = mLastBlockNr;
+		auto mm = MemoryManager::getInstance();
+		auto balance = mm->getMathMemory();
+
+		std::unique_ptr<model::gradido::GradidoBlock> lastGradidoBlockWithFinalBalance;
+		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> receiveTransfers;
+
+		do 
+		{
+			auto block = getBlock(blockNr);
+			auto blockIndex = block->getBlockIndex();
+			auto addressIndex = getAddressIndex()->getIndexForAddress(address);
+			auto transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinColor);
+			std::sort(transactionNrs.begin(), transactionNrs.end());
+			// begin on last transaction
+			for (auto it = transactionNrs.rbegin(); it != transactionNrs.rend(); ++it) 
+			{
+				auto transactionEntry = block->getTransaction(*it);
+				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				if (gradidoBlock->getReceived() > date) {
+					continue;
+				}
+				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
+				if (transactionBody->isTransfer() || transactionBody->isDeferredTransfer()) {
+					auto transfer = transactionBody->getTransferTransaction();
+					if (transfer->getSenderPublicKeyString() == address) {
+						lastGradidoBlockWithFinalBalance = std::move(gradidoBlock);
+						break;
+					}
+					else {
+						auto receiveAmount = mm->getMathMemory();
+						if (mpfr_set_str(receiveAmount, transfer->getAmount().data(), 10, gDefaultRound)) {
+							throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
+						}
+						
+						receiveTransfers.push_back({ receiveAmount , gradidoBlock->getReceived() });						
+					}
+				}
+				else if (transactionBody->isCreation() || transactionBody->isRegisterAddress()) {
+					lastGradidoBlockWithFinalBalance = std::move(gradidoBlock);
+					break;
+				} 				
+			}
+
+			blockNr--;
+		} while (blockNr > 0 && !lastGradidoBlockWithFinalBalance);
+
+		// calculate decay
+		auto lastDate = lastGradidoBlockWithFinalBalance->getReceived();
+		auto gdd = mm->getMathMemory();
+		auto temp = mm->getMathMemory();
+		if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
+			throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
+		}
+
+		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
+			assert(it->second > lastDate);
+			calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
+			calculateDecayFast(temp, gdd);
+			mpfr_add(gdd, gdd, it->first, gDefaultRound);
+			lastDate = it->second;
+			mm->releaseMathMemory(it->first);
+		}
+
+		assert(date > lastDate);
+		calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
+		calculateDecayFast(temp, gdd);
+		mm->releaseMathMemory(temp);
+
+		return gdd;				
 	}
 
 	Poco::SharedPtr<model::TransactionEntry> Group::getTransactionForId(uint64_t transactionId)
@@ -550,8 +648,4 @@ namespace controller {
 
 	}
 
-	void Group::calculateFinalBalance(Poco::SharedPtr<model::gradido::GradidoBlock> newGradidoBlock)
-	{
-		throw std::runtime_error("not implemented yet");
-	}
 }

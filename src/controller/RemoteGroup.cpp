@@ -17,7 +17,17 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
+	mpfr_ptr RemoteGroup::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+
 	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+
+	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::findLastTransactionForAddress(const std::string& address, uint32_t coinColor/* = 0*/)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

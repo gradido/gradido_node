@@ -1,4 +1,5 @@
 #include "SystemExceptions.h"
+#include <string>
 
 NoSpaceLeftOnDevice::NoSpaceLeftOnDevice(const char* what, const std::string& filename) noexcept
 	: GradidoBlockchainException(what), mFileName(filename)
@@ -16,3 +17,5 @@ std::string NoSpaceLeftOnDevice::getFullString() const
 
 	return resultString;
 }
+
+

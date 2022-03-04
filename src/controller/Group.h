@@ -53,10 +53,13 @@ namespace controller {
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
-		Poco::AutoPtr<model::gradido::GradidoBlock> findLastTransaction(const std::string& address);
+		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, uint32_t coinColor = 0);
 
 		//! \brief return last transaction which was added to this blockchain
 		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
+
+		//! \brief get last transaction for this user for this coin color with a final balance
+		mpfr_ptr calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date);
 
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 
@@ -101,8 +104,6 @@ namespace controller {
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		virtual void fillSignatureCacheOnStartup();
-
-		void calculateFinalBalance(Poco::SharedPtr<model::gradido::GradidoBlock> newGradidoBlock);
 
 		TaskObserver mTaskObserver;
 		iota::MessageListener* mIotaMessageListener;
