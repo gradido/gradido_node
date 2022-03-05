@@ -82,7 +82,7 @@ namespace model {
 
 			leveldb::Status s = mLevelDB->Put(leveldb::WriteOptions(), key, value);
 			if (!s.ok()) {
-				throw LevelDBPutException("cannot put to level db", s);
+				throw LevelDBStatusException("cannot put to level db", s);
 			}
 			return true;
 		}
@@ -91,7 +91,7 @@ namespace model {
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			leveldb::Status s = mLevelDB->Put(leveldb::WriteOptions(), key, value);
 			if (!s.ok()) {
-				throw LevelDBPutException("cannot put to level db", s);
+				throw LevelDBStatusException("cannot put to level db", s);
 			}
 			return true;
 		}

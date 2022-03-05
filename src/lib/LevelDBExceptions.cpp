@@ -17,13 +17,13 @@ std::string LevelDBKeyAlreadyExistException::getFullString() const
 }
 
 // #########################  Level DB Put Exception ###############################
-LevelDBPutException::LevelDBPutException(const char* what, const leveldb::Status& status) noexcept
+LevelDBStatusException::LevelDBStatusException(const char* what, const leveldb::Status& status) noexcept
 	: GradidoBlockchainException(what), mStatusString(status.ToString())
 {
 
 }
 
-std::string LevelDBPutException::getFullString() const
+std::string LevelDBStatusException::getFullString() const
 {
 	std::string result = what();
 	result += ", level db status: " + mStatusString;

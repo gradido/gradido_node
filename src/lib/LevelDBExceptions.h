@@ -15,14 +15,16 @@ protected:
 	std::string mValue;
 };
 
-class LevelDBPutException : public GradidoBlockchainException
+class LevelDBStatusException : public GradidoBlockchainException
 {
 public:
-	explicit LevelDBPutException(const char* what, const leveldb::Status& status) noexcept;
+	explicit LevelDBStatusException(const char* what, const leveldb::Status& status) noexcept;
 	std::string getFullString() const;
 
 protected:
 	std::string mStatusString;
 };
+
+
 
 #endif //__GRADIDO_NODE_LIB_LEVEL_DB_EXCEPTIONS_H

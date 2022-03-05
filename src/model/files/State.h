@@ -36,8 +36,11 @@ namespace model {
 			//! \return false if key already exist or error occurred, else true
 			bool addKeyValue(const std::string& key, const std::string& value);
 			//! add new value key pair or update value if key exist
-			//! \return false if error occurred else true
+			//! \return true, throw exception on error
 			bool setKeyValue(const std::string& key, const std::string& value);
+
+			//! \brief get iterator for looping over every entry
+			inline leveldb::Iterator* getIterator() { return mLevelDB->NewIterator(leveldb::ReadOptions()); }
 
 		protected:
 			leveldb::DB* mLevelDB;
