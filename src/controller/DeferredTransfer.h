@@ -15,7 +15,7 @@ namespace controller
 
 		@brief Cache for active Deferred Transfers
 
-		- free entry if transaction was drained or timeouted on get call
+		- free entry if transaction was drained on get call
 		- store in level db address index as key and transaction nrs as comma separated string as value
 	*/
 

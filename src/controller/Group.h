@@ -6,6 +6,7 @@
 //#include "Block.h"
 #include "BlockIndex.h"
 #include "TaskObserver.h"
+#include "DeferredTransfer.h"
 
 #include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
@@ -59,6 +60,7 @@ namespace controller {
 		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
 
 		//! \brief get last transaction for this user for this coin color with a final balance
+		// TODO: make UML diagram for function
 		mpfr_ptr calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date);
 
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
@@ -90,9 +92,7 @@ namespace controller {
 		inline uint32_t getGroupDefaultCoinColor() const { return mCoinColor; }
 
 		bool isSignatureInCache(const model::gradido::GradidoTransaction* transaction);
-
 		void setListeningCommunityServer(Poco::URI uri);
-
 
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
@@ -111,6 +111,9 @@ namespace controller {
 		Poco::Path mFolderPath;
 		Poco::SharedPtr<AddressIndex> mAddressIndex;
 		model::files::State mGroupState;
+		DeferredTransfer    mDeferredTransfersCache;
+
+		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> getTimeoutedDeferredTransferReturnedAmounts(uint32_t addressIndex, Poco::DateTime beginDate, Poco::DateTime endDate);
 
 		Poco::SharedPtr<model::gradido::GradidoBlock> mLastTransaction;
 		int mLastAddressIndex;
@@ -161,6 +164,8 @@ namespace controller {
 		};
 		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
 		mutable Poco::FastMutex mSignatureCacheMutex;
+
+
 
 		Poco::ExpireCache<iota::MessageId, uint64_t> mMessageIdTransactionNrCache;
 		mutable Poco::FastMutex mMessageIdTransactionNrCacheMutex;

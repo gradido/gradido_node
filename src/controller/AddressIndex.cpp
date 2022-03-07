@@ -24,13 +24,7 @@ namespace controller {
 
 	uint32_t AddressIndex::getIndexForAddress(const std::string &address)
 	{
-		auto addressIndex = getAddressIndex(address);
-		if (addressIndex.isNull()) {
-			return 0;
-		}
-
-		auto index = addressIndex->getIndexForAddress(address);
-		return index;
+		return getAddressIndex(address)->getIndexForAddress(address);
 	}
 
 	

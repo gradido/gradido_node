@@ -27,7 +27,7 @@ namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath, uint32_t coinColor)
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
-		mFolderPath(folderPath), mGroupState(folderPath),
+		mFolderPath(folderPath), mGroupState(folderPath), mDeferredTransfersCache(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCoinColor(coinColor), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
 		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
@@ -368,17 +368,20 @@ namespace controller {
 	{
 		auto blockNr = mLastBlockNr;
 		auto mm = MemoryManager::getInstance();
-		auto balance = mm->getMathMemory();
+		auto gdd = mm->getMathMemory();
+		auto temp = mm->getMathMemory();
 
 		std::unique_ptr<model::gradido::GradidoBlock> lastGradidoBlockWithFinalBalance;
-		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> receiveTransfers;
+		std::list<std::pair<mpfr_ptr, Poco::DateTime>> receiveTransfers;
+
+		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
 
 		do 
 		{
 			auto block = getBlock(blockNr);
 			auto blockIndex = block->getBlockIndex();
-			auto addressIndex = getAddressIndex()->getIndexForAddress(address);
 			auto transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinColor);
+
 			std::sort(transactionNrs.begin(), transactionNrs.end());
 			// begin on last transaction
 			for (auto it = transactionNrs.rbegin(); it != transactionNrs.rend(); ++it) 
@@ -400,8 +403,23 @@ namespace controller {
 						if (mpfr_set_str(receiveAmount, transfer->getAmount().data(), 10, gDefaultRound)) {
 							throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
 						}
-						
-						receiveTransfers.push_back({ receiveAmount , gradidoBlock->getReceived() });						
+						if (transactionBody->isDeferredTransfer()) {
+							auto deferredTransfer = transactionBody->getDeferredTransfer();
+							if (deferredTransfer->getTimeoutAsPocoDateTime() <= date) {
+								continue;
+							}
+							// subtract decay from time: date -> timeout
+							// later in code the decay for: received -> date will be subtracted automatic
+							// TODO: check if result is like expected 
+							auto secondsForDecay = Poco::Timespan(deferredTransfer->getTimeoutAsPocoDateTime() - date).totalSeconds();
+							calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, secondsForDecay);
+							calculateDecayFast(temp, receiveAmount);
+						}
+
+						receiveTransfers.push_front({ receiveAmount , gradidoBlock->getReceived() });
+						if (transactionBody->isDeferredTransfer()) {
+							break;
+						}
 					}
 				}
 				else if (transactionBody->isCreation() || transactionBody->isRegisterAddress()) {
@@ -414,13 +432,34 @@ namespace controller {
 		} while (blockNr > 0 && !lastGradidoBlockWithFinalBalance);
 
 		// calculate decay
-		auto lastDate = lastGradidoBlockWithFinalBalance->getReceived();
-		auto gdd = mm->getMathMemory();
-		auto temp = mm->getMathMemory();
-		if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
-			throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
+		Poco::DateTime lastDate;
+		if (lastGradidoBlockWithFinalBalance) {
+			lastDate = lastGradidoBlockWithFinalBalance->getReceived();
+			if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
+				throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
+			}
+		}
+		else if(receiveTransfers.size()) {
+			// if no lastGradidoBlockWithFinalBalance was found because sender is deferred transfer or not registered
+			// use first received transfer as starting point
+			auto firstReceived = receiveTransfers.front();
+			mpfr_add(gdd, gdd, firstReceived.first, gDefaultRound);
+			lastDate = firstReceived.second;
 		}
 
+		// check for time outed deferred transfers which will be automatic booked back
+		auto deferredTransfers = getTimeoutedDeferredTransferReturnedAmounts(addressIndex, lastDate, date);
+		auto deferredTransfersIt = deferredTransfers.begin();
+		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
+			while (it->second > deferredTransfersIt->second) {
+				receiveTransfers.insert(it, *deferredTransfersIt);
+				deferredTransfersIt++;
+				if (deferredTransfersIt == deferredTransfers.end()) {
+					break;
+				}
+			}
+		}		
+		
 		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
 			assert(it->second > lastDate);
 			calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
@@ -429,7 +468,9 @@ namespace controller {
 			lastDate = it->second;
 			mm->releaseMathMemory(it->first);
 		}
-
+		if (mpfr_cmp_si(gdd, 0, gDefaultRound)) {
+			return gdd;
+		}
 		assert(date > lastDate);
 		calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
 		calculateDecayFast(temp, gdd);
@@ -646,6 +687,39 @@ namespace controller {
 			
 		} while (transaction && transaction->getReceived() > border);
 
+	}
+
+	std::vector<std::pair<mpfr_ptr, Poco::DateTime>>  Group::getTimeoutedDeferredTransferReturnedAmounts(uint32_t addressIndex, Poco::DateTime beginDate, Poco::DateTime endDate)
+	{
+		auto mm = MemoryManager::getInstance();
+		auto deferredTransfers = mDeferredTransfersCache.getTransactionNrsForAddressIndex(addressIndex);
+		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> timeoutedDeferredTransfers;
+		for (auto it = deferredTransfers.begin(); it != deferredTransfers.end(); it++) {
+			auto transactionEntry = getTransactionForId(*it);
+			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+			auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
+			// little error correction
+			if (!transactionBody->isDeferredTransfer()) {
+				mDeferredTransfersCache.removeTransactionNrForAddressIndex(addressIndex, *it);
+				continue;
+			}
+			auto deferredTransfer = gradidoBlock->getGradidoTransaction()->getTransactionBody()->getDeferredTransfer();
+			auto timeout = deferredTransfer->getTimeoutAsPocoDateTime();
+			if (timeout < beginDate || timeout > endDate) {
+				continue;
+			}
+
+			// check if someone has already used it
+			auto balance = calculateAddressBalance(deferredTransfer->getRecipientPublicKeyString(), deferredTransfer->getCoinColor(), timeout);
+			if (mpfr_cmp_si(balance, 0) > 0) {
+				timeoutedDeferredTransfers.push_back({ balance, timeout });
+			}
+			else {
+				mDeferredTransfersCache.removeTransactionNrForAddressIndex(addressIndex, gradidoBlock->getID());
+				mm->releaseMathMemory(balance);
+			}
+		}
+		return timeoutedDeferredTransfers;
 	}
 
 }
