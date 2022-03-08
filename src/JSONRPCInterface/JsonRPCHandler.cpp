@@ -11,7 +11,7 @@
 
 using namespace rapidjson;
 
-void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
+void JsonRPCHandler::handle(std::string method, const Value& params)
 {
 	auto alloc = mResponseJson.GetAllocator();
 
@@ -57,11 +57,39 @@ void JsonRPCHandler::handle(std::string method, const rapidjson::Value& params)
 	else if (method == "listtransactions") {
 		stateError("not implemented yet");
 	}
+	else if (method == "getgroupdetails") {
+		std::string groupAlias;
+		if (!getStringParameter(params, "group", groupAlias)) return;
+		return getGroupDetails(groupAlias);
+	}
 	else {
 		stateError("method not known");
 	}
 }
 
+
+void JsonRPCHandler::getGroupDetails(const std::string& groupAlias)
+{
+	auto gm = GroupManager::getInstance();
+	auto group = gm->findGroup(GROUP_REGISTER_GROUP_ALIAS);
+	if(group.isNull()) {
+		stateError("node server error");
+		return;
+	}
+	auto gradidoBlock = group->getLastTransaction([=](const model::gradido::GradidoBlock* _gradidoBlock) {
+		return _gradidoBlock->getGradidoTransaction()->getTransactionBody()->getGlobalGroupAdd()->getGroupAlias() == groupAlias;
+	});
+	if (gradidoBlock.isNull()) {
+		stateError("group not known");
+		return;
+	}
+	auto groupAdd = gradidoBlock->getGradidoTransaction()->getTransactionBody()->getGlobalGroupAdd();
+	auto alloc = mResponseJson.GetAllocator();
+	stateSuccess();
+	mResponseJson.AddMember("groupName", Value(groupAdd->getGroupName().data(), alloc), alloc);
+	mResponseJson.AddMember("groupAlias", Value(groupAdd->getGroupAlias().data(), alloc), alloc);
+	mResponseJson.AddMember("coinColor", groupAdd->getCoinColor(), alloc);
+}
 
 void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::string& groupAlias)
 {

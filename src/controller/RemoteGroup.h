@@ -20,7 +20,7 @@ namespace controller {
 		RemoteGroup(const std::string& groupAlias);
 
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> getAllTransactions(std::function<bool(model::TransactionEntry*)> filter = nullptr);
-		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
+		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter = nullptr);
 		mpfr_ptr calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date);
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, uint32_t coinColor = 0);

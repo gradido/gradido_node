@@ -12,7 +12,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::gradido::GradidoBlock> RemoteGroup::getLastTransaction()
+	Poco::SharedPtr<model::gradido::GradidoBlock> RemoteGroup::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter /*= nullptr*/)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

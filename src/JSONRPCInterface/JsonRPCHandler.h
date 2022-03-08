@@ -11,8 +11,8 @@ public:
 
 protected:
 	void putTransaction(const std::string& transactionBinary, const std::string& groupAlias);
+	void getGroupDetails(const std::string& groupAlias);
 	void getTransactions(int64_t fromTransactionId, const std::string& groupAlias);
-
 
 };
 

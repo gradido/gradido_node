@@ -57,7 +57,7 @@ namespace controller {
 		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, uint32_t coinColor = 0);
 
 		//! \brief return last transaction which was added to this blockchain
-		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction();
+		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter = nullptr);
 
 		//! \brief get last transaction for this user for this coin color with a final balance
 		// TODO: make UML diagram for function

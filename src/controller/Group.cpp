@@ -348,8 +348,25 @@ namespace controller {
 		return transactions;
 	}
 
-	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction()
+	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter/* = nullptr*/)
 	{
+		if (filter) {
+			int blockCursor = mLastBlockNr;
+			while (blockCursor >= 0)
+			{
+				auto block = getBlock(blockCursor);
+				auto blockIndex = block->getBlockIndex();
+				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
+					auto transaction = block->getTransaction(i);
+					Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock(new model::gradido::GradidoBlock(transaction->getSerializedTransaction()));
+					if (filter(gradidoBlock.get())) {
+						return gradidoBlock;
+					}
+				}
+				blockCursor--;
+			}
+			return nullptr;
+		}
 		if (mLastTransaction) {
 			return mLastTransaction;
 		}
@@ -520,7 +537,7 @@ namespace controller {
 			}
 			blockNr--;
 		} while (blockNr > 0);
-
+		return nullptr;
 	}
 
 	std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> Group::findTransactions(const std::string& address, int month, int year)
@@ -568,7 +585,9 @@ namespace controller {
 	{
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> result;
 		auto lastBlock = getBlock(mLastBlockNr);
-		result.reserve(lastBlock->getBlockIndex()->getMaxTransactionNr());
+		if (!filter) {
+			result.reserve(lastBlock->getBlockIndex()->getMaxTransactionNr());
+		}
 		int blockCursor = 1;
 		while (blockCursor <= mLastBlockNr)
 		{
