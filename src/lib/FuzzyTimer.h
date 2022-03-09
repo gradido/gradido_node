@@ -42,7 +42,8 @@
 enum TimerReturn {
 	GO_ON = 0,
 	REMOVE_ME = 1,
-	REPORT_ERROR = 2
+	REPORT_ERROR = 2,
+	EXCEPTION = 3
 };
 #if (_MSC_VER >= 1200 && _MSC_VER < 1310)
 enum TimerReturn;
@@ -80,6 +81,8 @@ public:
 		\brief update timer map, maybe call timer... (only one per frame)
 	*/
 	bool move();
+
+	void stop();
 
 	void run();
 private:

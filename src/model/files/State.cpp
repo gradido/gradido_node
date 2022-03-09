@@ -3,6 +3,7 @@
 #include <cassert>
 #include "Poco/Mutex.h"
 #include "Poco/Thread.h"
+#include "Poco/File.h"
 #include "../../lib/LevelDBExceptions.h"
 #include "../../SingletonManager/LoggerManager.h"
 
@@ -16,9 +17,13 @@ namespace model {
 			: mLevelDB(nullptr)
 		{
 			Poco::ScopedLock<Poco::FastMutex> _lock(g_StateMutex);
-			path.pushDirectory(".state");
+			//path.pushDirectory(".state");
 			leveldb::Options options;
 			options.create_if_missing = true;
+			Poco::File file(path);
+			if (!file.exists()) {
+				file.createDirectories();
+			}
 			leveldb::Status status = leveldb::DB::Open(options, path.toString(), &mLevelDB);
 			// if group is removed from cache and created new at the same time, the lock file from other level db instance is maybe still there 
 			// and trigger an io error, so give it same time an try it again, maximal 100 times. 

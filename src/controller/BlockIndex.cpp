@@ -72,7 +72,9 @@ namespace controller {
 					// first = coin color
 					// second = vector with transaction nr indices
 					for (auto itTranInd = itCoinColorInd->second.begin(); itTranInd != itCoinColorInd->second.end(); itTranInd++) {
-						coinColorsForTransactionNrs[*itTranInd] = itCoinColorInd->first;
+						assert(*itTranInd == coinColorsForTransactionNrs.size());
+						coinColorsForTransactionNrs.push_back(itCoinColorInd->first);
+						//coinColorsForTransactionNrs[*itTranInd] = itCoinColorInd->first;
 					}
 				}
 

@@ -4,7 +4,7 @@
 namespace controller
 {
 	DeferredTransfer::DeferredTransfer(const Poco::Path& groupFolder)
-		: mState(Poco::Path(groupFolder, "DeferredTransfers"))
+		: mState(Poco::Path(groupFolder, Poco::Path("deferredTransferCache")))
 	{
 		loadFromState();
 	}

@@ -36,9 +36,11 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 	mInitalized = true;
 
 	// load special group 
+	
 	Poco::SharedPtr<controller::Group> group = new controller::GroupRegisterGroup;
 	group->init();
 	mGroupMap.insert({ GROUP_REGISTER_GROUP_ALIAS, group });
+	//*/
 	mWorkMutex.unlock();
 
 	auto groups = mGroupIndex->listGroupAliases();
@@ -100,9 +102,10 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 		mWorkMutex.unlock();
 		return nullptr;
 	}
-	auto registerGroup = dynamic_cast<controller::GroupRegisterGroup*>(mGroupMap[GROUP_REGISTER_GROUP_ALIAS].get());
+	//auto registerGroup = dynamic_cast<controller::GroupRegisterGroup*>(mGroupMap[GROUP_REGISTER_GROUP_ALIAS].get());
 
-	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, registerGroup->findGroup(groupAlias).coinColor);
+	//Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, registerGroup->findGroup(groupAlias).coinColor);
+	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, 0);
 	mGroupMap.insert({ groupAlias, group });
 	mWorkMutex.unlock();
 	group->init();

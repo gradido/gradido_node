@@ -25,6 +25,7 @@
 
 #include "SingletonManager/GroupManager.h"
 #include "SingletonManager/OrderingManager.h"
+#include "SingletonManager/CacheManager.h"
 
 MainServer::MainServer()
 	: _helpRequested(false)
@@ -224,6 +225,7 @@ int MainServer::main(const std::vector<std::string>& args)
 
 		// stop worker scheduler
 		// TODO: make sure that pending transaction are still write out to storage
+		CacheManager::getInstance()->getFuzzyTimer()->stop();
 		ServerGlobals::g_CPUScheduler->stop();
 		ServerGlobals::g_WriteFileCPUScheduler->stop();
 		ServerGlobals::g_IotaRequestCPUScheduler->stop();

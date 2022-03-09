@@ -3,6 +3,7 @@
 #include "../SingletonManager/OrderingManager.h"
 #include "../SingletonManager/CacheManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/http/RequestExceptions.h"
 #include "../ServerGlobals.h"
 
 namespace iota
@@ -60,7 +61,16 @@ namespace iota
 		static const char* function_name = "MessageListener::listener";
 
 		// collect message ids for index from iota
-		auto messageIds = ServerGlobals::g_IotaRequestHandler->findByIndex(mIndex);
+		std::vector<MemoryBin*> messageIds;
+		try {
+			messageIds = ServerGlobals::g_IotaRequestHandler->findByIndex(mIndex);
+		}
+		catch (...) {
+			unlock();
+			IotaRequest::defaultExceptionHandler(mErrorLog, true);
+			return EXCEPTION;
+		}
+	
 		//printf("called getMessageIdsForIndexiation and get %d message ids %s\n", messageIds.size(), timeUsed.string().data());
 		if (messageIds.size()) {
 			updateStoredMessages(messageIds);

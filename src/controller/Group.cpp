@@ -27,7 +27,7 @@ namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath, uint32_t coinColor)
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
-		mFolderPath(folderPath), mGroupState(folderPath), mDeferredTransfersCache(folderPath),
+		mFolderPath(folderPath), mGroupState(Poco::Path(folderPath, ".state")), mDeferredTransfersCache(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCoinColor(coinColor), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
 		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
@@ -357,6 +357,7 @@ namespace controller {
 				auto block = getBlock(blockCursor);
 				auto blockIndex = block->getBlockIndex();
 				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
+					if (!i) break;
 					auto transaction = block->getTransaction(i);
 					Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock(new model::gradido::GradidoBlock(transaction->getSerializedTransaction()));
 					if (filter(gradidoBlock.get())) {
@@ -594,6 +595,7 @@ namespace controller {
 			auto block = getBlock(blockCursor);
 			auto blockIndex = block->getBlockIndex();
 			for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
+				if (!i) break;
 				auto transaction = block->getTransaction(i);
 				if (!filter || filter(transaction)) {
 					result.push_back(block->getTransaction(i));

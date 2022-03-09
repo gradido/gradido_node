@@ -7,7 +7,7 @@
 
 namespace controller {
 	GroupRegisterGroup::GroupRegisterGroup()
-		: Group(GROUP_REGISTER_GROUP_ALIAS, Poco::Path(ServerGlobals::g_FilesPath + '/' + GROUP_REGISTER_GROUP_ALIAS), 0)
+		: Group(GROUP_REGISTER_GROUP_ALIAS, Poco::Path(ServerGlobals::g_FilesPath, Poco::Path(GROUP_REGISTER_GROUP_ALIAS, "")), 0)
 	{
 		Poco::File file(mFolderPath);
 		if (!file.exists()) {

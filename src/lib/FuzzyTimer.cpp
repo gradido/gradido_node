@@ -1,6 +1,7 @@
 #include "FuzzyTimer.h"
 #include "Poco/Timestamp.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "gradido_blockchain/GradidoBlockchainException.h"
 
 FuzzyTimer::FuzzyTimer()
 	: exit(false)
@@ -88,22 +89,48 @@ bool FuzzyTimer::move()
 		}
 		else {
 			//printf("[FuzzyTimer::move] about to call: %s\n", it->second.name.data());
-			TimerReturn ret = it->second.callback->callFromTimer();
+			Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+			TimerReturn ret;
+			try {
+				ret = it->second.callback->callFromTimer();
+			}
+			catch (GradidoBlockchainException& ex) {
+				errorLog.error("[FuzzyTimer::move] Gradido Blockchain Exception: %s", ex.getFullString());
+				ret = EXCEPTION;
+			}
+			catch (Poco::Exception& ex) {
+				errorLog.error("[FuzzyTimer::move] Poco Exception: %s", ex.displayText());
+				ret = EXCEPTION;
+			} 
+			catch (std::runtime_error& ex) {
+				errorLog.error("[FuzzyTimer::move] std::runtime_error: %s", ex.what());
+				ret = EXCEPTION;
+			}
 			if (it->second.nextLoop() && ret == GO_ON) {
 				mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));
 			}
 
 			if (ret == REPORT_ERROR) {
-				LoggerManager::getInstance()->mErrorLogging.error(
-					"[Timer::move] timer run report error: timer type: %s, timer name: %s",
+				errorLog.error(
+					"[FuzzyTimer::move] timer run report error: timer type: %s, timer name: %s",
+					std::string(it->second.callback->getResourceType()), it->second.name);				
+			}
+			else if (ret == EXCEPTION) {
+				errorLog.error(
+					"[FuzzyTimer::move] timer run throw a exception: timer type: %s, timer name: %s",
 					std::string(it->second.callback->getResourceType()), it->second.name);
-				//LOG_ERROR("report error from timer callback", DR_ERROR);
 			}
 		}
 		mRegisteredAtTimer.erase(it);					
 	}
 
 	return true;
+}
+
+void FuzzyTimer::stop()
+{
+	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	exit = true;
 }
 void FuzzyTimer::run()
 {

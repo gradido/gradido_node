@@ -9,11 +9,18 @@
 
 #include "../model/NodeTransactionEntry.h"
 
+#include "rapidjson/prettywriter.h"
+
 using namespace rapidjson;
 
 void JsonRPCHandler::handle(std::string method, const Value& params)
 {
 	auto alloc = mResponseJson.GetAllocator();
+
+	StringBuffer buffer;
+	PrettyWriter<StringBuffer> writer(buffer);
+	params.Accept(writer);
+	printf("incoming json-rpc request, params: \n%s\n", buffer.GetString());
 
 	if (method == "getlasttransaction") {
 		stateSuccess();
@@ -23,13 +30,17 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	else if (method == "getTransactions") {
 		printf("getTransactions called\n");
 		if(!params.IsObject()) {
-			return stateError("params not an object");
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			stateError("params not an object");
+			return;
 		}
 		std::string groupAlias;
 		uint64_t transactionId = 0;
 
-		if(!getStringParameter(params, "group", groupAlias)) return;
-		if(!getUInt64Parameter(params, "fromTransactionId", transactionId)) return;
+		if (!getStringParameter(params, "group", groupAlias) || !getUInt64Parameter(params, "fromTransactionId", transactionId)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}		
 		printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
 		getTransactions(transactionId, groupAlias);
 	}
@@ -59,10 +70,14 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	}
 	else if (method == "getgroupdetails") {
 		std::string groupAlias;
-		if (!getStringParameter(params, "group", groupAlias)) return;
+		if (!getStringParameter(params, "groupAlias", groupAlias)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
 		return getGroupDetails(groupAlias);
 	}
 	else {
+		mResponseErrorCode = JSON_RPC_ERROR_METHODE_NOT_FOUND;
 		stateError("method not known");
 	}
 }
@@ -73,6 +88,7 @@ void JsonRPCHandler::getGroupDetails(const std::string& groupAlias)
 	auto gm = GroupManager::getInstance();
 	auto group = gm->findGroup(GROUP_REGISTER_GROUP_ALIAS);
 	if(group.isNull()) {
+		mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
 		stateError("node server error");
 		return;
 	}
@@ -80,6 +96,7 @@ void JsonRPCHandler::getGroupDetails(const std::string& groupAlias)
 		return _gradidoBlock->getGradidoTransaction()->getTransactionBody()->getGlobalGroupAdd()->getGroupAlias() == groupAlias;
 	});
 	if (gradidoBlock.isNull()) {
+		mResponseErrorCode = JSON_RPC_ERROR_UNKNOWN_GROUP;
 		stateError("group not known");
 		return;
 	}
@@ -99,6 +116,7 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	auto gm = GroupManager::getInstance();
 	auto group = gm->findGroup(groupAlias);
 	if (group.isNull()) {
+		mResponseErrorCode = JSON_RPC_ERROR_UNKNOWN_GROUP;
 		stateError("group not known");
 		return;
 	}

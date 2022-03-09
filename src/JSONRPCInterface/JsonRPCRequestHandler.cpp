@@ -19,7 +19,7 @@
 using namespace rapidjson;
 
 JsonRPCRequestHandler::JsonRPCRequestHandler()
-	: mResponseJson(kObjectType), mResponseResult(kObjectType)
+	: mResponseJson(kObjectType), mResponseResult(kObjectType), mResponseErrorCode(JSON_RPC_ERROR_NONE)
 {
 
 }
@@ -80,7 +80,18 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 		StringBuffer buffer;
 		Writer<StringBuffer> writer(buffer);
 		auto alloc = mResponseJson.GetAllocator();
-		mResponseJson.AddMember("result", mResponseResult, alloc);
+		if (mResponseErrorCode) {
+			Value error(kObjectType);
+			error.AddMember("code", mResponseErrorCode, alloc);
+			error.AddMember("message", mResponseResult["msg"], alloc);
+			if (mResponseResult.HasMember("details")) {
+				error.AddMember("data", mResponseResult["details"], alloc);
+			}
+			mResponseJson.AddMember("error", error, alloc);
+		}
+		else {
+			mResponseJson.AddMember("result", mResponseResult, alloc);
+		}
 		mResponseJson.AddMember("jsonrpc", "2.0", alloc);
 		mResponseJson.AddMember("id", id, alloc);
 		mResponseJson.Accept(writer);
