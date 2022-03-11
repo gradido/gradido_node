@@ -43,7 +43,8 @@ enum TimerReturn {
 	GO_ON = 0,
 	REMOVE_ME = 1,
 	REPORT_ERROR = 2,
-	EXCEPTION = 3
+	EXCEPTION = 3,
+	NOT_SET = 4
 };
 #if (_MSC_VER >= 1200 && _MSC_VER < 1310)
 enum TimerReturn;

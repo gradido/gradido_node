@@ -5,6 +5,7 @@
 #include "JSONRPCInterface/JsonRequestHandlerFactory.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/http/ServerConfig.h"
 
 #include "Poco/Util/HelpFormatter.h"
 #include "Poco/Net/ServerSocket.h"
@@ -170,7 +171,8 @@ int MainServer::main(const std::vector<std::string>& args)
 			homeFolder.createDirectory();
 		}
 
-		if (!ServerGlobals::initSSLClientContext()) {
+		std::string cacertPath = Poco::Path::home() + ".gradido/cacert.pem";
+		if (!ServerConfig::initSSLClientContext(cacertPath.data())) {
 			return Application::EXIT_CANTCREAT;
 		}
 		ServerGlobals::initIota(config());

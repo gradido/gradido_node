@@ -28,6 +28,8 @@ int WriteTransactionsToBlockTask::run()
 
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
 		auto transactionEntry = *it;
+		auto base64 = DataTypeConverter::binToBase64(*transactionEntry->getSerializedTransaction());
+		printf("serialized transaction: %s\n", base64.data());
 		lines.push_back(transactionEntry->getSerializedTransaction());
 		if (lastTransactionNr > 0 && lastTransactionNr + 1 != transactionEntry->getTransactionNr()) {
 			throw BlockchainOrderException("out of order transaction");

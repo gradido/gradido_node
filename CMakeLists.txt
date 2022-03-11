@@ -34,6 +34,7 @@ ENDIF()
 
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
+FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
 FILE(GLOB HTTPInterface "src/HTTPInterface/*.h" "src/HTTPInterface/*.cpp")
 FILE(GLOB JSONRPCInterface "src/JSONRPCInterface/*.h" "src/JSONRPCInterface/*.cpp")
@@ -48,7 +49,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 
 SET(LOCAL_SRCS 
-	${CONTAINER} ${CONTROLLER} ${IOTA}
+	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
 	${MODEL} ${MODEL_FILES} 
@@ -62,6 +63,7 @@ SET(LOCAL_SRCS
 if(MSVC)
 # src
 source_group("container" FILES ${CONTAINER})
+source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
 source_group("iota" FILES ${IOTA})
 source_group("HTTP-Interface" FILES ${HTTPInterface})

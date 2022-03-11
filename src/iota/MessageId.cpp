@@ -28,8 +28,9 @@ namespace iota {
 
 	void MessageId::fromMemoryBin(const MemoryBin* bin)
 	{
-		if (bin->size() == 4 * sizeof(uint64_t)) {
-			throw MessageIdFormatException("message id as bin has wrong size", DataTypeConverter::binToHex(bin));
+		if (bin->size() != 4 * sizeof(uint64_t)) {
+			auto hex = DataTypeConverter::binToHex(bin);
+			throw MessageIdFormatException("message id as bin has wrong size", hex);
 		}
 		memcpy(mMessageId, *bin, 4 * sizeof(uint64_t));
 	}

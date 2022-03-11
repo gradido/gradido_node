@@ -7,7 +7,8 @@
 #include "../../ServerGlobals.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
-#include "../../lib/BinTextConverter.h"
+//#include "../../lib/BinTextConverter.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include "Poco/File.h"
 
@@ -123,10 +124,17 @@ namespace model {
 			}
 			std::unique_ptr<std::string> resultString(new std::string);
 			resultString->reserve(transactionSize);
-			fileStream->read(resultString->data(), transactionSize);			
+			// block wise read
+			char buffer[4096];
+			size_t readCursor = 0;
+			while (fileStream->read(buffer, sizeof(buffer)) && transactionSize - readCursor >= 4096)
+				resultString->append(buffer, sizeof(buffer));
+			resultString->append(buffer, transactionSize - readCursor);
+
+			//fileStream->read(resultString->data(), transactionSize);			
 			mCurrentFileCursorReadPosition += transactionSize;
 			fl->unlock(filePath);
-
+			auto base64 = DataTypeConverter::binToBase64(resultString->data());
 			return std::move(resultString);
 		}
 
@@ -175,7 +183,7 @@ namespace model {
 				// check data type overflow
 				assert((Poco::UInt32)size == (*itLines)->size());
 				resultingCursorPositions.push_back(cursorPos);
-
+				
 				fileStream->write((char*)&size, sizeof(Poco::UInt16));
 				fileStream->write((*itLines)->data(), size);
 				mCurrentFileSize += sizeof(Poco::UInt16) + size;

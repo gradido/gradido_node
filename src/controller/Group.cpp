@@ -71,13 +71,13 @@ namespace controller {
 		return true;
 	}
 
-	void Group::setListeningCommunityServer(Poco::URI uri)
+	void Group::setListeningCommunityServer(client::Base* client)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mCommunityServer) {
 			delete mCommunityServer;
 		}
-		mCommunityServer = new JsonRequest(uri);
+		mCommunityServer = client;
 	}
 
 	void Group::exit()
@@ -135,7 +135,7 @@ namespace controller {
 			id = lastTransaction->getID() + 1;
 		}
 		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
-		if (newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
+		if (lastTransaction && newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
 			throw BlockchainOrderException("previous transaction is younger");
 		}
 		// calculate final balance
@@ -197,27 +197,7 @@ namespace controller {
 			);
 			// say community server that a new transaction awaits him
 			if (mCommunityServer) {
-				Value params(kObjectType);
-				auto alloc = mCommunityServer->getJsonAllocator();
-				auto transactionBase64 = DataTypeConverter::binToBase64(mLastTransaction->getSerialized());
-				params.AddMember("transactionBase64", Value(transactionBase64.get()->data(), alloc), alloc);
-				try {
-					auto result = mCommunityServer->postRequest(params);
-					if (result.IsObject()) {
-						StringBuffer buffer;
-						PrettyWriter<StringBuffer> writer(buffer);
-						result.Accept(writer);
-
-						printf(buffer.GetString());
-					}
-				}
-				catch (RapidjsonParseErrorException& ex) {
-					printf("[Group::addTransaction] Result Json Exception: %s\n", ex.getFullString().data());
-				}
-				catch (Poco::Exception& ex) {
-					printf("[Group::addTransaction] Poco Exception: %s\n", ex.displayText().data());
-				}
-				
+				mCommunityServer->notificateNewTransaction(mLastTransaction);
 			}
 		}
 		return result;
@@ -699,9 +679,18 @@ namespace controller {
 				continue;
 			}
 			// TODO: reverse order to read in transactions ascending to prevent jumping back in forth in file (seek trigger a new block read from mostly 8K)
-			auto transactionEntry = block->getTransaction(transactionNr);
-			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
-			mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
+			try {
+				auto transactionEntry = block->getTransaction(transactionNr);
+				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
+			}
+			catch (GradidoBlockchainTransactionNotFoundException& ex) {
+				LoggerManager::getInstance()->mErrorLogging.warning("transaction: %d not found, reset state: %s", transactionNr, ex.getFullString());
+				if (transactionNr == 1) {
+					updateLastTransactionId(0);
+					break;
+				}
+			}
 			
 			transactionNr--;
 			//printf("compare received: %" PRId64 " with border : %" PRId64 "\n", transaction->getReceived().timestamp().raw(), border.timestamp().raw());

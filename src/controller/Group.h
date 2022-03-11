@@ -15,6 +15,8 @@
 #include "gradido_blockchain/http/JsonRequest.h"
 #include "../iota/MessageListener.h"
 
+#include "../client/Base.h"
+
 #include "Poco/Path.h"
 #include "Poco/AutoPtr.h"
 #include "Poco/URI.h"
@@ -92,7 +94,7 @@ namespace controller {
 		inline uint32_t getGroupDefaultCoinColor() const { return mCoinColor; }
 
 		bool isSignatureInCache(const model::gradido::GradidoTransaction* transaction);
-		void setListeningCommunityServer(Poco::URI uri);
+		void setListeningCommunityServer(client::Base* client);
 
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
@@ -171,7 +173,8 @@ namespace controller {
 		mutable Poco::FastMutex mMessageIdTransactionNrCacheMutex;
 
 		// Community Server listening on new blocks for his group
-		JsonRequest* mCommunityServer;
+		client::Base* mCommunityServer;
+
 		bool mExitCalled;
 	};
 }

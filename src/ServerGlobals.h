@@ -24,14 +24,12 @@ namespace ServerGlobals {
 	//! in which timespan the timeout manager checks timeouts in seconds, default 1 minute
 	extern Poco::UInt16						g_TimeoutCheck;
 	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
-	extern Poco::UInt16						g_WriteToDiskTimeout;
-	extern Poco::Net::Context::Ptr g_SSL_CLient_Context;
+	extern Poco::UInt16						g_WriteToDiskTimeout;	
 	extern IotaRequest* g_IotaRequestHandler;
 	extern Poco::AtomicCounter              g_NumberExistingTasks;
 	extern bool								g_LogTransactions;
 
 	void clearMemory();
-	bool initSSLClientContext();
 	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
 };
 

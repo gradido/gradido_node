@@ -1,8 +1,12 @@
 #include "GroupManager.h"
+#include "LoggerManager.h"
 
 //#include "Poco/Path.h"
 #include "Poco/File.h"
 #include "../ServerGlobals.h"
+#include "../client/Json.h"
+#include "../client/GraphQL.h"
+
 
 
 GroupManager::GroupManager()
@@ -48,16 +52,39 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 		// load all groups to start iota message listener from all groups
 		try {
 			auto group = findGroup(*it);
-			std::string communityNewBlockUri = "community." + *it + ".newBlockUri";
-			if (config.has(communityNewBlockUri)) {
-				group->setListeningCommunityServer(Poco::URI(config.getString(communityNewBlockUri)));
+			// for notification of community server by new transaction
+			std::string groupAliasConfig = "community." + *it;
+			std::string communityNewBlockUri = groupAliasConfig + ".newBlockUri";
+			std::string communityNewBlockUriTypeIndex = groupAliasConfig + ".blockUriType";
+			std::string communityNewBlockUriType = "json";
+			if (config.has(communityNewBlockUriTypeIndex)) {
+				communityNewBlockUriType = config.getString(communityNewBlockUriTypeIndex);
 			}
+			if (config.has(communityNewBlockUri)) {
+				client::Base* clientBase = nullptr;
+				auto uri = Poco::URI(config.getString(communityNewBlockUri));
+				if (communityNewBlockUriType == "json") {
+					clientBase = new client::Json(uri);
+				}
+				else if (communityNewBlockUriType == "graphql") {
+					clientBase = new client::GraphQL(uri);
+				}
+				else {
+					LoggerManager::getInstance()->mErrorLogging.error("unknown new block uri type: %s", communityNewBlockUriType);
+				}
+				if (clientBase) {
+					group->setListeningCommunityServer(clientBase);
+				}
+			}
+
 		}
 		catch (GradidoBlockchainTransactionNotFoundException& ex) {
-			printf("group: %s, exception: %s\n",
-				it->data(), ex.getFullString().data()
-			);
+			LoggerManager::getInstance()->mErrorLogging.error("[GroupManager::init] transaction not found exception: %s in group: %s", ex.getFullString(), *it);
 			return -1;
+		}
+		catch (GradidoBlockchainException& ex) {
+			LoggerManager::getInstance()->mErrorLogging.error("[GroupManager::init] gradido blockchain exception: %s in group: %s", ex.getFullString(), *it);
+			return -2;
 		}
 	}
 

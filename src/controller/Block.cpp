@@ -2,6 +2,7 @@
 #include "../ServerGlobals.h"
 
 #include "TaskObserver.h"
+#include "../model/files/FileExceptions.h"
 
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
@@ -89,8 +90,13 @@ namespace controller {
 				}
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
 			}
-			auto blockLine = mBlockFile->readLine(fileCursor);			
-			addTransaction(std::move(blockLine), fileCursor);
+			try {
+				auto blockLine = mBlockFile->readLine(fileCursor);
+				addTransaction(std::move(blockLine), fileCursor);
+			}
+			catch (model::files::EndReachingException& ex) {
+				throw GradidoBlockchainTransactionNotFoundException("transaction not found in file").setTransactionId(transactionNr);
+			}
 			return mSerializedTransactions.get(transactionNr);
 		}
 		else {

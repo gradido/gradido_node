@@ -139,7 +139,7 @@ int IotaMessageToTransactionTask::run()
     //std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
     OrderingManager::getInstance()->pushTransaction(
         std::move(transaction), mMilestoneIndex,
-        mTimestamp, *dataIndex.second.get(), mMessageId.toMemoryBin());
+        mTimestamp, group->getGroupAlias(), mMessageId.toMemoryBin());
 
     return 0;
 }

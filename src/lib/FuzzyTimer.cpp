@@ -2,6 +2,7 @@
 #include "Poco/Timestamp.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "../iota/IotaExceptions.h"
 
 FuzzyTimer::FuzzyTimer()
 	: exit(false)
@@ -90,7 +91,7 @@ bool FuzzyTimer::move()
 		else {
 			//printf("[FuzzyTimer::move] about to call: %s\n", it->second.name.data());
 			Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-			TimerReturn ret;
+			TimerReturn ret = NOT_SET;
 			try {
 				ret = it->second.callback->callFromTimer();
 			}
@@ -104,6 +105,10 @@ bool FuzzyTimer::move()
 			} 
 			catch (std::runtime_error& ex) {
 				errorLog.error("[FuzzyTimer::move] std::runtime_error: %s", ex.what());
+				ret = EXCEPTION;
+			}
+			catch (MessageIdFormatException& ex) {
+				errorLog.error("[FuzzyTimer::move] ... exception");
 				ret = EXCEPTION;
 			}
 			if (it->second.nextLoop() && ret == GO_ON) {
