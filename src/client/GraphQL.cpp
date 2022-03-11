@@ -6,6 +6,7 @@
 #include "../SingletonManager/LoggerManager.h"
 
 #include "rapidjson/prettywriter.h"
+#include "rapidjson/pointer.h"
 
 using namespace rapidjson;
 
@@ -41,22 +42,37 @@ namespace client
 
 		variables.AddMember("transactionJson", Value(it->second.data(), alloc), alloc);
 
-		params.AddMember("operationName", NULL, alloc);
+		params.AddMember("operationName", Value(Type::kNullType), alloc);
 		params.AddMember("variables", variables, alloc);
 
-		std::string grapqhlQuery = "query($transactionJson: String!){newGradidoBlock(transactionJson: $transactionJson){}}";
+		std::string grapqhlQuery = "mutation($transactionJson: String!){newGradidoBlock(transactionJson: $transactionJson)}";
 		params.AddMember("query", Value(grapqhlQuery.data(), alloc), alloc);
 
 		try {
 			auto result = request.postRequest(params);
+			// default result 
+			/*
+			*
+			{
+				"data": {
+					"newGradidoBlock": true
+				}
+			}
+			*/
+			// Access DOM by Get(). It return nullptr if the value does not exist.
+			if (Value* newGradidoBlock = Pointer("/data/newGradidoBlock").Get(result))
+				if(newGradidoBlock->IsBool() && newGradidoBlock->GetBool()) {
+					return true;
+			}
 			StringBuffer buffer;
 			PrettyWriter<StringBuffer> writer(buffer);
 			result.Accept(writer);
 			LoggerManager::getInstance()->mErrorLogging.information("response from notify community (graphql) of new block: %s", std::string(buffer.GetString()));
-			return true;
+			return false;
 		}
 		catch (RapidjsonParseErrorException& ex) {
 			throw RequestResponseInvalidJsonException("NewGradidoBlock", mUri, ex.getRawText());
 		}		
+		return false;
 	}
 }

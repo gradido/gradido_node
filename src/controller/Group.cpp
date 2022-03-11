@@ -141,6 +141,11 @@ namespace controller {
 		// calculate final balance
 		newGradidoBlock->calculateFinalGDD(this);
 
+		// calculate tx hash
+		auto txHash = newGradidoBlock->calculateTxHash(lastTransaction.get());
+		newGradidoBlock->setTxHash(txHash);
+		MemoryManager::getInstance()->releaseMemory(txHash);
+
 		// intern validation
 		model::gradido::TransactionValidationLevel level = (model::gradido::TransactionValidationLevel)(
 			model::gradido::TRANSACTION_VALIDATION_SINGLE |
