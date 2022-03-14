@@ -65,6 +65,12 @@ namespace task {
 				printf("task name: %s\n", name.data());
 #endif
 			}
+			catch (GradidoBlockchainException& ex) {
+				printf("[CPUShedulerThread] gradido blockchain exception %s for task type: %s\n", ex.getFullString().data(), mWaitingTask->getResourceType());
+#ifdef _UNI_LIB_DEBUG
+				printf("task name: %s\n", name.data());
+#endif
+			}
 				
 			mWaitingTask = mParent->getNextUndoneTask(this);
 		}
