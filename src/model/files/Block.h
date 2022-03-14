@@ -69,7 +69,6 @@ namespace model {
 			Poco::SharedPtr<Poco::FileStream>	mBlockFile;
 			Poco::FastMutex mFastMutex;
 			Poco::UInt32    mCurrentFileSize;
-			std::streampos  mCurrentFileCursorReadPosition;
 
 		};
 

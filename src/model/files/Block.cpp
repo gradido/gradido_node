@@ -18,7 +18,7 @@ namespace model {
 	namespace files {
 		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
 			: //mTimer(0, ServerGlobals::g_TimeoutCheck),
-			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0), mCurrentFileCursorReadPosition(0)
+			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
 		{
 			char fileName[16]; memset(fileName, 0, 16);
 			sprintf(fileName, "blk%08d.dat", blockNr);
@@ -54,7 +54,6 @@ namespace model {
 				if (telled && telled > crypto_generichash_KEYBYTES) {
 					mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
 				}
-				mCurrentFileCursorReadPosition = telled;
 			}
 			mLastUsed = Poco::Timestamp();
 			return mBlockFile;
@@ -82,6 +81,7 @@ namespace model {
 		std::unique_ptr<std::string> Block::readLine(Poco::UInt32 startReading)
 		{
 			// set also mCurrentFileSize
+			printf("[Block::readLine] cursor: %d\n", startReading);
 			auto fileStream = getOpenFile();
 			if (fileStream->fail()) {
 
@@ -115,41 +115,21 @@ namespace model {
 			// https://stackoverflow.com/questions/9349470/whats-the-difference-between-fseek-lseek-seekg-seekp
 			// "The difference between the various seek functions is just the kind of file/stream objects on which they operate. 
 			//  On Linux, seekg and fseek are probably implemented in terms of lseek."
-			if (mCurrentFileCursorReadPosition != startReading) {
-				fileStream->seekg(startReading);
-				mCurrentFileCursorReadPosition = startReading;
+			if (fileStream->tellg() != startReading) {
+				fileStream->seekg(startReading, std::ios_base::beg);
 			}
-			
+			printf("state before read transaction size: %d\n", fileStream->rdstate());
 			fileStream->read((char*)&transactionSize, sizeof(Poco::UInt16));
-			mCurrentFileCursorReadPosition += sizeof(Poco::UInt16);
 			if (startReading + transactionSize > mCurrentFileSize) {
 				fl->unlock(filePath);
 				throw EndReachingException("file is to small for transaction size", mBlockPath.toString().data(), startReading, transactionSize);
 			}
 			if (transactionSize < minimalFileSize) {
-				char readBuffer[4096]; memset(readBuffer, 0, 4096);
-				mBlockFile->seekg(0, std::ios_base::end);
-				auto telled = mBlockFile->tellg();
-				auto state = fileStream->rdstate();
-				// 2 = failbit: Logical error on i/o operation
-				fileStream->seekg(0);
-				fileStream->read(readBuffer, telled);
-				auto hex = DataTypeConverter::binToHex((const unsigned char*)readBuffer, 10);
-				printf("%d File in Hex: %s\n", transactionSize, hex.data());
 				fl->unlock(filePath);
 				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.toString().data(), startReading, transactionSize);
 			}
-			std::unique_ptr<std::string> resultString(new std::string);
-			resultString->reserve(transactionSize);
-			// block wise read
-			char buffer[4096];
-			size_t readCursor = 0;
-			while (fileStream->read(buffer, sizeof(buffer)) && transactionSize - readCursor >= 4096)
-				resultString->append(buffer, sizeof(buffer));
-			resultString->append(buffer, transactionSize - readCursor);
-
-			//fileStream->read(resultString->data(), transactionSize);			
-			mCurrentFileCursorReadPosition += transactionSize;
+			std::unique_ptr<std::string> resultString(new std::string(transactionSize, '\0'));
+			fileStream->read(resultString->data(), transactionSize);			
 			fl->unlock(filePath);
 			//auto base64 = DataTypeConverter::binToBase64(resultString->data());
 			return std::move(resultString);
@@ -177,6 +157,7 @@ namespace model {
 			if (!fl->tryLockTimeout(filePath, 100)) {
 				throw LockException("couldn't lock file in time", filePath.data());
 			}
+			
 			auto fileStream = getOpenFile();
 
 			// read current hash
