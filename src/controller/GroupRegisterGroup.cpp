@@ -32,15 +32,15 @@ namespace controller {
 	bool GroupRegisterGroup::addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp)
 	{
 		Poco::ScopedLock _lock(mWorkingMutex);
+		if (!newTransaction->getTransactionBody()->isGlobalGroupAdd()) {
+			throw InvalidTransactionTypeOnBlockchain(
+				"non global group add don't belong to GroupRegister blockchain",
+				newTransaction->getTransactionBody()->getTransactionType()
+			);
+		}
 		auto result = Group::addTransaction(std::move(newTransaction), messageId, iotaMilestoneTimestamp);
 		if (result) {
 			auto transaction = getLastTransaction();
-			if (!transaction->getGradidoTransaction()->getTransactionBody()->isGlobalGroupAdd()) {
-				throw InvalidTransactionTypeOnBlockchain(
-					"non global group add don't belong to GroupRegister blockchain",
-					transaction->getGradidoTransaction()->getTransactionBody()->getTransactionType()
-				);
-			}
 			auto globalGroupAdd = transaction->getGradidoTransaction()->getTransactionBody()->getGlobalGroupAdd();
 			mRegisteredGroups.insert({ globalGroupAdd->getGroupAlias(), GroupEntry(transaction->getID(), globalGroupAdd->getCoinColor()) });
 			return true;

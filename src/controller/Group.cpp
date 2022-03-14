@@ -162,7 +162,7 @@ namespace controller {
 			model::gradido::TRANSACTION_VALIDATION_PAIRED
 			);
 		auto transactionBody = newGradidoBlock->getGradidoTransaction()->getTransactionBody();
-		if (transactionBody->isRegisterAddress()) {
+		if (transactionBody->isRegisterAddress() || transactionBody->isGlobalGroupAdd()) {
 			// for register address check if address already exist
 			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
 		}
@@ -364,15 +364,24 @@ namespace controller {
 		if (mLastTransaction) {
 			return mLastTransaction;
 		}
-		if (!mLastTransactionId) {
+		Poco::ScopedLock _lock(mWorkingMutex);
+		auto block = getBlock(mLastBlockNr);
+		auto blockIndex = block->getBlockIndex();
+		auto lastTransactionId = mLastTransactionId;
+		if (!lastTransactionId || lastTransactionId > blockIndex->getMaxTransactionNr()) {
+			lastTransactionId = blockIndex->getMaxTransactionNr();
+		}
+		if (!lastTransactionId) {
 			return nullptr;
 		}
-		auto block = getBlock(mLastBlockNr);
 		// throw an exception if transaction wasn't found
-		auto transaction = block->getTransaction(mLastTransactionId);
-		
-		mLastTransaction = new model::gradido::GradidoBlock(transaction->getSerializedTransaction());
-		return mLastTransaction;
+		auto transaction = block->getTransaction(lastTransactionId);
+		if (!transaction.isNull()) {
+			updateLastTransactionId(lastTransactionId);
+			mLastTransaction = new model::gradido::GradidoBlock(transaction->getSerializedTransaction());
+			return mLastTransaction;
+		}
+		return nullptr;		
 	}
 
 	mpfr_ptr Group::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
