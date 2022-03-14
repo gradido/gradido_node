@@ -26,6 +26,12 @@ namespace model {
 			std::string mFileName;
 		};
 
+		class FileStreamException : public GradidoBlockchainException
+		{
+		public:
+			explicit FileStreamException(const char* what, const std::string& filename) noexcept;
+		};
+
 		class HashMismatchException : public GradidoBlockchainException
 		{
 		public:

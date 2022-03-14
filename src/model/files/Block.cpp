@@ -45,6 +45,7 @@ namespace model {
 
 		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()
 		{
+			printf("Block::getOpenFile: %s\n", mBlockPath.toString().data());
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			if (mBlockFile.isNull()) {
 				mBlockFile = new Poco::FileStream(mBlockPath.toString());
@@ -82,6 +83,9 @@ namespace model {
 		{
 			// set also mCurrentFileSize
 			auto fileStream = getOpenFile();
+			if (fileStream->fail()) {
+
+			}
 			auto minimalFileSize = sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
 			if (mCurrentFileSize <= minimalFileSize) {
 				throw EndReachingException("file is smaller than minimal block size", mBlockPath.toString().data(), 0, minimalFileSize);
@@ -123,11 +127,15 @@ namespace model {
 				throw EndReachingException("file is to small for transaction size", mBlockPath.toString().data(), startReading, transactionSize);
 			}
 			if (transactionSize < minimalFileSize) {
-				char readBuffer[10]; memset(readBuffer, 0, 10);
-
-				fileStream->read(readBuffer, 10);
+				char readBuffer[4096]; memset(readBuffer, 0, 4096);
+				mBlockFile->seekg(0, std::ios_base::end);
+				auto telled = mBlockFile->tellg();
+				auto state = fileStream->rdstate();
+				// 2 = failbit: Logical error on i/o operation
+				fileStream->seekg(0);
+				fileStream->read(readBuffer, telled);
 				auto hex = DataTypeConverter::binToHex((const unsigned char*)readBuffer, 10);
-				printf("%d 10 Bytes after size: %s\n", transactionSize, hex.data());
+				printf("%d File in Hex: %s\n", transactionSize, hex.data());
 				fl->unlock(filePath);
 				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.toString().data(), startReading, transactionSize);
 			}
