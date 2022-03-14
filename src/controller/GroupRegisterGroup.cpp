@@ -7,7 +7,7 @@
 
 namespace controller {
 	GroupRegisterGroup::GroupRegisterGroup()
-		: Group(GROUP_REGISTER_GROUP_ALIAS, Poco::Path(ServerGlobals::g_FilesPath, Poco::Path(GROUP_REGISTER_GROUP_ALIAS, "")), 0)
+		: Group(GROUP_REGISTER_GROUP_ALIAS, Poco::Path(Poco::Path(ServerGlobals::g_FilesPath, ""), Poco::Path(GROUP_REGISTER_GROUP_ALIAS, "")), 0)
 	{
 		Poco::File file(mFolderPath);
 		if (!file.exists()) {
@@ -37,7 +37,7 @@ namespace controller {
 			auto transaction = getLastTransaction();
 			if (!transaction->getGradidoTransaction()->getTransactionBody()->isGlobalGroupAdd()) {
 				throw InvalidTransactionTypeOnBlockchain(
-					"a non global group add was added to GroupRegister blockchain",
+					"non global group add don't belong to GroupRegister blockchain",
 					transaction->getGradidoTransaction()->getTransactionBody()->getTransactionType()
 				);
 			}
@@ -52,7 +52,7 @@ namespace controller {
 	{
 		auto transactions = getAllTransactions();
 		// for signature fill up on startup 
-		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
+		Poco::Timestamp border = Poco::Timestamp() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
 
 		for (auto it = transactions.begin(); it != transactions.end(); it++) 
 		{
@@ -67,7 +67,7 @@ namespace controller {
 			// fill mRegisteredGroups
 			mRegisteredGroups.insert({ globalGroupAdd->getGroupAlias(), GroupEntry(transaction->getID(), globalGroupAdd->getCoinColor()) });
 			// from Group::fillSignatureCacheOnStartup
-			if (transaction->getReceived() > border) {
+			if (transaction->getReceivedAsTimestamp() > border) {
 				mCachedSignatures.add(HalfSignature(transaction->getGradidoTransaction()), nullptr);				
 			}
 		}

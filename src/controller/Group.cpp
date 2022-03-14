@@ -134,10 +134,18 @@ namespace controller {
 		if (lastTransaction) {
 			id = lastTransaction->getID() + 1;
 		}
+		if (mGroupAlias != GROUP_REGISTER_GROUP_ALIAS && newTransaction->getTransactionBody()->isGlobalGroupAdd()) {
+			throw InvalidTransactionTypeOnBlockchain(
+				"global group add don't belong to group blockchain",
+				newTransaction->getTransactionBody()->getTransactionType()
+			);
+		}
+
 		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
 		if (lastTransaction && newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
 			throw BlockchainOrderException("previous transaction is younger");
 		}
+		
 		// calculate final balance
 		newGradidoBlock->calculateFinalGDD(this);
 
@@ -391,7 +399,7 @@ namespace controller {
 			{
 				auto transactionEntry = block->getTransaction(*it);
 				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
-				if (gradidoBlock->getReceived() > date) {
+				if (gradidoBlock->getReceivedAsTimestamp() > date.timestamp()) {
 					continue;
 				}
 				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
@@ -672,7 +680,7 @@ namespace controller {
 		int transactionNr = mLastTransactionId;
 
 		std::unique_ptr<model::gradido::GradidoBlock> transaction;
-		Poco::DateTime border = Poco::DateTime() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
+		Poco::Timestamp border = Poco::Timestamp() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
 
 		do {
 			if (transactionNr <= 0) break;
@@ -700,7 +708,7 @@ namespace controller {
 			transactionNr--;
 			//printf("compare received: %" PRId64 " with border : %" PRId64 "\n", transaction->getReceived().timestamp().raw(), border.timestamp().raw());
 			
-		} while (transaction && transaction->getReceived() > border);
+		} while (transaction && transaction->getReceivedAsTimestamp() > border);
 
 	}
 

@@ -56,6 +56,14 @@ namespace model {
 			int mReadCursor;
 			size_t mBlockSize;
 		};
+
+		class InvalidReadBlockSize : public EndReachingException
+		{
+		public: 
+			explicit InvalidReadBlockSize(const char* what, const char* filename, int readCursor, size_t blockSize) noexcept
+				: EndReachingException(what, filename, readCursor, blockSize) {};
+
+		};
 	}
 }
 

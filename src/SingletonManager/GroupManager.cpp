@@ -39,13 +39,11 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 
 	mInitalized = true;
 
-	// load special group 
-	
+	// load special group 	
 	Poco::SharedPtr<controller::Group> group = new controller::GroupRegisterGroup;
-	group->init();
 	mGroupMap.insert({ GROUP_REGISTER_GROUP_ALIAS, group });
-	//*/
 	mWorkMutex.unlock();
+	group->init();		
 
 	auto groups = mGroupIndex->listGroupAliases();
 	for (auto it = groups.begin(); it != groups.end(); it++) {

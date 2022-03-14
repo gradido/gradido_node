@@ -9,6 +9,8 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
+#include "../SingletonManager/LoggerManager.h"
+
 //#include "Poco/URI.h"
 //#include "Poco/DeflatingStream.h"
 
@@ -55,8 +57,20 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 				try {
 					handle(method, rapidjson_params["params"]);
 				}
+				catch (GradidoBlockchainException& ex) {
+					mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
+					LoggerManager::getInstance()->mErrorLogging.error("gradido node exception in Json RPC handle: %s", ex.getFullString());
+					stateError("gradido node intern exception");
+				}
+				catch (Poco::Exception& ex) {
+					mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
+					LoggerManager::getInstance()->mErrorLogging.error("Poco exception in Json RPC handle: %s", ex.displayText());
+					stateError("gradido node intern exception");
+				}
 				catch (std::exception& ex) {
-					stateError("exception", ex.what());
+					mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
+					LoggerManager::getInstance()->mErrorLogging.error("exception in Json RPC handle: %s", ex.what());
+					stateError("gradido node intern exception");
 				}
 			}
 		}

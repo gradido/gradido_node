@@ -5,8 +5,6 @@
 
 namespace controller {
 
-#define GROUP_REGISTER_GROUP_ALIAS "GroupRegister"
-
 	/*!
 		@brief struct for holding two important informations for every group
 	*/

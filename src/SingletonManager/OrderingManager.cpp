@@ -136,7 +136,7 @@ int OrderingManager::ThreadFunction()
                 }
                 catch (GradidoBlockchainException& ex) {
                     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-                    errorLog.information("[OrderingManager] transaction not added: ", ex.getFullString());
+                    errorLog.information("[OrderingManager] transaction not added: %s", ex.getFullString());
                 }
             }
         }

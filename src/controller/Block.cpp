@@ -95,6 +95,7 @@ namespace controller {
 				addTransaction(std::move(blockLine), fileCursor);
 			}
 			catch (model::files::EndReachingException& ex) {
+				LoggerManager::getInstance()->mErrorLogging.error("%s: %s", std::string(__FUNCTION__), ex.getFullString());
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in file").setTransactionId(transactionNr);
 			}
 			return mSerializedTransactions.get(transactionNr);

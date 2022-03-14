@@ -122,6 +122,15 @@ namespace model {
 				fl->unlock(filePath);
 				throw EndReachingException("file is to small for transaction size", mBlockPath.toString().data(), startReading, transactionSize);
 			}
+			if (transactionSize < minimalFileSize) {
+				char readBuffer[10]; memset(readBuffer, 0, 10);
+
+				fileStream->read(readBuffer, 10);
+				auto hex = DataTypeConverter::binToHex((const unsigned char*)readBuffer, 10);
+				printf("%d 10 Bytes after size: %s\n", transactionSize, hex.data());
+				fl->unlock(filePath);
+				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.toString().data(), startReading, transactionSize);
+			}
 			std::unique_ptr<std::string> resultString(new std::string);
 			resultString->reserve(transactionSize);
 			// block wise read
@@ -134,7 +143,7 @@ namespace model {
 			//fileStream->read(resultString->data(), transactionSize);			
 			mCurrentFileCursorReadPosition += transactionSize;
 			fl->unlock(filePath);
-			auto base64 = DataTypeConverter::binToBase64(resultString->data());
+			//auto base64 = DataTypeConverter::binToBase64(resultString->data());
 			return std::move(resultString);
 		}
 
