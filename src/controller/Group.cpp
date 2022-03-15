@@ -142,9 +142,17 @@ namespace controller {
 		}
 
 		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
-		if (lastTransaction && newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
-			throw BlockchainOrderException("previous transaction is younger");
+		if (lastTransaction) {
+			if (newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
+				throw BlockchainOrderException("previous transaction is younger");
+			}
+			if (newGradidoBlock->getReceived() == lastTransaction->getReceived()) {
+				if (!newGradidoBlock->getGradidoTransaction()->getSerializedConst()->compare(*lastTransaction->getGradidoTransaction()->getSerializedConst())) {
+					throw GradidoBlockchainTransactionAlreadyExistException("[Group::addTransaction] skip because already exist 2");
+				}
+			}
 		}
+		
 		
 		// calculate final balance
 		newGradidoBlock->calculateFinalGDD(this);

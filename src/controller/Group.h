@@ -25,8 +25,12 @@
 
 #include "gradido_blockchain/model/IGradidoBlockchain.h"
 
+#include <algorithm> 
+
 // MAGIC NUMBER: how long signatures should be cached to prevent processing transactions more than once
-#define MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES 10
+// should be at least MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION_IN_MINUTES minutes, 
+// this is the maximal allowed timespan between created and received date in transactions
+#define MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES std::max(10, MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION_IN_MINUTES)
 
 namespace controller {
 
