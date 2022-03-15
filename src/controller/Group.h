@@ -97,7 +97,7 @@ namespace controller {
 		inline const std::string& getGroupAlias() { return mGroupAlias; }
 		inline uint32_t getGroupDefaultCoinColor() const { return mCoinColor; }
 
-		bool isSignatureInCache(const model::gradido::GradidoTransaction* transaction);
+		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
 		void setListeningCommunityServer(client::Base* client);
 
 	protected:
@@ -105,7 +105,7 @@ namespace controller {
 		void updateLastBlockNr(int lastBlockNr);
 		void updateLastTransactionId(int lastTransactionId);
 
-		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
+		
 		void addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
@@ -135,7 +135,7 @@ namespace controller {
 		Poco::SharedPtr<Block> getBlockContainingTransaction(uint64_t transactionId);
 
 		// for preventing double transactions
-		// keep first 32 Byte of first signature of each transaction from last MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes
+		// keep first 32 Byte of first signature of each transaction from last MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES minutes
 		struct HalfSignature
 		{
 			HalfSignature(const char* signature) {
@@ -168,10 +168,8 @@ namespace controller {
 			//bool comp(a, b)
 			int64_t sign[4];
 		};
-		Poco::ExpireCache<HalfSignature, void*> mCachedSignatures;
+		Poco::ExpireCache<HalfSignature, uint64_t> mCachedSignatureTransactionNrs;
 		mutable Poco::FastMutex mSignatureCacheMutex;
-
-
 
 		Poco::ExpireCache<iota::MessageId, uint64_t> mMessageIdTransactionNrCache;
 		mutable Poco::FastMutex mMessageIdTransactionNrCacheMutex;

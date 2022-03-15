@@ -29,7 +29,7 @@ namespace controller {
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(Poco::Path(folderPath, ".state")), mDeferredTransfersCache(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCoinColor(coinColor), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
-		mCachedSignatures(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
+		mCachedSignatureTransactionNrs(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
 		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
 		mCommunityServer(nullptr), mExitCalled(false)
 	{
@@ -671,9 +671,17 @@ namespace controller {
 		HalfSignature transactionSign(transaction);
 
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
-		if (mCachedSignatures.has(transactionSign)) {
-			mCachedSignatures.get(transactionSign);
-			return true;
+		if (mCachedSignatureTransactionNrs.has(transactionSign)) {
+			// additional check if transaction really exactly the same, because hash collisions are possible, albeit with a very low probability
+			auto transactionNr = mCachedSignatureTransactionNrs.get(transactionSign);
+			auto cachedGradidoBlock = std::make_unique<model::gradido::GradidoBlock>(getTransactionForId(*transactionNr)->getSerializedTransaction());
+			// compare return 0 if strings are the same
+			if (!cachedGradidoBlock->getGradidoTransaction()->getSerializedConst()->compare(*transaction->getSerializedConst())) {
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		return false;
 	}
@@ -681,14 +689,9 @@ namespace controller {
 	void Group::addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
-		mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
+		mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());
 	}
 
-	bool Group::isSignatureInCache(const model::gradido::GradidoTransaction* transaction)
-	{
-		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
-		return mCachedSignatures.has(HalfSignature(transaction));
-	}
 
 	void Group::fillSignatureCacheOnStartup()
 	{
@@ -712,7 +715,7 @@ namespace controller {
 			try {
 				auto transactionEntry = block->getTransaction(transactionNr);
 				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
-				mCachedSignatures.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
+				mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
 			}
 			catch (GradidoBlockchainTransactionNotFoundException& ex) {
 				LoggerManager::getInstance()->mErrorLogging.warning("transaction: %d not found, reset state: %s", transactionNr, ex.getFullString());

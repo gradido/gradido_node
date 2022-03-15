@@ -121,7 +121,7 @@ int IotaMessageToTransactionTask::run()
     // check if transaction already exist
     // if this transaction doesn't belong to us, we can quit here 
     // also if we already have this transaction
-    if (group.isNull() || group->isSignatureInCache(transaction.get())) {
+    if (group.isNull() || group->isTransactionAlreadyExist(transaction.get())) {
         errorLog.information("transaction skipped because it cames from other group or was found in cache, messageId: %s",
             mMessageId.toHex()
         );

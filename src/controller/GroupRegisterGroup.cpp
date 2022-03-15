@@ -68,7 +68,7 @@ namespace controller {
 			mRegisteredGroups.insert({ globalGroupAdd->getGroupAlias(), GroupEntry(transaction->getID(), globalGroupAdd->getCoinColor()) });
 			// from Group::fillSignatureCacheOnStartup
 			if (transaction->getReceivedAsTimestamp() > border) {
-				mCachedSignatures.add(HalfSignature(transaction->getGradidoTransaction()), nullptr);				
+				mCachedSignatureTransactionNrs.add(HalfSignature(transaction->getGradidoTransaction()), nullptr);				
 			}
 		}
 	}
