@@ -131,7 +131,8 @@ int IotaMessageToTransactionTask::run()
     if (lastTransaction && lastTransaction->getReceived() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
         errorLog.information("transaction skipped because it cames from the past, messageId: %s", 
-            mMessageId.toHex().data());
+            mMessageId.toHex()
+        );
         return 0;
     }
         

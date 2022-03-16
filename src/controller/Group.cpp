@@ -731,7 +731,7 @@ namespace controller {
 			try {
 				auto transactionEntry = block->getTransaction(transactionNr);
 				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
-				mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), nullptr);
+				mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());
 			}
 			catch (GradidoBlockchainTransactionNotFoundException& ex) {
 				LoggerManager::getInstance()->mErrorLogging.warning("transaction: %d not found, reset state: %s", transactionNr, ex.getFullString());
