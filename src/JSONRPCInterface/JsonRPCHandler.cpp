@@ -35,14 +35,16 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 			return;
 		}
 		std::string groupAlias;
+		std::string format;
 		uint64_t transactionId = 0;
 
 		if (!getStringParameter(params, "group", groupAlias) || !getUInt64Parameter(params, "fromTransactionId", transactionId)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}		
+		getStringParameter(params, "format", format);
 		printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
-		getTransactions(transactionId, groupAlias);
+		getTransactions(transactionId, groupAlias, format);
 	}
 	else if (method == "getaddressbalance") {
 		stateError("not implemented yet");
@@ -108,7 +110,7 @@ void JsonRPCHandler::getGroupDetails(const std::string& groupAlias)
 	mResponseJson.AddMember("coinColor", groupAdd->getCoinColor(), alloc);
 }
 
-void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::string& groupAlias)
+void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::string& groupAlias, const std::string& format)
 {
 	Profiler timeUsed;
 	auto alloc = mResponseJson.GetAllocator();
@@ -124,37 +126,27 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	auto transactions = group->findTransactionsFromXToLast(fromTransactionId);
 	printf("%d transactions for group: %s found\n", transactions.size(), groupAlias.data());
 	stateSuccess();
-	mResponseResult.AddMember("type", "base64", alloc);
+	if (format == "json") {
+		mResponseResult.AddMember("type", "json", alloc);
+	}
+	else {
+		mResponseResult.AddMember("type", "base64", alloc);
+	}
 	Value jsonTransactionArray(kArrayType);
 	Poco::AutoPtr<model::gradido::GradidoBlock> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
+		
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
-			// check for tx hash error			
-			/*Profiler time;
-			Poco::AutoPtr<model::GradidoBlock> gradidoBlock(new model::GradidoBlock(*it, group));
-			//printf("time unserialize: %s\n", time.string().data());
-			model::TransactionValidationLevel level = static_cast<model::TransactionValidationLevel>(model::TRANSACTION_VALIDATION_DATE_RANGE | model::TRANSACTION_VALIDATION_SINGLE | model::TRANSACTION_VALIDATION_SINGLE_PREVIOUS);
-			auto validationResult = gradidoBlock->validate(level);
-			
-			if (!prevTransaction.isNull()) {
-				time.reset();
-				if (!gradidoBlock->validate(prevTransaction)) {
-					printf("error validating transaction with prev transaction\n");
-					gradidoBlock->printErrors();
-				}
-				//printf("time validate tx hash: %s\n", time.string().data());
+			if (format == "json") {
+				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionSerialized);
+				//auto jsonTransaction = Value(gradidoBlock->toJson().data(), alloc);
+				auto jsonTransaction = gradidoBlock->toJson(mResponseJson);
+				jsonTransactionArray.PushBack(jsonTransaction, alloc);
+			} else {
+				auto base64Transaction = Value(DataTypeConverter::binToBase64(*transactionSerialized).data(), alloc);
+				jsonTransactionArray.PushBack(base64Transaction, alloc);
 			}
-			prevTransaction = gradidoBlock;
-			if (!validationResult) {
-				printf("error validating transaction\n");
-				gradidoBlock->printErrors();
-				//break;
-			}
-			//*/
-			auto base64Transaction = Value(DataTypeConverter::binToBase64(*transactionSerialized).data(), alloc);
-			jsonTransactionArray.PushBack(base64Transaction, alloc);
-			//printf("base 64: %s\n", base64Transaction.GetString());
 		}
 	}
 	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);
