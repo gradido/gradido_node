@@ -474,7 +474,6 @@ namespace controller {
 		if (lastGradidoBlockWithFinalBalance) {
 			lastDate = lastGradidoBlockWithFinalBalance->getReceivedAsTimestamp();
 			if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
-				printf("final balance: %s\n", lastGradidoBlockWithFinalBalance->getFinalBalance().data());
 				throw model::gradido::TransactionValidationInvalidInputException("finalBalance cannot be parsed to a number", "finalBalance", "string");
 			}
 		}
@@ -513,7 +512,13 @@ namespace controller {
 		}
 		assert(date > lastDate);
 		calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
+		std::string tempString;
+		model::gradido::TransactionBase::amountToString(&tempString, gdd);
+		printf("before decay: %s with %d seconds\n", tempString.data(), Poco::Timespan(date - lastDate).totalSeconds());
 		calculateDecayFast(temp->getData(), gdd);
+		tempString.clear();
+		model::gradido::TransactionBase::amountToString(&tempString, gdd);
+		printf("after decay : %s\n", tempString.data());
 
 		return gdd;				
 	}
