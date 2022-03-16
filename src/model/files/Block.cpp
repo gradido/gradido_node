@@ -45,7 +45,7 @@ namespace model {
 
 		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()
 		{
-			printf("Block::getOpenFile: %s\n", mBlockPath.toString().data());
+			//printf("Block::getOpenFile: %s\n", mBlockPath.toString().data());
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			if (mBlockFile.isNull()) {
 				mBlockFile = new Poco::FileStream(mBlockPath.toString());
@@ -81,7 +81,7 @@ namespace model {
 		std::unique_ptr<std::string> Block::readLine(Poco::UInt32 startReading)
 		{
 			// set also mCurrentFileSize
-			printf("[Block::readLine] cursor: %d\n", startReading);
+			//printf("[Block::readLine] cursor: %d\n", startReading);
 			auto fileStream = getOpenFile();
 			if (fileStream->fail()) {
 
@@ -118,7 +118,7 @@ namespace model {
 			if (fileStream->tellg() != startReading) {
 				fileStream->seekg(startReading, std::ios_base::beg);
 			}
-			printf("state before read transaction size: %d\n", fileStream->rdstate());
+			//printf("state before read transaction size: %d\n", fileStream->rdstate());
 			fileStream->read((char*)&transactionSize, sizeof(Poco::UInt16));
 			if (startReading + transactionSize > mCurrentFileSize) {
 				fl->unlock(filePath);

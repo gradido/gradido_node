@@ -158,7 +158,13 @@ namespace controller {
 		newGradidoBlock->calculateFinalGDD(this);
 
 		// calculate tx hash
-		auto txHash = newGradidoBlock->calculateTxHash(lastTransaction.get());
+		MemoryBin* txHash = nullptr;
+		if (lastTransaction) {
+			txHash = newGradidoBlock->calculateTxHash(lastTransaction.get());
+		}
+		else {
+			txHash = newGradidoBlock->calculateTxHash(nullptr);
+		}
 		newGradidoBlock->setTxHash(txHash);
 		MemoryManager::getInstance()->releaseMemory(txHash);
 
@@ -166,13 +172,15 @@ namespace controller {
 		model::gradido::TransactionValidationLevel level = (model::gradido::TransactionValidationLevel)(
 			model::gradido::TRANSACTION_VALIDATION_SINGLE |
 			model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS |
-			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
-			model::gradido::TRANSACTION_VALIDATION_PAIRED
+			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE
 			);
 		auto transactionBody = newGradidoBlock->getGradidoTransaction()->getTransactionBody();
 		if (transactionBody->isRegisterAddress() || transactionBody->isGlobalGroupAdd()) {
 			// for register address check if address already exist
 			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
+		}
+		if (!transactionBody->isLocal()) {
+			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_PAIRED);
 		}
 		printf("validate with level: %d\n", level);
 		auto otherGroup = transactionBody->getOtherGroup();
@@ -394,16 +402,18 @@ namespace controller {
 
 	mpfr_ptr Group::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
 	{
-		auto blockNr = mLastBlockNr;
 		auto mm = MemoryManager::getInstance();
 		auto gdd = mm->getMathMemory();
-		auto temp = mm->getMathMemory();
+		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
+		// if return zero, no transaction for this address exist on this blockchain
+		if (!addressIndex) return gdd;
+
+		auto blockNr = mLastBlockNr;
+		auto temp = MathMemory::create();
 
 		std::unique_ptr<model::gradido::GradidoBlock> lastGradidoBlockWithFinalBalance;
 		std::list<std::pair<mpfr_ptr, Poco::DateTime>> receiveTransfers;
-
-		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
-
+		
 		do 
 		{
 			auto block = getBlock(blockNr);
@@ -440,8 +450,8 @@ namespace controller {
 							// later in code the decay for: received -> date will be subtracted automatic
 							// TODO: check if result is like expected 
 							auto secondsForDecay = Poco::Timespan(deferredTransfer->getTimeoutAsPocoDateTime() - date).totalSeconds();
-							calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, secondsForDecay);
-							calculateDecayFast(temp, receiveAmount);
+							calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, secondsForDecay);
+							calculateDecayFast(temp->getData(), receiveAmount);
 						}
 
 						receiveTransfers.push_front({ receiveAmount , gradidoBlock->getReceived() });
@@ -462,9 +472,10 @@ namespace controller {
 		// calculate decay
 		Poco::DateTime lastDate;
 		if (lastGradidoBlockWithFinalBalance) {
-			lastDate = lastGradidoBlockWithFinalBalance->getReceived();
+			lastDate = lastGradidoBlockWithFinalBalance->getReceivedAsTimestamp();
 			if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
-				throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
+				printf("final balance: %s\n", lastGradidoBlockWithFinalBalance->getFinalBalance().data());
+				throw model::gradido::TransactionValidationInvalidInputException("finalBalance cannot be parsed to a number", "finalBalance", "string");
 			}
 		}
 		else if(receiveTransfers.size()) {
@@ -490,19 +501,19 @@ namespace controller {
 		
 		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
 			assert(it->second > lastDate);
-			calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
-			calculateDecayFast(temp, gdd);
+			calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
+			calculateDecayFast(temp->getData(), gdd);
 			mpfr_add(gdd, gdd, it->first, gDefaultRound);
 			lastDate = it->second;
 			mm->releaseMathMemory(it->first);
 		}
-		if (mpfr_cmp_si(gdd, 0, gDefaultRound)) {
+		// cmp return 0 if gdd == 0
+		if (!mpfr_cmp_si(gdd, 0, gDefaultRound)) {
 			return gdd;
 		}
 		assert(date > lastDate);
-		calculateDecayFactorForDuration(temp, gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
-		calculateDecayFast(temp, gdd);
-		mm->releaseMathMemory(temp);
+		calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
+		calculateDecayFast(temp->getData(), gdd);
 
 		return gdd;				
 	}
