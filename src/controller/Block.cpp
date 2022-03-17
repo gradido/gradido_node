@@ -98,6 +98,10 @@ namespace controller {
 				LoggerManager::getInstance()->mErrorLogging.error("%s: %s", std::string(__FUNCTION__), ex.getFullString());
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in file").setTransactionId(transactionNr);
 			}
+			catch (Poco::NullPointerException& ex) {
+				printf("[Block::getTransaction] catch Poco Null Pointer Exception\n");
+				throw;
+			}
 			return mSerializedTransactions.get(transactionNr);
 		}
 		else {

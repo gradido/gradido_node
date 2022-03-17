@@ -129,9 +129,9 @@ namespace model {
 				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.toString().data(), startReading, transactionSize);
 			}
 			std::unique_ptr<std::string> resultString(new std::string(transactionSize, '\0'));
+			resultString->resize(transactionSize);
 			fileStream->read(resultString->data(), transactionSize);			
 			fl->unlock(filePath);
-			//auto base64 = DataTypeConverter::binToBase64(resultString->data());
 			return std::move(resultString);
 		}
 
@@ -194,7 +194,7 @@ namespace model {
 
 			// write at end of file
 			fileStream->write(*hash, hash->size());
-
+			fileStream->flush();
 			fl->unlock(filePath);
 			mm->releaseMemory(hash);
 			return resultingCursorPositions;

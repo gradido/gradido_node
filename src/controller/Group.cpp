@@ -13,6 +13,7 @@
 #include "gradido_blockchain/lib/Decay.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
+#include "gradido_blockchain/model/protobufWrapper/ProtobufExceptions.h"
 
 #include "Block.h"
 
@@ -20,6 +21,8 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
+
+#include "Poco/Util/ServerApplication.h"
 
 using namespace rapidjson;
 
@@ -207,6 +210,16 @@ namespace controller {
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
 		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(newGradidoBlock, mAddressIndex);
+		try {
+			model::gradido::GradidoBlock test(transactionEntry->getSerializedTransaction());
+		}
+		catch (ProtobufParseException& ex) {
+			LoggerManager::getInstance()->mErrorLogging.fatal(
+				"couldn't load Gradido Block from freshly created serialized version: %s\n%s", 
+				ex.getFullString(), ex.getSerializedAsBase64()
+			);
+			Poco::Util::ServerApplication::terminate();
+		}
 		bool result = block->pushTransaction(transactionEntry);
 		if (result) {
 			mLastTransaction = newGradidoBlock;
@@ -476,6 +489,7 @@ namespace controller {
 			if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
 				throw model::gradido::TransactionValidationInvalidInputException("finalBalance cannot be parsed to a number", "finalBalance", "string");
 			}
+			printf("final balance str: %s\n", lastGradidoBlockWithFinalBalance->getFinalBalance().data());
 		}
 		else if(receiveTransfers.size()) {
 			// if no lastGradidoBlockWithFinalBalance was found because sender is deferred transfer or not registered

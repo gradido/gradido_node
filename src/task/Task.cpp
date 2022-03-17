@@ -20,9 +20,11 @@ namespace task {
 		//printf("[Task::~Task]\n");
 		if (mParentTaskPtrArraySize) {
 			delete[] mParentTaskPtrArray;
+			mParentTaskPtrArray = nullptr;
 		}
 		if (mFinishCommand) {
 			delete mFinishCommand;
+			mFinishCommand = nullptr;
 		}
         mParentTaskPtrArraySize = 0;
 			
