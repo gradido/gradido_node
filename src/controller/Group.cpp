@@ -22,8 +22,6 @@
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 
-#include "Poco/Util/ServerApplication.h"
-
 using namespace rapidjson;
 
 namespace controller {
@@ -210,16 +208,6 @@ namespace controller {
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
 		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(newGradidoBlock, mAddressIndex);
-		try {
-			model::gradido::GradidoBlock test(transactionEntry->getSerializedTransaction());
-		}
-		catch (ProtobufParseException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.fatal(
-				"couldn't load Gradido Block from freshly created serialized version: %s\n%s", 
-				ex.getFullString(), ex.getSerializedAsBase64()
-			);
-			Poco::Util::ServerApplication::terminate();
-		}
 		bool result = block->pushTransaction(transactionEntry);
 		if (result) {
 			mLastTransaction = newGradidoBlock;
@@ -467,7 +455,7 @@ namespace controller {
 							calculateDecayFast(temp->getData(), receiveAmount);
 						}
 
-						receiveTransfers.push_front({ receiveAmount , gradidoBlock->getReceived() });
+						receiveTransfers.push_front({ receiveAmount , gradidoBlock->getReceivedAsTimestamp() });
 						if (transactionBody->isDeferredTransfer()) {
 							break;
 						}
@@ -489,7 +477,6 @@ namespace controller {
 			if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
 				throw model::gradido::TransactionValidationInvalidInputException("finalBalance cannot be parsed to a number", "finalBalance", "string");
 			}
-			printf("final balance str: %s\n", lastGradidoBlockWithFinalBalance->getFinalBalance().data());
 		}
 		else if(receiveTransfers.size()) {
 			// if no lastGradidoBlockWithFinalBalance was found because sender is deferred transfer or not registered
@@ -501,23 +488,27 @@ namespace controller {
 
 		// check for time outed deferred transfers which will be automatic booked back
 		auto deferredTransfers = getTimeoutedDeferredTransferReturnedAmounts(addressIndex, lastDate, date);
-		auto deferredTransfersIt = deferredTransfers.begin();
-		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
-			while (it->second > deferredTransfersIt->second) {
-				receiveTransfers.insert(it, *deferredTransfersIt);
-				deferredTransfersIt++;
+		if (deferredTransfers.size()) {
+			auto deferredTransfersIt = deferredTransfers.begin();
+			for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
+				while (it->second > deferredTransfersIt->second && deferredTransfersIt != deferredTransfers.end()) {
+					receiveTransfers.insert(it, *deferredTransfersIt);
+					deferredTransfersIt++;
+					
+				}
 				if (deferredTransfersIt == deferredTransfers.end()) {
 					break;
 				}
 			}
-		}		
-		
+		}
 		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
-			assert(it->second > lastDate);
-			calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
-			calculateDecayFast(temp->getData(), gdd);
-			mpfr_add(gdd, gdd, it->first, gDefaultRound);
-			lastDate = it->second;
+			assert(it->second >= lastDate);
+			if (it->second > lastDate) {
+				calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
+				calculateDecayFast(temp->getData(), gdd);
+				mpfr_add(gdd, gdd, it->first, gDefaultRound);
+				lastDate = it->second;
+			}			
 			mm->releaseMathMemory(it->first);
 		}
 		// cmp return 0 if gdd == 0
@@ -526,13 +517,7 @@ namespace controller {
 		}
 		assert(date > lastDate);
 		calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
-		std::string tempString;
-		model::gradido::TransactionBase::amountToString(&tempString, gdd);
-		printf("before decay: %s with %d seconds\n", tempString.data(), Poco::Timespan(date - lastDate).totalSeconds());
-		calculateDecayFast(temp->getData(), gdd);
-		tempString.clear();
-		model::gradido::TransactionBase::amountToString(&tempString, gdd);
-		printf("after decay : %s\n", tempString.data());
+		calculateDecayFast(temp->getData(), gdd);		
 
 		return gdd;				
 	}
