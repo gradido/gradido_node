@@ -30,6 +30,8 @@ namespace controller {
 	* File Path starting with first byte from account public key as folder and second byte as file name. \n
 	* Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n
 	* ./94/93.index
+	* 
+	* TODO: extend address index with first transaction nr where the address is involved
 	*/
 
 	class AddressIndex : public ControllerBase

@@ -41,10 +41,10 @@ FILE(GLOB JSONRPCInterface "src/JSONRPCInterface/*.h" "src/JSONRPCInterface/*.cp
 FILE(GLOB LIB_SRC "src/lib/*.h" "src/lib/*.cpp" "src/lib/*.c")
 FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
 FILE(GLOB MODEL_FILES "src/model/files/*.h" "src/model/files/*.cpp")
+FILE(GLOB MODEL_APOLLO "src/model/Apollo/*.h" "src/model/Apollo/*.cpp")
 FILE(GLOB SINGLETON_MANAGER "src/SingletonManager/*.h" "src/SingletonManager/*.cpp")
 FILE(GLOB TASK "src/task/*.cpp" "src/task/*.h")
-FILE(GLOB TCP_SERVER "src/TCPServer/*.cpp" "src/TCPServer/*.h")
-FILE(GLOB VALIDATION "src/validation/*.h" "src/validation/*.cpp")
+FILE(GLOB VIEW "src/view/*.h" "src/view/*.cpp")
 FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 
@@ -52,10 +52,9 @@ SET(LOCAL_SRCS
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
-	${MODEL} ${MODEL_FILES} 
+	${MODEL} ${MODEL_FILES} ${MODEL_APOLLO}
 	${SINGLETON_MANAGER}
-	${TASK} ${TCP_SERVER}
-	${VALIDATION}
+	${TASK} ${VIEW}
 	${MAIN}
 )
 #aux_source_directory("src/cpp" LOCAL_SRCS)
@@ -70,11 +69,10 @@ source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
 source_group("model\\files" FILES ${MODEL_FILES})
+source_group("model\\Apollo" FILES ${MODEL_APOLLO})
 source_group("model" FILES ${MODEL})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})
-source_group("tcp-server" FILES ${TCP_SERVER})
-source_group("validation" FILES ${VALIDATION})
 source_group("test\\lib" FILES ${TEST_LIB})
 source_group("test\\model\\files" FILES ${TEST_MODEL_FILES})
 source_group("test\\model" FILES ${TEST_MODEL})

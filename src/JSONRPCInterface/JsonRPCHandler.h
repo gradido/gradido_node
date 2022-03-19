@@ -13,6 +13,14 @@ protected:
 	void putTransaction(const std::string& transactionBinary, const std::string& groupAlias);
 	void getGroupDetails(const std::string& groupAlias);
 	void getTransactions(int64_t fromTransactionId, const std::string& groupAlias, const std::string& format);
+	void listTransactions(
+		const std::string& groupAlias, 
+		const std::string& publicKeyHex, 
+		int currentPage = 1, 
+		int pageSize = 25, 
+		bool orderDESC = true, 
+		bool onlyCreations = false
+	);
 
 };
 
