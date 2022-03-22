@@ -25,13 +25,6 @@ namespace model {
 			mDecayAmount = mm->getMathMemory();
 			mpfr_sub(mDecayAmount, startBalance, balance->getData(), gDefaultRound);
 			mpfr_neg(mDecayAmount, mDecayAmount, gDefaultRound);
-			// debug
-			std::string startBalanceString, decayAmountString;
-			gradido::TransactionBase::amountToString(&startBalanceString, startBalance);
-			gradido::TransactionBase::amountToString(&decayAmountString, mDecayAmount);
-			printf("start balance: %s\n", startBalanceString.data());
-			printf("duration: %d seconds\n", duration.totalSeconds());
-			printf("decay: %s\n", decayAmountString.data());
 		}
 
 		Decay::~Decay()
