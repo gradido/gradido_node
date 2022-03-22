@@ -7,6 +7,8 @@
 
 namespace model {
 	namespace Apollo {
+		extern const char* jsDateTimeFormat;
+
 		class Decay
 		{
 		public:
@@ -14,6 +16,9 @@ namespace model {
 			~Decay();
 
 			rapidjson::Value toJson(rapidjson::Document::AllocatorType& alloc);
+
+			inline mpfr_ptr getDecayAmount() const { return mDecayAmount; }
+			
 
 		protected:
 			Poco::Timestamp mDecayStart;

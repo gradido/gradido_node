@@ -1,6 +1,7 @@
 #include "Decay.h"
 #include "gradido_blockchain/MemoryManager.h"
 #include "Poco/Timespan.h"
+#include "Poco/DateTimeFormatter.h"
 
 #include "gradido_blockchain/model/protobufWrapper/TransactionBase.h"
 
@@ -8,6 +9,8 @@ using namespace rapidjson;
 
 namespace model {
 	namespace Apollo {
+		const char* jsDateTimeFormat = "%Y-%m-%dT%H:%M:%S.%i%z";
+
 		Decay::Decay(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance)
 			: mDecayStart(decayStart), mDecayEnd(decayEnd), mDecayAmount(nullptr)
 		{
@@ -21,6 +24,14 @@ namespace model {
 			calculateDecayFast(decayFactor->getData(), balance->getData());
 			mDecayAmount = mm->getMathMemory();
 			mpfr_sub(mDecayAmount, startBalance, balance->getData(), gDefaultRound);
+			mpfr_neg(mDecayAmount, mDecayAmount, gDefaultRound);
+			// debug
+			std::string startBalanceString, decayAmountString;
+			gradido::TransactionBase::amountToString(&startBalanceString, startBalance);
+			gradido::TransactionBase::amountToString(&decayAmountString, mDecayAmount);
+			printf("start balance: %s\n", startBalanceString.data());
+			printf("duration: %d seconds\n", duration.totalSeconds());
+			printf("decay: %s\n", decayAmountString.data());
 		}
 
 		Decay::~Decay()
@@ -34,12 +45,14 @@ namespace model {
 		Value Decay::toJson(Document::AllocatorType& alloc)
 		{
 			Value decay(kObjectType);
-			std::string balanceString;
-			model::gradido::TransactionBase::amountToString(&balanceString, mDecayAmount);
-			decay.AddMember("balance", Value(balanceString.data(), alloc), alloc);
-			decay.AddMember("decayStart", mDecayStart.epochTime(), alloc);
-			decay.AddMember("decayEnd", mDecayEnd.epochTime(), alloc);
-			decay.AddMember("decayDuration", Poco::Timespan(mDecayEnd - mDecayStart).totalSeconds(), alloc);
+			std::string decayString;
+			model::gradido::TransactionBase::amountToString(&decayString, mDecayAmount);
+			decay.AddMember("decay", Value(decayString.data(), alloc), alloc);
+			auto decayStartString = Poco::DateTimeFormatter::format(mDecayStart, jsDateTimeFormat);
+			decay.AddMember("start", Value(decayStartString.data(), alloc), alloc);
+			auto decayEndString = Poco::DateTimeFormatter::format(mDecayEnd, jsDateTimeFormat);
+			decay.AddMember("end", Value(decayEndString.data(), alloc), alloc);
+			decay.AddMember("duration", Poco::Timespan(mDecayEnd - mDecayStart).totalSeconds(), alloc);
 			decay.AddMember("__typename", "Decay", alloc);
 			return std::move(decay);
 		}

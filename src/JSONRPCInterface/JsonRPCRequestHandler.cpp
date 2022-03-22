@@ -69,7 +69,8 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 				}
 				catch (std::exception& ex) {
 					mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
-					LoggerManager::getInstance()->mErrorLogging.error("exception in Json RPC handle: %s", ex.what());
+					std::string what(ex.what());
+					LoggerManager::getInstance()->mErrorLogging.error("exception in Json RPC handle: %s", what);
 					stateError("gradido node intern exception");
 				}
 			}
@@ -163,6 +164,11 @@ void JsonRPCRequestHandler::parseJsonWithErrorPrintFile(std::istream& request_st
 
 void JsonRPCRequestHandler::stateError(const char* msg, std::string details)
 {
+	// clear prev error states
+	mResponseResult.RemoveMember("state");
+	mResponseResult.RemoveMember("msg");
+	mResponseResult.RemoveMember("details");
+
 	auto alloc = mResponseJson.GetAllocator();
 	mResponseResult.AddMember("state", "error", alloc);
 	mResponseResult.AddMember("msg", Value(msg, alloc), alloc);
@@ -174,7 +180,12 @@ void JsonRPCRequestHandler::stateError(const char* msg, std::string details)
 
 
 void JsonRPCRequestHandler::stateSuccess()
-{
+{	
+	// clear error states
+	mResponseResult.RemoveMember("state");
+	mResponseResult.RemoveMember("msg");
+	mResponseResult.RemoveMember("details");
+	
 	mResponseResult.AddMember("state", "success", mResponseJson.GetAllocator());
 }
 

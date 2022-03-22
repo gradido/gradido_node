@@ -10,6 +10,7 @@
 #include "Poco/DateTimeFormatter.h"
 
 #include "../model/NodeTransactionEntry.h"
+#include "../model/Apollo/TransactionList.h"
 
 #include "rapidjson/prettywriter.h"
 
@@ -24,6 +25,12 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	params.Accept(writer);
 	printf("incoming json-rpc request, params: \n%s\n", buffer.GetString());
 
+	std::string groupAlias;
+	if (!getStringParameter(params, "groupAlias", groupAlias)) {
+		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+		return;
+	}
+
 	if (method == "getlasttransaction") {
 		stateSuccess();
 		mResponseResult.AddMember("transaction", "", alloc);
@@ -36,11 +43,10 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 			stateError("params not an object");
 			return;
 		}
-		std::string groupAlias;
 		std::string format;
 		uint64_t transactionId = 0;
 
-		if (!getStringParameter(params, "group", groupAlias) || !getUInt64Parameter(params, "fromTransactionId", transactionId)) {
+		if (!getUInt64Parameter(params, "fromTransactionId", transactionId)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}		
@@ -70,14 +76,21 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		stateError("not implemented yet");
 	}
 	else if (method == "listtransactions") {
-		stateError("not implemented yet");
-	}
-	else if (method == "getgroupdetails") {
-		std::string groupAlias;
-		if (!getStringParameter(params, "groupAlias", groupAlias)) {
+		std::string pubkey;
+		if (!getStringParameter(params, "pubkey", pubkey)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}
+		int currentPage = 1, pageSize = 25;
+		getIntParameter(params, "currentPage", currentPage);
+		getIntParameter(params, "pageSize", pageSize);
+		bool orderDESC = true, onlyCreations = false;
+		getBoolParameter(params, "orderDESC", orderDESC);
+		getBoolParameter(params, "onlyCreations", onlyCreations);
+
+		return listTransactions(groupAlias, pubkey, currentPage, pageSize, orderDESC, onlyCreations);
+	}
+	else if (method == "getgroupdetails") {
 		return getGroupDetails(groupAlias);
 	}
 	else {
@@ -177,12 +190,8 @@ void JsonRPCHandler::listTransactions(
 		"query": "query ($currentPage: Int = 1, $pageSize: Int = 25, $order: Order = DESC, $onlyCreations: Boolean = false) {\n  transactionList(\n    currentPage: $currentPage\n    pageSize: $pageSize\n    order: $order\n    onlyCreations: $onlyCreations\n  ) {\n    gdtSum\n    count\n    balance\n    decay\n    decayDate\n    transactions {\n      type\n      balance\n      decayStart\n      decayEnd\n      decayDuration\n      memo\n      transactionId\n      name\n      email\n      date\n      decay {\n        balance\n        decayStart\n        decayEnd\n        decayDuration\n        decayStartBlock\n        __typename\n      }\n      firstTransaction\n      __typename\n    }\n    __typename\n  }\n}\n"
 	}
 	*/
-	if (onlyCreations) {
-		throw std::runtime_error("onlyCreations = true, not implemented yet");
-	}
 	Profiler timeUsed;
 	auto alloc = mResponseJson.GetAllocator();
-
 	auto gm = GroupManager::getInstance();
 	auto group = gm->findGroup(groupAlias);
 	if (group.isNull()) {
@@ -190,85 +199,14 @@ void JsonRPCHandler::listTransactions(
 		stateError("group not known");
 		return;
 	}
+
 	auto pubkey = DataTypeConverter::hexToBinString(publicKeyHex);
 	auto allTransactions = group->findTransactions(*pubkey.get());
-	Value transactionList(kObjectType);
-	transactionList.AddMember("gdtSum", "0", alloc);
-	transactionList.AddMember("count", allTransactions.size(), alloc);
 
-	Value transactions(kArrayType);
+	model::Apollo::TransactionList transactionList(group, std::move(pubkey), alloc);
+	auto transactionListValue = transactionList.generateList(allTransactions, currentPage, pageSize, orderDESC, onlyCreations);
 
-	
-	// sort in ascending order
-	// TODO: check if it is already sorted
-	std::sort(allTransactions.begin(), allTransactions.end(), [](
-		const Poco::SharedPtr<model::NodeTransactionEntry>& x,
-		const Poco::SharedPtr<model::NodeTransactionEntry>& y) {
-			return x->getTransactionNr() > y->getTransactionNr();
-	});	
-
-	int iteratorPage = 1;
-	int pageIterator = 1;
-	std::list<Value> transactionsTempList;
-	for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
-		if (pageIterator >= pageSize) {
-			iteratorPage++;
-			pageIterator = 0;
-		}
-		if (iteratorPage > currentPage) break;
-		if (iteratorPage == currentPage) 
-		{
-			Value transaction(kObjectType);
-			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());
-			auto gradidoTransaction = gradidoBlock->getGradidoTransaction();
-			auto transactionBody = gradidoTransaction->getTransactionBody();
-			if (transactionBody->getTransactionType() == model::gradido::TRANSACTION_CREATION) {
-				transaction.AddMember("type", "creation", alloc);
-				auto creation = transactionBody->getCreationTransaction();
-				transaction.AddMember("balance", Value(creation->getAmount().data(), alloc), alloc);
-				transaction.AddMember("name", "Gradido Akademie", alloc);
-			}
-			else if (transactionBody->getTransactionType() == model::gradido::TRANSACTION_TRANSFER ||
-				transactionBody->getTransactionType() == model::gradido::TRANSACTION_DEFERRED_TRANSFER) {
-				auto transfer = transactionBody->getTransferTransaction();
-				if (transfer->getRecipientPublicKeyString() == *pubkey.get()) {
-					transaction.AddMember("type", "receive", alloc);
-					transaction.AddMember("name", Value(DataTypeConverter::binToHex(transfer->getSenderPublicKeyString()).data(), alloc), alloc);
-				}
-				else if (transfer->getSenderPublicKeyString() == *pubkey.get()) {
-					transaction.AddMember("type", "send", alloc);
-					transaction.AddMember("name", Value(DataTypeConverter::binToHex(transfer->getRecipientPublicKeyString()).data(), alloc), alloc);
-				}
-				transaction.AddMember("balance", Value(transfer->getAmount().data(), alloc), alloc);
-			}
-			else {
-				throw std::runtime_error("transaction type not implemented yet");
-			}
-			transaction.AddMember("memo", Value(transactionBody->getMemo().data(), alloc), alloc);
-			transaction.AddMember("transactionId", gradidoBlock->getID(), alloc);
-			auto dateString = Poco::DateTimeFormatter::format(gradidoBlock->getReceivedAsTimestamp(), "%Y-%m-%dT%H:%M:%S.%i%z");
-			transaction.AddMember("date", Value(dateString.data(), alloc), alloc);
-			Value decay(kObjectType);
-			// TODO: calculate decay
-			transaction.AddMember("decay", decay, alloc);
-			if (orderDESC) {
-				// PushFront
-				//transactionList.PushBack(transaction, alloc);
-				transactionsTempList.push_front(std::move(transaction));
-			}
-			else {
-				transactionsTempList.push_back(std::move(transaction));
-			}
-		}
-		// TODO: skip unknown transaction types and if onlyCreations is set, skip all non creations
-		pageIterator++;
-	}
-	for (auto it = transactionsTempList.begin(); it != transactionsTempList.end(); it++) {
-		transactionList.PushBack(*it, alloc);
-	}
-	transactionsTempList.clear();
-
-	transactionList.AddMember("transactions", transactions, alloc);
-	mResponseResult.AddMember("transactionList", transactionList, alloc);
+	stateSuccess();
+	mResponseResult.AddMember("transactionList", transactionListValue, alloc);
 	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 }

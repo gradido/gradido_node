@@ -515,9 +515,11 @@ namespace controller {
 		if (!mpfr_cmp_si(gdd, 0, gDefaultRound)) {
 			return gdd;
 		}
-		assert(date > lastDate);
-		calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
-		calculateDecayFast(temp->getData(), gdd);		
+		assert(date >= lastDate);
+		if (Poco::Timespan(date - lastDate).totalSeconds()) {
+			calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
+			calculateDecayFast(temp->getData(), gdd);
+		}
 
 		return gdd;				
 	}
