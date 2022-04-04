@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 
 #include "../TransactionsBase64.h"
-#include "../../model/TransactionEntry.h"
+#include "../../src/model/NodeTransactionEntry.h"
 #include "TransactionEntryTest.h"
 
 namespace model {

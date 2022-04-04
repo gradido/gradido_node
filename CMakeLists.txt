@@ -73,11 +73,6 @@ source_group("model\\Apollo" FILES ${MODEL_APOLLO})
 source_group("model" FILES ${MODEL})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})
-source_group("test\\lib" FILES ${TEST_LIB})
-source_group("test\\model\\files" FILES ${TEST_MODEL_FILES})
-source_group("test\\model" FILES ${TEST_MODEL})
-source_group("test\\controller" FILES ${TEST_CONTROLLER})
-source_group("test" FILES ${TEST})
 
 endif(MSVC)
 
@@ -149,4 +144,6 @@ endif(UNIX)
 
 # add test
 include(CTest)
-#add_subdirectory(test)
+add_subdirectory(test)
+
+

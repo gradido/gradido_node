@@ -1,2 +1,5 @@
 build
 .vscode
+doc
+!doc/html/GradidoCoin_300x.png
+Doxyfile.bak

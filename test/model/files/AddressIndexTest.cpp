@@ -1,8 +1,8 @@
 #include "AddressIndexTest.h"
-#include "../../../lib/BinTextConverter.h"
+#include "../../../src/lib/BinTextConverter.h"
 
-#include "../../../model/files/AddressIndex.h"
-#include "../../../controller/AddressIndex.h"
+#include "../../../src/model/files/AddressIndex.h"
+#include "../../../src/controller/AddressIndex.h"
 
 namespace model {
 	namespace files {

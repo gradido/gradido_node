@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 
-#include "../../controller/AddressIndex.h"
+#include "../../src/controller/AddressIndex.h"
 
 TEST(ControllerAddressIndexTest, addAndCheck) 
 {

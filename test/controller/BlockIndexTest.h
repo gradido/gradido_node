@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_TEST_CONTROLLER_BLOCK_INDEX_TEST_FIXTURE_H
 
 #include "gtest/gtest.h"
-#include "../../model/TransactionEntry.h"
+#include "../../src/model/NodeTransactionEntry.h"
 
 
 namespace controller {
@@ -20,11 +20,11 @@ namespace controller {
 			mTestAddressIndices.push_back({ 17 });
 			mTestAddressIndices.push_back({ 32, 17 });
 
-			mTestTransactions.push_back(new model::TransactionEntry(120, 7, 2018, mTestAddressIndices[0].data(), 4));
-			mTestTransactions.push_back(new model::TransactionEntry(17, 7, 2018, mTestAddressIndices[1].data(), 4));
-			mTestTransactions.push_back(new model::TransactionEntry(19, 7, 2018, mTestAddressIndices[2].data(), 1));
-			mTestTransactions.push_back(new model::TransactionEntry(75, 6, 2018, mTestAddressIndices[2].data(), 1));
-			mTestTransactions.push_back(new model::TransactionEntry(76, 6, 2017, mTestAddressIndices[3].data(), 2));
+			mTestTransactions.push_back(new model::NodeTransactionEntry(120, 7, 2018, 0xffbb94, mTestAddressIndices[0].data(), 4));
+			mTestTransactions.push_back(new model::NodeTransactionEntry(17, 7, 2018, 0xffbb94, mTestAddressIndices[1].data(), 4));
+			mTestTransactions.push_back(new model::NodeTransactionEntry(19, 7, 2018, 0xffbb94, mTestAddressIndices[2].data(), 1));
+			mTestTransactions.push_back(new model::NodeTransactionEntry(75, 6, 2018, 0xffbb94, mTestAddressIndices[2].data(), 1));
+			mTestTransactions.push_back(new model::NodeTransactionEntry(76, 6, 2017, 0xffbb94, mTestAddressIndices[3].data(), 2));
 
 			// add random file cursor positions
 			for (auto it = mTestTransactions.begin(); it != mTestTransactions.end(); it++) {
@@ -53,7 +53,7 @@ namespace controller {
 
 		// Class members declared here can be used by all tests in the test suite
 		// for Foo.
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> mTestTransactions;
+		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> mTestTransactions;
 		std::vector<std::vector<uint32_t>> mTestAddressIndices;
 		
 	};

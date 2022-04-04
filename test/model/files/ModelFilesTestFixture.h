@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_TEST_MODEL_FILES_BASE_TEST_FIXTURE_H
 
 #include "gtest/gtest.h"
-#include "../../../model/files/Block.h"
+#include "../../../src/model/files/Block.h"
 #include "Poco/File.h"
 
 namespace model {

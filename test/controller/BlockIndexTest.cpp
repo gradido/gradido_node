@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../../controller/BlockIndex.h"
+#include "../../src/controller/BlockIndex.h"
 #include "BlockIndexTest.h"
 
 namespace controller

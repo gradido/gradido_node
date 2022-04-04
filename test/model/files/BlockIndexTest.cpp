@@ -1,9 +1,9 @@
 #include "BlockIndexTest.h"
 
 #include "Poco/File.h"
-#include "../../../model/files/BlockIndex.h"
+#include "../../../src/model/files/BlockIndex.h"
 #include "../../controller/MockBlockIndex.h"
-#include "../../../model/TransactionEntry.h"
+#include "../../../src/model/NodeTransactionEntry.h"
 
 #include "../../TransactionsBase64.h"
 
@@ -22,9 +22,9 @@ namespace model {
 			std::vector<uint32_t> addressIndices1 = { 2192, 1223, 1234, 3432 };
 			std::vector<uint32_t> addressIndices2 = { 2192, 785, 1234, 121 };
 
-			blockIndexModelFile->addDataBlock(1210, 0, addressIndices1);
+			blockIndexModelFile->addDataBlock(1210, 0, 0xffaa01, addressIndices1);
 			blockIndexModelFile->addMonthBlock(7);
-			blockIndexModelFile->addDataBlock(119, 128, addressIndices2);
+			blockIndexModelFile->addDataBlock(119, 128, 0xccab02, addressIndices2);
 			EXPECT_EQ(blockIndexModelFile->writeToFile(), true);
 
 			EXPECT_EQ(blockIndexModelFile->readFromFile(&blockIndexController), true);

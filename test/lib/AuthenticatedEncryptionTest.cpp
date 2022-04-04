@@ -1,6 +1,6 @@
 #include "AuthenticatedEncryptionTest.h"
-#include "../../lib/AuthenticatedEncryption.h"
-#include "../../lib/DataTypeConverter.h"
+#include "gradido_blockchain/crypto/AuthenticatedEncryption.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 const char* testMessage1 = "Hallo Welt";
 
@@ -10,7 +10,7 @@ TEST(AuthenticatedEncryptionTest, EncryptDecryptMessage)
 	auto encryptionKeyPair1 = new AuthenticatedEncryption();
 	auto encryptionKeyPair2 = new AuthenticatedEncryption();
 	
-	auto message = mm->getFreeMemory(strlen(testMessage1)+1);
+	auto message = mm->getMemory(strlen(testMessage1)+1);
 	memcpy(*message, testMessage1, message->size());
 	auto encryptedMessage = encryptionKeyPair1->encrypt(message, encryptionKeyPair2);
 	ASSERT_NE(encryptedMessage, nullptr);
@@ -54,7 +54,7 @@ TEST(AuthenticatedEncryptionTest, EncryptPrecalculatedSecretDecryptMessage)
 
 	auto index = encryptionKeyPair1->precalculateSharedSecret(encryptionKeyPair2);
 
-	auto message = mm->getFreeMemory(strlen(testMessage1) + 1);
+	auto message = mm->getMemory(strlen(testMessage1) + 1);
 	memcpy(*message, testMessage1, message->size());
 	auto encryptedMessage = encryptionKeyPair1->encrypt(message, index);
 	ASSERT_NE(encryptedMessage, nullptr);
@@ -81,7 +81,7 @@ TEST(AuthenticatedEncryptionTest, EncryptDecryptPrecalculatedSecretMessage)
 
 	auto index = encryptionKeyPair2->precalculateSharedSecret(encryptionKeyPair1);
 
-	auto message = mm->getFreeMemory(strlen(testMessage1) + 1);
+	auto message = mm->getMemory(strlen(testMessage1) + 1);
 	memcpy(*message, testMessage1, message->size());
 	auto encryptedMessage = encryptionKeyPair1->encrypt(message, encryptionKeyPair2);
 	ASSERT_NE(encryptedMessage, nullptr);

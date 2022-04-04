@@ -22,6 +22,7 @@ namespace controller {
 	 * map: uint64 transaction nr, uint32 file cursor
 	 * map: uint32 address index, uint64 transaction nr
 	 * year[month[
+	 TODO: Auto-Recover if missing, and maybe check with saved block on startup
 	 */
 
 	class BlockIndex : public ControllerBase, public model::files::IBlockIndexReceiver
