@@ -100,6 +100,9 @@ namespace controller {
 		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
 		void setListeningCommunityServer(client::Base* client);
 
+		// expensive, remove all address and block indices, they must be build from scratch
+		void resetAllIndices();
+
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
 		void updateLastBlockNr(int lastBlockNr);

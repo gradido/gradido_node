@@ -153,6 +153,8 @@ namespace model {
 			}
 
 			auto fileSize = file.getSize();
+			if (!fileSize) return false;
+
 			auto readedSize = 0;
 			Poco::FileInputStream fileStream(filePath);
 			auto hash = mm->getMemory(32);

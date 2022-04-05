@@ -49,6 +49,9 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 	for (auto it = groups.begin(); it != groups.end(); it++) {
 		// load all groups to start iota message listener from all groups
 		try {
+			// with that call not running groups will be initialized and start listening
+			auto group = findGroup(*it);
+
 			// for notification of community server by new transaction
 			std::string groupAliasConfig = "community." + *it;
 			std::string communityNewBlockUri = groupAliasConfig + ".newBlockUri";
@@ -69,8 +72,7 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 				else {
 					LoggerManager::getInstance()->mErrorLogging.error("unknown new block uri type: %s", communityNewBlockUriType);
 				}
-				if (clientBase) {
-					auto group = findGroup(*it);
+				if (clientBase) {					
 					group->setListeningCommunityServer(clientBase);
 				}
 			}

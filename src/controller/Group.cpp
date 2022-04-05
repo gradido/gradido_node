@@ -22,6 +22,9 @@
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 
+#include "Poco/File.h"
+#include "Poco/RegularExpression.h"
+
 using namespace rapidjson;
 
 namespace controller {
@@ -48,7 +51,7 @@ namespace controller {
 			<< ", last block nr: " << std::to_string(mLastBlockNr)
 			<< ", last transaction id: " << std::to_string(mLastTransactionId)
 			<< std::endl;
-		mAddressIndex = new AddressIndex(folderPath, mLastAddressIndex);
+		mAddressIndex = new AddressIndex(folderPath, mLastAddressIndex, this);
 	}
 
 	Group::~Group()
@@ -79,6 +82,37 @@ namespace controller {
 			delete mCommunityServer;
 		}
 		mCommunityServer = client;
+	}
+
+	void Group::resetAllIndices()
+	{
+		LoggerManager::getInstance()->mErrorLogging.warning("[Group::resetAllIndices called] something went wrong with the index files");
+		Poco::ScopedLock _lock(mWorkingMutex);
+		// clear indices from memory
+		mCachedBlocks.clear();
+		mAddressIndex.reset();
+		updateLastAddressIndex(0);
+
+		// clear indices from mass storage
+		// clear address indices
+		Poco::Path addressIndicesFolder(mFolderPath);
+		addressIndicesFolder.pushDirectory("pubkeys");
+		Poco::File pubkeyFolder(addressIndicesFolder);
+		pubkeyFolder.remove(true);
+
+		// clear block indices
+		Poco::File groupFolder(mFolderPath);
+		Poco::Path::StringVec files;
+		groupFolder.list(files);
+		// *.index
+		Poco::RegularExpression isIndexFile(".*\.index$");
+		std::for_each(files.begin(), files.end(), [&](const std::string& file) {
+			if (isIndexFile.match(file)) {
+				Poco::File fileForDeletion(mFolderPath.toString() + file);
+				fileForDeletion.remove();
+			}
+		});
+		mAddressIndex = new AddressIndex(mFolderPath, mLastAddressIndex, this);
 	}
 
 	void Group::exit()
@@ -235,6 +269,7 @@ namespace controller {
 
 	void Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received, mpfr_ptr sum)
 	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions;
 		// received = max
 		// received - 2 month = min
@@ -302,6 +337,7 @@ namespace controller {
 	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
 	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactionsFromXToLast(uint64_t fromTransactionId)
 	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactionEntries;
 		uint64_t transactionIdCursor = fromTransactionId;
 		// we cannot handle zero transaction id, starts with one,
@@ -360,6 +396,7 @@ namespace controller {
 
 	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter/* = nullptr*/)
 	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (filter) {
 			int blockCursor = mLastBlockNr;
 			while (blockCursor >= 0)
@@ -403,6 +440,7 @@ namespace controller {
 
 	mpfr_ptr Group::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
 	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto mm = MemoryManager::getInstance();
 		auto gdd = mm->getMathMemory();
 		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
@@ -611,6 +649,7 @@ namespace controller {
 
 	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::getAllTransactions(std::function<bool(model::TransactionEntry*)> filter/* = nullptr*/)
 	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> result;
 		auto lastBlock = getBlock(mLastBlockNr);
 		if (!filter) {

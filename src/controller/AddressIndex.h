@@ -34,10 +34,12 @@ namespace controller {
 	* TODO: extend address index with first transaction nr where the address is involved
 	*/
 
+	class Group;
+
 	class AddressIndex : public ControllerBase
 	{
 	public:
-		AddressIndex(Poco::Path path, uint32_t lastIndex);
+		AddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent);
 
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
 		//! \return Index or 0 if address didn't exist.
@@ -64,19 +66,17 @@ namespace controller {
 		//!  Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n
 		//!  ./94/93.index
 		static Poco::Path getAddressIndexFilePathForAddress(const std::string& address);
-		static Poco::Path getAddressIndexFilePathForAddress(const MemoryBin* address);
-
 
 	protected:
 		//! \brief reading model::files::AddressIndex from cache or if not exist in cache, creating model::files::AddressIndex which load from file if exist
 		//!
 		//! Can need some time if file must at first load from disk, maybe I/O read.
 		Poco::SharedPtr<model::files::AddressIndex> getAddressIndex(const std::string& address);
-		Poco::SharedPtr<model::files::AddressIndex> getAddressIndex(const MemoryBin* address);
 
 		Poco::Path mGroupPath;
 		uint32_t   mLastIndex;
 		Poco::AccessExpireCache<uint16_t, model::files::AddressIndex> mAddressIndicesCache;
+		Group* mParent;
 	};
 }
 
