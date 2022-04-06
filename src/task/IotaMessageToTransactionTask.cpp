@@ -71,6 +71,7 @@ int IotaMessageToTransactionTask::run()
         }
     } catch(model::gradido::TransactionValidationException& e) {
         errorLog.error(e.getFullString());
+        notificateFailedTransaction(group, transaction.get(), e.what());
         return 0;
     }
    
@@ -110,8 +111,10 @@ int IotaMessageToTransactionTask::run()
         if (pairingTransaction) {
             if (!pairingTransaction->isBelongToUs(transaction.get())) {
                 std::string parentMessageIdHexString(*parentMessageIdHex.get());
-				errorLog.information("transaction skipped because pairing transaction wasn't found, messageId: %s, pairing message id: %s",
-					mMessageId.toHex(), *parentMessageIdHex.get()
+                std::string message = "transaction skipped because pairing transaction wasn't found";
+                notificateFailedTransaction(group, transaction.get(), message);
+				errorLog.information("%s, messageId: %s, pairing message id: %s",
+                    message, mMessageId.toHex(), *parentMessageIdHex.get()
                 );
                 return 0;
             }
@@ -130,9 +133,9 @@ int IotaMessageToTransactionTask::run()
     auto lastTransaction = group->getLastTransaction();
     if (lastTransaction && lastTransaction->getReceived() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
-        errorLog.information("transaction skipped because it cames from the past, messageId: %s", 
-            mMessageId.toHex()
-        );
+        std::string message = "transaction skipped because it cames from the past";
+        notificateFailedTransaction(group, transaction.get(), message);
+        errorLog.information("%s, messageId: %s", message, mMessageId.toHex());
         return 0;
     }
         
@@ -153,4 +156,18 @@ std::string IotaMessageToTransactionTask::getGradidoGroupAlias(const std::string
 		return iotaIndex.substr(8);
 	}
 	return "";
+}
+
+void IotaMessageToTransactionTask::notificateFailedTransaction(
+    Poco::SharedPtr<controller::Group> group,
+	const model::gradido::GradidoTransaction* transaction,
+	const std::string& errorMessage
+)
+{
+	if (!group.isNull()) {
+		auto communityServer = group->getListeningCommunityServer();
+		if (communityServer) {
+			communityServer->notificateFailedTransaction(transaction, errorMessage, mMessageId.toHex());
+		}
+	}
 }

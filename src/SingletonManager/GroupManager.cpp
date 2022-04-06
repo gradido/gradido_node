@@ -55,11 +55,8 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 			// for notification of community server by new transaction
 			std::string groupAliasConfig = "community." + *it;
 			std::string communityNewBlockUri = groupAliasConfig + ".newBlockUri";
-			std::string communityNewBlockUriTypeIndex = groupAliasConfig + ".blockUriType";
-			std::string communityNewBlockUriType = "json";
-			if (config.has(communityNewBlockUriTypeIndex)) {
-				communityNewBlockUriType = config.getString(communityNewBlockUriTypeIndex);
-			}
+			auto communityNewBlockUriType = config.getString(groupAliasConfig + ".blockUriType", "json");
+
 			if (config.has(communityNewBlockUri)) {
 				client::Base* clientBase = nullptr;
 				auto uri = Poco::URI(config.getString(communityNewBlockUri));

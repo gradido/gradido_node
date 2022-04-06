@@ -99,6 +99,7 @@ namespace controller {
 
 		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
 		void setListeningCommunityServer(client::Base* client);
+		inline client::Base* getListeningCommunityServer() const { return mCommunityServer; }
 
 		// expensive, remove all address and block indices, they must be build from scratch
 		void resetAllIndices();

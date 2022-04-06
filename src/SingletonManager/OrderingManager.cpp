@@ -126,6 +126,8 @@ int OrderingManager::ThreadFunction()
                 auto seconds = transaction->getTransactionBody()->getCreatedSeconds();
                 printf("transaction type: %d, created: %d\n", type, seconds);
               
+                // TODO: check if it is really necessary
+                auto transactionCopy = std::make_unique<model::gradido::GradidoTransaction>(transaction->getSerialized().get());
                 // put transaction to blockchain
                 auto group = gm->findGroup(itTransaction->groupAlias);
                 if (group.isNull()) {
@@ -136,6 +138,10 @@ int OrderingManager::ThreadFunction()
                 }
                 catch (GradidoBlockchainException& ex) {
                     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+                    auto communityServer = group->getListeningCommunityServer();
+                    if (communityServer) {
+                        communityServer->notificateFailedTransaction(transactionCopy.get(), ex.what(), *itTransaction->messageId->convertToHex().get());
+                    }
                     errorLog.information("[OrderingManager] transaction not added: %s", ex.getFullString());
                 }
             }

@@ -41,6 +41,33 @@ namespace client {
 		else {
 			throw GradidoUnknownEnumException("unknown format", "NotificationFormat", mFormat);
 		}
+		return notificate(std::move(params));
+		
+	}
+
+	bool Base::notificateFailedTransaction(const model::gradido::GradidoTransaction* gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
+	{
+		Poco::Net::NameValueCollection params;
+
+		if (mFormat == NOTIFICATION_FORMAT_PROTOBUF_BASE64) {
+			auto transactionBase64 = DataTypeConverter::binToBase64(gradidoTransaction->getSerializedConst());
+			params.add("transactionBase64", *transactionBase64.get());
+		}
+		else if (mFormat == NOTIFICATION_FORMAT_JSON) {
+			auto transactionJson = gradidoTransaction->toJson();
+			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
+			params.add("transactionJson", transactionJson);
+		}
+		else {
+			throw GradidoUnknownEnumException("unknown format", "NotificationFormat", mFormat);
+		}
+		params.add("error", errorMessage);
+		params.add("messageId", messageId);
+		return notificate(std::move(params));
+	}
+
+	bool Base::notificate(Poco::Net::NameValueCollection params)
+	{
 		try {
 			return postRequest(params);
 		}
@@ -63,4 +90,5 @@ namespace client {
 			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Poco Exception: %s\n", ex.displayText());
 		}
 	}
+
 }

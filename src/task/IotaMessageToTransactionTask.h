@@ -4,6 +4,7 @@
 #include "CPUTask.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "../iota/MessageId.h"
+#include "../controller/Group.h"
 /*!
  * @author: einhornimmond
  * 
@@ -31,12 +32,16 @@ public:
 
 protected:
     std::string getGradidoGroupAlias(const std::string& iotaIndex) const;
+    void notificateFailedTransaction(
+        Poco::SharedPtr<controller::Group> group,
+        const model::gradido::GradidoTransaction* transaction, 
+        const std::string& errorMessage
+    );
 
     uint32_t mMilestoneIndex;
     //! seconds
     uint64_t mTimestamp;
     iota::MessageId mMessageId;
-    Poco::AutoPtr<model::gradido::GradidoTransaction> mTransaction;
 };
 
 #endif //__GRADIDO_NODE_TASK_IOTA_MESSAGE_TO_TRANSACTION_TASK

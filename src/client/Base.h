@@ -27,8 +27,10 @@ namespace client
 		virtual ~Base();
 
 		bool notificateNewTransaction(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock);
+		bool notificateFailedTransaction(const model::gradido::GradidoTransaction* gradidoTransaction, const std::string& errorMessage, const std::string& messageId);
 		virtual bool postRequest(const Poco::Net::NameValueCollection& parameterValuePairs) = 0;
 	protected:		
+		bool notificate(Poco::Net::NameValueCollection params);
 		enum NotificationFormat : int
 		{
 			NOTIFICATION_FORMAT_PROTOBUF_BASE64,
