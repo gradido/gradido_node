@@ -29,6 +29,43 @@ namespace controller {
 		return it->second;
 	}
 
+	uint32_t GroupRegisterGroup::generateUniqueCoinColor()
+	{
+		std::set<uint32_t> coinColors;
+		std::for_each(mRegisteredGroups.begin(), mRegisteredGroups.end(), [&](auto it) {
+			coinColors.insert(it.second.coinColor);
+		});
+		uint32_t result = rand();
+		int maxTryCount = 1000;
+		while (coinColors.find(result) != coinColors.end() && maxTryCount > 0) {
+			result = rand();
+			maxTryCount--;
+		}
+		if (maxTryCount <= 0) {
+			throw std::runtime_error("error with rand, cannot find new unique coin color");
+		}
+		return result;
+	}
+
+	bool GroupRegisterGroup::isCoinColorUnique(uint32_t coinColor)
+	{
+		for (auto it = mRegisteredGroups.begin(); it != mRegisteredGroups.end(); it++) {
+			if (it->second.coinColor == coinColor) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool GroupRegisterGroup::isGroupAliasUnique(const std::string& groupAlias)
+	{
+		auto it = mRegisteredGroups.find(groupAlias);
+		if (it == mRegisteredGroups.end()) {
+			return true;
+		}
+		return false;
+	}
+
 	bool GroupRegisterGroup::addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp)
 	{
 		Poco::ScopedLock _lock(mWorkingMutex);

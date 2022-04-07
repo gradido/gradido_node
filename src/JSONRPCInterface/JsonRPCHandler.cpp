@@ -20,13 +20,19 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 {
 	auto alloc = mResponseJson.GetAllocator();
 
+	// Debugging
 	StringBuffer buffer;
 	PrettyWriter<StringBuffer> writer(buffer);
 	params.Accept(writer);
 	printf("incoming json-rpc request, params: \n%s\n", buffer.GetString());
 
+	std::set<std::string> noNeedForGroupAlias = {
+		"getRandomUniqueCoinColor",
+		"isGroupUnique"
+	};
+
 	std::string groupAlias;
-	if (!getStringParameter(params, "groupAlias", groupAlias)) {
+	if (noNeedForGroupAlias.find(method) == noNeedForGroupAlias.end() && !getStringParameter(params, "groupAlias", groupAlias)) {
 		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 		return;
 	}
@@ -93,6 +99,16 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	else if (method == "getgroupdetails") {
 		return getGroupDetails(groupAlias);
 	}
+	else if (method == "isGroupUnique") {
+		std::string groupAlias; 
+		uint32_t coinColor;
+		getStringParameter(params, "groupAlias", groupAlias);
+		getUIntParameter(params, "coinColor", coinColor);
+		isGroupUnique(groupAlias, coinColor);
+	}
+	else if (method == "getRandomUniqueCoinColor") {
+		getRandomUniqueCoinColor();
+	}
 	else {
 		mResponseErrorCode = JSON_RPC_ERROR_METHODE_NOT_FOUND;
 		stateError("method not known");
@@ -123,6 +139,35 @@ void JsonRPCHandler::getGroupDetails(const std::string& groupAlias)
 	mResponseJson.AddMember("groupName", Value(groupAdd->getGroupName().data(), alloc), alloc);
 	mResponseJson.AddMember("groupAlias", Value(groupAdd->getGroupAlias().data(), alloc), alloc);
 	mResponseJson.AddMember("coinColor", groupAdd->getCoinColor(), alloc);
+}
+
+void JsonRPCHandler::getRandomUniqueCoinColor()
+{
+	auto gm = GroupManager::getInstance();
+	auto groupRegisterGroup = gm->getGroupRegisterGroup();
+	auto alloc = mResponseJson.GetAllocator();
+
+	stateSuccess();
+	mResponseJson.AddMember("coinColor", groupRegisterGroup->generateUniqueCoinColor(), alloc);
+}
+
+void JsonRPCHandler::isGroupUnique(const std::string& groupAlias, uint32_t coinColor)
+{
+	auto gm = GroupManager::getInstance();
+	auto groupRegisterGroup = gm->getGroupRegisterGroup();
+	auto alloc = mResponseJson.GetAllocator();
+
+	if (!groupAlias.size() && !coinColor) {
+		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+		stateError("nothing to check");
+	}
+	stateSuccess();
+	if (groupAlias.size()) {
+		mResponseJson.AddMember("isGroupAliasUnique", groupRegisterGroup->isGroupAliasUnique(groupAlias), alloc);
+	}
+	if (coinColor) {
+		mResponseJson.AddMember("isCoinColorUnique", groupRegisterGroup->isCoinColorUnique(coinColor), alloc);
+	}
 }
 
 void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::string& groupAlias, const std::string& format)

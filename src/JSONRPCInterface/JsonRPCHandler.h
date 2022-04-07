@@ -12,6 +12,8 @@ public:
 protected:
 	void putTransaction(const std::string& transactionBinary, const std::string& groupAlias);
 	void getGroupDetails(const std::string& groupAlias);
+	void getRandomUniqueCoinColor();
+	void isGroupUnique(const std::string& groupAlias, uint32_t coinColor);
 	void getTransactions(int64_t fromTransactionId, const std::string& groupAlias, const std::string& format);
 	void listTransactions(
 		const std::string& groupAlias, 
@@ -21,6 +23,9 @@ protected:
 		bool orderDESC = true, 
 		bool onlyCreations = false
 	);
+
+	// helper
+	
 
 };
 

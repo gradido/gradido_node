@@ -1,5 +1,6 @@
 #include "GroupManager.h"
 #include "LoggerManager.h"
+#include "../controller/ControllerExceptions.h"
 
 //#include "Poco/Path.h"
 #include "Poco/File.h"
@@ -135,6 +136,16 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 	group->init();
 	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;
+}
+
+Poco::SharedPtr<controller::GroupRegisterGroup> GroupManager::getGroupRegisterGroup()
+{
+	Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
+	auto it = mGroupMap.find(GROUP_REGISTER_GROUP_ALIAS);
+	if (it == mGroupMap.end()) {
+		throw controller::GroupNotFoundException("cannot find group register group", GROUP_REGISTER_GROUP_ALIAS);
+	}
+	return it->second.cast<controller::GroupRegisterGroup>();
 }
 
 std::vector<Poco::SharedPtr<controller::Group>> GroupManager::findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey)

@@ -36,6 +36,7 @@ public:
 	//!
 	//! Poco::AccessExpireCache use his own mutex
 	Poco::SharedPtr<controller::Group> findGroup(const std::string& groupAlias);
+	Poco::SharedPtr<controller::GroupRegisterGroup> getGroupRegisterGroup();
 
 	std::vector<Poco::SharedPtr<controller::Group>> findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey);
 

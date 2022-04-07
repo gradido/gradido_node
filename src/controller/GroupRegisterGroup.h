@@ -33,6 +33,9 @@ namespace controller {
 		~GroupRegisterGroup();
 
 		GroupEntry findGroup(const std::string& groupAlias);
+		uint32_t generateUniqueCoinColor();
+		bool isCoinColorUnique(uint32_t coinColor);
+		bool isGroupAliasUnique(const std::string& groupAlias);
 
 		bool addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp);
 
