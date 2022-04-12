@@ -8,6 +8,8 @@
 #include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/CacheManager.h"
 
+#include "Poco/Util/ServerApplication.h"
+
 namespace controller {
 	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
 		: //mTimer(0, ServerGlobals::g_TimeoutCheck),
@@ -18,9 +20,7 @@ namespace controller {
 	{
 		//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
 		//mTimer.start(callback);
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer("controller::" + mBlockFile->getBlockPath(), this, ServerGlobals::g_TimeoutCheck, -1);
-		mBlockIndex->loadFromFile();
 	}
 
 	Block::~Block()
@@ -37,6 +37,38 @@ namespace controller {
 		//checkTimeout(mTimer);
 		//printf("after call checkTimeout\n");
 		mSerializedTransactions.clear();		
+	}
+
+	bool Block::init(Poco::SharedPtr<controller::AddressIndex> addressIndex)
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		if (!mBlockIndex->loadFromFile()) {
+			// check if Block exist
+			if (mBlockFile->getCurrentFileSize()) {
+				auto rebuildBlockIndexTask = mBlockFile->rebuildBlockIndex(addressIndex);
+				if (rebuildBlockIndexTask.isNull()) {
+					return false;
+				}
+				int sumWaited = 0;
+				while (!rebuildBlockIndexTask->isPendingQueueEmpty() && sumWaited < 1000) {
+					Poco::Thread::sleep(100);
+					sumWaited += 100;
+				}
+				if (!rebuildBlockIndexTask->isPendingQueueEmpty()) {
+					LoggerManager::getInstance()->mErrorLogging.critical("[controller::Block::Block] rebuildBlockIndex Task isn't finished after waiting a whole second");
+					Poco::Util::ServerApplication::terminate();
+				}
+				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
+				mBlockIndex->reset();
+				std::for_each(transactionEntries.begin(), transactionEntries.end(),
+					[&](const Poco::SharedPtr<model::NodeTransactionEntry>& transactionEntry)
+					{
+						mBlockIndex->addIndicesForTransaction(transactionEntry);
+					}
+				);
+			}
+		}
+		return true;
 	}
 
 	void Block::exit()

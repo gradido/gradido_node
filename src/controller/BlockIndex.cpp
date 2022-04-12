@@ -337,4 +337,14 @@ namespace controller {
 		return { lastEntry->first, lastMonthEntry->first };
 	}
 
+	void BlockIndex::reset()
+	{
+		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		mTransactionNrsFileCursors.clear();
+		mYearMonthAddressIndexEntrys.clear();
+		mBlockIndexFile.reset();
+		mMaxTransactionNr = 0;
+		mMinTransactionNr = 0;
+	}
+
 }

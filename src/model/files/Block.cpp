@@ -4,6 +4,8 @@
 #include "../../SingletonManager/FileLockManager.h"
 #include "../../SingletonManager/LoggerManager.h"
 #include "../../SingletonManager/CacheManager.h"
+#include "../../controller/AddressIndex.h"
+#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 #include "../../ServerGlobals.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -26,6 +28,9 @@ namespace model {
 			Poco::File file(mBlockPath);
 			if (!file.exists()) {
 				file.createFile();
+			}
+			else {
+				getOpenFile();
 			}
 
 			//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
@@ -77,14 +82,12 @@ namespace model {
 			mFastMutex.unlock();
 			return GO_ON;
 		}
-		
-		std::unique_ptr<std::string> Block::readLine(Poco::UInt32 startReading)
+
+		Poco::UInt16 Block::readLine(Poco::UInt32 startReading, std::string& strBuffer)
 		{
-			// set also mCurrentFileSize
-			//printf("[Block::readLine] cursor: %d\n", startReading);
 			auto fileStream = getOpenFile();
 			if (fileStream->fail()) {
-
+				throw std::runtime_error("[model::files::Block::readLine] file stream is failing!");
 			}
 			auto minimalFileSize = sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
 			if (mCurrentFileSize <= minimalFileSize) {
@@ -101,7 +104,7 @@ namespace model {
 			if (!fl->tryLockTimeout(filePath, 100)) {
 				throw LockException("cannot lock file for reading", filePath.data());
 			}
-			
+
 			Poco::UInt16 transactionSize = 0;
 			// call seek only if it is really necessary 
 			// for example if a block file is read in complete line by line on program startup
@@ -128,10 +131,21 @@ namespace model {
 				fl->unlock(filePath);
 				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.toString().data(), startReading, transactionSize);
 			}
-			std::unique_ptr<std::string> resultString(new std::string(transactionSize, '\0'));
-			resultString->resize(transactionSize);
-			fileStream->read(resultString->data(), transactionSize);			
+			if (strBuffer.capacity() < transactionSize) {
+				strBuffer.reserve(transactionSize);
+			}
+			strBuffer.resize(transactionSize);
+			fileStream->read(strBuffer.data(), transactionSize);			
 			fl->unlock(filePath);
+			return transactionSize;
+		}
+		
+		std::unique_ptr<std::string> Block::readLine(Poco::UInt32 startReading)
+		{
+			// set also mCurrentFileSize
+			//printf("[Block::readLine] cursor: %d\n", startReading);
+			auto resultString = std::make_unique<std::string>();
+			auto transactionSize = readLine(startReading, *resultString.get());
 			return std::move(resultString);
 		}
 
@@ -190,6 +204,7 @@ namespace model {
 				crypto_generichash_update(&state, *hash, hash->size());
 				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
 				crypto_generichash_final(&state, *hash, hash->size());
+				printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
 			}
 
 			// write at end of file
@@ -283,6 +298,63 @@ namespace model {
 			return result;
 		}
 
+		Poco::AutoPtr<RebuildBlockIndexTask> Block::rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex)
+		{
+			auto mm = MemoryManager::getInstance();
+			auto fl = FileLockManager::getInstance();
+			Poco::AutoPtr<RebuildBlockIndexTask> rebuildTask = new RebuildBlockIndexTask(addressIndex);;
+
+			std::string filePath = mBlockPath.toString();
+			
+			
+			Poco::Int32 fileCursor = 0;
+			std::string readBuffer;
+			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
+			memset(*hash, 0, crypto_generichash_KEYBYTES);
+
+			crypto_generichash_state state;
+			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+			crypto_generichash_update(&state, *hash, hash->size());
+
+			// read in every line
+			while (fileCursor + sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
+				auto lineSize = readLine(fileCursor, readBuffer);
+				fileCursor += lineSize + sizeof(Poco::UInt16);
+				rebuildTask->pushLine(fileCursor, std::string(readBuffer.begin(), readBuffer.begin() + lineSize));
+				rebuildTask->scheduleTask(rebuildTask);
+				//
+
+				crypto_generichash_update(&state, (const unsigned char*)readBuffer.data(), lineSize);
+
+			}
+			
+			crypto_generichash_final(&state, *hash, hash->size());
+
+			auto hash2 = mm->getMemory(crypto_generichash_KEYBYTES);
+			if (!fl->tryLockTimeout(filePath, 100)) {
+				throw LockException("couldn't lock file in time", filePath.data());
+			}
+			auto fileStream = getOpenFile();			
+			fileStream->read(*hash2, crypto_generichash_KEYBYTES);
+			fl->unlock(filePath);
+
+			bool result = false;
+			if (0 == sodium_memcmp(*hash, *hash2, crypto_generichash_KEYBYTES)) {
+				result = true;
+			}
+
+			HashMismatchException exception("block hash mismatch", hash, hash2);
+			mm->releaseMemory(hash);
+			mm->releaseMemory(hash2);
+			if (result) {
+				return rebuildTask;
+			}
+			else {
+				throw exception;			
+			}
+		}
+			
+
 
 		// *********************** TASKS ***********************************
 
@@ -301,6 +373,38 @@ namespace model {
 			mCursorPositions = mTargetBlock->appendLines(mLines);
 
 			return 0;
+		}
+
+
+		RebuildBlockIndexTask::RebuildBlockIndexTask(Poco::SharedPtr<controller::AddressIndex> addressIndex)
+			: task::CPUTask(ServerGlobals::g_CPUScheduler), mAddressIndex(addressIndex)
+		{
+
+		}
+
+		int RebuildBlockIndexTask::run()
+		{
+			while (!mPendingFileCursorLine.empty()) {
+				std::pair<Poco::Int32, std::string> fileCursorLine;
+				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
+					throw std::runtime_error("don't get next file cursor line");
+				}
+				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(&fileCursorLine.second);
+				lock();
+				Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(
+					gradidoBlock.get(), 
+					mAddressIndex, 
+					fileCursorLine.first
+				);
+				mTransactionEntries.push_back(transactionEntry);
+				unlock();
+			}
+			return 0;
+		}
+
+		void RebuildBlockIndexTask::pushLine(Poco::Int32 fileCursor, std::string line)
+		{
+			mPendingFileCursorLine.push({ fileCursor, std::move(line) });
 		}
 	}
 }

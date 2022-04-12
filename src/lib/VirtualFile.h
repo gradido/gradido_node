@@ -57,4 +57,16 @@ protected:
 	
 };
 
+class BufferOverflowException : public GradidoBlockchainException
+{
+public:
+	explicit BufferOverflowException(const char* what, size_t bufferSize, size_t askSize) noexcept;
+	
+	std::string getFullString() const;
+
+protected:
+	size_t mBufferSize;
+	size_t mAskSize;
+};
+
 #endif //__GRADIDO_NODE_LIB_VIRTUAL_FILE

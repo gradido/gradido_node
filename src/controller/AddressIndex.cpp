@@ -1,6 +1,7 @@
 #include "AddressIndex.h"
 #include "sodium.h"
 #include "../ServerGlobals.h"
+#include "../SingletonManager/LoggerManager.h"
 #include "Group.h"
 #include "../model/files/FileExceptions.h"
 
@@ -75,6 +76,7 @@ namespace controller {
 				return newAddressIndex;
 			}
 			catch (model::files::HashMismatchException& ex) {
+				LoggerManager::getInstance()->mErrorLogging.critical(ex.getFullString());
 				mParent->resetAllIndices();
 				Poco::SharedPtr<model::files::AddressIndex> newAddressIndex(new model::files::AddressIndex(addressIndexPath));
 				mAddressIndicesCache.add(firstBytes, newAddressIndex);

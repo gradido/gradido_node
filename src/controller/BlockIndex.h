@@ -75,6 +75,9 @@ namespace controller {
 		std::pair<uint16_t, uint8_t> getOldestYearMonth();
 		std::pair<uint16_t, uint8_t> getNewestYearMonth();
 
+		// clear maps
+		void reset();
+
 	protected:
 		//! \brief called from model::files::BlockIndex while reading file
 
@@ -97,6 +100,7 @@ namespace controller {
 		Poco::Mutex mSlowWorkingMutex;
 
 	};
+
 }
 
 #endif //__GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H

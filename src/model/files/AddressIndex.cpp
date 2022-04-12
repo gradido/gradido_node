@@ -26,6 +26,9 @@ namespace model {
 
 		bool AddressIndex::add(const std::string& address, uint32_t index)
 		{
+			if (address == "") {
+				throw std::runtime_error("empty address");
+			}
 			mFileWritten = false;
 			mFastMutex.lock();
 			bool result = mAddressesIndices.insert(std::pair<std::string, uint32_t>(address, index)).second;
@@ -180,11 +183,12 @@ namespace model {
 			auto compareHash = calculateHash(sortedMap);
 			auto compareResult = memcmp(*hash, *compareHash, 32);
 			fl->unlock(filePath);
+			HashMismatchException exception("address index file hash mismatch", hash, compareHash);
 			mm->releaseMemory(hash);
 			mm->releaseMemory(compareHash);
 
 			if (compareResult != 0) {
-				throw HashMismatchException("file hash mismatch");
+				throw exception;
 			}
 
 			return true;

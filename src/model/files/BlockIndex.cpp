@@ -1,4 +1,5 @@
 #include "BlockIndex.h"
+#include "FileExceptions.h"
 
 #include "Poco/File.h"
 #include "../NodeTransactionEntry.h"
@@ -109,6 +110,7 @@ namespace model {
 				mDataBlocks.pop();
 				delete block;
 			}
+			mDataBlockSumSize = 0;
 		}
 
 		bool BlockIndex::writeToFile()
@@ -120,7 +122,7 @@ namespace model {
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 
-			VirtualFile vFile(mDataBlockSumSize + crypto_generichash_BYTES);
+			VirtualFile vFile(mDataBlockSumSize + crypto_generichash_BYTES + sizeof(uint8_t));
 
 			// maybe has more speed (cache hits) with list and calling update hash in a row, but I think must be profiled and depend on CPU type
 			// auto-profiling and strategy choosing?
@@ -138,6 +140,7 @@ namespace model {
 			vFile.write(&hash_type, sizeof(uint8_t));
 			vFile.write((const char*)*hash, hash->size());
 			mm->releaseMemory(hash);
+			//printf("block index write hash to file: %s\n", DataTypeConverter::binToHex(hash).data());
 
 			return vFile.writeToFile(mFilename.data());
 
@@ -148,7 +151,7 @@ namespace model {
 			assert(receiver);
 
 			VirtualFile* vFile = VirtualFile::readFromFile(mFilename.data());
-			if (!vFile) {
+			if (!vFile || !vFile->getSize()) {
 				return false;
 			}
 
@@ -210,10 +213,19 @@ namespace model {
 			crypto_generichash_final(&state, *hashCalculated, hashCalculated->size());
 
 			int hashCompareResult = sodium_compare(*hashFromFile, *hashCalculated, hashCalculated->size());
-
-			mm->releaseMemory(hashFromFile);
-			mm->releaseMemory(hashCalculated);
-			delete vFile;
+			// TODO: use RAII
+			if (hashCompareResult) {
+				HashMismatchException exception("block index file hash mismatch", hashFromFile, hashCalculated);
+				mm->releaseMemory(hashFromFile);
+				mm->releaseMemory(hashCalculated);
+				delete vFile;
+				throw exception;
+			}
+			else {
+				mm->releaseMemory(hashFromFile);
+				mm->releaseMemory(hashCalculated);
+				delete vFile;
+			}
 
 			return 0 == hashCompareResult;
 		}

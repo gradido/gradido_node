@@ -24,6 +24,7 @@
 
 #include "Poco/File.h"
 #include "Poco/RegularExpression.h"
+#include "Poco/Util/ServerApplication.h"
 
 using namespace rapidjson;
 
@@ -682,6 +683,13 @@ namespace controller {
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		// Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupHash);
 		block = new Block(blockNr, mFolderPath, &mTaskObserver, mGroupAlias);
+		if (!block->init(mAddressIndex)) {
+			// TODO: request block from neighbor gradido node or check if all transactions which should be in this block are still present on iota
+			LoggerManager::getInstance()->mErrorLogging.critical(
+				"[controller::Group::getBlock] block init return false, maybe block file is corrupt, please delete block file and index and all which came after and try again"
+			);
+			Poco::Util::ServerApplication::terminate();
+		}
 		mCachedBlocks.add(blockNr, block);
 		return block;
 	}

@@ -35,6 +35,8 @@ namespace controller {
 		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias);
 		~Block();
 
+		//! \return false if block file has errors
+		bool init(Poco::SharedPtr<controller::AddressIndex> addressIndex);
 		void exit();
 
 		//! \brief put new transaction to cache and file system

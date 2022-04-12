@@ -1,5 +1,5 @@
 #include "FileExceptions.h"
-
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 #include <string>
 
 namespace model {
@@ -45,10 +45,23 @@ namespace model {
 			: GradidoBlockchainException(what)
 		{
 		}
+		HashMismatchException::HashMismatchException(const char* what, MemoryBin* hash1, MemoryBin* hash2) noexcept
+			: GradidoBlockchainException(what)
+		{
+			mHash1Hex = DataTypeConverter::binToHex(hash1);
+			mHash2Hex = DataTypeConverter::binToHex(hash2);
+		}
 
 		std::string HashMismatchException::getFullString() const
 		{
-			return what();
+			std::string result;
+			size_t resultSize = strlen(what());
+			resultSize += mHash1Hex.size() + mHash2Hex.size() + 2 + 9 + 9;
+			result.reserve(resultSize);
+			result = what();
+			result += ", hash1: " + mHash1Hex;
+			result += ", hash2: " + mHash2Hex;
+			return result;
 		}
 
 		// ********************** File Hash Missing **************************************

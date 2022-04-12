@@ -3,6 +3,8 @@
 #include "Poco/File.h"
 #include "Poco/FileStream.h"
 
+#include "../model/files/FileExceptions.h"
+
 #include "../SingletonManager/FileLockManager.h"
 #include "../SingletonManager/LoggerManager.h"
 
@@ -27,7 +29,7 @@ bool VirtualFile::read(void* dst, size_t size)
 {
 	assert(mBuffer);
 	if (mCursor + size > mBuffer->size()) {
-		return false;
+		throw BufferOverflowException("try more read than in buffer", mBuffer->size(), mCursor + size);
 	}
 	
 	memcpy(dst, &mBuffer->data()[mCursor], size);
@@ -39,7 +41,7 @@ bool VirtualFile::write(const void* src, size_t size)
 {
 	assert(mBuffer);
 	if (mCursor + size > mBuffer->size()) {
-		return false;
+		throw BufferOverflowException("try more write than in buffer", mBuffer->size(), mCursor + size);
 	}
 
 	memcpy(&mBuffer->data()[mCursor], src, size);
@@ -80,12 +82,17 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 	
 
 	if (!fl->tryLockTimeout(filename, 100)) {
-		return nullptr;
+		throw model::files::LockException("cannot lock file to read into virtual file", filename);
 	}
 	try {
 		Poco::FileInputStream file(filename);
 		file.seekg(0, std::ios_base::end);
 		auto telled = file.tellg();
+		if (!telled) {
+			file.close();
+			fl->unlock(filename);
+			return nullptr;
+		}
 		file.seekg(0, std::ios_base::beg);
 
 		auto fileBuffer = mm->getMemory(telled);
@@ -95,7 +102,6 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 		fl->unlock(filename);
 
 		return new VirtualFile(fileBuffer);
-
 	} 
 	catch (Poco::FileNotFoundException& ex) {
 		return nullptr;
@@ -110,6 +116,16 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 		return nullptr;
 	}
 	
+}
 
-	
+// ******************** Exceptions *********************************
+BufferOverflowException::BufferOverflowException(const char* what, size_t bufferSize, size_t askSize) noexcept
+	: GradidoBlockchainException(what), mBufferSize(bufferSize), mAskSize(askSize)
+{
+
+}
+
+std::string BufferOverflowException::getFullString() const 
+{
+	return what();
 }

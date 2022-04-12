@@ -2,6 +2,7 @@
 #define _GRADIDO_NODE_MODEL_FILES_FILE_EXCEPTIONS_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/MemoryManager.h"
 
 namespace model {
 	namespace files {
@@ -36,8 +37,12 @@ namespace model {
 		{
 		public:
 			explicit HashMismatchException(const char* what) noexcept;
+			explicit HashMismatchException(const char* what, MemoryBin* hash1, MemoryBin* hash2) noexcept;
 
 			std::string getFullString() const;
+		protected:
+			std::string mHash1Hex;
+			std::string mHash2Hex;
 		};
 
 		class HashMissingException : public GradidoBlockchainException

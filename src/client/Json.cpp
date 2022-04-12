@@ -24,12 +24,13 @@ namespace client {
 		
 		try {
 			auto result = request.postRequest(params);
-			/*if (result.IsObject()) {
+		/*	if (result.IsObject()) {
 				StringBuffer buffer;
 				PrettyWriter<StringBuffer> writer(buffer);
 				result.Accept(writer);
 				LoggerManager::getInstance()->mErrorLogging.information("response from notify community of new block: %s", std::string(buffer.GetString()));
-			}*/
+			}
+			*/
 		}
 		catch (RapidjsonParseErrorException& ex) {
 			LoggerManager::getInstance()->mErrorLogging.error("[client::Json::postRequest] Result Json Exception: %s\n", ex.getFullString().data());

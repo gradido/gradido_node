@@ -9,6 +9,8 @@
 #include "Poco/Timer.h"
 
 #include "gradido_blockchain/MemoryManager.h"
+#include "gradido_blockchain/lib/MultithreadQueue.h"
+#include "../../model/NodeTransactionEntry.h"
 
 #include "../../lib/FuzzyTimer.h"
 
@@ -17,8 +19,14 @@
 //! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
 #define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
 
+namespace controller {
+	class AddressIndex;
+}
+
 namespace model {
 	namespace files {
+		class RebuildBlockIndexTask;
+
 		class Block : public FileBase, public TimerCallback
 		{
 		public:
@@ -33,11 +41,9 @@ namespace model {
 			TimerReturn callFromTimer();
 			const char* getResourceType() const { return "model::files::Block"; }
 
-			//! \return -1 error locking file for reading
-			//! \return -2 error invalid size (greater as file size)
-			//! \return -3 error if startReading is greater than mCurrentFileSize
-			//! \return 0 ok
-			std::unique_ptr<std::string> readLine(Poco::UInt32 startReading);
+			//! \return size of line (without size field in file)
+			Poco::UInt16 readLine(Poco::UInt32 startReading, std::string& strBuffer);
+			std::unique_ptr<std::string> readLine(Poco::UInt32 startReading);			
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)
@@ -51,6 +57,10 @@ namespace model {
 
 			// very expensive, read in whole file and calculate hash
 			bool validateHash();
+
+			// read whole file, validate hash
+			Poco::AutoPtr<RebuildBlockIndexTask> rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex);
+
 
 		protected:
 			//! \brief open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed
@@ -85,6 +95,26 @@ namespace model {
 			Poco::SharedPtr<Block> mTargetBlock;
 			std::vector<const std::string*> mLines;
 			std::vector<Poco::UInt32> mCursorPositions;
+		};
+
+		
+		class RebuildBlockIndexTask : public task::CPUTask
+		{
+		public:
+			RebuildBlockIndexTask(Poco::SharedPtr<controller::AddressIndex> addressIndex);
+			const char* getResourceType() const { return "RebuildBlockIndexTask"; };
+
+			int run();
+			//! \param line will be moved
+			void pushLine(Poco::Int32 fileCursor, std::string line);
+			const std::list<Poco::SharedPtr<model::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
+
+			inline bool isPendingQueueEmpty() { return mPendingFileCursorLine.empty(); }
+
+		protected:
+			Poco::SharedPtr<controller::AddressIndex> mAddressIndex;
+			std::list<Poco::SharedPtr<model::NodeTransactionEntry>> mTransactionEntries;
+			MultithreadQueue<std::pair<Poco::Int32, std::string>> mPendingFileCursorLine;
 		};
 	}
 }
