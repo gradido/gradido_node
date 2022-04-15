@@ -1,4 +1,0 @@
-<map id="WriteTransactionsToBlockTask::run" name="WriteTransactionsToBlockTask::run">
-<area shape="rect" id="node1" title="called from task scheduler, maybe from another thread" alt="" coords="5,5,180,47"/>
-<area shape="rect" id="node2" href="$classtask_1_1_task.html#ae035d934c5935b5414ef6da14a265efd" title=" " alt="" coords="228,13,343,39"/>
-</map>

@@ -1,4 +1,0 @@
-<map id="controller::Group::findTransactions" name="controller::Group::findTransactions">
-<area shape="rect" id="node1" title="Find every transaction belonging to address account in memory or block chain, expensive." alt="" coords="203,5,329,47"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a290d7ff553429948078ee4f0dd563b5c" title="Search for creation transactions from specific month and add balances together." alt="" coords="5,5,155,47"/>
-</map>

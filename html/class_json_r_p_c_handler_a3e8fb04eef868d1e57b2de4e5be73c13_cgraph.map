@@ -1,6 +1,0 @@
-<map id="JsonRPCHandler::putTransaction" name="JsonRPCHandler::putTransaction">
-<area shape="rect" id="node1" title=" " alt="" coords="5,64,219,91"/>
-<area shape="rect" id="node2" href="$class_group_manager.html#a023ecd32edba5827e65a8228298fdffc" title=" " alt="" coords="267,5,449,32"/>
-<area shape="rect" id="node3" href="$class_json_request_handler.html#a1f0cd333c5fd72c0dd5d7899d9aa5926" title=" " alt="" coords="287,57,429,98"/>
-<area shape="rect" id="node4" href="$class_json_request_handler.html#ac98c00cf75a53afb27cd5c223bfabeb6" title=" " alt="" coords="287,122,429,163"/>
-</map>

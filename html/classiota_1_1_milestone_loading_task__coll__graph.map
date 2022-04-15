@@ -1,8 +1,0 @@
-<map id="iota::MilestoneLoadingTask" name="iota::MilestoneLoadingTask">
-<area shape="rect" id="node1" title=" " alt="" coords="109,911,289,1017"/>
-<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="26,573,169,738"/>
-<area shape="rect" id="node3" href="$classtask_1_1_task.html" title=" " alt="" coords="5,145,189,413"/>
-<area shape="rect" id="node4" href="$classtask_1_1_command.html" title=" " alt="" coords="39,5,155,83"/>
-<area shape="rect" id="node5" href="$classiota_1_1_message_validator.html" title="get messages and milestones from listener and check if messages where confirmed" alt="" coords="193,463,412,848"/>
-<area shape="rect" id="node6" title=" " alt="" coords="245,241,360,318"/>
-</map>

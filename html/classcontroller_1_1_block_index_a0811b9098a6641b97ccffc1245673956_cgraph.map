@@ -1,4 +1,0 @@
-<map id="controller::BlockIndex::addIndicesForTransaction" name="controller::BlockIndex::addIndicesForTransaction">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,184,47"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_block_index.html#a49636f1c6d2433390339ca90d73be8e6" title="add transactionNr &#45; fileCursor pair to map if not already exist" alt="" coords="232,5,428,47"/>
-</map>

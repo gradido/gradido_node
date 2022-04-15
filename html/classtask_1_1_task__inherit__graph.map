@@ -1,8 +1,0 @@
-<map id="task::Task" name="task::Task">
-<area shape="rect" id="node1" title=" " alt="" coords="352,5,536,288"/>
-<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="373,336,515,501"/>
-<area shape="rect" id="node3" href="$class_iota_message_to_transaction_task.html" title=": Get confirmed transaction id from Iota, process it" alt="" coords="5,571,211,795"/>
-<area shape="rect" id="node4" href="$class_write_transactions_to_block_task.html" title="Task for collecting transactions and write it to block chain after timeout." alt="" coords="235,549,437,817"/>
-<area shape="rect" id="node5" href="$classiota_1_1_milestone_loading_task.html" title=" " alt="" coords="462,623,642,744"/>
-<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block_append_line_task.html" title=" " alt="" coords="667,608,840,759"/>
-</map>

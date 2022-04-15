@@ -1,4 +1,0 @@
-<map id="model::files::BlockIndex::DataBlock::readFromFile" name="model::files::BlockIndex::DataBlock::readFromFile">
-<area shape="rect" id="node1" title="return false if reading failed, file to short?" alt="" coords="5,5,180,47"/>
-<area shape="rect" id="node2" href="$class_virtual_file.html#a888acb75cb32b3d1b1790e97309c0a05" title="copy from buffer over into dst, move cursor" alt="" coords="228,13,341,39"/>
-</map>

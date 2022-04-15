@@ -1,4 +1,0 @@
-<map id="task::Task::isAllParentsReady" name="task::Task::isAllParentsReady">
-<area shape="rect" id="node1" title="return true if all parent task finished or return false and schedule not already finished parent task..." alt="" coords="192,5,353,47"/>
-<area shape="rect" id="node2" href="$classtask_1_1_task.html#afe0f93bf727c643d86983d1142dd3117" title=" " alt="" coords="5,13,144,39"/>
-</map>
