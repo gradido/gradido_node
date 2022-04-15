@@ -1,0 +1,7 @@
+<map id="model::files::BlockIndex::readFromFile" name="model::files::BlockIndex::readFromFile">
+<area shape="rect" id="node1" title="read from file, put content into receiver" alt="" coords="5,27,184,69"/>
+<area shape="rect" id="node2" href="$class_virtual_file.html#a888acb75cb32b3d1b1790e97309c0a05" title="copy from buffer over into dst, move cursor" alt="" coords="480,5,605,32"/>
+<area shape="rect" id="node3" href="$class_virtual_file.html#abbdc300573ac1c30d2ae09b585af0a2b" title="get memory bin in file size and fill it with file content" alt="" coords="232,93,413,120"/>
+<area shape="rect" id="node5" href="$structmodel_1_1files_1_1_block_index_1_1_block.html#af6656e044626dfb1bf1c7efdb43794c5" title="return false if reading failed, file to short?" alt="" coords="233,27,412,69"/>
+<area shape="rect" id="node4" href="$class_virtual_file.html#ab4fefe3e765c9cc319863a021e115fae" title="get memory bin from memory manager by his own" alt="" coords="461,93,624,120"/>
+</map>

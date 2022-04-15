@@ -1,0 +1,5 @@
+<map id="controller::Group::addTransaction" name="controller::Group::addTransaction">
+<area shape="rect" id="node1" title="add transaction from iota into blockchain, important! must be called in correct order" alt="" coords="5,5,144,47"/>
+<area shape="rect" id="node2" href="$class_group_manager.html#ac42a491ca23c0fec6a46f5cf9bee8a99" title="getting group object from Poco::AccessExpireCache or create if not in cache and put in cache" alt="" coords="192,13,381,39"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group_index.html#a1cdd2b99d1d916c582200cae9545dd2e" title="get full folder path for group public key if the hash from groupPublicKey exist multiple time,..." alt="" coords="429,5,596,47"/>
+</map>

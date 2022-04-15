@@ -1,0 +1,4 @@
+<map id="TaskObserver::removeBlockWriteTask" name="TaskObserver::removeBlockWriteTask">
+<area shape="rect" id="node1" title="remove WriteTransactionsToBlockTask from map and transactions" alt="" coords="5,5,209,47"/>
+<area shape="rect" id="node2" href="$class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9" title="collect all transaction nrs from transactions" alt="" coords="257,5,445,47"/>
+</map>

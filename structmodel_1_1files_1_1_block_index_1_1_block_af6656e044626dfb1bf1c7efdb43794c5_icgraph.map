@@ -1,0 +1,4 @@
+<map id="model::files::BlockIndex::Block::readFromFile" name="model::files::BlockIndex::Block::readFromFile">
+<area shape="rect" id="node1" title="return false if reading failed, file to short?" alt="" coords="232,5,411,47"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block_index.html#ae197b4a43d106d58b23a102f2598ca0c" title="read from file, put content into receiver" alt="" coords="5,5,184,47"/>
+</map>

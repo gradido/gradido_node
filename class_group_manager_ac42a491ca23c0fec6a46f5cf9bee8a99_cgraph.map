@@ -1,0 +1,4 @@
+<map id="GroupManager::findGroup" name="GroupManager::findGroup">
+<area shape="rect" id="node1" title="getting group object from Poco::AccessExpireCache or create if not in cache and put in cache" alt="" coords="5,13,195,39"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group_index.html#a1cdd2b99d1d916c582200cae9545dd2e" title="get full folder path for group public key if the hash from groupPublicKey exist multiple time,..." alt="" coords="243,5,409,47"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="controller::GroupIndex::listGroupAliases" name="controller::GroupIndex::listGroupAliases">
+<area shape="rect" id="node1" title="collect all froup aliases from unordered map (not the fastest operation from unordered map)" alt="" coords="200,5,367,47"/>
+<area shape="rect" id="node2" href="$class_group_manager.html#a020d987bd819a1a76f3ca8dcbdd03ab7" title="load group index file and fill hash list with group public key = folder name pairs" alt="" coords="5,13,152,39"/>
+</map>

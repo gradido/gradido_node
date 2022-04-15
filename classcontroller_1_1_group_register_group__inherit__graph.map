@@ -1,0 +1,6 @@
+<map id="controller::GroupRegisterGroup" name="controller::GroupRegisterGroup">
+<area shape="rect" id="node1" title="Special Group on which all Gradido Node Server listen, contain group registries." alt="" coords="115,155,300,196"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html" title="Main entry point for adding and searching for transactions TODO: validate transaction on startup." alt="" coords="142,80,273,107"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_controller_base.html" title=" " alt="" coords="5,5,193,32"/>
+<area shape="rect" id="node4" title=" " alt="" coords="218,5,415,32"/>
+</map>

@@ -1,0 +1,4 @@
+<map id="VirtualFile::readFromFile" name="VirtualFile::readFromFile">
+<area shape="rect" id="node1" title="get memory bin in file size and fill it with file content" alt="" coords="5,5,187,32"/>
+<area shape="rect" id="node2" href="$class_virtual_file.html#ab4fefe3e765c9cc319863a021e115fae" title="get memory bin from memory manager by his own" alt="" coords="235,5,397,32"/>
+</map>

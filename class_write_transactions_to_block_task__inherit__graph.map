@@ -1,0 +1,5 @@
+<map id="WriteTransactionsToBlockTask" name="WriteTransactionsToBlockTask">
+<area shape="rect" id="node1" title="Task for collecting transactions and write it to block chain after timeout." alt="" coords="5,155,223,181"/>
+<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="57,80,171,107"/>
+<area shape="rect" id="node3" href="$classtask_1_1_task.html" title=" " alt="" coords="71,5,157,32"/>
+</map>

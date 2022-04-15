@@ -1,0 +1,8 @@
+<map id="VirtualFile::read" name="VirtualFile::read">
+<area shape="rect" id="node1" title="copy from buffer over into dst, move cursor" alt="" coords="480,114,605,141"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block_index.html#ae197b4a43d106d58b23a102f2598ca0c" title="read from file, put content into receiver" alt="" coords="5,12,184,53"/>
+<area shape="rect" id="node3" href="$structmodel_1_1files_1_1_block_index_1_1_block.html#af6656e044626dfb1bf1c7efdb43794c5" title="return false if reading failed, file to short?" alt="" coords="243,41,421,83"/>
+<area shape="rect" id="node4" href="$structmodel_1_1files_1_1_block_index_1_1_year_block.html#a71a29b5956b8dd001a6afbce0c2a7397" title="return false if reading failed, file to short?" alt="" coords="239,107,425,148"/>
+<area shape="rect" id="node5" href="$structmodel_1_1files_1_1_block_index_1_1_month_block.html#a0cac5c5a963728dfe4022bbb66299e27" title="return false if reading failed, file to short?" alt="" coords="232,172,432,213"/>
+<area shape="rect" id="node6" href="$structmodel_1_1files_1_1_block_index_1_1_data_block.html#a10fd3d1ca94ecfa28e43bcda086b8eef" title="return false if reading failed, file to short?" alt="" coords="237,237,427,279"/>
+</map>

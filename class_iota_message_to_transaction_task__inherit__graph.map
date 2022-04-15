@@ -1,0 +1,5 @@
+<map id="IotaMessageToTransactionTask" name="IotaMessageToTransactionTask">
+<area shape="rect" id="node1" title=": Get confirmed transaction id from Iota, process it" alt="" coords="5,155,228,181"/>
+<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="59,80,174,107"/>
+<area shape="rect" id="node3" href="$classtask_1_1_task.html" title=" " alt="" coords="73,5,160,32"/>
+</map>

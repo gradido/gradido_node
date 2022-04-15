@@ -1,0 +1,5 @@
+<map id="iota::MessageListener" name="iota::MessageListener">
+<area shape="rect" id="node1" title="call iota regular and check if new message on the listening index are available" alt="" coords="84,80,249,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,5,165,32"/>
+<area shape="rect" id="node3" href="$class_timer_callback.html" title=" " alt="" coords="190,5,306,32"/>
+</map>

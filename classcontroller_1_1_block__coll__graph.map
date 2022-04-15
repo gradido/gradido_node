@@ -1,0 +1,7 @@
+<map id="controller::Block" name="controller::Block">
+<area shape="rect" id="node1" title="interface for adding and getting transactions from specific block" alt="" coords="211,171,339,197"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_controller_base.html" title=" " alt="" coords="5,81,193,108"/>
+<area shape="rect" id="node3" href="$class_timer_callback.html" title=" " alt="" coords="217,81,333,108"/>
+<area shape="rect" id="node4" href="$class_task_observer.html" title=" " alt="" coords="357,81,468,108"/>
+<area shape="rect" id="node5" title=" " alt="" coords="333,5,493,32"/>
+</map>
