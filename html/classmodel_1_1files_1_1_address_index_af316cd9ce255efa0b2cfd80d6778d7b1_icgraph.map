@@ -1,6 +1,0 @@
-<map id="model::files::AddressIndex::checkFile" name="model::files::AddressIndex::checkFile">
-<area shape="rect" id="node1" title="Check if index file contains current indices (compare sizes), fileLock via FileLockManager,..." alt="" coords="480,27,655,69"/>
-<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea" title="Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLock..." alt="" coords="257,27,432,69"/>
-<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_address_index.html#a4ae311bf893bc8b199071575a0610000" title="Adding new index, account address public key pair into memory, use Poco::FastMutex::ScopedLock." alt="" coords="5,5,209,32"/>
-<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_address_index.html#a4e1f457f7f8715f2fda15df438de7ae9" title=" " alt="" coords="20,57,195,98"/>
-</map>

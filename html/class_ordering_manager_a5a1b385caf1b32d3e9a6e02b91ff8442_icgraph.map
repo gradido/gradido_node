@@ -1,9 +1,0 @@
-<map id="OrderingManager::getInstance" name="OrderingManager::getInstance">
-<area shape="rect" id="node1" title=" " alt="" coords="501,115,697,141"/>
-<area shape="rect" id="node2" href="$class_main_server.html#a09dcb399eb71be7dffe478bd64545d11" title=" " alt="" coords="267,5,390,32"/>
-<area shape="rect" id="node3" href="$classiota_1_1_message_validator.html#ae40ebf08ab355e937f5120168c26f47b" title=" " alt="" coords="238,56,419,83"/>
-<area shape="rect" id="node4" href="$class_iota_message_to_transaction_task.html#afc547eb27e6a9e33d9ec6777c764aa2e" title="called from task scheduler, maybe from another thread" alt="" coords="240,107,417,149"/>
-<area shape="rect" id="node5" href="$classiota_1_1_message_listener.html#a926ee84ffd0a46cae70d8dc90baa8ab8" title=" " alt="" coords="245,173,412,214"/>
-<area shape="rect" id="node7" href="$class_iota_message_to_transaction_task.html#ad5fc6d59bfc57d1220b9b8e9441bab35" title=" " alt="" coords="204,238,453,279"/>
-<area shape="rect" id="node6" href="$classiota_1_1_message_listener.html#ac74a94a38ef22e72295d183ea71af35d" title=" " alt="" coords="5,173,156,214"/>
-</map>

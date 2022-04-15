@@ -1,6 +1,0 @@
-<map id="controller::Block::getTransaction" name="controller::Block::getTransaction">
-<area shape="rect" id="node1" title="load transaction from cache or file system" alt="" coords="5,35,129,76"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_block.html#af9555c340969e8256be495013c41a80e" title="add transaction from Block File, called by Block File, adding to cache and index" alt="" coords="177,5,301,47"/>
-<area shape="rect" id="node4" href="$class_logger_manager.html#a88f5ea1c5a1bf96ccb17ffabc3fd9a9b" title=" " alt="" coords="349,67,536,94"/>
-<area shape="rect" id="node3" href="$class_group_manager.html#a023ecd32edba5827e65a8228298fdffc" title=" " alt="" coords="351,13,534,39"/>
-</map>

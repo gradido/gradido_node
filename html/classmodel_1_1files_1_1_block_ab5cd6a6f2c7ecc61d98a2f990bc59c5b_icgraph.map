@@ -1,8 +1,0 @@
-<map id="model::files::Block::getOpenFile" name="model::files::Block::getOpenFile">
-<area shape="rect" id="node1" title="open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed" alt="" coords="360,100,489,141"/>
-<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block.html#a62095335a15577b650ac8ecd9d438159" title=" " alt="" coords="183,5,312,47"/>
-<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block.html#adc947669499b526c4c86ed5d50600128" title="very expensive, read in whole file and calculate hash" alt="" coords="183,71,312,112"/>
-<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_block.html#a485cfc70b6d8f66107fb95908a266b36" title=" " alt="" coords="5,100,135,141"/>
-<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block.html#a1b1aa10bcf24bfbecf2deba6b65e428e" title=" " alt="" coords="183,188,312,229"/>
-<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_block.html#ac7237c328cb61dd2bb6139c2e173a9cf" title="call appendLines" alt="" coords="5,5,135,47"/>
-</map>

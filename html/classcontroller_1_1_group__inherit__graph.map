@@ -1,5 +1,0 @@
-<map id="controller::Group" name="controller::Group">
-<area shape="rect" id="node1" title="Main entry point for adding and searching for transactions TODO: validate transaction on startup." alt="" coords="78,131,298,765"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_controller_base.html" title=" " alt="" coords="5,5,173,83"/>
-<area shape="rect" id="node3" title=" " alt="" coords="198,5,375,83"/>
-</map>

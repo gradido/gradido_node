@@ -1,5 +1,0 @@
-<map id="model::files::AddressIndex::checkFile" name="model::files::AddressIndex::checkFile">
-<area shape="rect" id="node1" title="Check if index file contains current indices (compare sizes), fileLock via FileLockManager,..." alt="" coords="5,35,180,76"/>
-<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_address_index.html#a45a9ec196ac5eea967c8eb11f77ac6cb" title="Calculate file size from map entry count + space for hash, use Poco::FastMutex::ScopedLock." alt="" coords="239,5,413,47"/>
-<area shape="rect" id="node3" href="$class_file_lock_manager.html#a8399a835b02b2013283423050efa52ba" title=" " alt="" coords="228,71,424,98"/>
-</map>

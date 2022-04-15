@@ -1,6 +1,0 @@
-<map id="model::files::BlockIndex::Block" name="model::files::BlockIndex::Block">
-<area shape="rect" id="node1" title=" " alt="" coords="205,5,365,171"/>
-<area shape="rect" id="node2" href="$structmodel_1_1files_1_1_block_index_1_1_data_block.html" title=" " alt="" coords="5,219,181,472"/>
-<area shape="rect" id="node3" href="$structmodel_1_1files_1_1_block_index_1_1_month_block.html" title=" " alt="" coords="205,263,365,428"/>
-<area shape="rect" id="node4" href="$structmodel_1_1files_1_1_block_index_1_1_year_block.html" title=" " alt="" coords="389,263,549,428"/>
-</map>

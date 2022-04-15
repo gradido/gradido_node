@@ -1,4 +1,0 @@
-<map id="OrderingManager::ThreadFunction" name="OrderingManager::ThreadFunction">
-<area shape="rect" id="node1" title="will be called every time from thread, when condSignal was called will be called from thread with loc..." alt="" coords="5,13,224,39"/>
-<area shape="rect" id="node2" href="$classiota_1_1_message_validator.html#aa5e9932d7f8a1913924d0af2abcd9c5a" title=" " alt="" coords="272,5,427,47"/>
-</map>

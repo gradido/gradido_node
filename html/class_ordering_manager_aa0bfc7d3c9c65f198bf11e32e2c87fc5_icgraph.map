@@ -1,4 +1,0 @@
-<map id="OrderingManager::pushTransaction" name="OrderingManager::pushTransaction">
-<area shape="rect" id="node1" title=" " alt="" coords="231,13,455,39"/>
-<area shape="rect" id="node2" href="$class_iota_message_to_transaction_task.html#afc547eb27e6a9e33d9ec6777c764aa2e" title="called from task scheduler, maybe from another thread" alt="" coords="5,5,183,47"/>
-</map>

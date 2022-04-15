@@ -1,6 +1,0 @@
-<map id="model::files::Block::appendLine" name="model::files::Block::appendLine">
-<area shape="rect" id="node1" title="call appendLines" alt="" coords="5,27,135,69"/>
-<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block.html#a62095335a15577b650ac8ecd9d438159" title=" " alt="" coords="183,27,312,69"/>
-<area shape="rect" id="node3" href="$class_file_lock_manager.html#a8399a835b02b2013283423050efa52ba" title=" " alt="" coords="360,5,556,32"/>
-<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block.html#ab5cd6a6f2c7ecc61d98a2f990bc59c5b" title="open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed" alt="" coords="393,57,523,98"/>
-</map>

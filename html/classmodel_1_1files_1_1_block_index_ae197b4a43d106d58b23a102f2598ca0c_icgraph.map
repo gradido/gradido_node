@@ -1,4 +1,0 @@
-<map id="model::files::BlockIndex::readFromFile" name="model::files::BlockIndex::readFromFile">
-<area shape="rect" id="node1" title="read from file, put content into receiver" alt="" coords="200,5,360,47"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_block_index.html#a09afd2785b550c464e1173a4bb6e1bb7" title="loading block index from file (or at least try to load)" alt="" coords="5,5,152,47"/>
-</map>

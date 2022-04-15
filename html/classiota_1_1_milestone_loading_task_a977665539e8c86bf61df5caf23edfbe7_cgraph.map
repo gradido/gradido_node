@@ -1,6 +1,0 @@
-<map id="iota::MilestoneLoadingTask::run" name="iota::MilestoneLoadingTask::run">
-<area shape="rect" id="node1" title="called from task scheduler, maybe from another thread" alt="" coords="5,23,212,50"/>
-<area shape="rect" id="node2" href="$class_logger_manager.html#a88f5ea1c5a1bf96ccb17ffabc3fd9a9b" title=" " alt="" coords="497,27,684,54"/>
-<area shape="rect" id="node3" href="$namespaceiota.html#a8931f7a2beda09017a73506f253d2d45" title=" " alt="" coords="260,23,449,50"/>
-<area shape="rect" id="node4" href="$classiota_1_1_message_validator.html#a27c563956ccd93929ed19e4a63b248c7" title=" " alt="" coords="277,75,432,116"/>
-</map>
