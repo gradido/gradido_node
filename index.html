@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.2"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Gradido Node: Architecture Overview</title>
+<title>Gradido Node: Gradido Node</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -84,133 +84,12 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Architecture Overview </div></div>
+  <div class="headertitle"><div class="title">Gradido Node </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="toc"><h3>Table of Contents</h3>
-<ul><li class="level1"><a href="#intro_sec">Introduction</a></li>
-<li class="level1"><a href="#protocol_sec">Transaction Protocol</a></li>
-<li class="level1"><a href="#file_formats_sec">File Formats</a><ul><li class="level2"><a href="#step1">Step 1: Opening the box</a></li>
-</ul>
-</li>
-</ul>
-</div>
-<div class="textblock"><h1><a class="anchor" id="intro_sec"></a>
-Introduction</h1>
-<p >The gradido Node is inspired by bitcoin. <br  />
-The target is getting a node powerful enough to handle in future every transaction between every human on earth. <br  />
-That means approx. 14 transaction... per ms. <br  />
-Currently approx. 3.5 billion transactions per day (digital and analog together) exist. <br  />
-<br  />
-The world population is divided in regional groups approx. 100 per group. <br  />
-Groups can have other groups as parent, recursive.<br  />
-The Node Server has a separate block chain for every group he is listening. <br  />
-14 transactions per ms is only valid for a Node Server listening to all groups worldwide. <br  />
-Most should listening only at some groups but should also operate resource efficiency to run on small and cheap servers <br  />
-and nevertheless withstanding hacking-attacks. <br  />
-<br  />
-Gradido Whitepaper: <a href="https://docs.google.com/document/d/1jZp-DiiMPI9ZPNXmjsvOQ1BtnfDFfx8BX7CDmA8KKjY/edit">https://docs.google.com/document/d/1jZp-DiiMPI9ZPNXmjsvOQ1BtnfDFfx8BX7CDmA8KKjY/edit</a></p>
-<h1><a class="anchor" id="protocol_sec"></a>
-Transaction Protocol</h1>
-<p >For Gradido transactions google protobuf messages are used, inspired by hedera hashgraph message format. <br  />
- It all starting with a transaction. This will later be exchanged with hedera consensus message. <br  />
-<br  />
-<code>message Transaction {<br  />
-&#160;uint64 id = 1; // unique per group, starting with 1, counting upwards<br  />
-&#160;TimestampSeconds received = 2; // world time, received at ordering service, currently community server, later hedera hashgraph<br  />
-&#160;SignatureMap sigMap = 3; // containing signature - pubkey pairs Byte<br  />
-&#160;bytes txHash = 4; // hash for complete transaction<br  />
-&#160;bytes bodyBytes = 5; // containing TransactionBody but serialized, like hedera do it<br  />
-}</code><br  />
-<br  />
-<br  />
-<code>message TransactionBody {<br  />
- &#160;string memo = 1; // max 150 chars, mainly encrypted with shared keys <br  />
- &#160;TimestampSeconds created = 2; // world time, creation date of transaction<br  />
- // specific transactions, not yet complete. <br  />
-&#160;oneof data {<br  />
-&#160;&#160;StateCreateGroup createGroup = 6;// the first transaction for a new group<br  />
-&#160;&#160;StateGroupChangeParent groupChangeParent = 7;// change group parent<br  />
-&#160;&#160;Transfer transfer = 8;// transaction type for sending gradidos from one to another<br  />
-&#160;&#160;TransactionCreation creation = 9;// transation type for the gradido creation <br  />
-&#160;}<br  />
-}</code><br  />
- Mainly it exist two transaction types: State Changes and Gradido Transaction.<br  />
-</p><h3>State Changes:</h3>
-<ul>
-<li>
-creating or moving a group </li>
-<li>
-changing group council member </li>
-<li>
-creating new gradido account </li>
-<li>
-moving gradido account to another group </li>
-<li>
-adding hash of email or nickname to gradido account </li>
-<li>
-removing hash of email or nickname to gradido account </li>
-</ul>
-<p><br  />
-</p><h3>Gradido Transactions:</h3>
-<ul>
-<li>
-Transfer gradidos from one to another </li>
-<li>
-Create gradidos through group founder </li>
-<li>
-Create gradidos through group council members </li>
-</ul>
-<h1><a class="anchor" id="file_formats_sec"></a>
-File Formats</h1>
-<p >root folder is ~/.gradido like with bitcoin or other crypto currencies<br  />
- first file is group.index<br  />
- txt format, created by user<br  />
- containing in this format: <br  />
- &lt;group public key&gt; = &lt;folder name&gt;<br  />
- The Gradido Node create the folder with this name and store every transaction belonging to this group in there<br  />
- in the group folder:<br  />
- &#160;<b>.state: leveldb format, containing:</b><br  />
- </p><ul>
-<li>
-current group states </li>
-<li>
-counter for account index (lastKtoIndex) </li>
-<li>
-counter for last block id (lastBlockNr) </li>
-</ul>
-<p><br  />
- &#160;<b>pubkeys_&lt;first hash byte hex&gt;</b><br  />
- &#160;&#160;<b>_&lt;second hash byte hex&gt;.index: binary, unordered, containing:</b><br  />
- </p><ul>
-<li>
-account hash, kto index uint32 </li>
-<li>
-file hash at end of file </li>
-</ul>
-<p>&#160;&#160;file is unordered, sorting in memory<br  />
- <br  />
-&#160;<b>blk0000000X.index, binary, sorted by kto index, containing:</b><br  />
- </p><ul>
-<li>
-lowest kto index, highest kto index </li>
-<li>
-kto index, count, [count X file positions where transaction which contain kto starts] </li>
-<li>
-file hash at end of file </li>
-</ul>
-<p>&#160;write out after block finished, until then exist only in memory<br  />
-<br  />
-&#160;<b>blk0000000X.data, binary, sorted by transaction id, containing: </b><br  />
-</p><ul>
-<li>
-size, serialized transaction (protobuf format) </li>
-<li>
-file hash at end of file </li>
-</ul>
-<h2><a class="anchor" id="step1"></a>
-Step 1: Opening the box</h2>
-<p >etc... </p>
+<div class="textblock"><p ><a class="anchor" id="md_README"></a> conan install .. -s build_type=Debug</p>
+<p >sudo apt install libcurl4-openssl-dev</p>
+<p >Code doc: <a href="https://gradido.github.io/gradido_node/html/index.html">https://gradido.github.io/gradido_node/html/index.html</a> </p>
 </div></div><!-- PageDoc -->
 </div><!-- contents -->
 </div><!-- doc-content -->

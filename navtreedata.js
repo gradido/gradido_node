@@ -25,13 +25,6 @@
 var NAVTREE =
 [
   [ "Gradido Node", "index.html", [
-    [ "Architecture Overview", "index.html", [
-      [ "Introduction", "index.html#intro_sec", null ],
-      [ "Transaction Protocol", "index.html#protocol_sec", null ],
-      [ "File Formats", "index.html#file_formats_sec", [
-        [ "Step 1: Opening the box", "index.html#step1", null ]
-      ] ]
-    ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ]
     ] ],

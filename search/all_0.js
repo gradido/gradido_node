@@ -10,6 +10,5 @@ var searchData=
   ['addressindexentry_7',['AddressIndexEntry',['../structcontroller_1_1_block_index_1_1_address_index_entry.html',1,'controller::BlockIndex']]],
   ['addtimer_8',['addTimer',['../class_fuzzy_timer.html#a67fca7b99d7b5a11a451cd695bf46aeb',1,'FuzzyTimer']]],
   ['addtransaction_9',['addTransaction',['../classcontroller_1_1_block.html#a5f240ca79b5b53a37b16c85e6bd29e50',1,'controller::Block::addTransaction()'],['../classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c',1,'controller::Group::addTransaction()'],['../classcontroller_1_1_group_register_group.html#a1cf7cfc9a24f40a25500a7aa3452a050',1,'controller::GroupRegisterGroup::addTransaction()']]],
-  ['appendline_10',['appendLine',['../classmodel_1_1files_1_1_block.html#a1028ea2d4adcd34c504cceebee75eaec',1,'model::files::Block']]],
-  ['architecture_20overview_11',['Architecture Overview',['../index.html',1,'']]]
+  ['appendline_10',['appendLine',['../classmodel_1_1files_1_1_block.html#a1028ea2d4adcd34c504cceebee75eaec',1,'model::files::Block']]]
 ];

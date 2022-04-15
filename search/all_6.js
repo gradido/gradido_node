@@ -18,13 +18,14 @@ var searchData=
   ['gettransactionnrs_15',['getTransactionNrs',['../class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9',1,'WriteTransactionsToBlockTask']]],
   ['getvalueforkey_16',['getValueForKey',['../classmodel_1_1files_1_1_state.html#a79a8eda8772fae8f6b8a67fd3720952a',1,'model::files::State']]],
   ['globalstatemanager_17',['GlobalStateManager',['../class_global_state_manager.html',1,'']]],
-  ['gradidotransactionwithgroup_18',['GradidoTransactionWithGroup',['../struct_ordering_manager_1_1_gradido_transaction_with_group.html',1,'OrderingManager']]],
-  ['graphql_19',['GraphQL',['../classclient_1_1_graph_q_l.html',1,'client']]],
-  ['group_20',['Group',['../classcontroller_1_1_group.html',1,'controller::Group'],['../classcontroller_1_1_group.html#a6a5994004f8d4f6d2d3b7df0498b8bb8',1,'controller::Group::Group()']]],
-  ['groupentry_21',['GroupEntry',['../structcontroller_1_1_group_entry.html',1,'controller']]],
-  ['groupindex_22',['GroupIndex',['../classcontroller_1_1_group_index.html',1,'controller::GroupIndex'],['../classmodel_1_1files_1_1_group_index.html#a3cb88fba269e07278bbce30bf9110e92',1,'model::files::GroupIndex::GroupIndex()'],['../classmodel_1_1files_1_1_group_index.html',1,'model::files::GroupIndex']]],
-  ['groupindexentry_23',['GroupIndexEntry',['../structcontroller_1_1_group_index_1_1_group_index_entry.html',1,'controller::GroupIndex']]],
-  ['groupmanager_24',['GroupManager',['../class_group_manager.html',1,'']]],
-  ['groupnotfoundexception_25',['GroupNotFoundException',['../classcontroller_1_1_group_not_found_exception.html',1,'controller']]],
-  ['groupregistergroup_26',['GroupRegisterGroup',['../classcontroller_1_1_group_register_group.html',1,'controller']]]
+  ['gradido_20node_18',['Gradido Node',['../index.html',1,'']]],
+  ['gradidotransactionwithgroup_19',['GradidoTransactionWithGroup',['../struct_ordering_manager_1_1_gradido_transaction_with_group.html',1,'OrderingManager']]],
+  ['graphql_20',['GraphQL',['../classclient_1_1_graph_q_l.html',1,'client']]],
+  ['group_21',['Group',['../classcontroller_1_1_group.html',1,'controller::Group'],['../classcontroller_1_1_group.html#a6a5994004f8d4f6d2d3b7df0498b8bb8',1,'controller::Group::Group()']]],
+  ['groupentry_22',['GroupEntry',['../structcontroller_1_1_group_entry.html',1,'controller']]],
+  ['groupindex_23',['GroupIndex',['../classcontroller_1_1_group_index.html',1,'controller::GroupIndex'],['../classmodel_1_1files_1_1_group_index.html#a3cb88fba269e07278bbce30bf9110e92',1,'model::files::GroupIndex::GroupIndex()'],['../classmodel_1_1files_1_1_group_index.html',1,'model::files::GroupIndex']]],
+  ['groupindexentry_24',['GroupIndexEntry',['../structcontroller_1_1_group_index_1_1_group_index_entry.html',1,'controller::GroupIndex']]],
+  ['groupmanager_25',['GroupManager',['../class_group_manager.html',1,'']]],
+  ['groupnotfoundexception_26',['GroupNotFoundException',['../classcontroller_1_1_group_not_found_exception.html',1,'controller']]],
+  ['groupregistergroup_27',['GroupRegisterGroup',['../classcontroller_1_1_group_register_group.html',1,'controller']]]
 ];
