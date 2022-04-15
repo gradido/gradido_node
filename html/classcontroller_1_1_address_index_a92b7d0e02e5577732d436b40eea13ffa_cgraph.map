@@ -1,0 +1,5 @@
+<map id="controller::AddressIndex::getOrAddIndexForAddress" name="controller::AddressIndex::getOrAddIndexForAddress">
+<area shape="rect" id="node1" title="Get or add index if not exist in cache or file, maybe I/O read." alt="" coords="5,5,188,47"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_address_index.html#ad0c3d5d4cf529b053f72e87c64cbd080" title="reading model::files::AddressIndex from cache or if not exist in cache, creating model::files::Addres..." alt="" coords="236,5,399,47"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_address_index.html#a59839b69b6f1f5a98ec6c3782f96e823" title="take first hex sets from address as folder and file name" alt="" coords="447,5,689,47"/>
+</map>

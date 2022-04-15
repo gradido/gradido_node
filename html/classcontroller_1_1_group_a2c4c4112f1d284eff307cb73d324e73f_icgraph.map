@@ -1,0 +1,13 @@
+<map id="controller::Group::getBlock" name="controller::Group::getBlock">
+<area shape="rect" id="node1" title=" " alt="" coords="476,169,603,211"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a435aeeda6dd38bf86f72653d78869387" title=" " alt="" coords="235,5,420,47"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_group.html#ae8e568b6229a699bfed1ecc781a1b162" title="Find every transaction belonging to address account in memory or block chain, expensive." alt="" coords="264,71,391,112"/>
+<area shape="rect" id="node6" href="$classcontroller_1_1_group.html#ae83f827a3864c473a8203e933457665c" title=" " alt="" coords="227,136,428,177"/>
+<area shape="rect" id="node8" href="$classcontroller_1_1_group.html#a4a20b0f19b33b91503ecc8132cff4da9" title="get current block to write more transactions in it" alt="" coords="264,201,391,243"/>
+<area shape="rect" id="node10" href="$classcontroller_1_1_group.html#a59aa216bd418564b8c56480a88ad5481" title=" " alt="" coords="261,267,393,308"/>
+<area shape="rect" id="node11" href="$classcontroller_1_1_group.html#a99b11874c6ddc1e1496ec35e062aff72" title="Load group states via model::files::GroupState." alt="" coords="264,332,391,373"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group.html#ab3bf91f13507fa2516b949a9b905ca61" title=" " alt="" coords="21,13,163,39"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_group.html#a290d7ff553429948078ee4f0dd563b5c" title="Search for creation transactions from specific month and add balances together." alt="" coords="17,71,167,112"/>
+<area shape="rect" id="node7" href="$classcontroller_1_1_group.html#a40e6806b5d19e1c96a6e8915f27c2135" title=" " alt="" coords="5,136,179,177"/>
+<area shape="rect" id="node9" href="$classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c" title="add transaction from iota into blockchain, important! must be called in correct order" alt="" coords="29,233,155,275"/>
+</map>

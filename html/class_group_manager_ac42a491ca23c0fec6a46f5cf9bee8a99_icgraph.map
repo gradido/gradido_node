@@ -1,0 +1,5 @@
+<map id="GroupManager::findGroup" name="GroupManager::findGroup">
+<area shape="rect" id="node1" title="getting group object from Poco::AccessExpireCache or create if not in cache and put in cache" alt="" coords="185,42,356,69"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c" title="add transaction from iota into blockchain, important! must be called in correct order" alt="" coords="8,5,135,47"/>
+<area shape="rect" id="node3" href="$class_group_manager.html#a020d987bd819a1a76f3ca8dcbdd03ab7" title="load group index file and fill hash list with group public key = folder name pairs" alt="" coords="5,71,137,98"/>
+</map>

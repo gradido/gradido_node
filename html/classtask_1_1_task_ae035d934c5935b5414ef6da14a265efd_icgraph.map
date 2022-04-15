@@ -1,0 +1,13 @@
+<map id="task::Task::lock" name="task::Task::lock">
+<area shape="rect" id="node1" title=" " alt="" coords="956,173,1071,199"/>
+<area shape="rect" id="node2" href="$class_write_transactions_to_block_task.html#a5b1d2e03789d93c9a940b46b52bb590e" title=" " alt="" coords="705,5,908,47"/>
+<area shape="rect" id="node3" href="$class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9" title="collect all transaction nrs from transactions" alt="" coords="719,71,894,112"/>
+<area shape="rect" id="node7" href="$classtask_1_1_task.html#a83f2a80b04661d7e2732dc8934a2e8cc" title="return true if all parent task finished or return false and schedule not already finished parent task..." alt="" coords="726,136,887,177"/>
+<area shape="rect" id="node9" href="$classtask_1_1_task.html#aef3ee7384dd44e6274025f49e9405561" title="return true if task has finished, else false automatic scheduling of task if he isn&#39;t finished and sh..." alt="" coords="717,202,896,229"/>
+<area shape="rect" id="node10" href="$class_write_transactions_to_block_task.html#acdece707eb9e0e3e49c78ef1c986917f" title="called from task scheduler, maybe from another thread" alt="" coords="719,253,894,295"/>
+<area shape="rect" id="node11" href="$classtask_1_1_task.html#a26788a6b9089c0fce798d9caf6fde4a4" title=" " alt="" coords="713,319,900,346"/>
+<area shape="rect" id="node4" href="$class_task_observer.html#abb99f67e09fb4ef4144e983699e51bca" title="remove WriteTransactionsToBlockTask from map and transactions" alt="" coords="475,71,657,112"/>
+<area shape="rect" id="node5" href="$class_task_observer.html#aa0951519dd1424eaa6c1983fb186eb8f" title="remove Tasks" alt="" coords="248,78,427,105"/>
+<area shape="rect" id="node6" href="$class_task_observer_finish_command.html#af92d7b726676e451c85bbb84beb19e38" title=" " alt="" coords="5,71,200,112"/>
+<area shape="rect" id="node8" href="$classtask_1_1_task.html#afe0f93bf727c643d86983d1142dd3117" title=" " alt="" coords="497,143,635,170"/>
+</map>

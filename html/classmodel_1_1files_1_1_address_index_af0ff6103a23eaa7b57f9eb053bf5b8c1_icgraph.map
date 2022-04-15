@@ -1,0 +1,8 @@
+<map id="model::files::AddressIndex::calculateHash" name="model::files::AddressIndex::calculateHash">
+<area shape="rect" id="node1" title="Calculate file hash from map entrys sorted by indices." alt="" coords="480,39,655,80"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_address_index.html#a1fd0f56e79272681f80bf099238a485a" title="Load index, public key pairs from file and check file integrity with sha256 hash at end of file,..." alt="" coords="257,5,432,47"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea" title="Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLock..." alt="" coords="257,71,432,112"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_address_index.html#a41141dcd1983c745a3472e8ebbb191e5" title="Load from file if exist, fileLock via FileLockManager, I/O read if exist." alt="" coords="20,5,195,47"/>
+<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_address_index.html#a4ae311bf893bc8b199071575a0610000" title="Adding new index, account address public key pair into memory, use Poco::FastMutex::ScopedLock." alt="" coords="5,74,209,101"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_address_index.html#a4e1f457f7f8715f2fda15df438de7ae9" title=" " alt="" coords="20,125,195,167"/>
+</map>

@@ -1,0 +1,9 @@
+<map id="VirtualFile::read" name="VirtualFile::read">
+<area shape="rect" id="node1" title="copy from buffer over into dst, move cursor" alt="" coords="639,113,752,139"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block_index.html#ae197b4a43d106d58b23a102f2598ca0c" title="read from file, put content into receiver" alt="" coords="200,11,360,52"/>
+<area shape="rect" id="node4" href="$structmodel_1_1files_1_1_block_index_1_1_block.html#af6656e044626dfb1bf1c7efdb43794c5" title="return false if reading failed, file to short?" alt="" coords="419,40,579,81"/>
+<area shape="rect" id="node5" href="$structmodel_1_1files_1_1_block_index_1_1_year_block.html#a71a29b5956b8dd001a6afbce0c2a7397" title="return false if reading failed, file to short?" alt="" coords="412,105,587,147"/>
+<area shape="rect" id="node6" href="$structmodel_1_1files_1_1_block_index_1_1_month_block.html#a0cac5c5a963728dfe4022bbb66299e27" title="return false if reading failed, file to short?" alt="" coords="408,171,591,212"/>
+<area shape="rect" id="node7" href="$structmodel_1_1files_1_1_block_index_1_1_data_block.html#a10fd3d1ca94ecfa28e43bcda086b8eef" title="return false if reading failed, file to short?" alt="" coords="412,236,587,277"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_block_index.html#a09afd2785b550c464e1173a4bb6e1bb7" title="loading block index from file (or at least try to load)" alt="" coords="5,11,152,52"/>
+</map>

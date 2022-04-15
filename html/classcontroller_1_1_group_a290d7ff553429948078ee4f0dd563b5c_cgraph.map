@@ -1,0 +1,7 @@
+<map id="controller::Group::calculateCreationSum" name="controller::Group::calculateCreationSum">
+<area shape="rect" id="node1" title="Search for creation transactions from specific month and add balances together." alt="" coords="5,64,155,105"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#ae8e568b6229a699bfed1ecc781a1b162" title="Find every transaction belonging to address account in memory or block chain, expensive." alt="" coords="203,64,329,105"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group.html#a2c4c4112f1d284eff307cb73d324e73f" title=" " alt="" coords="407,5,534,47"/>
+<area shape="rect" id="node4" href="$class_group_manager.html#a023ecd32edba5827e65a8228298fdffc" title=" " alt="" coords="379,71,562,98"/>
+<area shape="rect" id="node5" href="$class_logger_manager.html#a88f5ea1c5a1bf96ccb17ffabc3fd9a9b" title=" " alt="" coords="377,122,564,149"/>
+</map>

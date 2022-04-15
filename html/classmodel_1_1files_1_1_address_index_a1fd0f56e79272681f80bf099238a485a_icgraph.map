@@ -1,0 +1,4 @@
+<map id="model::files::AddressIndex::loadFromFile" name="model::files::AddressIndex::loadFromFile">
+<area shape="rect" id="node1" title="Load index, public key pairs from file and check file integrity with sha256 hash at end of file,..." alt="" coords="228,5,403,47"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_address_index.html#a41141dcd1983c745a3472e8ebbb191e5" title="Load from file if exist, fileLock via FileLockManager, I/O read if exist." alt="" coords="5,5,180,47"/>
+</map>

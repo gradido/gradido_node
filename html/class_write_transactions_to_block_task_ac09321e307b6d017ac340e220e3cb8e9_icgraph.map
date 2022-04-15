@@ -1,0 +1,6 @@
+<map id="WriteTransactionsToBlockTask::getTransactionNrs" name="WriteTransactionsToBlockTask::getTransactionNrs">
+<area shape="rect" id="node1" title="collect all transaction nrs from transactions" alt="" coords="705,5,880,47"/>
+<area shape="rect" id="node2" href="$class_task_observer.html#abb99f67e09fb4ef4144e983699e51bca" title="remove WriteTransactionsToBlockTask from map and transactions" alt="" coords="475,5,657,47"/>
+<area shape="rect" id="node3" href="$class_task_observer.html#aa0951519dd1424eaa6c1983fb186eb8f" title="remove Tasks" alt="" coords="248,13,427,39"/>
+<area shape="rect" id="node4" href="$class_task_observer_finish_command.html#af92d7b726676e451c85bbb84beb19e38" title=" " alt="" coords="5,5,200,47"/>
+</map>

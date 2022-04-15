@@ -1,0 +1,4 @@
+<map id="model::files::Block::calculateHash" name="model::files::Block::calculateHash">
+<area shape="rect" id="node1" title="very expensive, read in whole file and calculate hash" alt="" coords="183,5,312,47"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block.html#a485cfc70b6d8f66107fb95908a266b36" title=" " alt="" coords="5,5,135,47"/>
+</map>

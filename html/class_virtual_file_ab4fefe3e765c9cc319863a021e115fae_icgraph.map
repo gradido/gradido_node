@@ -1,0 +1,6 @@
+<map id="VirtualFile::VirtualFile" name="VirtualFile::VirtualFile">
+<area shape="rect" id="node1" title="get memory bin from memory manager by his own" alt="" coords="620,13,767,39"/>
+<area shape="rect" id="node2" href="$class_virtual_file.html#abbdc300573ac1c30d2ae09b585af0a2b" title="get memory bin in file size and fill it with file content" alt="" coords="408,13,572,39"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_block_index.html#ae197b4a43d106d58b23a102f2598ca0c" title="read from file, put content into receiver" alt="" coords="200,5,360,47"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_block_index.html#a09afd2785b550c464e1173a4bb6e1bb7" title="loading block index from file (or at least try to load)" alt="" coords="5,5,152,47"/>
+</map>

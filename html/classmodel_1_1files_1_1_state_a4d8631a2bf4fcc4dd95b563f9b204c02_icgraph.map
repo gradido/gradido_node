@@ -1,0 +1,11 @@
+<map id="model::files::State::setKeyValue" name="model::files::State::setKeyValue">
+<area shape="rect" id="node1" title=" " alt="" coords="612,129,739,171"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a0a2547c0b67e7a5b274595b132fb2fd8" title=" " alt="" coords="180,5,345,47"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_group.html#a9c5730fd4a775de7001947369ef2d9c8" title=" " alt="" coords="413,64,545,105"/>
+<area shape="rect" id="node6" href="$class_global_state_manager.html#a985d520aad76b4346eeb03215d6defcc" title=" " alt="" coords="393,129,564,171"/>
+<area shape="rect" id="node7" href="$classcontroller_1_1_group.html#a8450d18527db451b8ab35ac9c3d0b8f7" title=" " alt="" coords="397,195,560,236"/>
+<area shape="rect" id="node9" href="$classcontroller_1_1_group.html#a581251a45c1233c9425de140ab5127fe" title=" " alt="" coords="415,260,542,301"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c" title="add transaction from iota into blockchain, important! must be called in correct order" alt="" coords="5,71,132,112"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_group.html#a4a20b0f19b33b91503ecc8132cff4da9" title="get current block to write more transactions in it" alt="" coords="199,71,326,112"/>
+<area shape="rect" id="node8" href="$classcontroller_1_1_group.html#a99b11874c6ddc1e1496ec35e062aff72" title="Load group states via model::files::GroupState." alt="" coords="199,195,326,236"/>
+</map>

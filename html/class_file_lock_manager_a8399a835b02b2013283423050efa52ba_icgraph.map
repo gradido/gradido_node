@@ -1,0 +1,22 @@
+<map id="FileLockManager::getInstance" name="FileLockManager::getInstance">
+<area shape="rect" id="node1" title=" " alt="" coords="897,283,1093,310"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block.html#a62095335a15577b650ac8ecd9d438159" title=" " alt="" coords="697,5,827,47"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block.html#adc947669499b526c4c86ed5d50600128" title="very expensive, read in whole file and calculate hash" alt="" coords="697,71,827,112"/>
+<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_block.html#a485cfc70b6d8f66107fb95908a266b36" title=" " alt="" coords="475,100,604,141"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_address_index.html#af316cd9ce255efa0b2cfd80d6778d7b1" title="Check if index file contains current indices (compare sizes), fileLock via FileLockManager,..." alt="" coords="675,188,849,229"/>
+<area shape="rect" id="node7" href="$classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea" title="Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLock..." alt="" coords="452,217,627,259"/>
+<area shape="rect" id="node10" href="$classmodel_1_1files_1_1_group_index.html#a3cb88fba269e07278bbce30bf9110e92" title="load group.index into memory as Poco Layered Configuration" alt="" coords="681,305,843,347"/>
+<area shape="rect" id="node11" href="$classmodel_1_1files_1_1_address_index.html#a1fd0f56e79272681f80bf099238a485a" title="Load index, public key pairs from file and check file integrity with sha256 hash at end of file,..." alt="" coords="675,371,849,412"/>
+<area shape="rect" id="node13" href="$class_virtual_file.html#abbdc300573ac1c30d2ae09b585af0a2b" title="get memory bin in file size and fill it with file content" alt="" coords="680,437,844,463"/>
+<area shape="rect" id="node16" href="$classmodel_1_1files_1_1_block.html#a1b1aa10bcf24bfbecf2deba6b65e428e" title=" " alt="" coords="697,488,827,529"/>
+<area shape="rect" id="node17" href="$class_virtual_file.html#ae43cf874b04266d94e578b500c432e34" title="write memory bin content to file, until cursor position" alt="" coords="687,554,837,581"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_block.html#ac7237c328cb61dd2bb6139c2e173a9cf" title="call appendLines" alt="" coords="475,5,604,47"/>
+<area shape="rect" id="node8" href="$classmodel_1_1files_1_1_address_index.html#a4ae311bf893bc8b199071575a0610000" title="Adding new index, account address public key pair into memory, use Poco::FastMutex::ScopedLock." alt="" coords="200,195,404,222"/>
+<area shape="rect" id="node9" href="$classmodel_1_1files_1_1_address_index.html#a4e1f457f7f8715f2fda15df438de7ae9" title=" " alt="" coords="215,247,389,288"/>
+<area shape="rect" id="node12" href="$classmodel_1_1files_1_1_address_index.html#a41141dcd1983c745a3472e8ebbb191e5" title="Load from file if exist, fileLock via FileLockManager, I/O read if exist." alt="" coords="452,367,627,408"/>
+<area shape="rect" id="node14" href="$classmodel_1_1files_1_1_block_index.html#ae197b4a43d106d58b23a102f2598ca0c" title="read from file, put content into receiver" alt="" coords="459,432,619,473"/>
+<area shape="rect" id="node15" href="$classcontroller_1_1_block_index.html#a09afd2785b550c464e1173a4bb6e1bb7" title="loading block index from file (or at least try to load)" alt="" coords="229,432,375,473"/>
+<area shape="rect" id="node18" href="$classmodel_1_1files_1_1_block_index.html#a87e5d8bb2faf36e3e770e593df3d85e4" title="replace Index File with new one, clear blocks after writing into file" alt="" coords="459,547,619,588"/>
+<area shape="rect" id="node19" href="$classcontroller_1_1_block_index.html#a8a65562025348d7f62ed29a932aaf2df" title="write block index into files" alt="" coords="229,547,375,588"/>
+<area shape="rect" id="node20" href="$classcontroller_1_1_block_index.html#a2145f428edf21f487785f77dc34d49b6" title=" " alt="" coords="5,547,152,588"/>
+</map>

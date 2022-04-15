@@ -1,0 +1,8 @@
+<map id="controller::Group::Group" name="controller::Group::Group">
+<area shape="rect" id="node1" title="Load group states via model::files::GroupState." alt="" coords="5,71,132,112"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_group.html#a2c4c4112f1d284eff307cb73d324e73f" title=" " alt="" coords="198,5,325,47"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_state.html#aea0bf6dc774c0846f2b36cb8ffd5574b" title=" " alt="" coords="186,71,337,112"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_group.html#a8450d18527db451b8ab35ac9c3d0b8f7" title=" " alt="" coords="180,136,343,177"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_state.html#a79a8eda8772fae8f6b8a67fd3720952a" title=" " alt="" coords="391,71,517,112"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_state.html#a4d8631a2bf4fcc4dd95b563f9b204c02" title=" " alt="" coords="391,136,517,177"/>
+</map>

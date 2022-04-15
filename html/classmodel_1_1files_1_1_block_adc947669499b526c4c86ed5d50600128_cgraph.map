@@ -1,0 +1,6 @@
+<map id="model::files::Block::calculateHash" name="model::files::Block::calculateHash">
+<area shape="rect" id="node1" title="very expensive, read in whole file and calculate hash" alt="" coords="5,49,135,90"/>
+<area shape="rect" id="node2" href="$class_file_lock_manager.html#a8399a835b02b2013283423050efa52ba" title=" " alt="" coords="183,5,379,32"/>
+<area shape="rect" id="node3" href="$class_logger_manager.html#a88f5ea1c5a1bf96ccb17ffabc3fd9a9b" title=" " alt="" coords="187,56,374,83"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block.html#ab5cd6a6f2c7ecc61d98a2f990bc59c5b" title="open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed" alt="" coords="216,107,345,149"/>
+</map>

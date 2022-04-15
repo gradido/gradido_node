@@ -1,0 +1,11 @@
+<map id="controller::BlockIndex::writeIntoFile" name="controller::BlockIndex::writeIntoFile">
+<area shape="rect" id="node1" title="write block index into files" alt="" coords="5,136,152,177"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_block_index.html#a3776dce7bd1ff0e514747259a856965f" title=" " alt="" coords="200,5,360,47"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_block_index.html#a5acae6b07dc18f1128f6b1533aebf4c2" title=" " alt="" coords="200,71,360,112"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block_index.html#a68f5afa198574bc68866ca7306e61a37" title=" " alt="" coords="200,136,360,177"/>
+<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_block_index.html#a549ca850449c0c44243d2bea266fd4ce" title="clear data blocks" alt="" coords="200,201,360,243"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block_index.html#a87e5d8bb2faf36e3e770e593df3d85e4" title="replace Index File with new one, clear blocks after writing into file" alt="" coords="200,267,360,308"/>
+<area shape="rect" id="node7" href="$class_virtual_file.html#ab6f997f913811412a1c85310ff7dd792" title="copy to buffer from src, move cursor" alt="" coords="426,249,541,275"/>
+<area shape="rect" id="node8" href="$class_virtual_file.html#ae43cf874b04266d94e578b500c432e34" title="write memory bin content to file, until cursor position" alt="" coords="408,299,559,326"/>
+<area shape="rect" id="node9" href="$class_file_lock_manager.html#a8399a835b02b2013283423050efa52ba" title=" " alt="" coords="607,299,803,326"/>
+</map>

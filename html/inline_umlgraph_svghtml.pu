@@ -1,0 +1,60 @@
+@startuml inline_umlgraph_1.svg
+(*) --> "Call from Timer"
+--> "Iota Api call /api/v1/messages?index=4752414449444f2e7079746861676f726173"
+note right
+ index consist of "GRADIDO." + groupAlias
+ in hex format, for example:
+ 4752414449444f2e7079746861676f726173 => GRADIDO.pythagoras
+end note
+--> "Add new MessageIDs to intern List"
+note right
+  Iota store the last 1000 Messages for a index,
+  so on every call we get all stored MessageIDs not only the new ones,
+  so we must filter ourselves
+end note
+--> "Send new MessageIDs to MessageValidator"
+--> "Remove old MessageIDs from intern List"
+note right
+  remove all MessageIDs from intern List,
+  which are not longer returned from Iota
+end note
+--> (*)
+@enduml
+@startuml inline_umlgraph_2.svg
+(*top) --> ===LOOP_START===
+--> "Wait on Pending Messages"
+note top
+    get new messageIDs
+    from MessageListener
+end note
+--> if "new messageIds" then 
+    ->[arrived] "Call Iota API:\nask for milestoneId for message"
+    if "milestoneId" then
+        -->[not null ]===VALID_MILESTONE===
+        --> "Observe Milestone"
+        note bottom
+            OrderingManager keep track
+            of all milestones 
+            for which messages are processing
+        end note
+
+        ===VALID_MILESTONE=== if "messages for this milestone" then
+        ->[where already queued] "put message to:\nConfirmedMessage map"
+        --> ===LOOP_START===
+        else
+            if "milestone is" then
+            ->[finished with loading] "start IotaMessageToTransactionTask task for milestone"
+            --> ===LOOP_START===
+            else
+                --->[else] "queue first message for this milestone"
+                --> "start MilestoneLoadingTask"
+                --> ===LOOP_START===
+            endif
+        endif
+    else 
+        ->[null]===LOOP_START===
+    endif
+else
+    ->[not arrived]===LOOP_START===
+endif
+@enduml
