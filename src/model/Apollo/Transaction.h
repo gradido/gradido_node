@@ -44,7 +44,9 @@ namespace model {
 			TransactionType mType;
 			mpfr_ptr        mAmount;
 			mpfr_ptr		mBalance;
-			std::string     mName;
+			std::string     mPubkey;
+			std::string		mFirstName;
+			std::string		mLastName;
 			std::string		mMemo;
 			int64_t			mId;
 			Poco::Timestamp mDate;

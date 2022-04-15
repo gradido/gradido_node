@@ -55,7 +55,7 @@ namespace model {
 			mpfr_ptr balance = nullptr;
 
 			int countTransactions = 0;
-
+			int foundRegisterAddressTransaction = 0;
 			for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
 				if (entryIterator == pageSize) {
 					pageIterator++;
@@ -65,6 +65,20 @@ namespace model {
 
 				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());
 				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
+				if (transactionBody->isRegisterAddress()) {
+					auto registerAddress = transactionBody->getRegisterAddress();
+					if (transactionBody->isLocal()) {
+						if ((registerAddress->isSubaccount() && registerAddress->getSubaccountPubkeyString() == *mPubkey.get()) ||
+							(!registerAddress->isSubaccount() && registerAddress->getUserPubkeyString() == *mPubkey.get())) {
+							foundRegisterAddressTransaction = 1;
+						}
+					}
+					else {
+						// for moving transactions
+						assert(false || "is not implemented yet");
+					}
+				}
+				
 				if (!onlyCreations && (transactionBody->isTransfer() || transactionBody->isDeferredTransfer()) || transactionBody->isCreation()) {
 					countTransactions++;
 
@@ -75,8 +89,8 @@ namespace model {
 
 					if (pageIterator == currentPage) {
 						transactionsVector.push_back(std::move(model::Apollo::Transaction(gradidoBlock.get(), *mPubkey.get())));
-						if ((it == allTransactions.begin() && !orderDESC) ||
-							(orderDESC && (it + 1) == allTransactions.end()))
+						if ((it + foundRegisterAddressTransaction == allTransactions.begin() && !orderDESC) ||
+							(orderDESC && (it + 1 + foundRegisterAddressTransaction) == allTransactions.end()))
 						{
 							transactionsVector.back().setFirstTransaction(true);
 							balance = mm->getMathMemory();
@@ -101,6 +115,11 @@ namespace model {
 					}
 					entryIterator++;
 				}
+			}
+			if (foundRegisterAddressTransaction && orderDESC && !balance && transactionsVector.size()) {
+				transactionsVector.back().setFirstTransaction(true);
+				balance = mm->getMathMemory();
+				mpfr_set(balance, transactionsVector.back().getAmount(), gDefaultRound);
 			}
 
 			transactionList.AddMember("count", countTransactions, mJsonAllocator);

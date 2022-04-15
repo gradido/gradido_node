@@ -22,7 +22,8 @@ namespace model {
 				if (mpfr_set_str(mAmount, creation->getAmount().data(), 10, gDefaultRound)) {
 					throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
 				}
-				mName = "Gradido Akademie";
+				mFirstName = "Gradido";
+				mLastName = "Akademie";
 			}
 			else if (transactionBody->getTransactionType() == model::gradido::TRANSACTION_TRANSFER ||
 				transactionBody->getTransactionType() == model::gradido::TRANSACTION_DEFERRED_TRANSFER) {
@@ -32,11 +33,11 @@ namespace model {
 				}
 				if (transfer->getRecipientPublicKeyString() == pubkey) {
 					mType = TRANSACTION_TYPE_RECEIVE;
-					mName = DataTypeConverter::binToHex(transfer->getSenderPublicKeyString());
+					mPubkey = DataTypeConverter::binToHex(transfer->getSenderPublicKeyString());
 				}
 				else if (transfer->getSenderPublicKeyString() == pubkey) {
 					mType = TRANSACTION_TYPE_SEND;
-					mName = DataTypeConverter::binToHex(transfer->getRecipientPublicKeyString());
+					mPubkey = DataTypeConverter::binToHex(transfer->getRecipientPublicKeyString());
 					mpfr_neg(mAmount, mAmount, gDefaultRound);
 				}
 				
@@ -75,7 +76,9 @@ namespace model {
 			: mType(parent.mType),
 			  mAmount(parent.mAmount),
 		      mBalance(parent.mBalance),
-			  mName(std::move(parent.mName)),
+			  mPubkey(std::move(parent.mPubkey)),
+			  mFirstName(std::move(parent.mFirstName)),
+			  mLastName(std::move(parent.mLastName)),
 			  mMemo(std::move(parent.mMemo)),
 			  mId(parent.mId),
 			  mDate(parent.mDate),
@@ -130,7 +133,9 @@ namespace model {
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
 			transaction.AddMember("id", mId, alloc);
 			Value linkedUser(kObjectType);
-			linkedUser.AddMember("pubkey", Value(mName.data(), alloc), alloc);
+			linkedUser.AddMember("pubkey", Value(mPubkey.data(), alloc), alloc);
+			linkedUser.AddMember("firstName", Value(mFirstName.data(), alloc), alloc);
+			linkedUser.AddMember("lastName", Value(mLastName.data(), alloc), alloc);
 			linkedUser.AddMember("__typename", "User", alloc);
 			transaction.AddMember("linkedUser", linkedUser, alloc);
 
