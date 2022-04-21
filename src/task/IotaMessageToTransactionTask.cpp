@@ -2,6 +2,7 @@
 
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
+#include "gradido_blockchain/model/protobufWrapper/ProtobufExceptions.h"
 
 #include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/GroupManager.h"
@@ -37,26 +38,35 @@ int IotaMessageToTransactionTask::run()
 {
     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
     std::pair<std::unique_ptr<std::string>, std::unique_ptr<std::string>> dataIndex;
+    auto iotaMessageIdHex = mMessageId.toHex();
     try {
-        dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(mMessageId.toHex());
+        dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);
     }
     catch (...) {
         IotaRequest::defaultExceptionHandler(errorLog, false);
         errorLog.warning("retry once after waiting 100 ms");
         Poco::Thread::sleep(100);
 		try {
-			dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(mMessageId.toHex());
+			dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);
 		}
 		catch (...) {
             // terminate application
             IotaRequest::defaultExceptionHandler(errorLog, true);
 		}
     }
+    
 
     auto gm = GroupManager::getInstance();
     auto group = gm->findGroup(getGradidoGroupAlias(*dataIndex.second.get()));
     
-    auto transaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
+    std::unique_ptr<model::gradido::GradidoTransaction> transaction;
+    try {
+        transaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
+    }
+    catch (ProtobufParseException& ex) {
+        errorLog.information("invalid gradido transaction, iota message ID: %s", iotaMessageIdHex);
+        return 0;
+    }
         
     Poco::Logger& transactionLog = LoggerManager::getInstance()->mTransactionLog;
     transactionLog.information("%d %d %s %s\n%s", 
@@ -85,7 +95,9 @@ int IotaMessageToTransactionTask::run()
         auto otherGroup = gm->findGroup(transaction->getTransactionBody()->getOtherGroup());
         if (!otherGroup.isNull()) {
             auto transactionEntry = otherGroup->findByMessageId(transaction->getParentMessageId(), true);
-            pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(transactionEntry->getSerializedTransaction());
+            if (!transactionEntry.isNull()) {
+                pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(transactionEntry->getSerializedTransaction());
+            }
         }
         // load from iota
         if (!pairingTransaction) {
