@@ -8,6 +8,7 @@
 
 #include "Poco/AutoPtr.h"
 #include "Poco/DateTimeFormatter.h"
+#include "Poco/Timezone.h"
 
 #include "../model/NodeTransactionEntry.h"
 #include "../model/Apollo/TransactionList.h"
@@ -31,10 +32,20 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		"isGroupUnique"
 	};
 
+	Poco::SharedPtr<controller::Group> group;
 	std::string groupAlias;
-	if (noNeedForGroupAlias.find(method) == noNeedForGroupAlias.end() && !getStringParameter(params, "groupAlias", groupAlias)) {
-		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-		return;
+	if (noNeedForGroupAlias.find(method) == noNeedForGroupAlias.end()) {
+		if (!getStringParameter(params, "groupAlias", groupAlias)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		auto gm = GroupManager::getInstance();
+		group = gm->findGroup(groupAlias);
+		if (group.isNull()) {
+			mResponseErrorCode = JSON_RPC_ERROR_UNKNOWN_GROUP;
+			stateError("group not known");
+			return;
+		}
 	}
 
 	if (method == "getlasttransaction") {
@@ -61,7 +72,29 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		getTransactions(transactionId, groupAlias, format);
 	}
 	else if (method == "getaddressbalance") {
-		stateError("not implemented yet");
+		std::string pubkey, pubkeyHex, date_string;
+		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
+		if (!getStringParameter(params, "date", date_string)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		int timezoneDifferential = Poco::Timezone::tzd();
+		Poco::DateTime date;
+		try {
+			date = Poco::DateTimeParser::parse(date_string, timezoneDifferential);
+		}
+		catch (Poco::Exception& ex) {
+			stateError("cannot parse date", ex.what());
+			return;
+		}
+		uint32_t coinColor = 0;
+		getUIntParameter(params, "coinColor", coinColor);
+		getAddressBalance(pubkey, date, group, coinColor);
+		
 	}
 	else if (method == "getaddresstxids") {
 		stateError("not implemented yet");
@@ -211,6 +244,20 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	}
 	mResponseResult.AddMember("transactions", jsonTransactionArray, alloc);
 	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
+}
+
+void JsonRPCHandler::getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, uint32_t coinColor /* = 0 */)
+{
+	assert(!group.isNull());
+	auto alloc = mResponseJson.GetAllocator();
+
+	auto balance = group->calculateAddressBalance(pubkey, coinColor, date);
+	std::string balanceString;
+	model::gradido::TransactionBase::amountToString(&balanceString, balance);
+	MemoryManager::getInstance()->releaseMathMemory(balance);
+
+	stateSuccess();
+	mResponseResult.AddMember("balance", Value(balanceString.data(), alloc), alloc);
 }
 
 void JsonRPCHandler::listTransactions(

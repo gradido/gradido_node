@@ -3,6 +3,9 @@
 
 #include "JsonRPCRequestHandler.h"
 #include "gradido_blockchain/MemoryManager.h"
+#include "Poco/DateTime.h"
+
+#include "../controller/Group.h"
 
 class JsonRPCHandler : public JsonRPCRequestHandler
 {
@@ -23,6 +26,7 @@ protected:
 		bool orderDESC = true, 
 		bool onlyCreations = false
 	);
+	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, uint32_t coinColor = 0);
 
 	// helper
 	
