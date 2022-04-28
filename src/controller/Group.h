@@ -81,6 +81,13 @@ namespace controller {
 		//! Use with care, can need some time and return huge amount of data.
 		//! \param address Address = user account public key.
 		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> findTransactions(const std::string& address);
+
+		/*! \brief Find every transaction belonging to address account in memory or block chain, expensive.
+			
+			Faster than findTransactions because it need only reading block index
+			\param address Address = user account public key.
+		*/
+		std::vector<uint64_t> findTransactionIds(const std::string& address);
 		//! \brief Find transactions of account in memory or block chain from a specific month.
 		//! \param address User account public key.
 		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> findTransactions(const std::string& address, int month, int year);

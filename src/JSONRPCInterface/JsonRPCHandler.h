@@ -27,6 +27,7 @@ protected:
 		bool onlyCreations = false
 	);
 	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, uint32_t coinColor = 0);
+	void getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
 
 	// helper
 	

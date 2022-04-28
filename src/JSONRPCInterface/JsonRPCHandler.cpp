@@ -97,7 +97,13 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		
 	}
 	else if (method == "getaddresstxids") {
-		stateError("not implemented yet");
+		std::string pubkey, pubkeyHex;
+		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
+		getAddressTxids(pubkey, group);
 	}
 	else if (method == "getblock") {
 		stateError("not implemented yet");
@@ -258,6 +264,21 @@ void JsonRPCHandler::getAddressBalance(const std::string& pubkey, Poco::DateTime
 
 	stateSuccess();
 	mResponseResult.AddMember("balance", Value(balanceString.data(), alloc), alloc);
+}
+
+void JsonRPCHandler::getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group)
+{
+	assert(!group.isNull());
+	assert(pubkey.size());
+	auto transactionNrs = group->findTransactionIds(pubkey);
+
+	auto alloc = mResponseJson.GetAllocator();
+	Value transactionNrsJson(kArrayType);
+	std::for_each(transactionNrs.begin(), transactionNrs.end(), [&](const uint64_t& value) {
+		transactionNrsJson.PushBack(value, alloc);
+	});
+	stateSuccess();
+	mResponseResult.AddMember("transactionNrs", transactionNrsJson, alloc);
 }
 
 void JsonRPCHandler::listTransactions(
