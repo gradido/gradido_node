@@ -395,6 +395,32 @@ namespace controller {
 		return transactions;
 	}
 
+	std::vector<uint64_t> Group::findTransactionIds(const std::string& address)
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::vector<uint64_t> transactions;
+
+		auto index = mAddressIndex->getIndexForAddress(address);
+		if (!index) { return transactions; }
+
+		int blockCursor = mLastBlockNr;
+		while (blockCursor > 0) {
+			auto block = getBlock(blockCursor);
+			auto blockIndex = block->getBlockIndex();
+			auto transactionNrs = blockIndex->findTransactionsForAddress(index);
+			if (transactionNrs.size()) {
+				transactions.insert(
+					transactions.end(),
+					std::make_move_iterator(transactionNrs.begin()),
+					std::make_move_iterator(transactionNrs.end())
+				);
+			}
+			blockCursor--;
+		}
+
+		return transactions;
+	}
+
 	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter/* = nullptr*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
