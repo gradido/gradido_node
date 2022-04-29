@@ -31,6 +31,11 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		"getRandomUniqueCoinColor",
 		"isGroupUnique"
 	};
+	std::set<std::string> noNeedForPubkey = {
+		"getgroupdetails",
+		"isGroupUnique",
+		"getRandomUniqueCoinColor"
+	};
 
 	Poco::SharedPtr<controller::Group> group;
 	std::string groupAlias;
@@ -47,6 +52,16 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 			return;
 		}
 	}
+	std::string pubkey;
+	if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
+		std::string pubkeyHex;
+		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
+	}
+	int timezoneDifferential = Poco::Timezone::tzd();
 
 	if (method == "getlasttransaction") {
 		stateSuccess();
@@ -72,17 +87,12 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		getTransactions(transactionId, groupAlias, format);
 	}
 	else if (method == "getaddressbalance") {
-		std::string pubkey, pubkeyHex, date_string;
-		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
-			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-			return;
-		}
-		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
+		std::string date_string;
 		if (!getStringParameter(params, "date", date_string)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}
-		int timezoneDifferential = Poco::Timezone::tzd();
+		
 		Poco::DateTime date;
 		try {
 			date = Poco::DateTimeParser::parse(date_string, timezoneDifferential);
@@ -97,12 +107,6 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		
 	}
 	else if (method == "getaddresstxids") {
-		std::string pubkey, pubkeyHex;
-		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
-			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-			return;
-		}
-		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
 		getAddressTxids(pubkey, group);
 	}
 	else if (method == "getblock") {
@@ -120,12 +124,30 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	else if (method == "gettransaction") {
 		stateError("not implemented yet");
 	}
-	else if (method == "listtransactions") {
-		std::string pubkey;
-		if (!getStringParameter(params, "pubkey", pubkey)) {
+	else if (method == "getcreationsumformonth") {
+		int month = 0, year = 0;
+		if (!getIntParameter(params, "month", month) || 
+			!getIntParameter(params, "year", year)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}
+		std::string date_string;
+		if (!getStringParameter(params, "startSearchDate", date_string)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+
+		Poco::DateTime date;
+		try {
+			date = Poco::DateTimeParser::parse(date_string, timezoneDifferential);
+		}
+		catch (Poco::Exception& ex) {
+			stateError("cannot parse date", ex.what());
+			return;
+		}
+		getCreationSumForMonth(pubkey, month, year, date, group);
+	}
+	else if (method == "listtransactions") {
 		int currentPage = 1, pageSize = 25;
 		getIntParameter(params, "currentPage", currentPage);
 		getIntParameter(params, "pageSize", pageSize);
@@ -281,9 +303,22 @@ void JsonRPCHandler::getAddressTxids(const std::string& pubkey, Poco::SharedPtr<
 	mResponseResult.AddMember("transactionNrs", transactionNrsJson, alloc);
 }
 
+void JsonRPCHandler::getCreationSumForMonth(const std::string& pubkey, int month, int year, Poco::DateTime searchStartDate, Poco::SharedPtr<controller::Group> group)
+{
+	assert(!group.isNull());
+	auto sum = MathMemory::create();
+	group->calculateCreationSum(pubkey, month, year, searchStartDate, sum->getData());
+	std::string sumString;
+	model::gradido::TransactionBase::amountToString(&sumString, sum->getData());
+	stateSuccess();
+	auto alloc = mResponseJson.GetAllocator();
+	mResponseJson.AddMember("sum", Value(sumString.data(), alloc), alloc);
+	
+}
+
 void JsonRPCHandler::listTransactions(
 	const std::string& groupAlias,
-	const std::string& publicKeyHex,
+	const std::string& pubkey,
 	int currentPage /*= 1*/,
 	int pageSize /*= 25*/,
 	bool orderDESC /*= true*/,
@@ -313,10 +348,9 @@ void JsonRPCHandler::listTransactions(
 		return;
 	}
 
-	auto pubkey = DataTypeConverter::hexToBinString(publicKeyHex);
-	auto allTransactions = group->findTransactions(*pubkey.get());
+	auto allTransactions = group->findTransactions(pubkey);
 
-	model::Apollo::TransactionList transactionList(group, std::move(pubkey), alloc);
+	model::Apollo::TransactionList transactionList(group, std::move(std::make_unique<std::string>(pubkey)), alloc);
 	auto transactionListValue = transactionList.generateList(allTransactions, currentPage, pageSize, orderDESC, onlyCreations);
 
 	stateSuccess();

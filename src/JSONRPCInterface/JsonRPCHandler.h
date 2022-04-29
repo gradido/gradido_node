@@ -18,6 +18,7 @@ protected:
 	void getRandomUniqueCoinColor();
 	void isGroupUnique(const std::string& groupAlias, uint32_t coinColor);
 	void getTransactions(int64_t fromTransactionId, const std::string& groupAlias, const std::string& format);
+	void getCreationSumForMonth(const std::string& pubkey, int month, int year, Poco::DateTime searchStartDate, Poco::SharedPtr<controller::Group> group);
 	void listTransactions(
 		const std::string& groupAlias, 
 		const std::string& publicKeyHex, 
@@ -26,6 +27,7 @@ protected:
 		bool orderDESC = true, 
 		bool onlyCreations = false
 	);
+	
 	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, uint32_t coinColor = 0);
 	void getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
 
