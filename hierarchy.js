@@ -1,5 +1,6 @@
 var hierarchy =
 [
+    [ "model::files::AddressIndex::AddressDetails", "structmodel_1_1files_1_1_address_index_1_1_address_details.html", null ],
     [ "controller::BlockIndex::AddressIndexEntry", "structcontroller_1_1_block_index_1_1_address_index_entry.html", null ],
     [ "client::Base", "classclient_1_1_base.html", [
       [ "client::GraphQL", "classclient_1_1_graph_q_l.html", null ],
@@ -37,6 +38,7 @@ var hierarchy =
       [ "client::MissingParameterException", "classclient_1_1_missing_parameter_exception.html", null ],
       [ "controller::BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],
       [ "controller::GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
+      [ "controller::WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ],
       [ "model::files::EndReachingException", "classmodel_1_1files_1_1_end_reaching_exception.html", [
         [ "model::files::InvalidReadBlockSize", "classmodel_1_1files_1_1_invalid_read_block_size.html", null ]
       ] ],

@@ -18,7 +18,8 @@ var annotated_dup =
       [ "GroupIndex", "classcontroller_1_1_group_index.html", "classcontroller_1_1_group_index" ],
       [ "GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
       [ "GroupRegisterGroup", "classcontroller_1_1_group_register_group.html", "classcontroller_1_1_group_register_group" ],
-      [ "RemoteGroup", "classcontroller_1_1_remote_group.html", null ]
+      [ "RemoteGroup", "classcontroller_1_1_remote_group.html", null ],
+      [ "WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ]
     ] ],
     [ "iota", null, [
       [ "MessageId", "classiota_1_1_message_id.html", "classiota_1_1_message_id" ],

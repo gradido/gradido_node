@@ -1,5 +1,6 @@
 var classmodel_1_1files_1_1_address_index =
 [
+    [ "AddressDetails", "structmodel_1_1files_1_1_address_index_1_1_address_details.html", null ],
     [ "AddressIndex", "classmodel_1_1files_1_1_address_index.html#a41141dcd1983c745a3472e8ebbb191e5", null ],
     [ "add", "classmodel_1_1files_1_1_address_index.html#a4ae311bf893bc8b199071575a0610000", null ],
     [ "calculateFileSize", "classmodel_1_1files_1_1_address_index.html#a45a9ec196ac5eea967c8eb11f77ac6cb", null ],
