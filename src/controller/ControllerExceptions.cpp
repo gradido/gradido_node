@@ -1,4 +1,5 @@
 #include "ControllerExceptions.h"
+#include "gradido_blockchain/model/protobufWrapper/TransactionBody.h"
 
 #include <string>
 
@@ -33,6 +34,29 @@ namespace controller {
 		resultString = what();
 		resultString += ", with group: " + mGroupAlias;
 		resultString += ", block nr: " + blockNrString;
+		return resultString;
+	}
+
+	// ************************ Wrong Transaction Type Exception **********************************
+	WrongTransactionTypeException::WrongTransactionTypeException(
+		const char* what, 
+		model::gradido::TransactionType type,
+		std::string pubkeyHex
+	) noexcept
+		: GradidoBlockchainException(what), mType(type), mPubkeyHex(pubkeyHex)
+	{
+
+	}
+
+	std::string WrongTransactionTypeException::getFullString() const
+	{
+		std::string resultString;
+		std::string transactionTypeString = model::gradido::TransactionBody::transactionTypeToString(mType);
+		size_t resultSize = strlen(what()) + 2 + 20 + transactionTypeString.size() + mPubkeyHex.size() + 10;
+		resultString.reserve(resultSize);
+		resultString = what();
+		resultString += ", transaction type: " + transactionTypeString;
+		resultString += ", pubkey: " + mPubkeyHex;
 		return resultString;
 	}
 }

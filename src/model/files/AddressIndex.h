@@ -3,6 +3,7 @@
 
 #include "FileBase.h"
 #include "gradido_blockchain/MemoryManager.h"
+#include "proto/gradido/RegisterAddress.pb.h"
 #include <unordered_map>
 #include <map>
 
@@ -23,6 +24,16 @@ namespace model {
 		class AddressIndex : public FileBase
 		{
 		public:
+			/*! @brief Container for address details which where together saved in address index file
+			* TODO: Use this struct instead of only the index in map and in file, update all other code accordingly
+			*/
+			struct AddressDetails
+			{
+				AddressDetails(uint32_t _index, proto::gradido::RegisterAddress_AddressType _type)
+					: index(_index), type(_type) {}
+				uint32_t index;
+				proto::gradido::RegisterAddress_AddressType type;
+			};
 			//! Load from file if exist, fileLock via FileLockManager, I/O read if exist.
 			AddressIndex(Poco::Path filePath);
 			~AddressIndex();

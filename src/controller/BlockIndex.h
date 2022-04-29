@@ -59,6 +59,7 @@ namespace controller {
 
 		//! \brief search from highest year and month to lowest, return youngest transaction which is fitting the search criteria
 		uint64_t findLastTransactionForAddress(uint32_t addressIndex, uint32_t coinColor = 0);
+		uint64_t findFirstTransactionForAddress(uint32_t addressIndex, uint32_t coinColor = 0);
 
 		//! \brief find transaction nrs from specific month and year
 		//! \return empty shared ptr if nothing found

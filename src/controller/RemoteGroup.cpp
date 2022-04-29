@@ -22,6 +22,11 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
+	proto::gradido::RegisterAddress_AddressType RemoteGroup::getAddressType(const std::string& address)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+
 	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
 	{
 		throw std::runtime_error("not implemented yet");

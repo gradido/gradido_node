@@ -25,6 +25,21 @@ namespace controller {
 		int			mBlockNr;
 	};
 
+	class WrongTransactionTypeException : public GradidoBlockchainException
+	{
+	public:
+		explicit WrongTransactionTypeException(
+			const char* what, 
+			model::gradido::TransactionType type,
+			std::string pubkeyHex
+		) noexcept;
+		std::string getFullString() const;
+
+	protected:
+		model::gradido::TransactionType mType;
+		std::string mPubkeyHex;
+	};
+
 }
 
 #endif //__GRADIDO_NODE_CONTROLLER_CONTROLLER_EXCEPTIONS_H

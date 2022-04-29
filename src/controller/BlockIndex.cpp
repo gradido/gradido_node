@@ -292,6 +292,45 @@ namespace controller {
 		return 0;
 	}
 
+	uint64_t BlockIndex::findFirstTransactionForAddress(uint32_t addressIndex, uint32_t coinColor/* = 0*/)
+	{
+		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		std::vector<uint64_t> result;
+		for (auto yearIt = mYearMonthAddressIndexEntrys.begin(); yearIt != mYearMonthAddressIndexEntrys.end(); ++yearIt) {
+			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); ++monthIt) {
+				AddressIndexEntry* addressIndexEntry = &monthIt->second;
+				auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.find(addressIndex);
+				auto traIndForCoinColor = addressIndexEntry->coinColorTransactionNrIndices.find(coinColor);
+				if (coinColor && traIndForCoinColor == addressIndexEntry->coinColorTransactionNrIndices.end()) {
+					continue;
+				}
+				if (addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end()) {
+					auto transactionNrIndices = addressIndexIt->second;
+					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
+						bool skip = false;
+						if (coinColor) {
+							skip = true;
+							for (auto itTransactionIndex = traIndForCoinColor->second.begin(); itTransactionIndex != traIndForCoinColor->second.end(); itTransactionIndex++) {
+								if (*it == *itTransactionIndex) {
+									skip = false;
+									break;
+								}
+							}
+						}
+						if (!skip) {
+							result.push_back((*addressIndexEntry->transactionNrs)[*it]);
+						}
+					}
+				}
+				if (result.size() > 0) {
+					std::sort(result.begin(), result.end());
+					return result.front();
+				}
+			}
+		}
+		return 0;
+	}
+
 	Poco::SharedPtr<std::vector<uint64_t>> BlockIndex::findTransactionsForMonthYear(uint16_t year, uint8_t month)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);

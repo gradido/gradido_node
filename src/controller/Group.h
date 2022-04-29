@@ -69,6 +69,8 @@ namespace controller {
 		// TODO: make UML diagram for function
 		mpfr_ptr calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date);
 
+		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
+
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 
 		//! \brief find transaction by messageId, especially used for validate cross group transactions

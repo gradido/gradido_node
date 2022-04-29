@@ -89,6 +89,7 @@ namespace client {
 		catch (Poco::Exception& ex) {
 			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Poco Exception: %s\n", ex.displayText());
 		}
+		return false;
 	}
 
 }

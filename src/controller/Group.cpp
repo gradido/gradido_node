@@ -563,6 +563,34 @@ namespace controller {
 		return gdd;				
 	}
 
+	proto::gradido::RegisterAddress_AddressType Group::getAddressType(const std::string& address)
+	{
+		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
+		// if return zero, no transaction for this address exist on this blockchain
+		if (!addressIndex) return proto::gradido::RegisterAddress_AddressType_NONE;
+
+		int blockNr = 1;
+		while (blockNr <= mLastBlockNr) {
+			auto block = getBlock(blockNr);
+			auto transactionNr = block->getBlockIndex()->findFirstTransactionForAddress(addressIndex);
+			if (transactionNr) {
+				auto transactionEntry = block->getTransaction(transactionNr);
+				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
+				if (!transactionBody->isRegisterAddress()) {
+					throw WrongTransactionTypeException(
+						"wrong transaction type for first transaction", 
+						transactionBody->getTransactionType(),
+						std::move(DataTypeConverter::binToHex(address))
+					);
+				}
+				return transactionBody->getRegisterAddress()->getAddressType();
+			}
+			blockNr++;
+		}
+		return proto::gradido::RegisterAddress_AddressType_NONE;
+	}
+
 	Poco::SharedPtr<model::TransactionEntry> Group::getTransactionForId(uint64_t transactionId)
 	{
 		auto blockNr = mLastBlockNr;
