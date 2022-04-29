@@ -106,6 +106,9 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		getAddressBalance(pubkey, date, group, coinColor);
 		
 	}
+	else if (method == "getaddresstype") {
+		getAddressType(pubkey, group);
+	}
 	else if (method == "getaddresstxids") {
 		getAddressTxids(pubkey, group);
 	}
@@ -286,6 +289,16 @@ void JsonRPCHandler::getAddressBalance(const std::string& pubkey, Poco::DateTime
 
 	stateSuccess();
 	mResponseResult.AddMember("balance", Value(balanceString.data(), alloc), alloc);
+}
+
+void JsonRPCHandler::getAddressType(const std::string& pubkey, Poco::SharedPtr<controller::Group> group)
+{
+	assert(!group.isNull());
+	auto alloc = mResponseJson.GetAllocator();
+
+	auto type = group->getAddressType(pubkey);
+	stateSuccess();
+	mResponseResult.AddMember("addressType", Value(model::gradido::RegisterAddress::getAddressStringFromType(type).data(), alloc), alloc);
 }
 
 void JsonRPCHandler::getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group)

@@ -7,6 +7,7 @@
 
 #include "../controller/Group.h"
 
+// TODO: write api doc and help on command
 class JsonRPCHandler : public JsonRPCRequestHandler
 {
 public:
@@ -29,6 +30,7 @@ protected:
 	);
 	
 	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, uint32_t coinColor = 0);
+	void getAddressType(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
 	void getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
 
 	// helper
