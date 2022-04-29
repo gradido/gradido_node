@@ -312,8 +312,7 @@ void JsonRPCHandler::getCreationSumForMonth(const std::string& pubkey, int month
 	model::gradido::TransactionBase::amountToString(&sumString, sum->getData());
 	stateSuccess();
 	auto alloc = mResponseJson.GetAllocator();
-	mResponseJson.AddMember("sum", Value(sumString.data(), alloc), alloc);
-	
+	mResponseResult.AddMember("sum", Value(sumString.data(), alloc), alloc);
 }
 
 void JsonRPCHandler::listTransactions(
