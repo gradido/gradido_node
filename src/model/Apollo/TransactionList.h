@@ -17,6 +17,7 @@ namespace model {
 
 			rapidjson::Value generateList(
 				std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions,
+				Poco::Timestamp now,
 				int currentPage = 1,
 				int pageSize = 25,
 				bool orderDESC = true,

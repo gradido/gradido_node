@@ -366,7 +366,6 @@ void JsonRPCHandler::listTransactions(
 	Poco::Timestamp now;
 	auto transactionListValue = transactionList.generateList(allTransactions, now, currentPage, pageSize, orderDESC, onlyCreations);
 
-	transactionListValue.RemoveMember("balance");
 	auto balance = group->calculateAddressBalance(pubkey, 0, now);
 	std::string balanceString;
 	model::gradido::TransactionBase::amountToString(&balanceString, balance);
