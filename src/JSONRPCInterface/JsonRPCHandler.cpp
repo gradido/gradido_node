@@ -363,7 +363,14 @@ void JsonRPCHandler::listTransactions(
 	auto allTransactions = group->findTransactions(pubkey);
 
 	model::Apollo::TransactionList transactionList(group, std::move(std::make_unique<std::string>(pubkey)), alloc);
-	auto transactionListValue = transactionList.generateList(allTransactions, currentPage, pageSize, orderDESC, onlyCreations);
+	Poco::Timestamp now;
+	auto transactionListValue = transactionList.generateList(allTransactions, now, currentPage, pageSize, orderDESC, onlyCreations);
+
+	transactionListValue.RemoveMember("balance");
+	auto balance = group->calculateAddressBalance(pubkey, 0, now);
+	std::string balanceString;
+	model::gradido::TransactionBase::amountToString(&balanceString, balance);
+	transactionListValue.AddMember("balance", Value(balanceString.data(), alloc), alloc);
 
 	stateSuccess();
 	mResponseResult.AddMember("transactionList", transactionListValue, alloc);
