@@ -24,6 +24,12 @@ namespace model {
 				}
 				mFirstName = "Gradido";
 				mLastName = "Akademie";
+				auto pubkeys = gradidoTransaction->getPublicKeysfromSignatureMap(true);
+				mPubkey = DataTypeConverter::binToHex(pubkeys.front());
+				for (auto it = pubkeys.begin(); it != pubkeys.end(); it++) {
+					mm->releaseMemory(*it);
+				}
+				pubkeys.clear();
 			}
 			else if (transactionBody->getTransactionType() == model::gradido::TRANSACTION_TRANSFER ||
 				transactionBody->getTransactionType() == model::gradido::TRANSACTION_DEFERRED_TRANSFER) {
@@ -39,8 +45,7 @@ namespace model {
 					mType = TRANSACTION_TYPE_SEND;
 					mPubkey = DataTypeConverter::binToHex(transfer->getRecipientPublicKeyString());
 					mpfr_neg(mAmount, mAmount, gDefaultRound);
-				}
-				
+				}				
 			}
 			else {
 				throw std::runtime_error("transaction type not implemented yet");
