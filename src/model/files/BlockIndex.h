@@ -166,7 +166,9 @@ namespace model {
 				std::string coinGroupId;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
-				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(int32_t) + coinGroupId.size() + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; }
+				size_t size() { 
+					return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(int32_t) + sizeof(uint16_t) + coinGroupId.size() + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; 
+				}
 
 				virtual void writeIntoFile(VirtualFile* vFile);
 				virtual bool readFromFile(VirtualFile* vFile);

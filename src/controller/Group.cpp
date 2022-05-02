@@ -565,9 +565,9 @@ namespace controller {
 			if (it->second > lastDate) {
 				calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
 				calculateDecayFast(temp->getData(), gdd);
-				mpfr_add(gdd, gdd, it->first, gDefaultRound);
 				lastDate = it->second;
-			}			
+			}
+			mpfr_add(gdd, gdd, it->first, gDefaultRound);			
 			mm->releaseMathMemory(it->first);
 		}
 		// cmp return 0 if gdd == 0

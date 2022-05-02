@@ -21,9 +21,11 @@ namespace model {
 
 			vFile->write(&transactionNr, sizeof(uint64_t));
 			vFile->write(&fileCursor, sizeof(int32_t));
-			auto coinGroupIdSize = coinGroupId.size();
-			vFile->write(&coinGroupIdSize, sizeof(size_t));
-			vFile->write(coinGroupId.data(), coinGroupId.size() * sizeof(char));
+			auto coinGroupIdSize = static_cast<uint16_t>(coinGroupId.size());
+			vFile->write(&coinGroupIdSize, sizeof(uint16_t));
+			if (coinGroupIdSize) {
+				vFile->write(coinGroupId.data(), coinGroupId.size() * sizeof(char));
+			}			
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
@@ -37,10 +39,15 @@ namespace model {
 			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
 			if (!vFile->read(&fileCursor, sizeof(int32_t))) return false;
-			size_t coinGroupIdSize = 0;
-			if (!vFile->read(&coinGroupIdSize, sizeof(size_t))) return false;
-			coinGroupId.resize(coinGroupIdSize);
-			if (!vFile->read(coinGroupId.data(), sizeof(uint32_t))) return false;
+			uint16_t coinGroupIdSize = 0;
+			if (!vFile->read(&coinGroupIdSize, sizeof(uint16_t))) return false;
+			if (coinGroupIdSize > 400) {
+				throw InvalidReadBlockSize("coin group size is to big", "block index file", vFile->getCursor(), coinGroupIdSize);
+			}
+			if (coinGroupIdSize) {
+				coinGroupId.resize(coinGroupIdSize);
+				if (!vFile->read(coinGroupId.data(), coinGroupId.size() * sizeof(char))) return false;
+			}
 			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
@@ -57,7 +64,9 @@ namespace model {
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));		
 			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(int32_t));
-			crypto_generichash_update(state, (const unsigned char*)coinGroupId.data(), coinGroupId.size());
+			if (coinGroupId.size()) {
+				crypto_generichash_update(state, (const unsigned char*)coinGroupId.data(), coinGroupId.size());
+			}
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
 
 			// second part
