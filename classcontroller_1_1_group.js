@@ -8,6 +8,7 @@ var classcontroller_1_1_group =
     [ "fillSignatureCacheOnStartup", "classcontroller_1_1_group.html#a435aeeda6dd38bf86f72653d78869387", null ],
     [ "findByMessageId", "classcontroller_1_1_group.html#a8e9c5d622aaa54abacaa35110178952e", null ],
     [ "findLastTransactionForAddress", "classcontroller_1_1_group.html#ada200e948f79847198c6248ea3ca07c1", null ],
+    [ "findTransactionIds", "classcontroller_1_1_group.html#a7b9ec4a539b5c6a6365c1ab2ca7ea402", null ],
     [ "findTransactions", "classcontroller_1_1_group.html#abb1b8dd4ecb1c19e60c131ee42515381", null ],
     [ "findTransactions", "classcontroller_1_1_group.html#adc3932a895ed25dcf49c7d5b3c9f7b7e", null ],
     [ "findTransactionsFromXToLast", "classcontroller_1_1_group.html#a7eaeac959377da252a8b64758c497460", null ],
