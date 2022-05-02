@@ -39,9 +39,9 @@ namespace controller {
 		bool writeIntoFile();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry);
-		bool addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
+		bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
 		//! implement from model::files::IBlockIndexReceiver, called by loading block index from file
-		bool addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
 		//! \return false if transactionNr exist, else return true
@@ -55,11 +55,11 @@ namespace controller {
 		//! \param coinColor ignore if value is zero
 		//! \return empty vector in case nothing found
 		//! TODO: profile and if to slow on big data amounts, update 
-		std::vector<uint64_t> findTransactionsForAddress(uint32_t addressIndex, uint32_t coinColor = 0);
+		std::vector<uint64_t> findTransactionsForAddress(uint32_t addressIndex, const std::string& coinGroupId = "");
 
 		//! \brief search from highest year and month to lowest, return youngest transaction which is fitting the search criteria
-		uint64_t findLastTransactionForAddress(uint32_t addressIndex, uint32_t coinColor = 0);
-		uint64_t findFirstTransactionForAddress(uint32_t addressIndex, uint32_t coinColor = 0);
+		uint64_t findLastTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId = "");
+		uint64_t findFirstTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId = "");
 
 		//! \brief find transaction nrs from specific month and year
 		//! \return empty shared ptr if nothing found
@@ -93,7 +93,7 @@ namespace controller {
 		{
 			Poco::SharedPtr<std::vector<uint64_t>> transactionNrs;
 			std::map<uint32_t, std::vector<uint32_t>> addressIndicesTransactionNrIndices;
-			std::map<uint32_t, std::vector<uint32_t>> coinColorTransactionNrIndices;
+			std::map<std::string, std::vector<uint32_t>> coinGroupIdTransactionNrIndices;
 		};
 
 		std::map<uint16_t, std::map<uint8_t, AddressIndexEntry>> mYearMonthAddressIndexEntrys;

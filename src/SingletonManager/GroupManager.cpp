@@ -39,12 +39,7 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 	mGroupIndex->update();
 
 	mInitalized = true;
-
-	// load special group 	
-	Poco::SharedPtr<controller::Group> group = new controller::GroupRegisterGroup;
-	mGroupMap.insert({ GROUP_REGISTER_GROUP_ALIAS, group });
 	mWorkMutex.unlock();
-	group->init();		
 
 	auto groups = mGroupIndex->listGroupAliases();
 	for (auto it = groups.begin(); it != groups.end(); it++) {
@@ -130,22 +125,12 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 	//auto registerGroup = dynamic_cast<controller::GroupRegisterGroup*>(mGroupMap[GROUP_REGISTER_GROUP_ALIAS].get());
 
 	//Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, registerGroup->findGroup(groupAlias).coinColor);
-	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, 0);
+	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
 	mGroupMap.insert({ groupAlias, group });
 	mWorkMutex.unlock();
 	group->init();
 	//mGroups.insert(std::pair<std::string, controller::Group*>(groupAlias, group));
 	return group;
-}
-
-Poco::SharedPtr<controller::GroupRegisterGroup> GroupManager::getGroupRegisterGroup()
-{
-	Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
-	auto it = mGroupMap.find(GROUP_REGISTER_GROUP_ALIAS);
-	if (it == mGroupMap.end()) {
-		throw controller::GroupNotFoundException("cannot find group register group", GROUP_REGISTER_GROUP_ALIAS);
-	}
-	return it->second.cast<controller::GroupRegisterGroup>();
 }
 
 std::vector<Poco::SharedPtr<controller::Group>> GroupManager::findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey)

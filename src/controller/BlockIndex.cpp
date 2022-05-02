@@ -64,17 +64,17 @@ namespace controller {
 						transactionTransactionIndices[*itTrNrIndex].push_back(addressIndex);
 					}
 				}
-				// reverse coin color				
-				std::vector<uint32_t> coinColorsForTransactionNrs;
-				coinColorsForTransactionNrs.reserve(addressIndexEntry.transactionNrs->size());
-				auto coinColorTranInd = &addressIndexEntry.coinColorTransactionNrIndices;
-				for (auto itCoinColorInd = coinColorTranInd->begin(); itCoinColorInd != coinColorTranInd->end(); itCoinColorInd++) {
+				// reverse coin group id				
+				std::vector<std::string> coinGroupIdsForTransactionNrs;
+				coinGroupIdsForTransactionNrs.reserve(addressIndexEntry.transactionNrs->size());
+				auto coinGroupTranInd = &addressIndexEntry.coinGroupIdTransactionNrIndices;
+				for (auto itCoinColorInd = coinGroupTranInd->begin(); itCoinColorInd != coinGroupTranInd->end(); itCoinColorInd++) {
 					// first = coin color
 					// second = vector with transaction nr indices
 					for (auto itTranInd = itCoinColorInd->second.begin(); itTranInd != itCoinColorInd->second.end(); itTranInd++) {
 						// TODO: assert was triggered, check why
 						//assert(*itTranInd == coinColorsForTransactionNrs.size());
-						coinColorsForTransactionNrs.push_back(itCoinColorInd->first);
+						coinGroupIdsForTransactionNrs.push_back(itCoinColorInd->first);
 						//coinColorsForTransactionNrs[*itTranInd] = itCoinColorInd->first;
 					}
 				}
@@ -83,7 +83,7 @@ namespace controller {
 				int index = 0;
 				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
 					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
-					mBlockIndexFile.addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinColorsForTransactionNrs[index], transactionTransactionIndices[index]);
+					mBlockIndexFile.addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinGroupIdsForTransactionNrs[index], transactionTransactionIndices[index]);
 					index++;
 				}
 			}
@@ -93,12 +93,12 @@ namespace controller {
 		//return true;
 	}
 	
-	bool BlockIndex::addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
+	bool BlockIndex::addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
 	{
-		return addIndicesForTransaction(coinColor, year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
+		return addIndicesForTransaction(coinGroupId, year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
 	}
 
-	bool BlockIndex::addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+	bool BlockIndex::addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		if (transactionNr > mMaxTransactionNr) {
@@ -143,10 +143,10 @@ namespace controller {
 			}
 		}
 		// coin color 
-		auto coinColorIndexTrans = &addressIndexEntry->coinColorTransactionNrIndices;
-		auto coinColorIt = coinColorIndexTrans->find(coinColor);
-		if (coinColorIt == coinColorIndexTrans->end()) {
-			coinColorIndexTrans->insert({ coinColor, {transactionNrIndex} });
+		auto coinGroupIdIndexTrans = &addressIndexEntry->coinGroupIdTransactionNrIndices;
+		auto coinColorIt = coinGroupIdIndexTrans->find(coinGroupId);
+		if (coinColorIt == coinGroupIdIndexTrans->end()) {
+			coinGroupIdIndexTrans->insert({ coinGroupId, {transactionNrIndex} });
 		}
 		else {
 			coinColorIt->second.push_back(transactionNrIndex);
@@ -174,7 +174,7 @@ namespace controller {
 		}
 
 		return addIndicesForTransaction(
-			transactionEntry->getCoinColor(),
+			transactionEntry->getCoinGroupId(),
 			transactionEntry->getYear(),
 			transactionEntry->getMonth(),
 			transactionNr,
@@ -218,7 +218,7 @@ namespace controller {
 	}
 
 	
-	std::vector<uint64_t> BlockIndex::findTransactionsForAddress(uint32_t addressIndex, uint32_t coinColor/* = 0*/)
+	std::vector<uint64_t> BlockIndex::findTransactionsForAddress(uint32_t addressIndex, const std::string& coinGroupId /*= ""*/)
 	{
 		std::vector<uint64_t> result;
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
@@ -226,17 +226,17 @@ namespace controller {
 			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); monthIt++) {
 				AddressIndexEntry* addressIndexEntry = &monthIt->second;
 				auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.find(addressIndex);
-				auto traIndForCoinColor = addressIndexEntry->coinColorTransactionNrIndices.find(coinColor);
-				if (coinColor && traIndForCoinColor == addressIndexEntry->coinColorTransactionNrIndices.end()) {
+				auto traIndForCoinGroupId = addressIndexEntry->coinGroupIdTransactionNrIndices.find(coinGroupId);
+				if (coinGroupId.size() && traIndForCoinGroupId == addressIndexEntry->coinGroupIdTransactionNrIndices.end()) {
 					continue;
 				}
 				if (addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end()) {
 					auto transactionNrIndices = addressIndexIt->second;
 					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
 						bool skip = false;
-						if (coinColor) {
+						if (coinGroupId.size()) {
 							skip = true;
-							for (auto itTransactionIndex = traIndForCoinColor->second.begin(); itTransactionIndex != traIndForCoinColor->second.end(); itTransactionIndex++) {
+							for (auto itTransactionIndex = traIndForCoinGroupId->second.begin(); itTransactionIndex != traIndForCoinGroupId->second.end(); itTransactionIndex++) {
 								if (*it == *itTransactionIndex) {
 									skip = false;
 									break;
@@ -253,7 +253,7 @@ namespace controller {
 		return result;
 	}
 
-	uint64_t BlockIndex::findLastTransactionForAddress(uint32_t addressIndex, uint32_t coinColor/* = 0*/)
+	uint64_t BlockIndex::findLastTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId/* = ""*/)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		std::vector<uint64_t> result;
@@ -261,15 +261,15 @@ namespace controller {
 			for (auto monthIt = yearIt->second.rbegin(); monthIt != yearIt->second.rend(); ++monthIt) {
 				AddressIndexEntry* addressIndexEntry = &monthIt->second;
 				auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.find(addressIndex);
-				auto traIndForCoinColor = addressIndexEntry->coinColorTransactionNrIndices.find(coinColor);
-				if (coinColor && traIndForCoinColor == addressIndexEntry->coinColorTransactionNrIndices.end()) {
+				auto traIndForCoinColor = addressIndexEntry->coinGroupIdTransactionNrIndices.find(coinGroupId);
+				if (coinGroupId.size() && traIndForCoinColor == addressIndexEntry->coinGroupIdTransactionNrIndices.end()) {
 					continue;
 				}
 				if (addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end()) {
 					auto transactionNrIndices = addressIndexIt->second;
 					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
 						bool skip = false;
-						if (coinColor) {
+						if (coinGroupId.size()) {
 							skip = true;
 							for (auto itTransactionIndex = traIndForCoinColor->second.begin(); itTransactionIndex != traIndForCoinColor->second.end(); itTransactionIndex++) {
 								if (*it == *itTransactionIndex) {
@@ -292,7 +292,7 @@ namespace controller {
 		return 0;
 	}
 
-	uint64_t BlockIndex::findFirstTransactionForAddress(uint32_t addressIndex, uint32_t coinColor/* = 0*/)
+	uint64_t BlockIndex::findFirstTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId/* = ""*/)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		std::vector<uint64_t> result;
@@ -300,17 +300,17 @@ namespace controller {
 			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); ++monthIt) {
 				AddressIndexEntry* addressIndexEntry = &monthIt->second;
 				auto addressIndexIt = addressIndexEntry->addressIndicesTransactionNrIndices.find(addressIndex);
-				auto traIndForCoinColor = addressIndexEntry->coinColorTransactionNrIndices.find(coinColor);
-				if (coinColor && traIndForCoinColor == addressIndexEntry->coinColorTransactionNrIndices.end()) {
+				auto traIndForCoinGroupId = addressIndexEntry->coinGroupIdTransactionNrIndices.find(coinGroupId);
+				if (coinGroupId.size() && traIndForCoinGroupId == addressIndexEntry->coinGroupIdTransactionNrIndices.end()) {
 					continue;
 				}
 				if (addressIndexIt != addressIndexEntry->addressIndicesTransactionNrIndices.end()) {
 					auto transactionNrIndices = addressIndexIt->second;
 					for (auto it = transactionNrIndices.begin(); it != transactionNrIndices.end(); it++) {
 						bool skip = false;
-						if (coinColor) {
+						if (coinGroupId.size()) {
 							skip = true;
-							for (auto itTransactionIndex = traIndForCoinColor->second.begin(); itTransactionIndex != traIndForCoinColor->second.end(); itTransactionIndex++) {
+							for (auto itTransactionIndex = traIndForCoinGroupId->second.begin(); itTransactionIndex != traIndForCoinGroupId->second.end(); itTransactionIndex++) {
 								if (*it == *itTransactionIndex) {
 									skip = false;
 									break;

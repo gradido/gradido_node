@@ -16,8 +16,8 @@ namespace model {
 	}
 
 
-	NodeTransactionEntry::NodeTransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
-		: TransactionEntry(transactionNr, month, year, coinColor)
+	NodeTransactionEntry::NodeTransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const std::string& coinGroupId, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+		: TransactionEntry(transactionNr, month, year, coinGroupId)
 	{
 		mAddressIndices.reserve(addressIndiceCount);
 		for (int i = 0; i < addressIndiceCount; i++) {

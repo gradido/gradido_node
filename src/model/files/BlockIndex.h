@@ -25,7 +25,7 @@ namespace model {
 		class IBlockIndexReceiver 
 		{
 		public:
-			virtual bool addIndicesForTransaction(uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
+			virtual bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
 		};
 
 		/*!
@@ -53,8 +53,8 @@ namespace model {
 				mDataBlocks.push(new YearBlock(year)); 
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
-			inline void addDataBlock(uint64_t transactionNr, int32_t fileCursor, uint32_t coinColor, const std::vector<uint32_t>& addressIndices) {
-				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, coinColor, addressIndices));
+			inline void addDataBlock(uint64_t transactionNr, int32_t fileCursor, const std::string& coinGroupId, const std::vector<uint32_t>& addressIndices) {
+				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, coinGroupId, addressIndices));
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
 
@@ -142,14 +142,14 @@ namespace model {
 				}
 			};
 			struct DataBlock: public Block {
-				DataBlock(uint64_t _transactionNr, int32_t _fileCursor, uint32_t _coinColor, const std::vector<uint32_t>& _addressIndices)
-					: Block(DATA_BLOCK), transactionNr(_transactionNr), fileCursor(_fileCursor), coinColor(_coinColor), addressIndices(nullptr), addressIndicesCount(_addressIndices.size())
+				DataBlock(uint64_t _transactionNr, int32_t _fileCursor, const std::string& _coinGroupId, const std::vector<uint32_t>& _addressIndices)
+					: Block(DATA_BLOCK), transactionNr(_transactionNr), fileCursor(_fileCursor), coinGroupId(_coinGroupId), addressIndices(nullptr), addressIndicesCount(_addressIndices.size())
 				{
 					addressIndices = (uint32_t*)malloc(addressIndicesCount * sizeof(uint32_t));
 					memcpy(addressIndices, _addressIndices.data(), addressIndicesCount * sizeof(uint32_t));
 				}
 				DataBlock()
-					: Block(DATA_BLOCK), transactionNr(0), fileCursor(-10), coinColor(0), addressIndices(nullptr), addressIndicesCount(0)
+					: Block(DATA_BLOCK), transactionNr(0), fileCursor(-10), addressIndices(nullptr), addressIndicesCount(0)
 				{
 
 				}
@@ -160,14 +160,13 @@ namespace model {
 					addressIndices = nullptr;
 					addressIndicesCount = 0;
 					fileCursor = 0;
-					coinColor = 0;
 				}
 				uint64_t transactionNr;
 				int32_t fileCursor;
-				uint32_t coinColor;
+				std::string coinGroupId;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
-				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(int32_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; }
+				size_t size() { return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(int32_t) + coinGroupId.size() + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; }
 
 				virtual void writeIntoFile(VirtualFile* vFile);
 				virtual bool readFromFile(VirtualFile* vFile);

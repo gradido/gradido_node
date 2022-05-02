@@ -30,10 +30,10 @@ using namespace rapidjson;
 
 namespace controller {
 
-	Group::Group(std::string groupAlias, Poco::Path folderPath, uint32_t coinColor)
+	Group::Group(std::string groupAlias, Poco::Path folderPath)
 		: mIotaMessageListener(nullptr), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(Poco::Path(folderPath, ".state")), mDeferredTransfersCache(folderPath),
-		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCoinColor(coinColor), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
+		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatureTransactionNrs(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
 		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
 		mCommunityServer(nullptr), mExitCalled(false)
@@ -170,13 +170,7 @@ namespace controller {
 		if (lastTransaction) {
 			id = lastTransaction->getID() + 1;
 		}
-		if (mGroupAlias != GROUP_REGISTER_GROUP_ALIAS && newTransaction->getTransactionBody()->isGlobalGroupAdd()) {
-			throw InvalidTransactionTypeOnBlockchain(
-				"global group add don't belong to group blockchain",
-				newTransaction->getTransactionBody()->getTransactionType()
-			);
-		}
-
+		
 		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
 		if (lastTransaction) {
 			if (newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
@@ -211,7 +205,7 @@ namespace controller {
 			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE
 			);
 		auto transactionBody = newGradidoBlock->getGradidoTransaction()->getTransactionBody();
-		if (transactionBody->isRegisterAddress() || transactionBody->isGlobalGroupAdd()) {
+		if (transactionBody->isRegisterAddress()) {
 			// for register address check if address already exist
 			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
 		}
@@ -309,7 +303,7 @@ namespace controller {
 		// maybe using a link transaction 
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> Group::findLastTransactionForAddress(const std::string& address, uint32_t coinColor/* = 0*/)
+	Poco::SharedPtr<model::TransactionEntry> Group::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto index = mAddressIndex->getIndexForAddress(address);
@@ -325,7 +319,7 @@ namespace controller {
 		do {
 			auto block = getBlock(blockNr);
 			auto blockIndex = block->getBlockIndex();
-			transactionNr = blockIndex->findLastTransactionForAddress(index, coinColor);
+			transactionNr = blockIndex->findLastTransactionForAddress(index, coinGroupId);
 			if (transactionNr) {
 				return block->getTransaction(transactionNr);
 			}
@@ -465,7 +459,7 @@ namespace controller {
 		return nullptr;		
 	}
 
-	mpfr_ptr Group::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
+	mpfr_ptr Group::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto mm = MemoryManager::getInstance();
@@ -484,7 +478,7 @@ namespace controller {
 		{
 			auto block = getBlock(blockNr);
 			auto blockIndex = block->getBlockIndex();
-			auto transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinColor);
+			auto transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinGroupId);
 
 			std::sort(transactionNrs.begin(), transactionNrs.end());
 			// begin on last transaction
@@ -871,7 +865,7 @@ namespace controller {
 			}
 
 			// check if someone has already used it
-			auto balance = calculateAddressBalance(deferredTransfer->getRecipientPublicKeyString(), deferredTransfer->getCoinColor(), timeout);
+			auto balance = calculateAddressBalance(deferredTransfer->getRecipientPublicKeyString(), deferredTransfer->getCoinGroupId(), timeout);
 			if (mpfr_cmp_si(balance, 0) > 0) {
 				timeoutedDeferredTransfers.push_back({ balance, timeout });
 			}

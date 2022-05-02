@@ -27,40 +27,31 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	params.Accept(writer);
 	printf("incoming json-rpc request, params: \n%s\n", buffer.GetString());
 
-	std::set<std::string> noNeedForGroupAlias = {
-		"getRandomUniqueCoinColor",
-		"isGroupUnique"
-	};
-	std::set<std::string> noNeedForPubkey = {
-		"getgroupdetails",
-		"isGroupUnique",
-		"getRandomUniqueCoinColor"
-	};
-
 	Poco::SharedPtr<controller::Group> group;
 	std::string groupAlias;
-	if (noNeedForGroupAlias.find(method) == noNeedForGroupAlias.end()) {
-		if (!getStringParameter(params, "groupAlias", groupAlias)) {
-			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-			return;
-		}
-		auto gm = GroupManager::getInstance();
-		group = gm->findGroup(groupAlias);
-		if (group.isNull()) {
-			mResponseErrorCode = JSON_RPC_ERROR_UNKNOWN_GROUP;
-			stateError("group not known");
-			return;
-		}
+	
+	// load group for all requests
+	if (!getStringParameter(params, "groupAlias", groupAlias)) {
+		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+		return;
 	}
-	std::string pubkey;
-	if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
-		std::string pubkeyHex;
-		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
-			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-			return;
-		}
-		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
+	auto gm = GroupManager::getInstance();
+	group = gm->findGroup(groupAlias);
+	if (group.isNull()) {
+		mResponseErrorCode = JSON_RPC_ERROR_UNKNOWN_GROUP;
+		stateError("group not known");
+		return;
 	}
+	
+	// load public key for all requests
+	std::string pubkey;	
+	std::string pubkeyHex;
+	if (!getStringParameter(params, "pubkey", pubkeyHex)) {
+		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+		return;
+	}
+	pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
+	
 	int timezoneDifferential = Poco::Timezone::tzd();
 
 	if (method == "getlasttransaction") {
@@ -101,9 +92,9 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 			stateError("cannot parse date", ex.what());
 			return;
 		}
-		uint32_t coinColor = 0;
-		getUIntParameter(params, "coinColor", coinColor);
-		getAddressBalance(pubkey, date, group, coinColor);
+		std::string coinGroupId = "";
+		getStringParameter(params, "coinGroupId", coinGroupId);
+		getAddressBalance(pubkey, date, group, coinGroupId);
 		
 	}
 	else if (method == "getaddresstype") {
@@ -160,77 +151,9 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 
 		return listTransactions(groupAlias, pubkey, currentPage, pageSize, orderDESC, onlyCreations);
 	}
-	else if (method == "getgroupdetails") {
-		return getGroupDetails(groupAlias);
-	}
-	else if (method == "isGroupUnique") {
-		std::string groupAlias; 
-		uint32_t coinColor;
-		getStringParameter(params, "groupAlias", groupAlias);
-		getUIntParameter(params, "coinColor", coinColor);
-		isGroupUnique(groupAlias, coinColor);
-	}
-	else if (method == "getRandomUniqueCoinColor") {
-		getRandomUniqueCoinColor();
-	}
 	else {
 		mResponseErrorCode = JSON_RPC_ERROR_METHODE_NOT_FOUND;
 		stateError("method not known");
-	}
-}
-
-
-void JsonRPCHandler::getGroupDetails(const std::string& groupAlias)
-{
-	auto gm = GroupManager::getInstance();
-	auto group = gm->findGroup(GROUP_REGISTER_GROUP_ALIAS);
-	if(group.isNull()) {
-		mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
-		stateError("node server error");
-		return;
-	}
-	auto gradidoBlock = group->getLastTransaction([=](const model::gradido::GradidoBlock* _gradidoBlock) {
-		return _gradidoBlock->getGradidoTransaction()->getTransactionBody()->getGlobalGroupAdd()->getGroupAlias() == groupAlias;
-	});
-	if (gradidoBlock.isNull()) {
-		mResponseErrorCode = JSON_RPC_ERROR_UNKNOWN_GROUP;
-		stateError("group not known");
-		return;
-	}
-	auto groupAdd = gradidoBlock->getGradidoTransaction()->getTransactionBody()->getGlobalGroupAdd();
-	auto alloc = mResponseJson.GetAllocator();
-	stateSuccess();
-	mResponseJson.AddMember("groupName", Value(groupAdd->getGroupName().data(), alloc), alloc);
-	mResponseJson.AddMember("groupAlias", Value(groupAdd->getGroupAlias().data(), alloc), alloc);
-	mResponseJson.AddMember("coinColor", groupAdd->getCoinColor(), alloc);
-}
-
-void JsonRPCHandler::getRandomUniqueCoinColor()
-{
-	auto gm = GroupManager::getInstance();
-	auto groupRegisterGroup = gm->getGroupRegisterGroup();
-	auto alloc = mResponseJson.GetAllocator();
-
-	stateSuccess();
-	mResponseJson.AddMember("coinColor", groupRegisterGroup->generateUniqueCoinColor(), alloc);
-}
-
-void JsonRPCHandler::isGroupUnique(const std::string& groupAlias, uint32_t coinColor)
-{
-	auto gm = GroupManager::getInstance();
-	auto groupRegisterGroup = gm->getGroupRegisterGroup();
-	auto alloc = mResponseJson.GetAllocator();
-
-	if (!groupAlias.size() && !coinColor) {
-		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-		stateError("nothing to check");
-	}
-	stateSuccess();
-	if (groupAlias.size()) {
-		mResponseJson.AddMember("isGroupAliasUnique", groupRegisterGroup->isGroupAliasUnique(groupAlias), alloc);
-	}
-	if (coinColor) {
-		mResponseJson.AddMember("isCoinColorUnique", groupRegisterGroup->isCoinColorUnique(coinColor), alloc);
 	}
 }
 
@@ -277,12 +200,17 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 }
 
-void JsonRPCHandler::getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, uint32_t coinColor /* = 0 */)
+void JsonRPCHandler::getAddressBalance(
+	const std::string& pubkey, 
+	Poco::DateTime date, 
+	Poco::SharedPtr<controller::Group> group, 
+	const std::string& coinGroupId /* = "" */
+)
 {
 	assert(!group.isNull());
 	auto alloc = mResponseJson.GetAllocator();
 
-	auto balance = group->calculateAddressBalance(pubkey, coinColor, date);
+	auto balance = group->calculateAddressBalance(pubkey, coinGroupId, date);
 	std::string balanceString;
 	model::gradido::TransactionBase::amountToString(&balanceString, balance);
 	MemoryManager::getInstance()->releaseMathMemory(balance);

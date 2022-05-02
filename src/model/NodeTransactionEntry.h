@@ -29,7 +29,7 @@ namespace model {
 		NodeTransactionEntry(gradido::GradidoBlock* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex, int32_t fileCursor = -10);
 
 		//! \brief init entry object from details e.g. by loading from file
-		NodeTransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, uint32_t coinColor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		NodeTransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const std::string& coinGroupId, const uint32_t* addressIndices, uint8_t addressIndiceCount);
 
 		inline void setFileCursor(int32_t newFileCursorValue) { Poco::FastMutex::ScopedLock lock(mFastMutex); mFileCursor = newFileCursorValue; }
 		inline int32_t getFileCursor() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mFileCursor; }
