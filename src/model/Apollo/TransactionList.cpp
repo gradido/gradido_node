@@ -15,10 +15,11 @@ namespace model {
 
 		Value TransactionList::generateList(
 			std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions,
+			Poco::Timestamp now,
 			int currentPage /*= 1*/,
 			int pageSize /*= 25*/,
 			bool orderDESC /*= true*/,
-			bool onlyCreations /*= false*/
+			bool onlyCreations /*= false*/			
 		)
 		{
 			auto mm = MemoryManager::getInstance();
@@ -50,7 +51,6 @@ namespace model {
 
 			int entryIterator = 0;
 			int pageIterator = 1;
-			Poco::Timestamp now;
 			Poco::Timestamp balanceStartTimestamp(now);
 			mpfr_ptr balance = nullptr;
 
@@ -151,15 +151,6 @@ namespace model {
 			if (!orderDESC && transactionsVector.size()) {
 				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate()), mJsonAllocator);
 			}
-
-			std::string balanceString;
-			if (!balance) {
-				balanceString = "0";
-			}
-			else {
-				model::gradido::TransactionBase::amountToString(&balanceString, balance);
-			}
-			transactionList.AddMember("balance", Value(balanceString.data(), mJsonAllocator), mJsonAllocator);
 			mm->releaseMathMemory(balance);
 
 			transactionList.AddMember("transactions", transactions, mJsonAllocator);

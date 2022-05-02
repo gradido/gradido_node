@@ -204,7 +204,7 @@ namespace model {
 				crypto_generichash_update(&state, *hash, hash->size());
 				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
 				crypto_generichash_final(&state, *hash, hash->size());
-				printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
+				//printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
 			}
 
 			// write at end of file

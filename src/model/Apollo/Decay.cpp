@@ -14,17 +14,23 @@ namespace model {
 		Decay::Decay(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance)
 			: mDecayStart(decayStart), mDecayEnd(decayEnd), mDecayAmount(nullptr)
 		{
-			assert(mDecayEnd > mDecayStart);
-			auto duration = Poco::Timespan(mDecayEnd - mDecayStart);
+			assert(mDecayEnd >= mDecayStart);
+
 			auto mm = MemoryManager::getInstance();
-			auto decayFactor = MathMemory::create();
-			auto balance = MathMemory::create();
-			calculateDecayFactorForDuration(decayFactor->getData(), gDecayFactorGregorianCalender, duration.totalSeconds());
-			mpfr_set(balance->getData(), startBalance, gDefaultRound);
-			calculateDecayFast(decayFactor->getData(), balance->getData());
+			// if decay end == decay start, decay is 0
 			mDecayAmount = mm->getMathMemory();
-			mpfr_sub(mDecayAmount, startBalance, balance->getData(), gDefaultRound);
-			mpfr_neg(mDecayAmount, mDecayAmount, gDefaultRound);
+
+			if (mDecayEnd > mDecayStart) {
+				auto duration = Poco::Timespan(mDecayEnd - mDecayStart);
+				auto decayFactor = MathMemory::create();
+				auto balance = MathMemory::create();
+				calculateDecayFactorForDuration(decayFactor->getData(), gDecayFactorGregorianCalender, duration.totalSeconds());
+				mpfr_set(balance->getData(), startBalance, gDefaultRound);
+				calculateDecayFast(decayFactor->getData(), balance->getData());
+
+				mpfr_sub(mDecayAmount, startBalance, balance->getData(), gDefaultRound);
+				mpfr_neg(mDecayAmount, mDecayAmount, gDefaultRound);
+			}
 		}
 
 		Decay::~Decay()
