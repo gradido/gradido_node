@@ -1,3 +1,9 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classtask_1_1_c_p_u_sheduler.html" title=" " alt="" coords="5,5,148,32"/>
+<area shape="rect" id="node1" href="$classtask_1_1_task.html" title=" " alt="" coords="5,107,92,133"/>
+<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="140,107,255,133"/>
+<area shape="rect" id="node3" href="$class_iota_message_to_transaction_task.html" title=": Get confirmed transaction id from Iota, process it" alt="" coords="303,5,525,32"/>
+<area shape="rect" id="node4" href="$class_write_transactions_to_block_task.html" title="Task for collecting transactions and write it to block chain after timeout." alt="" coords="305,56,523,83"/>
+<area shape="rect" id="node5" href="$classiota_1_1_milestone_loading_task.html" title=" " alt="" coords="315,107,513,133"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block_append_line_task.html" title=" " alt="" coords="319,158,509,199"/>
+<area shape="rect" id="node7" href="$classmodel_1_1files_1_1_rebuild_block_index_task.html" title=" " alt="" coords="319,223,509,265"/>
 </map>

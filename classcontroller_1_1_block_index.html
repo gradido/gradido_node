@@ -132,28 +132,28 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>writeIntoFile</b> ()<
 <tr class="memitem:a612c6e281992e43e109ecc6a8f5496f4"><td class="memItemLeft" align="right" valign="top"><a id="a612c6e281992e43e109ecc6a8f5496f4" name="a612c6e281992e43e109ecc6a8f5496f4"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>addIndicesForTransaction</b> (Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt; transactionEntry)</td></tr>
 <tr class="separator:a612c6e281992e43e109ecc6a8f5496f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3fd6001a26b1471b37470dda4e12bff3"><td class="memItemLeft" align="right" valign="top"><a id="a3fd6001a26b1471b37470dda4e12bff3" name="a3fd6001a26b1471b37470dda4e12bff3"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>addIndicesForTransaction</b> (uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector&lt; uint32_t &gt; &amp;addressIndices)</td></tr>
-<tr class="separator:a3fd6001a26b1471b37470dda4e12bff3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0811b9098a6641b97ccffc1245673956"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#a0811b9098a6641b97ccffc1245673956">addIndicesForTransaction</a> (uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t *addressIndices, uint8_t addressIndiceCount)</td></tr>
-<tr class="memdesc:a0811b9098a6641b97ccffc1245673956"><td class="mdescLeft">&#160;</td><td class="mdescRight">implement from <a class="el" href="classmodel_1_1files_1_1_i_block_index_receiver.html">model::files::IBlockIndexReceiver</a>, called by loading block index from file  <a href="classcontroller_1_1_block_index.html#a0811b9098a6641b97ccffc1245673956">More...</a><br /></td></tr>
-<tr class="separator:a0811b9098a6641b97ccffc1245673956"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4126a88f887ecb8f100ea86cd48c1244"><td class="memItemLeft" align="right" valign="top"><a id="a4126a88f887ecb8f100ea86cd48c1244" name="a4126a88f887ecb8f100ea86cd48c1244"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>addIndicesForTransaction</b> (const std::string &amp;coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector&lt; uint32_t &gt; &amp;addressIndices)</td></tr>
+<tr class="separator:a4126a88f887ecb8f100ea86cd48c1244"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a822972e951ef94f24fcf537f3ffecb0e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#a822972e951ef94f24fcf537f3ffecb0e">addIndicesForTransaction</a> (const std::string &amp;coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t *addressIndices, uint8_t addressIndiceCount)</td></tr>
+<tr class="memdesc:a822972e951ef94f24fcf537f3ffecb0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">implement from <a class="el" href="classmodel_1_1files_1_1_i_block_index_receiver.html">model::files::IBlockIndexReceiver</a>, called by loading block index from file  <a href="classcontroller_1_1_block_index.html#a822972e951ef94f24fcf537f3ffecb0e">More...</a><br /></td></tr>
+<tr class="separator:a822972e951ef94f24fcf537f3ffecb0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a49636f1c6d2433390339ca90d73be8e6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#a49636f1c6d2433390339ca90d73be8e6">addFileCursorForTransaction</a> (uint64_t transactionNr, int32_t fileCursor)</td></tr>
 <tr class="memdesc:a49636f1c6d2433390339ca90d73be8e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">add transactionNr - fileCursor pair to map if not already exist  <a href="classcontroller_1_1_block_index.html#a49636f1c6d2433390339ca90d73be8e6">More...</a><br /></td></tr>
 <tr class="separator:a49636f1c6d2433390339ca90d73be8e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2c1348469bf9a9c9f4dfc359e3f9163"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#aa2c1348469bf9a9c9f4dfc359e3f9163">findTransactionsForAddressMonthYear</a> (uint32_t addressIndex, uint16_t year, uint8_t month)</td></tr>
 <tr class="memdesc:aa2c1348469bf9a9c9f4dfc359e3f9163"><td class="mdescLeft">&#160;</td><td class="mdescRight">find transaction nrs for address index in specific month and year  <a href="classcontroller_1_1_block_index.html#aa2c1348469bf9a9c9f4dfc359e3f9163">More...</a><br /></td></tr>
 <tr class="separator:aa2c1348469bf9a9c9f4dfc359e3f9163"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a17e2b88c249efb31dedbd08b9d94f21a"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#a17e2b88c249efb31dedbd08b9d94f21a">findTransactionsForAddress</a> (uint32_t addressIndex, uint32_t coinColor=0)</td></tr>
-<tr class="memdesc:a17e2b88c249efb31dedbd08b9d94f21a"><td class="mdescLeft">&#160;</td><td class="mdescRight">find transaction nrs for address index  <a href="classcontroller_1_1_block_index.html#a17e2b88c249efb31dedbd08b9d94f21a">More...</a><br /></td></tr>
-<tr class="separator:a17e2b88c249efb31dedbd08b9d94f21a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b243e451e94c589ad19be8f6fcbd2d0"><td class="memItemLeft" align="right" valign="top"><a id="a2b243e451e94c589ad19be8f6fcbd2d0" name="a2b243e451e94c589ad19be8f6fcbd2d0"></a>
-uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>findLastTransactionForAddress</b> (uint32_t addressIndex, uint32_t coinColor=0)</td></tr>
-<tr class="memdesc:a2b243e451e94c589ad19be8f6fcbd2d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">search from highest year and month to lowest, return youngest transaction which is fitting the search criteria <br /></td></tr>
-<tr class="separator:a2b243e451e94c589ad19be8f6fcbd2d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3fe4619ca904718a284bbb2ae8305139"><td class="memItemLeft" align="right" valign="top"><a id="a3fe4619ca904718a284bbb2ae8305139" name="a3fe4619ca904718a284bbb2ae8305139"></a>
-uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>findFirstTransactionForAddress</b> (uint32_t addressIndex, uint32_t coinColor=0)</td></tr>
-<tr class="separator:a3fe4619ca904718a284bbb2ae8305139"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a880220b60e340d18c62183ebf7a3698c"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#a880220b60e340d18c62183ebf7a3698c">findTransactionsForAddress</a> (uint32_t addressIndex, const std::string &amp;coinGroupId=&quot;&quot;)</td></tr>
+<tr class="memdesc:a880220b60e340d18c62183ebf7a3698c"><td class="mdescLeft">&#160;</td><td class="mdescRight">find transaction nrs for address index  <a href="classcontroller_1_1_block_index.html#a880220b60e340d18c62183ebf7a3698c">More...</a><br /></td></tr>
+<tr class="separator:a880220b60e340d18c62183ebf7a3698c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2209e4cb2524a7c873aa35362c54ad2a"><td class="memItemLeft" align="right" valign="top"><a id="a2209e4cb2524a7c873aa35362c54ad2a" name="a2209e4cb2524a7c873aa35362c54ad2a"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>findLastTransactionForAddress</b> (uint32_t addressIndex, const std::string &amp;coinGroupId=&quot;&quot;)</td></tr>
+<tr class="memdesc:a2209e4cb2524a7c873aa35362c54ad2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">search from highest year and month to lowest, return youngest transaction which is fitting the search criteria <br /></td></tr>
+<tr class="separator:a2209e4cb2524a7c873aa35362c54ad2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f8eac3bf5ae60681baff2228fe6fb46"><td class="memItemLeft" align="right" valign="top"><a id="a1f8eac3bf5ae60681baff2228fe6fb46" name="a1f8eac3bf5ae60681baff2228fe6fb46"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>findFirstTransactionForAddress</b> (uint32_t addressIndex, const std::string &amp;coinGroupId=&quot;&quot;)</td></tr>
+<tr class="separator:a1f8eac3bf5ae60681baff2228fe6fb46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53542890e0b8c7f78791c57e3928f264"><td class="memItemLeft" align="right" valign="top">Poco::SharedPtr&lt; std::vector&lt; uint64_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_block_index.html#a53542890e0b8c7f78791c57e3928f264">findTransactionsForMonthYear</a> (uint16_t year, uint8_t month)</td></tr>
 <tr class="memdesc:a53542890e0b8c7f78791c57e3928f264"><td class="mdescLeft">&#160;</td><td class="mdescRight">find transaction nrs from specific month and year  <a href="classcontroller_1_1_block_index.html#a53542890e0b8c7f78791c57e3928f264">More...</a><br /></td></tr>
 <tr class="separator:a53542890e0b8c7f78791c57e3928f264"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -247,8 +247,8 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
 
 </div>
 </div>
-<a id="a0811b9098a6641b97ccffc1245673956" name="a0811b9098a6641b97ccffc1245673956"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0811b9098a6641b97ccffc1245673956">&#9670;&nbsp;</a></span>addIndicesForTransaction()</h2>
+<a id="a822972e951ef94f24fcf537f3ffecb0e" name="a822972e951ef94f24fcf537f3ffecb0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a822972e951ef94f24fcf537f3ffecb0e">&#9670;&nbsp;</a></span>addIndicesForTransaction()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -259,8 +259,8 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
         <tr>
           <td class="memname">bool controller::BlockIndex::addIndicesForTransaction </td>
           <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>coinColor</em>, </td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>coinGroupId</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -317,8 +317,8 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
 
 </div>
 </div>
-<a id="a17e2b88c249efb31dedbd08b9d94f21a" name="a17e2b88c249efb31dedbd08b9d94f21a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a17e2b88c249efb31dedbd08b9d94f21a">&#9670;&nbsp;</a></span>findTransactionsForAddress()</h2>
+<a id="a880220b60e340d18c62183ebf7a3698c" name="a880220b60e340d18c62183ebf7a3698c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a880220b60e340d18c62183ebf7a3698c">&#9670;&nbsp;</a></span>findTransactionsForAddress()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -332,8 +332,8 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>coinColor</em> = <code>0</code>&#160;</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>coinGroupId</em> = <code>&quot;&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

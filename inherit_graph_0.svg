@@ -9,9 +9,9 @@
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 656)">
 <title>Graphical Class Hierarchy</title>
 <polygon fill="white" stroke="transparent" points="-4,4 -4,-656 554,-656 554,4 -4,4"/>
-<!-- Node25 -->
+<!-- Node24 -->
 <g id="node1" class="node">
-<title>Node25</title>
+<title>Node24</title>
 <g id="a_node1"><a xlink:title=" ">
 <polygon fill="white" stroke="#bfbfbf" points="0,-338.5 0,-357.5 156,-357.5 156,-338.5 0,-338.5"/>
 <text text-anchor="middle" x="78" y="-345.5" font-family="Helvetica,sans-Serif" font-size="10.00">GradidoBlockchainException</text>
@@ -27,75 +27,75 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node0 -->
+<!-- Node24&#45;&gt;Node0 -->
 <g id="edge1" class="edge">
-<title>Node25&#45;&gt;Node0</title>
+<title>Node24&#45;&gt;Node0</title>
 <path fill="none" stroke="midnightblue" d="M80.89,-367.66C86.89,-418.5 110.21,-555.11 192,-623 198.87,-628.7 207.01,-632.83 215.55,-635.79"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="84.37,-367.22 79.81,-357.66 77.41,-367.98 84.37,-367.22"/>
 </g>
-<!-- Node27 -->
+<!-- Node26 -->
 <g id="node3" class="node">
-<title>Node27</title>
+<title>Node26</title>
 <g id="a_node3"><a xlink:href="class_level_d_b_key_already_exist_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="192,-594.5 192,-613.5 377,-613.5 377,-594.5 192,-594.5"/>
 <text text-anchor="middle" x="284.5" y="-601.5" font-family="Helvetica,sans-Serif" font-size="10.00">LevelDBKeyAlreadyExistException</text>
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node27 -->
+<!-- Node24&#45;&gt;Node26 -->
 <g id="edge2" class="edge">
-<title>Node25&#45;&gt;Node27</title>
+<title>Node24&#45;&gt;Node26</title>
 <path fill="none" stroke="midnightblue" d="M82.31,-367.67C91.11,-413.58 119.6,-528.19 192,-585 196.85,-588.81 202.28,-591.9 208,-594.41"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="85.7,-366.78 80.48,-357.56 78.81,-368.02 85.7,-366.78"/>
 </g>
-<!-- Node28 -->
+<!-- Node27 -->
 <g id="node4" class="node">
-<title>Node28</title>
+<title>Node27</title>
 <g id="a_node4"><a xlink:href="class_level_d_b_status_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="216.5,-556.5 216.5,-575.5 352.5,-575.5 352.5,-556.5 216.5,-556.5"/>
 <text text-anchor="middle" x="284.5" y="-563.5" font-family="Helvetica,sans-Serif" font-size="10.00">LevelDBStatusException</text>
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node28 -->
+<!-- Node24&#45;&gt;Node27 -->
 <g id="edge3" class="edge">
-<title>Node25&#45;&gt;Node28</title>
+<title>Node24&#45;&gt;Node27</title>
 <path fill="none" stroke="midnightblue" d="M84.17,-367.53C95.94,-407.97 128.75,-500.93 192,-547 199.21,-552.25 207.55,-556.13 216.19,-558.97"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="87.51,-366.5 81.45,-357.81 80.77,-368.38 87.51,-366.5"/>
 </g>
-<!-- Node29 -->
+<!-- Node28 -->
 <g id="node5" class="node">
-<title>Node29</title>
+<title>Node28</title>
 <g id="a_node5"><a xlink:href="class_message_id_format_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="208.5,-518.5 208.5,-537.5 360.5,-537.5 360.5,-518.5 208.5,-518.5"/>
 <text text-anchor="middle" x="284.5" y="-525.5" font-family="Helvetica,sans-Serif" font-size="10.00">MessageIdFormatException</text>
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node29 -->
+<!-- Node24&#45;&gt;Node28 -->
 <g id="edge4" class="edge">
-<title>Node25&#45;&gt;Node29</title>
+<title>Node24&#45;&gt;Node28</title>
 <path fill="none" stroke="midnightblue" d="M86.57,-366.82C101.34,-401.01 137.44,-473.12 192,-509 197.83,-512.83 204.28,-515.92 210.98,-518.39"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="89.76,-365.38 82.67,-357.5 83.3,-368.08 89.76,-365.38"/>
 </g>
-<!-- Node30 -->
+<!-- Node29 -->
 <g id="node6" class="node">
-<title>Node30</title>
+<title>Node29</title>
 <g id="a_node6"><a xlink:href="class_no_space_left_on_device.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="222,-480.5 222,-499.5 347,-499.5 347,-480.5 222,-480.5"/>
 <text text-anchor="middle" x="284.5" y="-487.5" font-family="Helvetica,sans-Serif" font-size="10.00">NoSpaceLeftOnDevice</text>
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node30 -->
+<!-- Node24&#45;&gt;Node29 -->
 <g id="edge5" class="edge">
-<title>Node25&#45;&gt;Node30</title>
+<title>Node24&#45;&gt;Node29</title>
 <path fill="none" stroke="midnightblue" d="M90.22,-366.14C108.15,-393.5 145.98,-444.88 192,-471 201.03,-476.13 211.26,-479.88 221.54,-482.62"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="93.06,-364.09 84.73,-357.55 87.16,-367.86 93.06,-364.09"/>
 </g>
-<!-- Node31 -->
+<!-- Node30 -->
 <g id="node7" class="node">
-<title>Node31</title>
+<title>Node30</title>
 <g id="a_node7"><a xlink:href="classclient_1_1_missing_parameter_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="216,-431 216,-461 353,-461 353,-431 216,-431"/>
 <text text-anchor="start" x="224" y="-449" font-family="Helvetica,sans-Serif" font-size="10.00">client::MissingParameter</text>
@@ -103,15 +103,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node31 -->
+<!-- Node24&#45;&gt;Node30 -->
 <g id="edge6" class="edge">
-<title>Node25&#45;&gt;Node31</title>
+<title>Node24&#45;&gt;Node30</title>
 <path fill="none" stroke="midnightblue" d="M98.88,-363.91C120.6,-380.57 156.97,-406.43 192,-422 199.5,-425.33 207.57,-428.28 215.68,-430.87"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="100.82,-360.99 90.79,-357.6 96.52,-366.51 100.82,-360.99"/>
 </g>
-<!-- Node32 -->
+<!-- Node31 -->
 <g id="node8" class="node">
-<title>Node32</title>
+<title>Node31</title>
 <g id="a_node8"><a xlink:href="classcontroller_1_1_block_not_loaded_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="210,-382 210,-412 359,-412 359,-382 210,-382"/>
 <text text-anchor="start" x="218" y="-400" font-family="Helvetica,sans-Serif" font-size="10.00">controller::BlockNotLoaded</text>
@@ -119,15 +119,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node32 -->
+<!-- Node24&#45;&gt;Node31 -->
 <g id="edge7" class="edge">
-<title>Node25&#45;&gt;Node32</title>
+<title>Node24&#45;&gt;Node31</title>
 <path fill="none" stroke="midnightblue" d="M128.78,-359.93C156.47,-366.56 191.2,-374.89 220.74,-381.96"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="129.46,-356.49 118.92,-357.56 127.82,-363.3 129.46,-356.49"/>
 </g>
-<!-- Node33 -->
+<!-- Node32 -->
 <g id="node9" class="node">
-<title>Node33</title>
+<title>Node32</title>
 <g id="a_node9"><a xlink:href="classcontroller_1_1_group_not_found_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="212,-333 212,-363 357,-363 357,-333 212,-333"/>
 <text text-anchor="start" x="220" y="-351" font-family="Helvetica,sans-Serif" font-size="10.00">controller::GroupNotFound</text>
@@ -135,15 +135,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node33 -->
+<!-- Node24&#45;&gt;Node32 -->
 <g id="edge8" class="edge">
-<title>Node25&#45;&gt;Node33</title>
+<title>Node24&#45;&gt;Node32</title>
 <path fill="none" stroke="midnightblue" d="M166.44,-348C181.63,-348 197.25,-348 211.95,-348"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="166.02,-344.5 156.02,-348 166.02,-351.5 166.02,-344.5"/>
 </g>
-<!-- Node34 -->
+<!-- Node33 -->
 <g id="node10" class="node">
-<title>Node34</title>
+<title>Node33</title>
 <g id="a_node10"><a xlink:href="classcontroller_1_1_wrong_transaction_type_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="206.5,-284 206.5,-314 362.5,-314 362.5,-284 206.5,-284"/>
 <text text-anchor="start" x="214.5" y="-302" font-family="Helvetica,sans-Serif" font-size="10.00">controller::WrongTransaction</text>
@@ -151,15 +151,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node34 -->
+<!-- Node24&#45;&gt;Node33 -->
 <g id="edge9" class="edge">
-<title>Node25&#45;&gt;Node34</title>
+<title>Node24&#45;&gt;Node33</title>
 <path fill="none" stroke="midnightblue" d="M128.78,-336.07C156.47,-329.44 191.2,-321.11 220.74,-314.04"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="127.82,-332.7 118.92,-338.44 129.46,-339.51 127.82,-332.7"/>
 </g>
-<!-- Node35 -->
+<!-- Node34 -->
 <g id="node11" class="node">
-<title>Node35</title>
+<title>Node34</title>
 <g id="a_node11"><a xlink:href="classmodel_1_1files_1_1_end_reaching_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="213,-235 213,-265 356,-265 356,-235 213,-235"/>
 <text text-anchor="start" x="221" y="-253" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::EndReaching</text>
@@ -167,15 +167,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node35 -->
+<!-- Node24&#45;&gt;Node34 -->
 <g id="edge10" class="edge">
-<title>Node25&#45;&gt;Node35</title>
+<title>Node24&#45;&gt;Node34</title>
 <path fill="none" stroke="midnightblue" d="M99.3,-332.12C121.11,-315.75 157.33,-290.49 192,-275 200.42,-271.24 209.53,-267.93 218.64,-265.05"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="96.98,-329.49 91.15,-338.34 101.23,-335.06 96.98,-329.49"/>
 </g>
-<!-- Node37 -->
+<!-- Node36 -->
 <g id="node13" class="node">
-<title>Node37</title>
+<title>Node36</title>
 <g id="a_node13"><a xlink:href="classmodel_1_1files_1_1_file_stream_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="218.5,-186 218.5,-216 350.5,-216 350.5,-186 218.5,-186"/>
 <text text-anchor="start" x="226.5" y="-204" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::FileStream</text>
@@ -183,15 +183,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node37 -->
+<!-- Node24&#45;&gt;Node36 -->
 <g id="edge12" class="edge">
-<title>Node25&#45;&gt;Node37</title>
+<title>Node24&#45;&gt;Node36</title>
 <path fill="none" stroke="midnightblue" d="M90.73,-329.96C109.09,-303.19 147.18,-253.19 192,-226 200.03,-221.13 209.01,-217.19 218.14,-214.01"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="87.74,-328.13 85.08,-338.39 93.56,-332.03 87.74,-328.13"/>
 </g>
-<!-- Node38 -->
+<!-- Node37 -->
 <g id="node14" class="node">
-<title>Node38</title>
+<title>Node37</title>
 <g id="a_node14"><a xlink:href="classmodel_1_1files_1_1_hash_mismatch_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="208.5,-137 208.5,-167 360.5,-167 360.5,-137 208.5,-137"/>
 <text text-anchor="start" x="216.5" y="-155" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::HashMismatch</text>
@@ -199,15 +199,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node38 -->
+<!-- Node24&#45;&gt;Node37 -->
 <g id="edge13" class="edge">
-<title>Node25&#45;&gt;Node38</title>
+<title>Node24&#45;&gt;Node37</title>
 <path fill="none" stroke="midnightblue" d="M86.46,-328.36C101.06,-292.61 136.89,-216.91 192,-177 197.33,-173.14 203.24,-169.87 209.4,-167.11"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="83.03,-327.5 82.61,-338.09 89.54,-330.08 83.03,-327.5"/>
 </g>
-<!-- Node39 -->
+<!-- Node38 -->
 <g id="node15" class="node">
-<title>Node39</title>
+<title>Node38</title>
 <g id="a_node15"><a xlink:href="classmodel_1_1files_1_1_hash_missing_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="213.5,-88 213.5,-118 355.5,-118 355.5,-88 213.5,-88"/>
 <text text-anchor="start" x="221.5" y="-106" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::HashMissing</text>
@@ -215,15 +215,15 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node39 -->
+<!-- Node24&#45;&gt;Node38 -->
 <g id="edge14" class="edge">
-<title>Node25&#45;&gt;Node39</title>
+<title>Node24&#45;&gt;Node38</title>
 <path fill="none" stroke="midnightblue" d="M83.34,-328.55C93.97,-285.55 125.43,-182 192,-128 198.27,-122.92 205.49,-118.86 213.07,-115.63"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="79.92,-327.79 81.03,-338.32 86.74,-329.4 79.92,-327.79"/>
 </g>
-<!-- Node40 -->
+<!-- Node39 -->
 <g id="node16" class="node">
-<title>Node40</title>
+<title>Node39</title>
 <g id="a_node16"><a xlink:href="classmodel_1_1files_1_1_index_address_pair_already_exist_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="211.5,-39 211.5,-69 357.5,-69 357.5,-39 211.5,-39"/>
 <text text-anchor="start" x="219.5" y="-57" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::IndexAddress</text>
@@ -231,30 +231,30 @@
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node40 -->
+<!-- Node24&#45;&gt;Node39 -->
 <g id="edge15" class="edge">
-<title>Node25&#45;&gt;Node40</title>
+<title>Node24&#45;&gt;Node39</title>
 <path fill="none" stroke="midnightblue" d="M81.37,-328.4C88.42,-278.81 113.91,-147.47 192,-79 197.7,-74.01 204.3,-70 211.3,-66.79"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="77.88,-328.06 80.04,-338.43 84.82,-328.98 77.88,-328.06"/>
 </g>
-<!-- Node41 -->
+<!-- Node40 -->
 <g id="node17" class="node">
-<title>Node41</title>
+<title>Node40</title>
 <g id="a_node17"><a xlink:href="classmodel_1_1files_1_1_lock_exception.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="209.5,-0.5 209.5,-19.5 359.5,-19.5 359.5,-0.5 209.5,-0.5"/>
 <text text-anchor="middle" x="284.5" y="-7.5" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::LockException</text>
 </a>
 </g>
 </g>
-<!-- Node25&#45;&gt;Node41 -->
+<!-- Node24&#45;&gt;Node40 -->
 <g id="edge16" class="edge">
-<title>Node25&#45;&gt;Node41</title>
+<title>Node24&#45;&gt;Node40</title>
 <path fill="none" stroke="midnightblue" d="M79.73,-328.07C82.93,-271.87 100.07,-111 192,-30 197.12,-25.49 203.03,-21.91 209.32,-19.1"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="76.22,-328.25 79.24,-338.4 83.21,-328.58 76.22,-328.25"/>
 </g>
-<!-- Node36 -->
+<!-- Node35 -->
 <g id="node12" class="node">
-<title>Node36</title>
+<title>Node35</title>
 <g id="a_node12"><a xlink:href="classmodel_1_1files_1_1_invalid_read_block_size.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="black" points="413,-235 413,-265 550,-265 550,-235 413,-235"/>
 <text text-anchor="start" x="421" y="-253" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::InvalidRead</text>
@@ -262,9 +262,9 @@
 </a>
 </g>
 </g>
-<!-- Node35&#45;&gt;Node36 -->
+<!-- Node34&#45;&gt;Node35 -->
 <g id="edge11" class="edge">
-<title>Node35&#45;&gt;Node36</title>
+<title>Node34&#45;&gt;Node35</title>
 <path fill="none" stroke="midnightblue" d="M366.28,-250C381.82,-250 397.93,-250 412.99,-250"/>
 <polygon fill="midnightblue" stroke="midnightblue" points="366.18,-246.5 356.18,-250 366.18,-253.5 366.18,-246.5"/>
 </g>

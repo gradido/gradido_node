@@ -99,12 +99,12 @@ Inheritance diagram for model::files::IBlockIndexReceiver:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac5fa5a0f09a55d095c3c0e94a30faa54"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_i_block_index_receiver.html#ac5fa5a0f09a55d095c3c0e94a30faa54">addIndicesForTransaction</a> (uint32_t coinColor, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t *addressIndices, uint8_t addressIndiceCount)=0</td></tr>
-<tr class="separator:ac5fa5a0f09a55d095c3c0e94a30faa54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a393076d982351cf0f524574d4f609237"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_i_block_index_receiver.html#a393076d982351cf0f524574d4f609237">addIndicesForTransaction</a> (const std::string &amp;coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t *addressIndices, uint8_t addressIndiceCount)=0</td></tr>
+<tr class="separator:a393076d982351cf0f524574d4f609237"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac5fa5a0f09a55d095c3c0e94a30faa54" name="ac5fa5a0f09a55d095c3c0e94a30faa54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5fa5a0f09a55d095c3c0e94a30faa54">&#9670;&nbsp;</a></span>addIndicesForTransaction()</h2>
+<a id="a393076d982351cf0f524574d4f609237" name="a393076d982351cf0f524574d4f609237"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a393076d982351cf0f524574d4f609237">&#9670;&nbsp;</a></span>addIndicesForTransaction()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -115,8 +115,8 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">virtual bool model::files::IBlockIndexReceiver::addIndicesForTransaction </td>
           <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>coinColor</em>, </td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>coinGroupId</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -167,7 +167,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classcontroller_1_1_block_index.html#a0811b9098a6641b97ccffc1245673956">controller::BlockIndex</a>.</p>
+<p>Implemented in <a class="el" href="classcontroller_1_1_block_index.html#a822972e951ef94f24fcf537f3ffecb0e">controller::BlockIndex</a>.</p>
 
 </div>
 </div>

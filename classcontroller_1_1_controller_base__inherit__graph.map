@@ -5,6 +5,5 @@
 <area shape="rect" id="node4" href="$classcontroller_1_1_block_index.html" title="store block index in memory for fast finding transactions" alt="" coords="260,107,424,133"/>
 <area shape="rect" id="node5" href="$classcontroller_1_1_deferred_transfer.html" title=" " alt="" coords="241,157,443,184"/>
 <area shape="rect" id="node6" href="$classcontroller_1_1_group.html" title="Main entry point for adding and searching for transactions TODO: validate transaction on startup." alt="" coords="277,208,407,235"/>
-<area shape="rect" id="node8" href="$classcontroller_1_1_group_index.html" title="storing group folder name in memory in hash list for fast access" alt="" coords="259,259,425,285"/>
-<area shape="rect" id="node7" href="$classcontroller_1_1_group_register_group.html" title="Special Group on which all Gradido Node Server listen, contain group registries." alt="" coords="491,201,676,242"/>
+<area shape="rect" id="node7" href="$classcontroller_1_1_group_index.html" title="storing group folder name in memory in hash list for fast access" alt="" coords="259,259,425,285"/>
 </map>

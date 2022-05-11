@@ -8,7 +8,6 @@ var dir_41ef5d8a90b9cc03a02949a5c062e6f0 =
     [ "DeferredTransfer.h", "_deferred_transfer_8h_source.html", null ],
     [ "Group.h", "_group_8h_source.html", null ],
     [ "GroupIndex.h", "controller_2_group_index_8h_source.html", null ],
-    [ "GroupRegisterGroup.h", "_group_register_group_8h_source.html", null ],
     [ "RemoteGroup.h", "_remote_group_8h_source.html", null ],
     [ "TaskObserver.h", "_task_observer_8h_source.html", null ]
 ];

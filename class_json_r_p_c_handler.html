@@ -157,18 +157,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>stateWarning</b> (con
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a3e8fb04eef868d1e57b2de4e5be73c13"><td class="memItemLeft" align="right" valign="top"><a id="a3e8fb04eef868d1e57b2de4e5be73c13" name="a3e8fb04eef868d1e57b2de4e5be73c13"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>putTransaction</b> (const std::string &amp;transactionBinary, const std::string &amp;groupAlias)</td></tr>
-<tr class="separator:a3e8fb04eef868d1e57b2de4e5be73c13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f5eb6fec3ba7eaaeb161b770e3f2602"><td class="memItemLeft" align="right" valign="top"><a id="a0f5eb6fec3ba7eaaeb161b770e3f2602" name="a0f5eb6fec3ba7eaaeb161b770e3f2602"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupDetails</b> (const std::string &amp;groupAlias)</td></tr>
-<tr class="separator:a0f5eb6fec3ba7eaaeb161b770e3f2602"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a95e5978dad30e27b4d326995000b9e00"><td class="memItemLeft" align="right" valign="top"><a id="a95e5978dad30e27b4d326995000b9e00" name="a95e5978dad30e27b4d326995000b9e00"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getRandomUniqueCoinColor</b> ()</td></tr>
-<tr class="separator:a95e5978dad30e27b4d326995000b9e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9aea2bd465da13d0cf00955b97abcdb"><td class="memItemLeft" align="right" valign="top"><a id="aa9aea2bd465da13d0cf00955b97abcdb" name="aa9aea2bd465da13d0cf00955b97abcdb"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>isGroupUnique</b> (const std::string &amp;groupAlias, uint32_t coinColor)</td></tr>
-<tr class="separator:aa9aea2bd465da13d0cf00955b97abcdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27a1518f68276bad4010f4c894dbce34"><td class="memItemLeft" align="right" valign="top"><a id="a27a1518f68276bad4010f4c894dbce34" name="a27a1518f68276bad4010f4c894dbce34"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>getTransactions</b> (int64_t fromTransactionId, const std::string &amp;groupAlias, const std::string &amp;format)</td></tr>
 <tr class="separator:a27a1518f68276bad4010f4c894dbce34"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -178,9 +166,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>getCreationSumForMont
 <tr class="memitem:ace0d8331f189b6bf3446f866bba6e870"><td class="memItemLeft" align="right" valign="top"><a id="ace0d8331f189b6bf3446f866bba6e870" name="ace0d8331f189b6bf3446f866bba6e870"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>listTransactions</b> (const std::string &amp;groupAlias, const std::string &amp;publicKeyHex, int currentPage=1, int pageSize=25, bool orderDESC=true, bool onlyCreations=false)</td></tr>
 <tr class="separator:ace0d8331f189b6bf3446f866bba6e870"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcc32d45895166d926416d38df3c934e"><td class="memItemLeft" align="right" valign="top"><a id="abcc32d45895166d926416d38df3c934e" name="abcc32d45895166d926416d38df3c934e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getAddressBalance</b> (const std::string &amp;pubkey, Poco::DateTime date, Poco::SharedPtr&lt; <a class="el" href="classcontroller_1_1_group.html">controller::Group</a> &gt; group, uint32_t coinColor=0)</td></tr>
-<tr class="separator:abcc32d45895166d926416d38df3c934e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4553baf166402b8f1d7755f437309683"><td class="memItemLeft" align="right" valign="top"><a id="a4553baf166402b8f1d7755f437309683" name="a4553baf166402b8f1d7755f437309683"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>getAddressBalance</b> (const std::string &amp;pubkey, Poco::DateTime date, Poco::SharedPtr&lt; <a class="el" href="classcontroller_1_1_group.html">controller::Group</a> &gt; group, const std::string &amp;coinGroupId=&quot;&quot;)</td></tr>
+<tr class="separator:a4553baf166402b8f1d7755f437309683"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a656aea682f96f04fd75beba45e8fb598"><td class="memItemLeft" align="right" valign="top"><a id="a656aea682f96f04fd75beba45e8fb598" name="a656aea682f96f04fd75beba45e8fb598"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>getAddressType</b> (const std::string &amp;pubkey, Poco::SharedPtr&lt; <a class="el" href="classcontroller_1_1_group.html">controller::Group</a> &gt; group)</td></tr>
 <tr class="separator:a656aea682f96f04fd75beba45e8fb598"><td class="memSeparator" colspan="2">&#160;</td></tr>

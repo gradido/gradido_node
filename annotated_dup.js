@@ -14,10 +14,8 @@ var annotated_dup =
       [ "ControllerBase", "classcontroller_1_1_controller_base.html", null ],
       [ "DeferredTransfer", "classcontroller_1_1_deferred_transfer.html", null ],
       [ "Group", "classcontroller_1_1_group.html", "classcontroller_1_1_group" ],
-      [ "GroupEntry", "structcontroller_1_1_group_entry.html", null ],
       [ "GroupIndex", "classcontroller_1_1_group_index.html", "classcontroller_1_1_group_index" ],
       [ "GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
-      [ "GroupRegisterGroup", "classcontroller_1_1_group_register_group.html", "classcontroller_1_1_group_register_group" ],
       [ "RemoteGroup", "classcontroller_1_1_remote_group.html", null ],
       [ "WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ]
     ] ],

@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['calculateaddressbalance_0',['calculateAddressBalance',['../classcontroller_1_1_group.html#a192340b0268f38e5bae81f3c07b6c41f',1,'controller::Group']]],
+  ['calculateaddressbalance_0',['calculateAddressBalance',['../classcontroller_1_1_group.html#a90827e006d576f0e34dda8dbb3da4c19',1,'controller::Group']]],
   ['calculatecreationsum_1',['calculateCreationSum',['../classcontroller_1_1_group.html#a0105a8d818b88ce7dd8841266340e7ee',1,'controller::Group']]],
   ['calculatefilesize_2',['calculateFileSize',['../classmodel_1_1files_1_1_address_index.html#a45a9ec196ac5eea967c8eb11f77ac6cb',1,'model::files::AddressIndex']]],
   ['calculatehash_3',['calculateHash',['../classmodel_1_1files_1_1_address_index.html#af0ff6103a23eaa7b57f9eb053bf5b8c1',1,'model::files::AddressIndex::calculateHash()'],['../classmodel_1_1files_1_1_block.html#adc947669499b526c4c86ed5d50600128',1,'model::files::Block::calculateHash()']]],

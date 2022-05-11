@@ -20,9 +20,7 @@ var hierarchy =
       [ "controller::Block", "classcontroller_1_1_block.html", null ],
       [ "controller::BlockIndex", "classcontroller_1_1_block_index.html", null ],
       [ "controller::DeferredTransfer", "classcontroller_1_1_deferred_transfer.html", null ],
-      [ "controller::Group", "classcontroller_1_1_group.html", [
-        [ "controller::GroupRegisterGroup", "classcontroller_1_1_group_register_group.html", null ]
-      ] ],
+      [ "controller::Group", "classcontroller_1_1_group.html", null ],
       [ "controller::GroupIndex", "classcontroller_1_1_group_index.html", null ]
     ] ],
     [ "task::CPUSheduler", "classtask_1_1_c_p_u_sheduler.html", null ],
@@ -49,7 +47,6 @@ var hierarchy =
       [ "model::files::LockException", "classmodel_1_1files_1_1_lock_exception.html", null ]
     ] ],
     [ "OrderingManager::GradidoTransactionWithGroup", "struct_ordering_manager_1_1_gradido_transaction_with_group.html", null ],
-    [ "controller::GroupEntry", "structcontroller_1_1_group_entry.html", null ],
     [ "model::files::GroupIndex", "classmodel_1_1files_1_1_group_index.html", null ],
     [ "controller::GroupIndex::GroupIndexEntry", "structcontroller_1_1_group_index_1_1_group_index_entry.html", null ],
     [ "GroupManager", "class_group_manager.html", null ],

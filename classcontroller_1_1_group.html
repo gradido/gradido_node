@@ -101,7 +101,7 @@ $(document).ready(function(){initNavTree('classcontroller_1_1_group.html',''); i
 <div class="dynheader">
 Inheritance diagram for controller::Group:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classcontroller_1_1_group__inherit__graph.svg" width="422" height="202"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classcontroller_1_1_group__inherit__graph.svg" width="422" height="112"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -118,30 +118,31 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a6a5994004f8d4f6d2d3b7df0498b8bb8"><td class="memItemLeft" align="right" valign="top"><a id="a6a5994004f8d4f6d2d3b7df0498b8bb8" name="a6a5994004f8d4f6d2d3b7df0498b8bb8"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>Group</b> (std::string alias, Poco::Path folderPath, uint32_t coinColor)</td></tr>
-<tr class="memdesc:a6a5994004f8d4f6d2d3b7df0498b8bb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load group states via model::files::GroupState. <br /></td></tr>
-<tr class="separator:a6a5994004f8d4f6d2d3b7df0498b8bb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99b11874c6ddc1e1496ec35e062aff72"><td class="memItemLeft" align="right" valign="top"><a id="a99b11874c6ddc1e1496ec35e062aff72" name="a99b11874c6ddc1e1496ec35e062aff72"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>Group</b> (std::string alias, Poco::Path folderPath)</td></tr>
+<tr class="memdesc:a99b11874c6ddc1e1496ec35e062aff72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load group states via model::files::GroupState. <br /></td></tr>
+<tr class="separator:a99b11874c6ddc1e1496ec35e062aff72"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab3bf91f13507fa2516b949a9b905ca61"><td class="memItemLeft" align="right" valign="top"><a id="ab3bf91f13507fa2516b949a9b905ca61" name="ab3bf91f13507fa2516b949a9b905ca61"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>init</b> ()</td></tr>
 <tr class="separator:ab3bf91f13507fa2516b949a9b905ca61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fac7e7b4813f1e0bf9fa232fc9949c4"><td class="memItemLeft" align="right" valign="top"><a id="a2fac7e7b4813f1e0bf9fa232fc9949c4" name="a2fac7e7b4813f1e0bf9fa232fc9949c4"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>exit</b> ()</td></tr>
 <tr class="separator:a2fac7e7b4813f1e0bf9fa232fc9949c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d18405e4740fc3f2386e1ed68f3c94c"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c">addTransaction</a> (std::unique_ptr&lt; model::gradido::GradidoTransaction &gt; newTransaction, const MemoryBin *messageId, uint64_t iotaMilestoneTimestamp)</td></tr>
-<tr class="memdesc:a9d18405e4740fc3f2386e1ed68f3c94c"><td class="mdescLeft">&#160;</td><td class="mdescRight">add transaction from iota into blockchain, important! must be called in correct order  <a href="classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c">More...</a><br /></td></tr>
+<tr class="memitem:a9d18405e4740fc3f2386e1ed68f3c94c"><td class="memItemLeft" align="right" valign="top"><a id="a9d18405e4740fc3f2386e1ed68f3c94c" name="a9d18405e4740fc3f2386e1ed68f3c94c"></a>
+virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>addTransaction</b> (std::unique_ptr&lt; model::gradido::GradidoTransaction &gt; newTransaction, const MemoryBin *messageId, uint64_t iotaMilestoneTimestamp)</td></tr>
+<tr class="memdesc:a9d18405e4740fc3f2386e1ed68f3c94c"><td class="mdescLeft">&#160;</td><td class="mdescRight">add transaction from iota into blockchain, important! must be called in correct order <br /></td></tr>
 <tr class="separator:a9d18405e4740fc3f2386e1ed68f3c94c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada200e948f79847198c6248ea3ca07c1"><td class="memItemLeft" align="right" valign="top">Poco::SharedPtr&lt; model::TransactionEntry &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#ada200e948f79847198c6248ea3ca07c1">findLastTransactionForAddress</a> (const std::string &amp;address, uint32_t coinColor=0)</td></tr>
-<tr class="memdesc:ada200e948f79847198c6248ea3ca07c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find last transaction of address account in memory or block chain.  <a href="classcontroller_1_1_group.html#ada200e948f79847198c6248ea3ca07c1">More...</a><br /></td></tr>
-<tr class="separator:ada200e948f79847198c6248ea3ca07c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b130d01deb4c59ebf2b9be319641d62"><td class="memItemLeft" align="right" valign="top">Poco::SharedPtr&lt; model::TransactionEntry &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#a2b130d01deb4c59ebf2b9be319641d62">findLastTransactionForAddress</a> (const std::string &amp;address, const std::string &amp;coinGroupId=&quot;&quot;)</td></tr>
+<tr class="memdesc:a2b130d01deb4c59ebf2b9be319641d62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find last transaction of address account in memory or block chain.  <a href="classcontroller_1_1_group.html#a2b130d01deb4c59ebf2b9be319641d62">More...</a><br /></td></tr>
+<tr class="separator:a2b130d01deb4c59ebf2b9be319641d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23cf99206814bf2784417eb5291a4cee"><td class="memItemLeft" align="right" valign="top"><a id="a23cf99206814bf2784417eb5291a4cee" name="a23cf99206814bf2784417eb5291a4cee"></a>
 Poco::SharedPtr&lt; model::gradido::GradidoBlock &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getLastTransaction</b> (std::function&lt; bool(const model::gradido::GradidoBlock *)&gt; filter=nullptr)</td></tr>
 <tr class="memdesc:a23cf99206814bf2784417eb5291a4cee"><td class="mdescLeft">&#160;</td><td class="mdescRight">return last transaction which was added to this blockchain <br /></td></tr>
 <tr class="separator:a23cf99206814bf2784417eb5291a4cee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a192340b0268f38e5bae81f3c07b6c41f"><td class="memItemLeft" align="right" valign="top"><a id="a192340b0268f38e5bae81f3c07b6c41f" name="a192340b0268f38e5bae81f3c07b6c41f"></a>
-mpfr_ptr&#160;</td><td class="memItemRight" valign="bottom"><b>calculateAddressBalance</b> (const std::string &amp;address, uint32_t coinColor, Poco::DateTime date)</td></tr>
-<tr class="memdesc:a192340b0268f38e5bae81f3c07b6c41f"><td class="mdescLeft">&#160;</td><td class="mdescRight">get last transaction for this user for this coin color with a final balance <br /></td></tr>
-<tr class="separator:a192340b0268f38e5bae81f3c07b6c41f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a90827e006d576f0e34dda8dbb3da4c19"><td class="memItemLeft" align="right" valign="top"><a id="a90827e006d576f0e34dda8dbb3da4c19" name="a90827e006d576f0e34dda8dbb3da4c19"></a>
+mpfr_ptr&#160;</td><td class="memItemRight" valign="bottom"><b>calculateAddressBalance</b> (const std::string &amp;address, const std::string &amp;groupId, Poco::DateTime date)</td></tr>
+<tr class="memdesc:a90827e006d576f0e34dda8dbb3da4c19"><td class="mdescLeft">&#160;</td><td class="mdescRight">get last transaction for this user for this coin color with a final balance <br /></td></tr>
+<tr class="separator:a90827e006d576f0e34dda8dbb3da4c19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38af071d20c2cfccf6e2293a3daf9453"><td class="memItemLeft" align="right" valign="top"><a id="a38af071d20c2cfccf6e2293a3daf9453" name="a38af071d20c2cfccf6e2293a3daf9453"></a>
 proto::gradido::RegisterAddress_AddressType&#160;</td><td class="memItemRight" valign="bottom"><b>getAddressType</b> (const std::string &amp;address)</td></tr>
 <tr class="separator:a38af071d20c2cfccf6e2293a3daf9453"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -175,12 +176,14 @@ std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td>
 <tr class="memitem:ad2e1239301f6ad94daa16003f7ddfa47"><td class="memItemLeft" align="right" valign="top"><a id="ad2e1239301f6ad94daa16003f7ddfa47" name="ad2e1239301f6ad94daa16003f7ddfa47"></a>
 Poco::SharedPtr&lt; <a class="el" href="classcontroller_1_1_address_index.html">AddressIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getAddressIndex</b> ()</td></tr>
 <tr class="separator:ad2e1239301f6ad94daa16003f7ddfa47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38a592de2639588f685b5b071e1f5413"><td class="memItemLeft" align="right" valign="top"><a id="a38a592de2639588f685b5b071e1f5413" name="a38a592de2639588f685b5b071e1f5413"></a>
-const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupAlias</b> ()</td></tr>
-<tr class="separator:a38a592de2639588f685b5b071e1f5413"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4ab09eee8e7ba5ad7af4af782a8dff8"><td class="memItemLeft" align="right" valign="top"><a id="ae4ab09eee8e7ba5ad7af4af782a8dff8" name="ae4ab09eee8e7ba5ad7af4af782a8dff8"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupDefaultCoinColor</b> () const</td></tr>
-<tr class="separator:ae4ab09eee8e7ba5ad7af4af782a8dff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a45eb3d1f9e61991402535c74b0c9d2fa"><td class="memItemLeft" align="right" valign="top"><a id="a45eb3d1f9e61991402535c74b0c9d2fa" name="a45eb3d1f9e61991402535c74b0c9d2fa"></a>
+const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupAlias</b> () const</td></tr>
+<tr class="memdesc:a45eb3d1f9e61991402535c74b0c9d2fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">group alias or group id, the single identifier for group blockchain and group coins <br /></td></tr>
+<tr class="separator:a45eb3d1f9e61991402535c74b0c9d2fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a752086d65b7a82aed2d5b1a19b26c0a8"><td class="memItemLeft" align="right" valign="top"><a id="a752086d65b7a82aed2d5b1a19b26c0a8" name="a752086d65b7a82aed2d5b1a19b26c0a8"></a>
+const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupId</b> () const</td></tr>
+<tr class="memdesc:a752086d65b7a82aed2d5b1a19b26c0a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">group id is the same as group alias <br /></td></tr>
+<tr class="separator:a752086d65b7a82aed2d5b1a19b26c0a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a97c851d1f29d3fc1071603a70738ba09"><td class="memItemLeft" align="right" valign="top"><a id="a97c851d1f29d3fc1071603a70738ba09" name="a97c851d1f29d3fc1071603a70738ba09"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isTransactionAlreadyExist</b> (const model::gradido::GradidoTransaction *transaction)</td></tr>
 <tr class="separator:a97c851d1f29d3fc1071603a70738ba09"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -259,9 +262,6 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>mLastBlockNr</b></td><
 <tr class="memitem:a5fc9f57d53367c91021b398e387cf43d"><td class="memItemLeft" align="right" valign="top"><a id="a5fc9f57d53367c91021b398e387cf43d" name="a5fc9f57d53367c91021b398e387cf43d"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>mLastTransactionId</b></td></tr>
 <tr class="separator:a5fc9f57d53367c91021b398e387cf43d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05451e3bb7fdf8c3937015fb0b56d427"><td class="memItemLeft" align="right" valign="top"><a id="a05451e3bb7fdf8c3937015fb0b56d427" name="a05451e3bb7fdf8c3937015fb0b56d427"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>mCoinColor</b></td></tr>
-<tr class="separator:a05451e3bb7fdf8c3937015fb0b56d427"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed309edcae92f0e6fbd9e457f47b1036"><td class="memItemLeft" align="right" valign="top"><a id="aed309edcae92f0e6fbd9e457f47b1036" name="aed309edcae92f0e6fbd9e457f47b1036"></a>
 Poco::AccessExpireCache&lt; Poco::UInt32, <a class="el" href="classcontroller_1_1_block.html">Block</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mCachedBlocks</b></td></tr>
 <tr class="separator:aed309edcae92f0e6fbd9e457f47b1036"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -293,58 +293,6 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
 <dl class="section author"><dt>Author</dt><dd>Dario Rekowski </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2020-02-06 </dd></dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a9d18405e4740fc3f2386e1ed68f3c94c" name="a9d18405e4740fc3f2386e1ed68f3c94c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9d18405e4740fc3f2386e1ed68f3c94c">&#9670;&nbsp;</a></span>addTransaction()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool controller::Group::addTransaction </td>
-          <td>(</td>
-          <td class="paramtype">std::unique_ptr&lt; model::gradido::GradidoTransaction &gt;&#160;</td>
-          <td class="paramname"><em>newTransaction</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const MemoryBin *&#160;</td>
-          <td class="paramname"><em>messageId</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t&#160;</td>
-          <td class="paramname"><em>iotaMilestoneTimestamp</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>add transaction from iota into blockchain, important! must be called in correct order </p>
-
-<p>Reimplemented in <a class="el" href="classcontroller_1_1_group_register_group.html#a1cf7cfc9a24f40a25500a7aa3452a050">controller::GroupRegisterGroup</a>.</p>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classcontroller_1_1_group_a9d18405e4740fc3f2386e1ed68f3c94c_cgraph.svg" width="602" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
-</div>
-</div>
-
-</div>
-</div>
 <a id="a0105a8d818b88ce7dd8841266340e7ee" name="a0105a8d818b88ce7dd8841266340e7ee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0105a8d818b88ce7dd8841266340e7ee">&#9670;&nbsp;</a></span>calculateCreationSum()</h2>
 
@@ -423,12 +371,10 @@ Here is the call graph for this function:</div>
 </div><div class="memdoc">
 <p >read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive put all signatures from young enough blocks into signature cache </p>
 
-<p>Reimplemented in <a class="el" href="classcontroller_1_1_group_register_group.html#a7bbceeca75dce09d4abde3efdfd9c652">controller::GroupRegisterGroup</a>.</p>
-
 </div>
 </div>
-<a id="ada200e948f79847198c6248ea3ca07c1" name="ada200e948f79847198c6248ea3ca07c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada200e948f79847198c6248ea3ca07c1">&#9670;&nbsp;</a></span>findLastTransactionForAddress()</h2>
+<a id="a2b130d01deb4c59ebf2b9be319641d62" name="a2b130d01deb4c59ebf2b9be319641d62"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b130d01deb4c59ebf2b9be319641d62">&#9670;&nbsp;</a></span>findLastTransactionForAddress()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -442,8 +388,8 @@ Here is the call graph for this function:</div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname"><em>coinColor</em> = <code>0</code>&#160;</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>coinGroupId</em> = <code>&quot;&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
