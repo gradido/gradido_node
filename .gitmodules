@@ -13,9 +13,6 @@
 [submodule "dependencies/rapidjson"]
 	path = dependencies/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
-[submodule "dependencies/poco"]
-	path = dependencies/poco
-	url = https://github.com/pocoproject/poco.git
 [submodule "dependencies/gradido_blockchain"]
 	path = dependencies/gradido_blockchain
 	url = git@github.com:gradido/gradido_blockchain.git
