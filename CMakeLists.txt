@@ -1,14 +1,17 @@
 cmake_minimum_required(VERSION 3.18.2)
-project(Gradido_Node C CXX)
+project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin" )
 
-SET(CMAKE_CXX_FLAGS "-std=c++17" )
+IF(WIN32)
+	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
+ELSE()
+	SET(CMAKE_CXX_FLAGS "-std=c++17" )
+ENDIF()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-IF(WIN32)
-	set(CMAKE_CXX_FLAGS         "/MP")
-ENDIF()
+set(INSTALL_BINDIR "bin")
+set(INSTALL_PLUGINDIR "bin")
 
 include_directories(
 	"dependencies" 
@@ -23,12 +26,11 @@ include_directories(
 IF(UNIX)
 	include_directories(
 		"dependencies/poco/Crypto/include" 
-		"dependencies/poco/Data/include" 
 		"dependencies/poco/Util/include" 
 		"dependencies/poco/Foundation/include"
-		"dependencies/poco/JSON/include"
 		"dependencies/poco/Net/include"
 		"dependencies/poco/NetSSL_OpenSSL/include"
+		"dependencies/poco/JWT/include"
 	)
 ENDIF()
 
@@ -85,10 +87,10 @@ add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
-add_subdirectory("dependencies/gradido_blockchain")
+
 
 if(NOT BUILD_SHARED_LIBS)
-	add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf")
+	#add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf")
 endif()
 
 ############################## config and add poco ###################################
@@ -102,44 +104,46 @@ IF(UNIX)
 	SET(ENABLE_JSON OFF CACHE BOOL "" FORCE)
 	add_subdirectory("dependencies/poco")
 
-	set(POCO_LIBS PocoFoundation PocoUtil PocoNet PocoNetSSL PocoData)
+	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL Poco::JWT)
 ENDIF()
+############################## find protobuf  #########################################
+#add_subdirectory(dependencies/protobuf/cmake)
 
-add_executable(Gradido_Node ${LOCAL_SRCS})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+# prevent problems with two libs including googletest 
+option(protobuf_BUILD_TESTS "Build tests" OFF)
+
+#message("binary dir: ${CMAKE_BINARY_DIR}")
+add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf/cmake)
+
+############################## add gradido blockchain  #########################################
+add_subdirectory("dependencies/gradido_blockchain")
+
+if(NOT BUILD_SHARED_LIBS)
+	#option(protobuf_BUILD_TESTS "Build tests" OFF)
+	#add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf/cmake")
+endif()
+
+add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
-if(WIN32)
 
-#find_library(MYSQL_LIBRARIES_DEBUG  mariadbclient.lib PATHS "import/mariadb/lib/debug")
-
-set(CMAKE_CXX_FLAGS         "/MP /EHsc")
-#set(CMAKE_CXX_FLAGS_DEBUG   "-O0 -g3")
-#set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-
-else()
-# set vars for mariadb cmake files 
-set(INSTALL_BINDIR "bin")
-set(INSTALL_PLUGINDIR "bin")
-
-endif(WIN32)
-
-
-target_link_libraries(Gradido_Node leveldb GradidoBlockchain)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain)
 if(NOT BUILD_SHARED_LIBS)
-	target_link_libraries(Gradido_Node libprotobuf)
+	target_link_libraries(GradidoNode libprotobuf)
 endif()
 if(WIN32)
-	target_link_libraries(Gradido_Node ${CONAN_LIBS})
-	target_link_libraries(Gradido_Node optimized Shlwapi)
-	target_link_libraries(Gradido_Node debug Shlwapi)
+	target_link_libraries(GradidoNode ${CONAN_LIBS})
+	target_link_libraries(GradidoNode optimized Shlwapi)
+	target_link_libraries(GradidoNode debug Shlwapi)
 else()
-	target_link_libraries(Gradido_Node ${POCO_LIBS} sodium -pthread)
+	target_link_libraries(GradidoNode ${POCO_LIBS} sodium -pthread)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 
 # install 
 if(UNIX)
-install(TARGETS Gradido_Node RUNTIME DESTINATION /usr/local/bin)
+install(TARGETS GradidoNode RUNTIME DESTINATION /usr/local/bin)
 endif(UNIX)
 
 # add test

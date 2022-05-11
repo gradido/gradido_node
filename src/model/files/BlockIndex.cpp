@@ -21,7 +21,11 @@ namespace model {
 
 			vFile->write(&transactionNr, sizeof(uint64_t));
 			vFile->write(&fileCursor, sizeof(int32_t));
-			vFile->write(&coinColor, sizeof(uint32_t));
+			auto coinGroupIdSize = static_cast<uint16_t>(coinGroupId.size());
+			vFile->write(&coinGroupIdSize, sizeof(uint16_t));
+			if (coinGroupIdSize) {
+				vFile->write(coinGroupId.data(), coinGroupId.size() * sizeof(char));
+			}			
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
@@ -35,7 +39,15 @@ namespace model {
 			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
 			if (!vFile->read(&fileCursor, sizeof(int32_t))) return false;
-			if (!vFile->read(&coinColor, sizeof(uint32_t))) return false;
+			uint16_t coinGroupIdSize = 0;
+			if (!vFile->read(&coinGroupIdSize, sizeof(uint16_t))) return false;
+			if (coinGroupIdSize > 400) {
+				throw InvalidReadBlockSize("coin group size is to big", "block index file", vFile->getCursor(), coinGroupIdSize);
+			}
+			if (coinGroupIdSize) {
+				coinGroupId.resize(coinGroupIdSize);
+				if (!vFile->read(coinGroupId.data(), coinGroupId.size() * sizeof(char))) return false;
+			}
 			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
@@ -52,7 +64,9 @@ namespace model {
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));		
 			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(int32_t));
-			crypto_generichash_update(state, (const unsigned char*)&coinColor, sizeof(uint32_t));
+			if (coinGroupId.size()) {
+				crypto_generichash_update(state, (const unsigned char*)coinGroupId.data(), coinGroupId.size());
+			}
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
 
 			// second part
@@ -63,7 +77,7 @@ namespace model {
 		{
 			// TransactionEntry(uint64_t transactionNr, int32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
 			auto transactionEntry = new NodeTransactionEntry(
-				transactionNr, month, year, coinColor, addressIndices, addressIndicesCount
+				transactionNr, month, year, coinGroupId, addressIndices, addressIndicesCount
 			);
 			transactionEntry->setFileCursor(fileCursor);
 			return transactionEntry;
@@ -197,7 +211,7 @@ namespace model {
 						//receiver->addIndicesForTransaction(dataBlock->createTransactionEntry(monthCursor, yearCursor));
 						//bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices);
 						receiver->addIndicesForTransaction(
-							dataBlock->coinColor,
+							dataBlock->coinGroupId,
 							yearCursor, monthCursor, 
 							dataBlock->transactionNr, dataBlock->fileCursor, 
 							dataBlock->addressIndices, dataBlock->addressIndicesCount

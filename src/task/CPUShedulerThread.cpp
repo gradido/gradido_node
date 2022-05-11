@@ -71,6 +71,12 @@ namespace task {
 				printf("task name: %s\n", name.data());
 #endif
 			}
+			catch (std::exception& ex) {
+				printf("[CPUShedulerThread] exception %s for task type: %s\n", ex.what(), mWaitingTask->getResourceType());
+#ifdef _UNI_LIB_DEBUG
+				printf("task name: %s\n", name.data());
+#endif
+			}
 				
 			mWaitingTask = mParent->getNextUndoneTask(this);
 		}

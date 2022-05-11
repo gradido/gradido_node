@@ -46,7 +46,7 @@ namespace controller {
 	{
 	public:
 		//! \brief Load group states via model::files::GroupState.
-		Group(std::string alias, Poco::Path folderPath, uint32_t coinColor);
+		Group(std::string alias, Poco::Path folderPath);
 		virtual ~Group();
 
 		// initialize, fill cache
@@ -60,14 +60,14 @@ namespace controller {
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
-		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, uint32_t coinColor = 0);
+		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 
 		//! \brief return last transaction which was added to this blockchain
 		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter = nullptr);
 
 		//! \brief get last transaction for this user for this coin color with a final balance
 		// TODO: make UML diagram for function
-		mpfr_ptr calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date);
+		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& groupId, Poco::DateTime date);
 
 		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
 
@@ -103,8 +103,10 @@ namespace controller {
 
 		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 
-		inline const std::string& getGroupAlias() { return mGroupAlias; }
-		inline uint32_t getGroupDefaultCoinColor() const { return mCoinColor; }
+		//! \brief group alias or group id, the single identifier for group blockchain and group coins
+		inline const std::string& getGroupAlias() const { return mGroupAlias; }
+		//! \brief group id is the same as group alias
+		inline const std::string& getGroupId() const { return mGroupAlias; }
 
 		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
 		void setListeningCommunityServer(client::Base* client);
@@ -138,7 +140,6 @@ namespace controller {
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;
-		uint32_t mCoinColor;
 		//std::list<BlockEntry> mBlocks;
 		Poco::AccessExpireCache<Poco::UInt32, Block> mCachedBlocks;
 

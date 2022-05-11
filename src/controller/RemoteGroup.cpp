@@ -2,7 +2,7 @@
 
 namespace controller {
 	RemoteGroup::RemoteGroup(const std::string& groupAlias)
-		: mGroupAlias(groupAlias), mGroupCoinColor(0)
+		: mGroupAlias(groupAlias)
 	{
 		// get coin color on first connect to remote group
 	}
@@ -17,7 +17,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	mpfr_ptr RemoteGroup::calculateAddressBalance(const std::string& address, uint32_t coinColor, Poco::DateTime date)
+	mpfr_ptr RemoteGroup::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
@@ -32,7 +32,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::findLastTransactionForAddress(const std::string& address, uint32_t coinColor/* = 0*/)
+	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
@@ -47,8 +47,8 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	uint32_t RemoteGroup::getGroupDefaultCoinColor() const
+	const std::string& RemoteGroup::getGroupId() const
 	{
-		return mGroupCoinColor;
+		return mGroupAlias;
 	}
 }

@@ -2,8 +2,7 @@
 #define __GRADIDO_NODE_SINGLETON_MANAGER_GROUP_MANAGER_H
 
 #include "../controller/GroupIndex.h"
-#include "../controller/GroupRegisterGroup.h"
-
+#include "../controller/Group.h"
 
 #include "Poco/Mutex.h"
 #include "Poco/AccessExpireCache.h"
@@ -36,7 +35,6 @@ public:
 	//!
 	//! Poco::AccessExpireCache use his own mutex
 	Poco::SharedPtr<controller::Group> findGroup(const std::string& groupAlias);
-	Poco::SharedPtr<controller::GroupRegisterGroup> getGroupRegisterGroup();
 
 	std::vector<Poco::SharedPtr<controller::Group>> findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey);
 

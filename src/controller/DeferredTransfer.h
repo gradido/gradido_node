@@ -5,6 +5,7 @@
 #include "../model/files/State.h"
 
 #include <map>
+#include <memory>
 
 namespace controller
 {
