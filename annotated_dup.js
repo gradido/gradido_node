@@ -8,6 +8,8 @@ var annotated_dup =
     ] ],
     [ "controller", null, [
       [ "AddressIndex", "classcontroller_1_1_address_index.html", "classcontroller_1_1_address_index" ],
+      [ "ArchiveTransactionDoubletteException", "classcontroller_1_1_archive_transaction_doublette_exception.html", null ],
+      [ "ArchiveTransactionsOrdering", "classcontroller_1_1_archive_transactions_ordering.html", "classcontroller_1_1_archive_transactions_ordering" ],
       [ "Block", "classcontroller_1_1_block.html", "classcontroller_1_1_block" ],
       [ "BlockIndex", "classcontroller_1_1_block_index.html", "classcontroller_1_1_block_index" ],
       [ "BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],

@@ -34,6 +34,7 @@ var hierarchy =
       [ "MessageIdFormatException", "class_message_id_format_exception.html", null ],
       [ "NoSpaceLeftOnDevice", "class_no_space_left_on_device.html", null ],
       [ "client::MissingParameterException", "classclient_1_1_missing_parameter_exception.html", null ],
+      [ "controller::ArchiveTransactionDoubletteException", "classcontroller_1_1_archive_transaction_doublette_exception.html", null ],
       [ "controller::BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],
       [ "controller::GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
       [ "controller::WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ],
@@ -87,6 +88,7 @@ var hierarchy =
       [ "iota::MessageValidator", "classiota_1_1_message_validator.html", null ],
       [ "task::Thread", "classtask_1_1_thread.html", [
         [ "OrderingManager", "class_ordering_manager.html", null ],
+        [ "controller::ArchiveTransactionsOrdering", "classcontroller_1_1_archive_transactions_ordering.html", null ],
         [ "task::CPUShedulerThread", "classtask_1_1_c_p_u_sheduler_thread.html", null ]
       ] ]
     ] ],

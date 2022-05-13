@@ -1,6 +1,7 @@
 <map id="task::Thread" name="task::Thread">
-<area shape="rect" id="node1" title=" " alt="" coords="113,80,216,107"/>
-<area shape="rect" id="node3" href="$class_ordering_manager.html" title=" " alt="" coords="5,155,140,181"/>
-<area shape="rect" id="node4" href="$classtask_1_1_c_p_u_sheduler_thread.html" title=" " alt="" coords="165,155,351,181"/>
-<area shape="rect" id="node2" title=" " alt="" coords="103,5,226,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="224,80,327,107"/>
+<area shape="rect" id="node3" href="$class_ordering_manager.html" title=" " alt="" coords="5,162,140,189"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_archive_transactions_ordering.html" title=" " alt="" coords="164,155,387,196"/>
+<area shape="rect" id="node5" href="$classtask_1_1_c_p_u_sheduler_thread.html" title=" " alt="" coords="411,162,598,189"/>
+<area shape="rect" id="node2" title=" " alt="" coords="214,5,337,32"/>
 </map>
