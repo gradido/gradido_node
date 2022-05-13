@@ -28,6 +28,11 @@ protected:
 	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, const std::string& coinGroupId = "");
 	void getAddressType(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
 	void getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
+	void putTransaction(
+		uint64_t transactionNr, 
+		std::unique_ptr<model::gradido::GradidoTransaction> transaction,
+		Poco::SharedPtr<controller::Group> group
+	);
 
 	// helper
 	

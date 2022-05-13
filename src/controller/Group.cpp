@@ -66,6 +66,11 @@ namespace controller {
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
 		if (mCommunityServer) {
 			delete mCommunityServer;
+			mCommunityServer = nullptr;
+		}
+		if (mArchiveTransactionOrdering) {
+			delete mArchiveTransactionOrdering;
+			mArchiveTransactionOrdering = nullptr;
 		}
 	}
 
@@ -114,6 +119,14 @@ namespace controller {
 			}
 		});
 		mAddressIndex = new AddressIndex(mFolderPath, mLastAddressIndex, this);
+	}
+
+	ArchiveTransactionsOrdering* Group::getArchiveTransactionsOrderer()
+	{
+		if (!mArchiveTransactionOrdering) {
+			mArchiveTransactionOrdering = new ArchiveTransactionsOrdering(this);
+		}
+		return mArchiveTransactionOrdering;
 	}
 
 	void Group::exit()
@@ -244,10 +257,12 @@ namespace controller {
 			// TODO: move call to better place
 			updateLastAddressIndex(mAddressIndex->getLastIndex());
 			addSignatureToCache(newGradidoBlock);
-			mMessageIdTransactionNrCacheMutex.lock();
-			iota::MessageId mid; mid.fromMemoryBin(messageId);
-			mMessageIdTransactionNrCache.add(mid, mLastTransaction->getID());
-			mMessageIdTransactionNrCacheMutex.unlock();
+			if (messageId) {
+				mMessageIdTransactionNrCacheMutex.lock();
+				iota::MessageId mid; mid.fromMemoryBin(messageId);
+				mMessageIdTransactionNrCache.add(mid, mLastTransaction->getID());
+				mMessageIdTransactionNrCacheMutex.unlock();
+			}
 
 			//std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
 			printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
@@ -424,6 +439,7 @@ namespace controller {
 			{
 				auto block = getBlock(blockCursor);
 				auto blockIndex = block->getBlockIndex();
+				// TODO: Check if search backwards make more sense
 				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
 					if (!i) break;
 					auto transaction = block->getTransaction(i);

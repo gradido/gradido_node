@@ -7,6 +7,7 @@
 #include "BlockIndex.h"
 #include "TaskObserver.h"
 #include "DeferredTransfer.h"
+#include "ArchiveTransactionsOrdering.h"
 
 #include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
@@ -115,6 +116,8 @@ namespace controller {
 		// expensive, remove all address and block indices, they must be build from scratch
 		void resetAllIndices();
 
+		ArchiveTransactionsOrdering* getArchiveTransactionsOrderer();
+
 	protected:
 		void updateLastAddressIndex(int lastAddressIndex);
 		void updateLastBlockNr(int lastBlockNr);
@@ -190,6 +193,7 @@ namespace controller {
 
 		// Community Server listening on new blocks for his group
 		client::Base* mCommunityServer;
+		ArchiveTransactionsOrdering* mArchiveTransactionOrdering;
 
 		bool mExitCalled;
 	};

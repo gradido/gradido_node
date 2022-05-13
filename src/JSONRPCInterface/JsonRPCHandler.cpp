@@ -151,6 +151,20 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 
 		return listTransactions(groupAlias, pubkey, currentPage, pageSize, orderDESC, onlyCreations);
 	}
+	else if (method == "puttransaction") {
+		std::string base64Transaction;
+		if (!getStringParameter(params, "transaction", base64Transaction)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		uint64_t transactionNr;
+		if (!getUInt64Parameter(params, "transactionNr", transactionNr)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		auto transaction = std::make_unique<model::gradido::GradidoTransaction>(&DataTypeConverter::base64ToBinString(base64Transaction));
+		putTransaction(transactionNr, std::move(transaction), group);
+	}
 	else {
 		mResponseErrorCode = JSON_RPC_ERROR_METHODE_NOT_FOUND;
 		stateError("method not known");
@@ -302,4 +316,16 @@ void JsonRPCHandler::listTransactions(
 	stateSuccess();
 	mResponseResult.AddMember("transactionList", transactionListValue, alloc);
 	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
+}
+
+void JsonRPCHandler::putTransaction(
+	uint64_t transactionNr, 
+	std::unique_ptr<model::gradido::GradidoTransaction> transaction,
+	Poco::SharedPtr<controller::Group> group
+)
+{
+	assert(!group.isNull());
+	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+	group->getArchiveTransactionsOrderer()->addPendingTransaction(std::move(transaction), transactionNr);
+	stateSuccess();
 }
