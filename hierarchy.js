@@ -34,6 +34,7 @@ var hierarchy =
       [ "MessageIdFormatException", "class_message_id_format_exception.html", null ],
       [ "NoSpaceLeftOnDevice", "class_no_space_left_on_device.html", null ],
       [ "client::MissingParameterException", "classclient_1_1_missing_parameter_exception.html", null ],
+      [ "controller::ArchivePendingTransactionsMapFull", "classcontroller_1_1_archive_pending_transactions_map_full.html", null ],
       [ "controller::ArchiveTransactionDoubletteException", "classcontroller_1_1_archive_transaction_doublette_exception.html", null ],
       [ "controller::BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],
       [ "controller::GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],

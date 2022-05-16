@@ -144,6 +144,13 @@ Protected Member Functions</h2></td></tr>
 <tr class="memdesc:a3dddf4c2832bc86e29e1430bb5060988"><td class="mdescLeft">&#160;</td><td class="mdescRight">will be called every time from thread, when condSignal was called will be called from thread with locked working mutex,<br  />
  mutex will be unlock after calling this function  <a href="classcontroller_1_1_archive_transactions_ordering.html#a3dddf4c2832bc86e29e1430bb5060988">More...</a><br /></td></tr>
 <tr class="separator:a3dddf4c2832bc86e29e1430bb5060988"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad26a316a11a100861a7c9761b4de5dd4"><td class="memItemLeft" align="right" valign="top"><a id="ad26a316a11a100861a7c9761b4de5dd4" name="ad26a316a11a100861a7c9761b4de5dd4"></a>
+uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>getNextTransactionId</b> ()</td></tr>
+<tr class="memdesc:ad26a316a11a100861a7c9761b4de5dd4"><td class="mdescLeft">&#160;</td><td class="mdescRight">check the last transaction of group and return the transaction id the next transaction would get <br /></td></tr>
+<tr class="separator:ad26a316a11a100861a7c9761b4de5dd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4c0a13c313579cbf961f0a835dad71a"><td class="memItemLeft" align="right" valign="top"><a id="ae4c0a13c313579cbf961f0a835dad71a" name="ae4c0a13c313579cbf961f0a835dad71a"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>insertTransactionToGroup</b> (std::unique_ptr&lt; model::gradido::GradidoTransaction &gt; transaction)</td></tr>
+<tr class="separator:ae4c0a13c313579cbf961f0a835dad71a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>

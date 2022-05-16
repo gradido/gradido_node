@@ -12,6 +12,7 @@ var searchData=
   ['addtimer_9',['addTimer',['../class_fuzzy_timer.html#a67fca7b99d7b5a11a451cd695bf46aeb',1,'FuzzyTimer']]],
   ['addtransaction_10',['addTransaction',['../classcontroller_1_1_block.html#a5f240ca79b5b53a37b16c85e6bd29e50',1,'controller::Block::addTransaction()'],['../classcontroller_1_1_group.html#a9d18405e4740fc3f2386e1ed68f3c94c',1,'controller::Group::addTransaction()']]],
   ['appendline_11',['appendLine',['../classmodel_1_1files_1_1_block.html#a1028ea2d4adcd34c504cceebee75eaec',1,'model::files::Block']]],
-  ['archivetransactiondoubletteexception_12',['ArchiveTransactionDoubletteException',['../classcontroller_1_1_archive_transaction_doublette_exception.html',1,'controller']]],
-  ['archivetransactionsordering_13',['ArchiveTransactionsOrdering',['../classcontroller_1_1_archive_transactions_ordering.html',1,'controller']]]
+  ['archivependingtransactionsmapfull_12',['ArchivePendingTransactionsMapFull',['../classcontroller_1_1_archive_pending_transactions_map_full.html',1,'controller']]],
+  ['archivetransactiondoubletteexception_13',['ArchiveTransactionDoubletteException',['../classcontroller_1_1_archive_transaction_doublette_exception.html',1,'controller']]],
+  ['archivetransactionsordering_14',['ArchiveTransactionsOrdering',['../classcontroller_1_1_archive_transactions_ordering.html',1,'controller']]]
 ];

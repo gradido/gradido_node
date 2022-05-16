@@ -8,6 +8,7 @@ var namespaces_dup =
     ] ],
     [ "controller", null, [
       [ "AddressIndex", "classcontroller_1_1_address_index.html", "classcontroller_1_1_address_index" ],
+      [ "ArchivePendingTransactionsMapFull", "classcontroller_1_1_archive_pending_transactions_map_full.html", null ],
       [ "ArchiveTransactionDoubletteException", "classcontroller_1_1_archive_transaction_doublette_exception.html", null ],
       [ "ArchiveTransactionsOrdering", "classcontroller_1_1_archive_transactions_ordering.html", "classcontroller_1_1_archive_transactions_ordering" ],
       [ "Block", "classcontroller_1_1_block.html", "classcontroller_1_1_block" ],
