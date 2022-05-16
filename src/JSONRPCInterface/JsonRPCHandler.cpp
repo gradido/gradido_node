@@ -31,7 +31,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 
 	Poco::SharedPtr<controller::Group> group;
 	std::string groupAlias;
-	
+
 	// load group for all requests
 	if (!getStringParameter(params, "groupAlias", groupAlias)) {
 		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
@@ -44,9 +44,9 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		stateError("group not known");
 		return;
 	}
-	
-	// load public key for nearly all requests 
-	std::string pubkey;	
+
+	// load public key for nearly all requests
+	std::string pubkey;
 	std::string pubkeyHex;
 	std::set<std::string> noNeedForPubkey = {
 		"puttransaction"
@@ -58,7 +58,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		}
 		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
 	}
-	
+
 	int timezoneDifferential = Poco::Timezone::tzd();
 
 	if (method == "getlasttransaction") {
@@ -79,7 +79,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		if (!getUInt64Parameter(params, "fromTransactionId", transactionId)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
-		}		
+		}
 		getStringParameter(params, "format", format);
 		printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
 		getTransactions(transactionId, groupAlias, format);
@@ -90,7 +90,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}
-		
+
 		Poco::DateTime date;
 		try {
 			date = Poco::DateTimeParser::parse(date_string, timezoneDifferential);
@@ -102,7 +102,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		std::string coinGroupId = "";
 		getStringParameter(params, "coinGroupId", coinGroupId);
 		getAddressBalance(pubkey, date, group, coinGroupId);
-		
+
 	}
 	else if (method == "getaddresstype") {
 		getAddressType(pubkey, group);
@@ -127,7 +127,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	}
 	else if (method == "getcreationsumformonth") {
 		int month = 0, year = 0;
-		if (!getIntParameter(params, "month", month) || 
+		if (!getIntParameter(params, "month", month) ||
 			!getIntParameter(params, "year", year)) {
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
@@ -169,7 +169,8 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
 			return;
 		}
-		auto transaction = std::make_unique<model::gradido::GradidoTransaction>(&DataTypeConverter::base64ToBinString(base64Transaction));
+		auto serializedTransaction = DataTypeConverter::base64ToBinString(base64Transaction);
+		auto transaction = std::make_unique<model::gradido::GradidoTransaction>(&serializedTransaction);
 		putTransaction(transactionNr, std::move(transaction), group);
 	}
 	else {
@@ -203,7 +204,7 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 	Value jsonTransactionArray(kArrayType);
 	Poco::AutoPtr<model::gradido::GradidoBlock> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
-		
+
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
 			if (format == "json") {
@@ -222,9 +223,9 @@ void JsonRPCHandler::getTransactions(int64_t fromTransactionId, const std::strin
 }
 
 void JsonRPCHandler::getAddressBalance(
-	const std::string& pubkey, 
-	Poco::DateTime date, 
-	Poco::SharedPtr<controller::Group> group, 
+	const std::string& pubkey,
+	Poco::DateTime date,
+	Poco::SharedPtr<controller::Group> group,
 	const std::string& coinGroupId /* = "" */
 )
 {
@@ -326,7 +327,7 @@ void JsonRPCHandler::listTransactions(
 }
 
 void JsonRPCHandler::putTransaction(
-	uint64_t transactionNr, 
+	uint64_t transactionNr,
 	std::unique_ptr<model::gradido::GradidoTransaction> transaction,
 	Poco::SharedPtr<controller::Group> group
 )
@@ -346,5 +347,5 @@ void JsonRPCHandler::putTransaction(
 	}
 	catch (model::gradido::TransactionValidationException& ex) {
 		stateError("invalid transaction", ex);
-	}	
+	}
 }
