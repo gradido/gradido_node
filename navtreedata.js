@@ -25,6 +25,7 @@
 var NAVTREE =
 [
   [ "Gradido Node", "index.html", [
+    [ "Brief", "index.html", null ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ]
     ] ],
