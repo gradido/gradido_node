@@ -4,7 +4,9 @@
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "../SingletonManager/GroupManager.h"
+#include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "Poco/AutoPtr.h"
 #include "Poco/DateTimeFormatter.h"
@@ -43,14 +45,19 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 		return;
 	}
 	
-	// load public key for all requests
+	// load public key for nearly all requests 
 	std::string pubkey;	
 	std::string pubkeyHex;
-	if (!getStringParameter(params, "pubkey", pubkeyHex)) {
-		mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
-		return;
+	std::set<std::string> noNeedForPubkey = {
+		"puttransaction"
+	};
+	if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
+		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
+			mResponseErrorCode = JSON_RPC_ERROR_INVALID_PARAMS;
+			return;
+		}
+		pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
 	}
-	pubkey = std::move(*DataTypeConverter::hexToBinString(pubkeyHex).release());
 	
 	int timezoneDifferential = Poco::Timezone::tzd();
 
@@ -326,6 +333,18 @@ void JsonRPCHandler::putTransaction(
 {
 	assert(!group.isNull());
 	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
-	group->getArchiveTransactionsOrderer()->addPendingTransaction(std::move(transaction), transactionNr);
-	stateSuccess();
+	try {
+		group->getArchiveTransactionsOrderer()->addPendingTransaction(std::move(transaction), transactionNr);
+		stateSuccess();
+	}
+	catch (controller::ArchiveTransactionDoubletteException& ex) {
+		LoggerManager::getInstance()->mErrorLogging.warning("puttransaction exception: %s", ex.getFullString());
+		stateError(ex.what());
+	}
+	catch (BlockchainOrderException& ex) {
+		stateError(ex.what());
+	}
+	catch (model::gradido::TransactionValidationException& ex) {
+		stateError("invalid transaction", ex);
+	}	
 }

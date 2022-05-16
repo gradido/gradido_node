@@ -6,7 +6,7 @@
 
 namespace controller {
 	ArchiveTransactionsOrdering::ArchiveTransactionsOrdering(Group* parentGroup)
-		: mParentGroup(parentGroup)
+		: Thread("grdArchiveOrd"),  mParentGroup(parentGroup)
 	{
 
 	}
@@ -21,12 +21,31 @@ namespace controller {
 		uint64_t transactionNr
 	)
 	{
-		std::scoped_lock<std::shared_mutex> _lock(mPendingTransactionsMutex);
-		auto result = mPendingTransactions.insert({ transactionNr, std::move(transaction) });
-		if (!result.second) {
+		auto nextTransactionId = getNextTransactionId();
+		if (nextTransactionId > transactionNr) {
 			throw ArchiveTransactionDoubletteException("transaction with this nr already exist", transactionNr);
 		}
-		condSignal();
+		if (nextTransactionId == transactionNr) {
+			insertTransactionToGroup(std::move(transaction));
+		}
+		else {
+			auto lastTransaction = mParentGroup->getLastTransaction();
+			if (!lastTransaction.isNull() && lastTransaction->getReceived() > transaction->getTransactionBody()->getCreatedSeconds()) {
+				throw BlockchainOrderException("previous transaction is younger");
+			}
+			std::scoped_lock<std::shared_mutex> _lock(mPendingTransactionsMutex);
+			// prevent that hackers can fill up the memory with pending archive transactions
+			// MAGIC NUMBER
+			if (mPendingTransactions.size() > 100) {
+				throw ArchivePendingTransactionsMapFull("archive pending map exhausted", mPendingTransactions.size());
+			}
+			auto result = mPendingTransactions.insert({ transactionNr, std::move(transaction) });
+			if (!result.second) {
+				throw ArchiveTransactionDoubletteException("transaction with this nr already exist", transactionNr);
+			}
+			condSignal();
+		}
+		
 	}
 
 	int ArchiveTransactionsOrdering::ThreadFunction()
@@ -39,34 +58,13 @@ namespace controller {
 				if (!mPendingTransactions.size()) return 0;
 				it = mPendingTransactions.begin();
 			}
-			auto lastTransaction = mParentGroup->getLastTransaction();
-			if (!lastTransaction.isNull()) {
-				if (lastTransaction->getID() + 1 != it->first) {
-					return 0;
-				}
-			}
-			else if (it->first > 1) {
-				return 0;
-			}
+			if (it->first != getNextTransactionId()) return 0;
+			
 			try {
-				auto createdTimestamp = it->second->getTransactionBody()->getCreatedSeconds();
-				// calculate hash with blake2b
-				auto mm = MemoryManager::getInstance();
-				auto hash = mm->getMemory(crypto_generichash_BYTES);
-				auto rawMessage = it->second->getSerialized();
-
-				crypto_generichash(
-					*hash, hash->size(),
-					(const unsigned char*)rawMessage->data(),
-					rawMessage->size(),
-					NULL, 0
-				);
-				mParentGroup->addTransaction(std::move(it->second), hash, createdTimestamp);
-				mm->releaseMemory(hash);
+				insertTransactionToGroup(std::move(it->second));
 			}
 			catch (GradidoBlockchainException& ex) {
-				LoggerManager::getInstance()->mErrorLogging.critical("[ArchiveTransactionsOrdering] terminate with gradido blockchain exception: %s", ex.getFullString());
-				Poco::Util::ServerApplication::terminate();
+				LoggerManager::getInstance()->mErrorLogging.warning("[ArchiveTransactionsOrdering] terminate with gradido blockchain exception: %s", ex.getFullString());
 			}
 			catch (Poco::Exception& ex) {
 				LoggerManager::getInstance()->mErrorLogging.critical("[ArchiveTransactionsOrdering] terminate with poco exception: %s", ex.displayText());
@@ -85,6 +83,35 @@ namespace controller {
 		return 0;
 	}
 
+	uint64_t ArchiveTransactionsOrdering::getNextTransactionId()
+	{
+		auto lastTransaction = mParentGroup->getLastTransaction();
+		if (!lastTransaction.isNull()) {
+			return lastTransaction->getID() + 1;
+		}
+		else {
+			return 1;
+		}
+	}
+
+	void ArchiveTransactionsOrdering::insertTransactionToGroup(std::unique_ptr<model::gradido::GradidoTransaction> transaction)
+	{
+		auto createdTimestamp = transaction->getTransactionBody()->getCreatedSeconds();
+		// calculate hash with blake2b
+		auto mm = MemoryManager::getInstance();
+		auto hash = mm->getMemory(crypto_generichash_BYTES);
+		auto rawMessage = transaction->getSerialized();
+
+		crypto_generichash(
+			*hash, hash->size(),
+			(const unsigned char*)rawMessage->data(),
+			rawMessage->size(),
+			NULL, 0
+		);
+		mParentGroup->addTransaction(std::move(transaction), hash, createdTimestamp);
+		mm->releaseMemory(hash);
+	}
+
 	// *************** Exceptions ****************************
 	ArchiveTransactionDoubletteException::ArchiveTransactionDoubletteException(const char* what, uint64_t transactionNr) noexcept
 		: GradidoBlockchainException(what), mTransactionNr(transactionNr)
@@ -97,6 +124,19 @@ namespace controller {
 	{
 		std::string result = what();
 		result += ", transaction nr: " + std::to_string(mTransactionNr);
+		return result;
+	}
+
+	ArchivePendingTransactionsMapFull::ArchivePendingTransactionsMapFull(const char* what, size_t mapSize) noexcept
+		: GradidoBlockchainException(what), mMapSize(mapSize)
+	{
+
+	}
+
+	std::string ArchivePendingTransactionsMapFull::getFullString() const
+	{
+		std::string result = what();
+		result += ", map size: " + std::to_string(mMapSize);
 		return result;
 	}
 }

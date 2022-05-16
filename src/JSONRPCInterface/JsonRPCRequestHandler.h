@@ -5,6 +5,8 @@
 #include "Poco/URI.h"
 #include "Poco/Logger.h"
 
+#include "gradido_blockchain/GradidoBlockchainException.h"
+
 #include "rapidjson/document.h"
 
 enum JsonRPCErrorCodes : int
@@ -52,6 +54,7 @@ public:
 	bool checkObjectOrArrayParameter(const rapidjson::Value& params, const char* fieldName);
 
 	void stateError(const char* msg, std::string details = "");
+	void stateError(const char* msg, GradidoBlockchainException& ex);
 	void customStateError(const char* state, const char* msg, std::string details = "");
 	void stateSuccess();
 	void stateWarning(const char* msg, std::string details = "");

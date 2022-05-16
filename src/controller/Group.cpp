@@ -36,7 +36,7 @@ namespace controller {
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatureTransactionNrs(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
 		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
-		mCommunityServer(nullptr), mExitCalled(false)
+		mCommunityServer(nullptr), mArchiveTransactionOrdering(nullptr), mExitCalled(false)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -525,8 +525,11 @@ namespace controller {
 							// subtract decay from time: date -> timeout
 							// later in code the decay for: received -> date will be subtracted automatic
 							// TODO: check if result is like expected
-							auto secondsForDecay = Poco::Timespan(deferredTransfer->getTimeoutAsPocoDateTime() - date).totalSeconds();
-							calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, secondsForDecay);
+							calculateDecayFactorForDuration(
+								temp->getData(), 
+								gDecayFactorGregorianCalender, 
+								date, deferredTransfer->getTimeoutAsPocoDateTime()
+							);
 							calculateDecayFast(temp->getData(), receiveAmount);
 						}
 
@@ -579,7 +582,11 @@ namespace controller {
 		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
 			assert(it->second >= lastDate);
 			if (it->second > lastDate) {
-				calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(it->second - lastDate).totalSeconds());
+				calculateDecayFactorForDuration(
+					temp->getData(), 
+					gDecayFactorGregorianCalender, 
+					lastDate, it->second
+				);
 				calculateDecayFast(temp->getData(), gdd);
 				lastDate = it->second;
 			}
@@ -592,7 +599,11 @@ namespace controller {
 		}
 		assert(date >= lastDate);
 		if (Poco::Timespan(date - lastDate).totalSeconds()) {
-			calculateDecayFactorForDuration(temp->getData(), gDecayFactorGregorianCalender, Poco::Timespan(date - lastDate).totalSeconds());
+			calculateDecayFactorForDuration(
+				temp->getData(), 
+				gDecayFactorGregorianCalender, 
+				lastDate, date
+			);
 			calculateDecayFast(temp->getData(), gdd);
 		}
 

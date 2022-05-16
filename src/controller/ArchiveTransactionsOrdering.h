@@ -29,6 +29,10 @@ namespace controller
 		void addPendingTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, uint64_t transactionNr);
 	protected:
 		int ThreadFunction();
+		//! check the last transaction of group and return the transaction id the next transaction would get
+		uint64_t getNextTransactionId();
+		void insertTransactionToGroup(std::unique_ptr<model::gradido::GradidoTransaction> transaction);
+
 		typedef std::map<uint64_t, std::unique_ptr<model::gradido::GradidoTransaction>> PendingTransactionsMap;
 		PendingTransactionsMap mPendingTransactions;
 		std::shared_mutex mPendingTransactionsMutex;
@@ -42,6 +46,16 @@ namespace controller
 		std::string getFullString() const;
 	protected:
 		uint64_t mTransactionNr;
+	};
+
+	class ArchivePendingTransactionsMapFull : public GradidoBlockchainException
+	{
+	public: 
+		explicit ArchivePendingTransactionsMapFull(const char* what, size_t mapSize) noexcept;
+		std::string getFullString() const;
+	protected:
+		size_t mMapSize;
+			
 	};
 }
 

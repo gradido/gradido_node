@@ -178,6 +178,19 @@ void JsonRPCRequestHandler::stateError(const char* msg, std::string details)
 	}
 }
 
+void JsonRPCRequestHandler::stateError(const char* msg, GradidoBlockchainException& ex)
+{
+	// clear prev error states
+	mResponseResult.RemoveMember("state");
+	mResponseResult.RemoveMember("msg");
+	mResponseResult.RemoveMember("details");
+
+	auto alloc = mResponseJson.GetAllocator();
+	mResponseResult.AddMember("state", "error", alloc);
+	mResponseResult.AddMember("msg", Value(msg, alloc), alloc);
+	mResponseResult.AddMember("details", ex.getDetails(alloc), alloc);
+}
+
 
 void JsonRPCRequestHandler::stateSuccess()
 {	

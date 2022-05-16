@@ -15,16 +15,24 @@ namespace model {
 			: mDecayStart(decayStart), mDecayEnd(decayEnd), mDecayAmount(nullptr)
 		{
 			assert(mDecayEnd >= mDecayStart);
-
+			if (mDecayStart < DECAY_START_TIME) {
+				mDecayStart = DECAY_START_TIME;
+			}
+			if (mDecayEnd < DECAY_START_TIME) {
+				mDecayEnd = DECAY_START_TIME;
+			}
 			auto mm = MemoryManager::getInstance();
 			// if decay end == decay start, decay is 0
 			mDecayAmount = mm->getMathMemory();
 
 			if (mDecayEnd > mDecayStart) {
-				auto duration = Poco::Timespan(mDecayEnd - mDecayStart);
 				auto decayFactor = MathMemory::create();
 				auto balance = MathMemory::create();
-				calculateDecayFactorForDuration(decayFactor->getData(), gDecayFactorGregorianCalender, duration.totalSeconds());
+				calculateDecayFactorForDuration(
+					decayFactor->getData(), 
+					gDecayFactorGregorianCalender, 
+					mDecayStart, mDecayEnd
+				);
 				mpfr_set(balance->getData(), startBalance, gDefaultRound);
 				calculateDecayFast(decayFactor->getData(), balance->getData());
 
