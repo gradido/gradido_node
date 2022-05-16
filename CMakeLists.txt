@@ -102,7 +102,7 @@ IF(UNIX)
 	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
 	SET(ENABLE_PAGECOMPILER OFF CACHE BOOL "" FORCE)
 	SET(ENABLE_JSON OFF CACHE BOOL "" FORCE)
-	add_subdirectory("dependencies/poco")
+	add_subdirectory("dependencies/gradido_blockchain/dependencies/poco")
 
 	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL Poco::JWT)
 ENDIF()
