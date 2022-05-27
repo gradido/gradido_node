@@ -1,7 +1,7 @@
 var class_virtual_file =
 [
-    [ "VirtualFile", "class_virtual_file.html#ab4fefe3e765c9cc319863a021e115fae", null ],
-    [ "VirtualFile", "class_virtual_file.html#a8a83aa9accb16f0e100db020851b7a18", null ],
+    [ "VirtualFile", "class_virtual_file.html#ae4c57d9f6e5a4a5e2711be3359906870", null ],
+    [ "VirtualFile", "class_virtual_file.html#a6ab6dd47e552424d01bd99a4c71e355f", null ],
     [ "~VirtualFile", "class_virtual_file.html#ae0b0faae09772cf57242c03f385277b6", null ],
     [ "read", "class_virtual_file.html#a888acb75cb32b3d1b1790e97309c0a05", null ],
     [ "setCursor", "class_virtual_file.html#a8bcbb8ec29d180ec8f81dfe69476da4b", null ],

@@ -1,7 +1,7 @@
 var searchData=
 [
   ['mainserver_0',['MainServer',['../class_main_server.html',1,'MainServer'],['../class_main_server.html#a7508544076edb2ebb27b03f80321cdca',1,'MainServer::MainServer()']]],
-  ['mblockindexfile_1',['mBlockIndexFile',['../classcontroller_1_1_block_index.html#a72d87560663d2b5784a3fced4990a081',1,'controller::BlockIndex']]],
+  ['mblockindexfile_1',['mBlockIndexFile',['../classcontroller_1_1_block_index.html#a7618d45062a158ae9d239686d49f6df4',1,'controller::BlockIndex']]],
   ['messageid_2',['MessageId',['../classiota_1_1_message_id.html',1,'iota']]],
   ['messageidformatexception_3',['MessageIdFormatException',['../class_message_id_format_exception.html',1,'']]],
   ['messagelistener_4',['MessageListener',['../classiota_1_1_message_listener.html',1,'iota::MessageListener'],['../classiota_1_1_message_listener.html#a0bde52d2d1eed8ccd1454c42e74f4e55',1,'iota::MessageListener::MessageListener()']]],

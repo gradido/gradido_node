@@ -4,6 +4,7 @@ var searchData=
   ['block_1',['Block',['../classcontroller_1_1_block.html',1,'controller::Block'],['../classmodel_1_1files_1_1_block.html',1,'model::files::Block'],['../structmodel_1_1files_1_1_block_index_1_1_block.html',1,'model::files::BlockIndex::Block']]],
   ['blockappendlinetask_2',['BlockAppendLineTask',['../classmodel_1_1files_1_1_block_append_line_task.html',1,'model::files']]],
   ['blockindex_3',['BlockIndex',['../classcontroller_1_1_block_index.html',1,'controller::BlockIndex'],['../classmodel_1_1files_1_1_block_index.html',1,'model::files::BlockIndex']]],
-  ['blocknotloadedexception_4',['BlockNotLoadedException',['../classcontroller_1_1_block_not_loaded_exception.html',1,'controller']]],
-  ['bufferoverflowexception_5',['BufferOverflowException',['../class_buffer_overflow_exception.html',1,'']]]
+  ['blockindexexception_4',['BlockIndexException',['../classcontroller_1_1_block_index_exception.html',1,'controller']]],
+  ['blocknotloadedexception_5',['BlockNotLoadedException',['../classcontroller_1_1_block_not_loaded_exception.html',1,'controller']]],
+  ['bufferoverflowexception_6',['BufferOverflowException',['../class_buffer_overflow_exception.html',1,'']]]
 ];

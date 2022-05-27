@@ -10,5 +10,5 @@ var classcontroller_1_1_block_index =
     [ "getFileCursorForTransactionNr", "classcontroller_1_1_block_index.html#ab14bfe4cd7a19e930235a8b530be4854", null ],
     [ "loadFromFile", "classcontroller_1_1_block_index.html#a09afd2785b550c464e1173a4bb6e1bb7", null ],
     [ "writeIntoFile", "classcontroller_1_1_block_index.html#a8a65562025348d7f62ed29a932aaf2df", null ],
-    [ "mBlockIndexFile", "classcontroller_1_1_block_index.html#a72d87560663d2b5784a3fced4990a081", null ]
+    [ "mBlockIndexFile", "classcontroller_1_1_block_index.html#a7618d45062a158ae9d239686d49f6df4", null ]
 ];

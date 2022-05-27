@@ -1,5 +1,8 @@
 var searchData=
 [
-  ['thread_0',['Thread',['../classtask_1_1_thread.html#a0cf84f940aad3e45a2f34fae4a1caa42',1,'task::Thread']]],
-  ['threadfunction_1',['ThreadFunction',['../classcontroller_1_1_archive_transactions_ordering.html#a3dddf4c2832bc86e29e1430bb5060988',1,'controller::ArchiveTransactionsOrdering::ThreadFunction()'],['../class_ordering_manager.html#aac1b1900767e8152925dbada61ae9afc',1,'OrderingManager::ThreadFunction()'],['../classtask_1_1_c_p_u_sheduler_thread.html#a7867811cded1d24b39c4ebdecd1e8685',1,'task::CPUShedulerThread::ThreadFunction()'],['../classtask_1_1_thread.html#ae5ce05044ed9d9a0675b622fc66209d0',1,'task::Thread::ThreadFunction()']]]
+  ['scheduletask_0',['scheduleTask',['../classtask_1_1_c_p_u_task.html#a139be4eb56d95203da397ac1c4d0ca7c',1,'task::CPUTask']]],
+  ['serialize_1',['serialize',['../classmodel_1_1files_1_1_address_index.html#a2d88a425287729406bd2331e83c00451',1,'model::files::AddressIndex::serialize()'],['../classmodel_1_1files_1_1_block_index.html#a61f19a19a21b576a80dca6ddafd03af8',1,'model::files::BlockIndex::serialize()']]],
+  ['setcursor_2',['setCursor',['../class_virtual_file.html#a8bcbb8ec29d180ec8f81dfe69476da4b',1,'VirtualFile']]],
+  ['setkeyvalue_3',['setKeyValue',['../classmodel_1_1files_1_1_state.html#a4d8631a2bf4fcc4dd95b563f9b204c02',1,'model::files::State']]],
+  ['state_4',['State',['../classmodel_1_1files_1_1_state.html#a7091905ba2dd71a6f07eab54f514102d',1,'model::files::State']]]
 ];

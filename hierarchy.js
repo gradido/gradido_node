@@ -36,6 +36,7 @@ var hierarchy =
       [ "client::MissingParameterException", "classclient_1_1_missing_parameter_exception.html", null ],
       [ "controller::ArchivePendingTransactionsMapFull", "classcontroller_1_1_archive_pending_transactions_map_full.html", null ],
       [ "controller::ArchiveTransactionDoubletteException", "classcontroller_1_1_archive_transaction_doublette_exception.html", null ],
+      [ "controller::BlockIndexException", "classcontroller_1_1_block_index_exception.html", null ],
       [ "controller::BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],
       [ "controller::GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
       [ "controller::WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ],
@@ -100,9 +101,11 @@ var hierarchy =
       [ "task::CPUTask", "classtask_1_1_c_p_u_task.html", [
         [ "IotaMessageToTransactionTask", "class_iota_message_to_transaction_task.html", null ],
         [ "WriteTransactionsToBlockTask", "class_write_transactions_to_block_task.html", null ],
+        [ "controller::SerializeBlockIndexTask", "classcontroller_1_1_serialize_block_index_task.html", null ],
         [ "iota::MilestoneLoadingTask", "classiota_1_1_milestone_loading_task.html", null ],
         [ "model::files::BlockAppendLineTask", "classmodel_1_1files_1_1_block_append_line_task.html", null ],
-        [ "model::files::RebuildBlockIndexTask", "classmodel_1_1files_1_1_rebuild_block_index_task.html", null ]
+        [ "model::files::RebuildBlockIndexTask", "classmodel_1_1files_1_1_rebuild_block_index_task.html", null ],
+        [ "task::HddWriteBufferTask", "classtask_1_1_hdd_write_buffer_task.html", null ]
       ] ]
     ] ],
     [ "TimerCallback", "class_timer_callback.html", [

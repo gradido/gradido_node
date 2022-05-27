@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['operator_3d_3d_0',['operator==',['../classiota_1_1_message_id.html#ab720dace46964103ad1db00e26d0b4a6',1,'iota::MessageId']]]
+  ['nodetransactionentry_0',['NodeTransactionEntry',['../classmodel_1_1_node_transaction_entry.html#ab2e27974293386c7dc73b1929af938df',1,'model::NodeTransactionEntry']]]
 ];

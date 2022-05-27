@@ -13,6 +13,7 @@ var annotated_dup =
       [ "ArchiveTransactionsOrdering", "classcontroller_1_1_archive_transactions_ordering.html", "classcontroller_1_1_archive_transactions_ordering" ],
       [ "Block", "classcontroller_1_1_block.html", "classcontroller_1_1_block" ],
       [ "BlockIndex", "classcontroller_1_1_block_index.html", "classcontroller_1_1_block_index" ],
+      [ "BlockIndexException", "classcontroller_1_1_block_index_exception.html", null ],
       [ "BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],
       [ "ControllerBase", "classcontroller_1_1_controller_base.html", null ],
       [ "DeferredTransfer", "classcontroller_1_1_deferred_transfer.html", null ],
@@ -20,6 +21,7 @@ var annotated_dup =
       [ "GroupIndex", "classcontroller_1_1_group_index.html", "classcontroller_1_1_group_index" ],
       [ "GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
       [ "RemoteGroup", "classcontroller_1_1_remote_group.html", null ],
+      [ "SerializeBlockIndexTask", "classcontroller_1_1_serialize_block_index_task.html", "classcontroller_1_1_serialize_block_index_task" ],
       [ "WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ]
     ] ],
     [ "iota", null, [
@@ -62,6 +64,7 @@ var annotated_dup =
       [ "CPUSheduler", "classtask_1_1_c_p_u_sheduler.html", null ],
       [ "CPUShedulerThread", "classtask_1_1_c_p_u_sheduler_thread.html", "classtask_1_1_c_p_u_sheduler_thread" ],
       [ "CPUTask", "classtask_1_1_c_p_u_task.html", "classtask_1_1_c_p_u_task" ],
+      [ "HddWriteBufferTask", "classtask_1_1_hdd_write_buffer_task.html", "classtask_1_1_hdd_write_buffer_task" ],
       [ "Task", "classtask_1_1_task.html", "classtask_1_1_task" ],
       [ "Thread", "classtask_1_1_thread.html", "classtask_1_1_thread" ]
     ] ],
