@@ -85,8 +85,8 @@ namespace model {
 
 		// **************************************************************************
 
-		BlockIndex::BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
-			: mDataBlockSumSize(0)
+		BlockIndex::BlockIndex(const Poco::Path& groupFolderPath, Poco::UInt32 blockNr)
+			: mDataBlockSumSize(0), mFileName(groupFolderPath)
 		{
 			char fileName[24]; memset(fileName, 0, 24);
 #ifdef _MSC_VER
@@ -94,13 +94,12 @@ namespace model {
 #else 
 			sprintf(fileName, "blk%08d.index", blockNr);
 #endif
-			groupFolderPath.append(fileName);
+			mFileName.append(fileName);
 			try {
-				Poco::File file(groupFolderPath);
+				Poco::File file(mFileName);
 				if (!file.exists()) {
 					file.createFile();
 				}
-				mFilename = groupFolderPath.toString();
 			}
 			catch (Poco::Exception& ex) {
 				auto lm = LoggerManager::getInstance();
@@ -108,6 +107,12 @@ namespace model {
 				lm->mErrorLogging.error("[%s] Poco Exception: %s\n", functionName, ex.displayText());
 				//printf("[%s] Poco Exception: %s\n", __FUNCTION__, ex.displayText().data());
 			}
+
+		}
+
+		BlockIndex::BlockIndex(const Poco::Path& filename)
+			: mDataBlockSumSize(0), mFileName(filename)
+		{
 
 		}
 
@@ -156,7 +161,7 @@ namespace model {
 			mm->releaseMemory(hash);
 			//printf("block index write hash to file: %s\n", DataTypeConverter::binToHex(hash).data());
 
-			return vFile.writeToFile(mFilename.data());
+			return vFile.writeToFile(mFileName.toString(Poco::Path::PATH_NATIVE).data());
 
 		}
 
@@ -164,7 +169,7 @@ namespace model {
 		{
 			assert(receiver);
 
-			VirtualFile* vFile = VirtualFile::readFromFile(mFilename.data());
+			VirtualFile* vFile = VirtualFile::readFromFile(mFileName.toString(Poco::Path::PATH_NATIVE).data());
 			if (!vFile || !vFile->getSize()) {
 				return false;
 			}
@@ -242,6 +247,37 @@ namespace model {
 			}
 
 			return 0 == hashCompareResult;
+		}
+
+		std::unique_ptr<VirtualFile> BlockIndex::serialize()
+		{
+			auto mm = MemoryManager::getInstance();
+			auto hash = mm->getMemory(crypto_generichash_BYTES);
+
+			crypto_generichash_state state;
+			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+
+			auto vFile = std::make_unique<VirtualFile>(mDataBlockSumSize + crypto_generichash_BYTES + sizeof(uint8_t));
+
+			// maybe has more speed (cache hits) with list and calling update hash in a row, but I think must be profiled and depend on CPU type
+			// auto-profiling and strategy choosing?
+			while (!mDataBlocks.empty())
+			{
+				auto block = mDataBlocks.front();
+				mDataBlocks.pop();
+				block->writeIntoFile(vFile.get());
+				block->updateHash(&state);
+				delete block;
+			}
+
+			crypto_generichash_final(&state, *hash, hash->size());
+			uint8_t hash_type = HASH_BLOCK;
+			vFile->write(&hash_type, sizeof(uint8_t));
+			vFile->write((const char*)*hash, hash->size());
+			mm->releaseMemory(hash);
+			//printf("block index write hash to file: %s\n", DataTypeConverter::binToHex(hash).data());
+
+			return std::move(vFile);
 		}
 	}
 

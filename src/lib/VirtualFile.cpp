@@ -8,31 +8,33 @@
 #include "../SingletonManager/FileLockManager.h"
 #include "../SingletonManager/LoggerManager.h"
 
-VirtualFile::VirtualFile(size_t size)
-	: mBuffer(MemoryManager::getInstance()->getMemory(size)), mCursor(0)
+VirtualFile::VirtualFile(size_t bufferSize)
+	: mBuffer((unsigned char*)malloc(bufferSize)), mBufferSize(bufferSize), mCursor(0)
 {
 
 }
-VirtualFile::VirtualFile(MemoryBin* buffer)
-	: mBuffer(buffer), mCursor(0)
+VirtualFile::VirtualFile(unsigned char* buffer, size_t bufferSize)
+	: mBuffer(buffer), mBufferSize(bufferSize), mCursor(0)
 {
 }
 
 VirtualFile::~VirtualFile()
 {
 	if (mBuffer) {
-		MemoryManager::getInstance()->releaseMemory(mBuffer);
+		free(mBuffer);
+		mBuffer = nullptr;
+		mBufferSize = 0;
 	}
 }
 
 bool VirtualFile::read(void* dst, size_t size)
 {
 	assert(mBuffer);
-	if (mCursor + size > mBuffer->size()) {
-		throw BufferOverflowException("try more read than in buffer", mBuffer->size(), mCursor + size);
+	if (mCursor + size > mBufferSize) {
+		throw BufferOverflowException("try more read than in buffer", mBufferSize, mCursor + size);
 	}
 	
-	memcpy(dst, &mBuffer->data()[mCursor], size);
+	memcpy(dst, &mBuffer[mCursor], size);
 	mCursor += size;
 	return true;
 }
@@ -40,18 +42,18 @@ bool VirtualFile::read(void* dst, size_t size)
 bool VirtualFile::write(const void* src, size_t size)
 {
 	assert(mBuffer);
-	if (mCursor + size > mBuffer->size()) {
-		throw BufferOverflowException("try more write than in buffer", mBuffer->size(), mCursor + size);
+	if (mCursor + size > mBufferSize) {
+		throw BufferOverflowException("try more write than in buffer", mBufferSize, mCursor + size);
 	}
 
-	memcpy(&mBuffer->data()[mCursor], src, size);
+	memcpy(&mBuffer[mCursor], src, size);
 	mCursor += size;
 	return true;
 }
 bool VirtualFile::setCursor(size_t dst)
 {
 	assert(mBuffer);
-	if (dst > mBuffer->size()) return false;
+	if (dst > mBufferSize) return false;
 	mCursor = dst;
 	return true;
 }
@@ -67,7 +69,7 @@ bool VirtualFile::writeToFile(const char* filename)
 	Poco::FileOutputStream file(filename);
 	file.seekp(0, std::ios_base::beg);
 
-	file.write(*mBuffer, mCursor);
+	file.write((const char*)mBuffer, mCursor);
 	file.close();
 
 	fl->unlock(filename);
@@ -78,8 +80,6 @@ bool VirtualFile::writeToFile(const char* filename)
 VirtualFile* VirtualFile::readFromFile(const char* filename)
 {
 	auto fl = FileLockManager::getInstance();
-	auto mm = MemoryManager::getInstance();
-	
 
 	if (!fl->tryLockTimeout(filename, 100)) {
 		throw model::files::LockException("cannot lock file to read into virtual file", filename);
@@ -95,13 +95,13 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 		}
 		file.seekg(0, std::ios_base::beg);
 
-		auto fileBuffer = mm->getMemory(telled);
-		file.read(*fileBuffer, telled);
+		auto fileBuffer = (unsigned char*)malloc(telled);
+		file.read((char*)fileBuffer, telled);
 		file.close();
 
 		fl->unlock(filename);
 
-		return new VirtualFile(fileBuffer);
+		return new VirtualFile(fileBuffer, telled);
 	} 
 	catch (Poco::FileNotFoundException& ex) {
 		return nullptr;

@@ -332,10 +332,13 @@ void JsonRPCHandler::putTransaction(
 )
 {
 	assert(!group.isNull());
-	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+	Profiler timeUsed;
 	try {
+		transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
 		group->getArchiveTransactionsOrderer()->addPendingTransaction(std::move(transaction), transactionNr);
 		stateSuccess();
+		auto alloc = mResponseJson.GetAllocator();
+		mResponseResult.AddMember("timeUsed", timeUsed.millis(), alloc);
 	}
 	catch (controller::ArchiveTransactionDoubletteException& ex) {
 		LoggerManager::getInstance()->mErrorLogging.warning("puttransaction exception: %s", ex.getFullString());

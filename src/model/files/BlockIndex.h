@@ -42,7 +42,10 @@ namespace model {
 		class BlockIndex : public FileBase
 		{
 		public:
-			BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
+			//! create filename from path and blocknr
+			BlockIndex(const Poco::Path& groupFolderPath, Poco::UInt32 blockNr);
+			//! use full filename which includes also the block nr
+			BlockIndex(const Poco::Path& filename);
 			~BlockIndex();
 
 			inline void addMonthBlock(uint8_t month) {
@@ -57,20 +60,28 @@ namespace model {
 				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, coinGroupId, addressIndices));
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
-
-			
-			//! \brief replace Index File with new one, clear blocks after writing into file
-			bool writeToFile();
-			
+	
 			//! \brief read from file, put content into receiver
 			//! \return true if hash in file and calculated hash are the same
 			//! \return false if file not found or couldn't opened
 			bool readFromFile(IBlockIndexReceiver* receiver);
 
+			//! called from SerializeBlockIndexTask once in a while (after hdd write timeout)
+			//! put blocks into binary file format
+			std::unique_ptr<VirtualFile> serialize();
+
+			bool BlockIndex::writeToFile();
+
 			//! \brief clear data blocks
 			void reset();
 
+			inline const Poco::Path& getFileName() { return mFileName; }
+
 		protected:
+			//! \brief replace Index File with new one, clear blocks after writing into file
+			
+			
+
 			enum BlockTypes {
 				YEAR_BLOCK = 0xad,
 				MONTH_BLOCK = 0x50,
@@ -177,11 +188,13 @@ namespace model {
 				Poco::SharedPtr<NodeTransactionEntry> createTransactionEntry(uint8_t month, uint16_t year);
 			};
 
-			std::string mFilename;
+			Poco::Path  mFileName;
 			std::queue<Block*> mDataBlocks;
 			size_t mDataBlockSumSize;
 		};
 	}
 }
+
+
 
 #endif //__GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H

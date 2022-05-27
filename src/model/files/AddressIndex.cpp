@@ -140,6 +140,37 @@ namespace model {
 			mFileWritten = true;
 		}
 
+		std::unique_ptr<VirtualFile> AddressIndex::serialize()
+		{
+			if (checkFile()) {
+				// current file seems containing address indices 
+				mFileWritten = true;
+				return nullptr;
+			}
+			auto mm = MemoryManager::getInstance();
+			Poco::FastMutex::ScopedLock lock(mFastMutex);
+			std::map<int, std::string> sortedMap;
+			auto filePath = mFilePath.toString();
+			
+			auto vFile = std::make_unique<VirtualFile>(mAddressesIndices.size() * ( 32 + sizeof(int32_t)  + crypto_generichash_BYTES));
+			//Poco::FileOutputStream file(filePath);
+
+			for (auto it = mAddressesIndices.begin(); it != mAddressesIndices.end(); it++) {
+				auto inserted = sortedMap.insert(std::pair<int, std::string>(it->second, it->first));
+				if (!inserted.second) {
+					std::string currentPair = std::to_string(it->second) + ": " + it->first;
+					std::string lastPair = std::to_string(inserted.first->first) + ": " + inserted.first->second;
+					throw IndexAddressPairAlreadyExistException("AddressIndex::writeToFile", currentPair, lastPair);
+				}
+				vFile->write(it->first.data(), 32);
+				vFile->write((const char*)&it->second, sizeof(int32_t));
+			}
+			auto hash = calculateHash(sortedMap);
+			vFile->write((const char*)hash->data(), hash->size());
+			mm->releaseMemory(hash);
+			return std::move(vFile);
+		}
+
 		bool AddressIndex::loadFromFile()
 		{
 			auto fl = FileLockManager::getInstance();

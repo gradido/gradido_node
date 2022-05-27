@@ -1,6 +1,5 @@
 #include "TaskObserver.h"
 #include "../task/WriteTransactionsToBlockTask.h"
-
 #include <cstring>
 
 
@@ -62,6 +61,16 @@ bool TaskObserver::isTransactionPending(uint64_t transactionNr)
 		return true;
 	}
 	return false;
+}
+
+Poco::SharedPtr<model::NodeTransactionEntry> TaskObserver::getTransaction(uint64_t transactionNr)
+{
+	Poco::FastMutex::ScopedLock lock(mFastMutex);
+	auto it = mTransactionsForTasks.find(transactionNr);
+	if (it != mTransactionsForTasks.end()) {
+		return it->second->getTransaction(transactionNr);
+	}
+	return nullptr;
 }
 
 const char* TaskObserver::TaskObserverTypeToString(TaskObserverType type)

@@ -25,6 +25,13 @@ namespace controller {
 		int			mBlockNr;
 	};
 
+	class BlockIndexException : public GradidoBlockchainException
+	{
+	public:
+		explicit BlockIndexException(const char* what) noexcept : GradidoBlockchainException(what) {};
+		std::string getFullString() const { return what(); }
+	};
+
 	class WrongTransactionTypeException : public GradidoBlockchainException
 	{
 	public:

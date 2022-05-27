@@ -113,14 +113,27 @@ namespace controller {
 
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
 		if (transactionEntry.isNull()) {
+			// maybe it was already deleted from cache but not written to file yet, especially happen while debugging
+			// happen also if cache timeout is shorter than file write timeout
+			Poco::SharedPtr<model::NodeTransactionEntry> transaction;
+			if (!mTransactionWriteTask.isNull()) {
+				transaction = mTransactionWriteTask->getTransaction(transactionNr);
+				if (!transaction.isNull()) return transaction;
+			}
+			if (mTaskObserver->isTransactionPending(transactionNr)) {
+				transaction = mTaskObserver->getTransaction(transactionNr);
+				if (!transaction.isNull()) return transaction;
+			}
 			// read from file system
 			int32_t fileCursor = 0;
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
-				// maybe it was already deleted from cache but not written to file yet, especially happen while debugging
-				if (!mTransactionWriteTask.isNull()) {
-					return mTransactionWriteTask->getTransaction(transactionNr);
-				}
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
+			}
+			if (!fileCursor && transactionNr < mBlockIndex->getMaxTransactionNr()) {
+				Poco::Thread::sleep(50);
+				if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
+					throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
+				}
 			}
 			try {
 				auto blockLine = mBlockFile->readLine(fileCursor);
@@ -134,11 +147,17 @@ namespace controller {
 				printf("[Block::getTransaction] catch Poco Null Pointer Exception\n");
 				throw;
 			}
-			return mSerializedTransactions.get(transactionNr);
+			transactionEntry = mSerializedTransactions.get(transactionNr);
+			if (transactionEntry.isNull()) {
+				printf("fileCursor: %d\n", fileCursor);
+				auto blockLine = mBlockFile->readLine(fileCursor);
+				auto block = std::make_unique<model::gradido::GradidoBlock>(blockLine.get());
+				printf("block: %s\n", block->toJson().data());
+				throw GradidoBlockchainTransactionNotFoundException("transaction not found after reading from block file").setTransactionId(transactionNr);
+			}			
 		}
-		else {
-			return transactionEntry;
-		}
+		
+		return transactionEntry;		
 	}
 
 	void Block::checkTimeout(Poco::Timer& timer)

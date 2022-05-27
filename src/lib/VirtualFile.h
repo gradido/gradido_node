@@ -20,10 +20,10 @@ class VirtualFile
 {
 public:
 	//! \brief get memory bin from memory manager by his own
-	VirtualFile(size_t size);
+	VirtualFile(size_t bufferSize);
 
-	//! \brief take given memory bin 
-	VirtualFile(MemoryBin* buffer);
+	//! \brief take given memory 
+	VirtualFile(unsigned char* buffer, size_t bufferSize);
 
 	//! \brief handle memory bin back to memory manager
 	~VirtualFile();
@@ -41,7 +41,7 @@ public:
 	bool setCursor(size_t dst);
 
 	inline size_t getCursor() { return mCursor; }
-	inline size_t getSize() { return mBuffer->size(); }
+	inline size_t getSize() { return mBufferSize; }
 
 	//! \brief write memory bin content to file, until cursor position
 	bool writeToFile(const char* filename);
@@ -51,7 +51,8 @@ public:
 	static VirtualFile* readFromFile(const char* filename);
 
 protected:
-	MemoryBin* mBuffer;
+	unsigned char* mBuffer;
+	size_t mBufferSize;
 	size_t mCursor;
 
 	

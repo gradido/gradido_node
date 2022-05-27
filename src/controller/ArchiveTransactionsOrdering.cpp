@@ -108,7 +108,13 @@ namespace controller {
 			rawMessage->size(),
 			NULL, 0
 		);
-		mParentGroup->addTransaction(std::move(transaction), hash, createdTimestamp);
+		try {
+			mParentGroup->addTransaction(std::move(transaction), hash, createdTimestamp);
+		}
+		catch (Poco::NullPointerException& ex) {
+			printf("poco null pointer exception by calling Group::addTransaction\n");
+			throw;
+		}
 		mm->releaseMemory(hash);
 	}
 

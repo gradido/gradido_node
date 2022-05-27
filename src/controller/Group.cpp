@@ -197,8 +197,14 @@ namespace controller {
 		}
 
 
-		// calculate final balance
-		newGradidoBlock->calculateFinalGDD(this);
+		try {
+			// calculate final balance
+			newGradidoBlock->calculateFinalGDD(this);
+		}
+		catch (Poco::NullPointerException& ex) {
+			LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling GradidoBlock::calculateFinalGDD");
+			throw;
+		}
 
 		// calculate tx hash
 		MemoryBin* txHash = nullptr;
@@ -241,7 +247,16 @@ namespace controller {
 			}
 		}
 		// if something went wrong, it throws an exception
-		newGradidoBlock->validate(level, this, otherBlockchain);
+		try {
+			newGradidoBlock->validate(level, this, otherBlockchain);
+		}
+		catch (model::gradido::InvalidCreationException& ex) {
+			LoggerManager::getInstance()->mErrorLogging.error("invalid creation %u: %s", (unsigned)id, ex.getFullString());
+		}
+		catch (Poco::NullPointerException& ex) {
+			LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling validate with level: %u", (unsigned)level);
+			throw;
+		}
 
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto block = getCurrentBlock();
@@ -250,7 +265,14 @@ namespace controller {
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
 		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(newGradidoBlock, mAddressIndex);
-		bool result = block->pushTransaction(transactionEntry);
+		bool result = false;
+		try {
+			result = block->pushTransaction(transactionEntry);
+		}
+		catch (Poco::NullPointerException& ex) {
+			LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling Block::pushTransaction");
+			throw;
+		}
 		if (result) {
 			mLastTransaction = newGradidoBlock;
 			updateLastTransactionId(newGradidoBlock->getID());
@@ -265,13 +287,19 @@ namespace controller {
 			}
 
 			//std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
-			printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
+			/*printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
 				__FUNCTION__, mLastTransaction->getID(), mGroupAlias.data(), mLastTransaction->getMessageIdHex().data(),
 				mLastTransaction->getReceived(), mLastTransaction->getGradidoTransaction()->toJson().data()
-			);
+			);*/
 			// say community server that a new transaction awaits him
 			if (mCommunityServer) {
-				mCommunityServer->notificateNewTransaction(mLastTransaction);
+				try {
+					mCommunityServer->notificateNewTransaction(mLastTransaction);
+				}
+				catch (Poco::NullPointerException& ex) {
+					LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling notificateNewTransaction");
+					throw;
+				}
 			}
 		}
 		return result;
@@ -493,7 +521,13 @@ namespace controller {
 		do
 		{
 			auto block = getBlock(blockNr);
+			if (block.isNull()) {
+				throw BlockNotLoadedException("[Group::calculateAddressBalance] block is null", mGroupAlias, blockNr);
+			}
 			auto blockIndex = block->getBlockIndex();
+			if (blockIndex.isNull()) {
+				throw BlockIndexException("[Group::calculateAddressBalance] block index is null");
+			}
 			auto transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinGroupId);
 
 			std::sort(transactionNrs.begin(), transactionNrs.end());
@@ -501,6 +535,9 @@ namespace controller {
 			for (auto it = transactionNrs.rbegin(); it != transactionNrs.rend(); ++it)
 			{
 				auto transactionEntry = block->getTransaction(*it);
+				if (transactionEntry.isNull()) {
+					throw GradidoBlockchainTransactionNotFoundException("[Group::calculateAddressBalance] transactionEntry is null");
+				}
 				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
 				if (gradidoBlock->getReceivedAsTimestamp() > date.timestamp()) {
 					continue;

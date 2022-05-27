@@ -5,11 +5,16 @@
 
 #include "../model/NodeTransactionEntry.h"
 
+#include "../task/HddWriteBufferTask.h"
+
+#include "../ServerGlobals.h"
+
 namespace controller {
 
 
 	BlockIndex::BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
-		: mBlockIndexFile(groupFolderPath, blockNr), mMaxTransactionNr(0), mMinTransactionNr(0)
+		: mBlockIndexFile(new model::files::BlockIndex(groupFolderPath, blockNr)), mMaxTransactionNr(0), mMinTransactionNr(0),
+		mDirty(false)
 	{
 
 	}
@@ -25,7 +30,7 @@ namespace controller {
 		assert(!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size());
 		mSlowWorkingMutex.unlock();
 
-		return mBlockIndexFile.readFromFile(this);
+		return mBlockIndexFile->readFromFile(this);
 	}
 
 	bool BlockIndex::writeIntoFile()
@@ -38,14 +43,14 @@ namespace controller {
 		// TODO: Change, this function is called in deconstructor and it isn't a good idea to assert while in deconstructor
 		assert(mYearMonthAddressIndexEntrys.size() && mTransactionNrsFileCursors.size());
 
-		mBlockIndexFile.reset();
+		mBlockIndexFile->reset();
 
 		for (auto itYear = mYearMonthAddressIndexEntrys.begin(); itYear != mYearMonthAddressIndexEntrys.end(); itYear++) 
 		{
-			mBlockIndexFile.addYearBlock(itYear->first);
+			mBlockIndexFile->addYearBlock(itYear->first);
 			for (auto itMonth = itYear->second.begin(); itMonth != itYear->second.end(); itMonth++) 
 			{
-				mBlockIndexFile.addMonthBlock(itMonth->first);
+				mBlockIndexFile->addMonthBlock(itMonth->first);
 
 				auto addressIndexEntry = itMonth->second;
 				// memory for putting address indices and transactions together
@@ -83,14 +88,76 @@ namespace controller {
 				int index = 0;
 				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
 					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
-					mBlockIndexFile.addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinGroupIdsForTransactionNrs[index], transactionTransactionIndices[index]);
+					mBlockIndexFile->addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinGroupIdsForTransactionNrs[index], transactionTransactionIndices[index]);
 					index++;
 				}
 			}
 		}
 		// finally write down to file
-		return mBlockIndexFile.writeToFile();
+		return mBlockIndexFile->writeToFile();
 		//return true;
+	}
+	std::unique_ptr<model::files::BlockIndex> BlockIndex::serialize()
+	{
+		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		if (!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size() && !mMaxTransactionNr && !mMinTransactionNr) {
+			// we haven't anything to save
+			return nullptr;
+		}
+		
+		assert(mYearMonthAddressIndexEntrys.size() && mTransactionNrsFileCursors.size());
+		auto blockIndexFile = std::make_unique<model::files::BlockIndex>(mBlockIndexFile->getFileName());
+
+		for (auto itYear = mYearMonthAddressIndexEntrys.begin(); itYear != mYearMonthAddressIndexEntrys.end(); itYear++)
+		{
+			blockIndexFile->addYearBlock(itYear->first);
+			for (auto itMonth = itYear->second.begin(); itMonth != itYear->second.end(); itMonth++)
+			{
+				blockIndexFile->addMonthBlock(itMonth->first);
+
+				auto addressIndexEntry = itMonth->second;
+				// memory for putting address indices and transactions together
+				std::vector<std::vector<uint32_t>> transactionTransactionIndices;
+				transactionTransactionIndices.reserve(addressIndexEntry.transactionNrs->size());
+				for (int i = 0; i < addressIndexEntry.transactionNrs->size(); i++) {
+					transactionTransactionIndices.push_back(std::vector<uint32_t>());
+				}
+				//std::vector<uint32_t>* transactionTransactionIndices = new std::vector<uint32_t>[addressIndexEntry.transactionNrs->size()];
+				//transactionTransactionIndices.reserve(addressIndexEntry.transactionNrs->size());
+
+				for (auto itAddressIndex = addressIndexEntry.addressIndicesTransactionNrIndices.begin(); itAddressIndex != addressIndexEntry.addressIndicesTransactionNrIndices.end(); itAddressIndex++)
+				{
+					auto addressIndex = itAddressIndex->first;
+					for (auto itTrNrIndex = itAddressIndex->second.begin(); itTrNrIndex != itAddressIndex->second.end(); itTrNrIndex++) {
+						transactionTransactionIndices[*itTrNrIndex].push_back(addressIndex);
+					}
+				}
+				// reverse coin group id				
+				std::vector<std::string> coinGroupIdsForTransactionNrs;
+				coinGroupIdsForTransactionNrs.reserve(addressIndexEntry.transactionNrs->size());
+				auto coinGroupTranInd = &addressIndexEntry.coinGroupIdTransactionNrIndices;
+				for (auto itCoinColorInd = coinGroupTranInd->begin(); itCoinColorInd != coinGroupTranInd->end(); itCoinColorInd++) {
+					// first = coin color
+					// second = vector with transaction nr indices
+					for (auto itTranInd = itCoinColorInd->second.begin(); itTranInd != itCoinColorInd->second.end(); itTranInd++) {
+						// TODO: assert was triggered, check why
+						//assert(*itTranInd == coinColorsForTransactionNrs.size());
+						coinGroupIdsForTransactionNrs.push_back(itCoinColorInd->first);
+						//coinColorsForTransactionNrs[*itTranInd] = itCoinColorInd->first;
+					}
+				}
+
+				// put into file object
+				int index = 0;
+				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
+					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+					mBlockIndexFile->addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinGroupIdsForTransactionNrs[index], transactionTransactionIndices[index]);
+					index++;
+				}
+			}
+		}
+		// finally write down to file
+		return std::move(blockIndexFile);
 	}
 	
 	bool BlockIndex::addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
@@ -101,6 +168,7 @@ namespace controller {
 	bool BlockIndex::addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		mDirty = true;
 		if (transactionNr > mMaxTransactionNr) {
 			mMaxTransactionNr = transactionNr;
 		}
@@ -188,6 +256,7 @@ namespace controller {
 	{
 		if (fileCursor < 0) return false;
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		mDirty = true;
 		auto result = mTransactionNrsFileCursors.insert(TransactionNrsFileCursorsPair(transactionNr, fileCursor));
 		return result.second;
 	}
@@ -385,6 +454,24 @@ namespace controller {
 		mBlockIndexFile.reset();
 		mMaxTransactionNr = 0;
 		mMinTransactionNr = 0;
+	}
+
+	// ******************** Serialize Block Index Task **************************
+	SerializeBlockIndexTask::SerializeBlockIndexTask(Poco::SharedPtr<BlockIndex> blockIndex)
+		: task::CPUTask(ServerGlobals::g_CPUScheduler), mBlockIndex(blockIndex)
+	{
+
+	}
+
+	int SerializeBlockIndexTask::run()
+	{
+		auto blockIndexFile = mBlockIndex->serialize();
+		if (blockIndexFile) {
+			auto vFile = blockIndexFile->serialize();
+			task::TaskPtr hddWriteTask = new task::HddWriteBufferTask(std::move(vFile), blockIndexFile->getFileName());
+			hddWriteTask->scheduleTask(hddWriteTask);
+		}
+		return 0;
 	}
 
 }

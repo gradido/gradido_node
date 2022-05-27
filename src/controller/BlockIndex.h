@@ -9,6 +9,7 @@
 #include "Poco/SharedPtr.h"
 
 #include "../model/files/BlockIndex.h"
+#include "../task/CPUTask.h"
 
 
 
@@ -37,6 +38,7 @@ namespace controller {
 
 		//! \brief write block index into files
 		bool writeIntoFile();
+		std::unique_ptr<model::files::BlockIndex> serialize();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry);
 		bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
@@ -81,8 +83,7 @@ namespace controller {
 
 	protected:
 		//! \brief called from model::files::BlockIndex while reading file
-
-		model::files::BlockIndex mBlockIndexFile;
+		Poco::SharedPtr<model::files::BlockIndex> mBlockIndexFile;
 		uint64_t				 mMaxTransactionNr;
 		uint64_t				 mMinTransactionNr;
 
@@ -99,7 +100,24 @@ namespace controller {
 		std::map<uint16_t, std::map<uint8_t, AddressIndexEntry>> mYearMonthAddressIndexEntrys;
 
 		Poco::Mutex mSlowWorkingMutex;
+		bool mDirty;
+	};
 
+	/*!
+	* @author einhornimmond
+	* @date 27.05.2022
+	* @brief bring block index in serialized format
+	*
+	*/
+	class SerializeBlockIndexTask : public task::CPUTask
+	{
+	public:
+		SerializeBlockIndexTask(Poco::SharedPtr<BlockIndex> blockIndex);
+
+		const char* getResourceType() const { return "SerializeBlockIndexTask"; };
+		int run();
+	protected:
+		Poco::SharedPtr<BlockIndex> mBlockIndex;
 	};
 
 }

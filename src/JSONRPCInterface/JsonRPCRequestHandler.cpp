@@ -75,6 +75,9 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 				}
 			}
 		}
+		else if (rapidjson_params.IsArray()) {
+			stateError("multiple rpc calls in one request not supported yet!");
+		}
 		else {
 			stateError("empty body");
 		}

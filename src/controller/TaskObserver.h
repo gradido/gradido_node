@@ -12,6 +12,7 @@
 
 #include "Poco/Mutex.h"
 #include "Poco/AutoPtr.h"
+#include "Poco/SharedPtr.h"
 
 #include "gradido_blockchain/lib/DRHashList.h"
 #include "gradido_blockchain/lib/MultithreadContainer.h"
@@ -37,6 +38,10 @@ enum TaskObserverType {
 
 class WriteTransactionsToBlockTask;
 
+namespace model {
+	class NodeTransactionEntry;
+}
+
 class TaskObserver : public MultithreadContainer
 {
 public:
@@ -58,6 +63,10 @@ public:
 	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
 	//! \return true if transaction is pending and false if not
 	bool isTransactionPending(uint64_t transactionNr);
+
+	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
+	//! \return the transaction in question
+	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
 
 	static const char* TaskObserverTypeToString(TaskObserverType type);
 	static TaskObserverType StringToTaskObserverType(const std::string& typeString);

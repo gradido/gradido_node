@@ -65,6 +65,8 @@ int IotaMessageToTransactionTask::run()
     }
     catch (ProtobufParseException& ex) {
         errorLog.information("invalid gradido transaction, iota message ID: %s", iotaMessageIdHex);
+        auto hex = DataTypeConverter::binToHex(*dataIndex.first.get());
+        errorLog.information("serialized: %s", hex);
         return 0;
     }
         

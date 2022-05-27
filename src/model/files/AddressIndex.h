@@ -2,6 +2,7 @@
 #define __GRADIDO_NODE_MODEL_FILES_ADDRESS_INDEX_H
 
 #include "FileBase.h"
+#include "../../lib/VirtualFile.h"
 #include "gradido_blockchain/MemoryManager.h"
 #include "proto/gradido/RegisterAddress.pb.h"
 #include <unordered_map>
@@ -53,7 +54,8 @@ namespace model {
 			//! Throw Poco::Exception if two addresses have the same index.
 			void writeToFile();
 
-			
+			//! serialize address indices for writing with hdd write buffer task
+			std::unique_ptr<VirtualFile> serialize();
 
 		protected:
 			//! \brief Check if index file contains current indices (compare sizes), fileLock via FileLockManager, I/O read.
@@ -74,7 +76,7 @@ namespace model {
 
 			Poco::Path mFilePath;
 			std::unordered_map<std::string, uint32_t> mAddressesIndices;
-			//! Indicate if current index set is written to file true) or not (false).
+			//! Indicate if current index set is written to file (true) or not (false).
 			bool mFileWritten;
 		};
 	}
