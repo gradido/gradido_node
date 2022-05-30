@@ -16,7 +16,9 @@ var hierarchy =
       [ "TaskObserverFinishCommand", "class_task_observer_finish_command.html", null ]
     ] ],
     [ "controller::ControllerBase", "classcontroller_1_1_controller_base.html", [
-      [ "controller::AddressIndex", "classcontroller_1_1_address_index.html", null ],
+      [ "controller::AddressIndex", "classcontroller_1_1_address_index.html", [
+        [ "controller::MemoryAddressIndex", "classcontroller_1_1_memory_address_index.html", null ]
+      ] ],
       [ "controller::Block", "classcontroller_1_1_block.html", null ],
       [ "controller::BlockIndex", "classcontroller_1_1_block_index.html", null ],
       [ "controller::DeferredTransfer", "classcontroller_1_1_deferred_transfer.html", null ],

@@ -1,7 +1,7 @@
 var searchData=
 [
   ['add_0',['add',['../classmodel_1_1files_1_1_address_index.html#a4ae311bf893bc8b199071575a0610000',1,'model::files::AddressIndex']]],
-  ['addaddressindex_1',['addAddressIndex',['../classcontroller_1_1_address_index.html#a7fc22573d1d2d130f49fd01b77640f0b',1,'controller::AddressIndex']]],
+  ['addaddressindex_1',['addAddressIndex',['../classcontroller_1_1_address_index.html#a7fc22573d1d2d130f49fd01b77640f0b',1,'controller::AddressIndex::addAddressIndex()'],['../classcontroller_1_1_memory_address_index.html#a25848654c86f9b79e7efc4d1f1ff6d62',1,'controller::MemoryAddressIndex::addAddressIndex()']]],
   ['addblockwritetask_2',['addBlockWriteTask',['../class_task_observer.html#a330df453ed434908764b75966613994c',1,'TaskObserver']]],
   ['addfilecursorfortransaction_3',['addFileCursorForTransaction',['../classcontroller_1_1_block_index.html#a49636f1c6d2433390339ca90d73be8e6',1,'controller::BlockIndex']]],
   ['addindicesfortransaction_4',['addIndicesForTransaction',['../classcontroller_1_1_block_index.html#a822972e951ef94f24fcf537f3ffecb0e',1,'controller::BlockIndex']]],

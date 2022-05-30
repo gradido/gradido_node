@@ -1,9 +1,10 @@
 <map id="controller::ControllerBase" name="controller::ControllerBase">
-<area shape="rect" id="node1" title=" " alt="" coords="5,132,193,159"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_address_index.html" title=" " alt="" coords="252,5,432,32"/>
-<area shape="rect" id="node3" href="$classcontroller_1_1_block.html" title="interface for adding and getting transactions from specific block" alt="" coords="278,56,406,83"/>
-<area shape="rect" id="node4" href="$classcontroller_1_1_block_index.html" title="store block index in memory for fast finding transactions" alt="" coords="260,107,424,133"/>
-<area shape="rect" id="node5" href="$classcontroller_1_1_deferred_transfer.html" title=" " alt="" coords="241,157,443,184"/>
-<area shape="rect" id="node6" href="$classcontroller_1_1_group.html" title="Main entry point for adding and searching for transactions TODO: validate transaction on startup." alt="" coords="277,208,407,235"/>
-<area shape="rect" id="node7" href="$classcontroller_1_1_group_index.html" title="storing group folder name in memory in hash list for fast access" alt="" coords="259,259,425,285"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,139,193,166"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_address_index.html" title=" " alt="" coords="252,13,432,39"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_block.html" title="interface for adding and getting transactions from specific block" alt="" coords="278,63,406,90"/>
+<area shape="rect" id="node5" href="$classcontroller_1_1_block_index.html" title="store block index in memory for fast finding transactions" alt="" coords="260,114,424,141"/>
+<area shape="rect" id="node6" href="$classcontroller_1_1_deferred_transfer.html" title=" " alt="" coords="241,165,443,191"/>
+<area shape="rect" id="node7" href="$classcontroller_1_1_group.html" title="Main entry point for adding and searching for transactions TODO: validate transaction on startup." alt="" coords="277,215,407,242"/>
+<area shape="rect" id="node8" href="$classcontroller_1_1_group_index.html" title="storing group folder name in memory in hash list for fast access" alt="" coords="259,266,425,293"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_memory_address_index.html" title=" " alt="" coords="491,5,689,47"/>
 </map>
