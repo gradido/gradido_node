@@ -132,7 +132,7 @@ namespace controller {
 			if (!fileCursor && transactionNr < mBlockIndex->getMaxTransactionNr()) {
 				Poco::Thread::sleep(50);
 				if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
-					throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
+					throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file after sleep").setTransactionId(transactionNr);
 				}
 			}
 			try {

@@ -23,11 +23,13 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 {
 	auto alloc = mResponseJson.GetAllocator();
 
-	// Debugging
-	StringBuffer buffer;
-	PrettyWriter<StringBuffer> writer(buffer);
-	params.Accept(writer);
-	printf("incoming json-rpc request, params: \n%s\n", buffer.GetString());
+	if (method != "puttransaction") {
+		// Debugging
+		StringBuffer buffer;
+		PrettyWriter<StringBuffer> writer(buffer);
+		params.Accept(writer);
+		printf("incoming json-rpc request, params: \n%s\n", buffer.GetString());
+	}
 
 	Poco::SharedPtr<controller::Group> group;
 	std::string groupAlias;

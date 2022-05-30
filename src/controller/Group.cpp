@@ -231,7 +231,7 @@ namespace controller {
 		if (!transactionBody->isLocal()) {
 			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_PAIRED);
 		}
-		printf("validate with level: %d\n", level);
+		//printf("validate with level: %d\n", level);
 		auto otherGroup = transactionBody->getOtherGroup();
 		model::IGradidoBlockchain* otherBlockchain = nullptr;
 		std::unique_ptr<RemoteGroup> mOtherGroupRemote;
@@ -323,7 +323,7 @@ namespace controller {
 			);
 			searchDate -= Poco::Timespan(Poco::DateTime::daysOfMonth(searchDate.year(), searchDate.month()), 0, 0, 0, 0);
 		}
-		printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
+		//printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
 		auto amount = mm->getMathMemory();
 		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
 			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());

@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_CONTROLLER_GROUP_H
 
 #include "ControllerBase.h"
-#include "AddressIndex.h"
+#include "MemoryAddressIndex.h"
 //#include "Block.h"
 #include "BlockIndex.h"
 #include "TaskObserver.h"
