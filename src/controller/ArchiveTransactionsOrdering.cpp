@@ -36,7 +36,7 @@ namespace controller {
 			std::scoped_lock<std::shared_mutex> _lock(mPendingTransactionsMutex);
 			// prevent that hackers can fill up the memory with pending archive transactions
 			// MAGIC NUMBER
-			if (mPendingTransactions.size() > 100) {
+			if (mPendingTransactions.size() > 5000) {
 				throw ArchivePendingTransactionsMapFull("archive pending map exhausted", mPendingTransactions.size());
 			}
 			auto result = mPendingTransactions.insert({ transactionNr, std::move(transaction) });

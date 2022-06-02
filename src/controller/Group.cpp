@@ -221,13 +221,10 @@ namespace controller {
 		model::gradido::TransactionValidationLevel level = (model::gradido::TransactionValidationLevel)(
 			model::gradido::TRANSACTION_VALIDATION_SINGLE |
 			model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS |
-			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE
+			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
+			model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP
 			);
 		auto transactionBody = newGradidoBlock->getGradidoTransaction()->getTransactionBody();
-		if (transactionBody->isRegisterAddress()) {
-			// for register address check if address already exist
-			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP);
-		}
 		if (!transactionBody->isLocal()) {
 			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_PAIRED);
 		}
@@ -249,9 +246,6 @@ namespace controller {
 		// if something went wrong, it throws an exception
 		try {
 			newGradidoBlock->validate(level, this, otherBlockchain);
-		}
-		catch (model::gradido::InvalidCreationException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("invalid creation %u: %s", (unsigned)id, ex.getFullString());
 		}
 		catch (Poco::NullPointerException& ex) {
 			LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling validate with level: %u", (unsigned)level);
@@ -334,7 +328,7 @@ namespace controller {
 				if (targetDate.month() != month || targetDate.year() != year) {
 					continue;
 				}
-				printf("added from transaction: %d \n", gradidoBlock->getID());
+				//printf("added from transaction: %d \n", gradidoBlock->getID());
 				mpfr_set_str(amount, creation->getAmount().data(), 10, gDefaultRound);
 				mpfr_add(sum, sum, amount, gDefaultRound);
 			}
