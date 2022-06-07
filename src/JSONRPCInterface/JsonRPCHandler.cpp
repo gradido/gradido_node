@@ -271,10 +271,10 @@ void JsonRPCHandler::getAddressTxids(const std::string& pubkey, Poco::SharedPtr<
 void JsonRPCHandler::getCreationSumForMonth(const std::string& pubkey, int month, int year, Poco::DateTime searchStartDate, Poco::SharedPtr<controller::Group> group)
 {
 	assert(!group.isNull());
-	auto sum = MathMemory::create();
-	group->calculateCreationSum(pubkey, month, year, searchStartDate, sum->getData());
+	auto sum = model::gradido::TransactionCreation::calculateCreationSum(pubkey, month, year, searchStartDate, group);
 	std::string sumString;
-	model::gradido::TransactionBase::amountToString(&sumString, sum->getData());
+	model::gradido::TransactionBase::amountToString(&sumString, sum);
+	MemoryManager::getInstance()->releaseMathMemory(sum);
 	stateSuccess();
 	auto alloc = mResponseJson.GetAllocator();
 	mResponseResult.AddMember("sum", Value(sumString.data(), alloc), alloc);

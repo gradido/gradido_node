@@ -7,7 +7,11 @@ namespace controller {
 		// get coin color on first connect to remote group
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::getAllTransactions(std::function<bool(model::TransactionEntry*)> filter /*= nullptr*/)
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::searchTransactions(
+		uint64_t startTransactionNr/* = 0*/,
+		std::function<FilterResult(model::TransactionEntry*)> filter/* = nullptr*/,
+		SearchDirection order /*= SearchDirection::ASC*/
+	)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
@@ -42,7 +46,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	void RemoteGroup::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received, mpfr_ptr sum)
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, int month, int year)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

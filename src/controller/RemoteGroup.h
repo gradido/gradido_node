@@ -19,14 +19,20 @@ namespace controller {
 	public:
 		RemoteGroup(const std::string& groupAlias);
 
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> getAllTransactions(std::function<bool(model::TransactionEntry*)> filter = nullptr);
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> searchTransactions(
+			uint64_t startTransactionNr = 0,
+			std::function<FilterResult(model::TransactionEntry*)> filter = nullptr,
+			SearchDirection order = SearchDirection::ASC
+		);
 		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter = nullptr);
 		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date);
 		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 		Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly = true);
-		void calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received, mpfr_ptr sum);
+		//! \brief Find transactions of account from a specific month.
+		//! \param address User account public key.
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, int month, int year);
 		const std::string& getGroupId() const;
 
 	protected:

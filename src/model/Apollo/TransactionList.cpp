@@ -14,7 +14,7 @@ namespace model {
 		}
 
 		Value TransactionList::generateList(
-			std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions,
+			std::vector<Poco::SharedPtr<model::TransactionEntry>> allTransactions,
 			Poco::Timestamp now,
 			int currentPage /*= 1*/,
 			int pageSize /*= 25*/,
@@ -35,16 +35,16 @@ namespace model {
 			if (orderDESC) {
 				// sort in descending order
 				std::sort(allTransactions.begin(), allTransactions.end(), [](
-					const Poco::SharedPtr<model::NodeTransactionEntry>& x,
-					const Poco::SharedPtr<model::NodeTransactionEntry>& y) {
+					const Poco::SharedPtr<model::TransactionEntry>& x,
+					const Poco::SharedPtr<model::TransactionEntry>& y) {
 						return x->getTransactionNr() > y->getTransactionNr();
 					});
 			}
 			else {
 				// sort in ascending order
 				std::sort(allTransactions.begin(), allTransactions.end(), [](
-					const Poco::SharedPtr<model::NodeTransactionEntry>& x,
-					const Poco::SharedPtr<model::NodeTransactionEntry>& y) {
+					const Poco::SharedPtr<model::TransactionEntry>& x,
+					const Poco::SharedPtr<model::TransactionEntry>& y) {
 						return x->getTransactionNr() < y->getTransactionNr();
 					});
 			}

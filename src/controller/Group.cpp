@@ -299,47 +299,6 @@ namespace controller {
 		return result;
 	}
 
-	void Group::calculateCreationSum(const std::string& address, int month, int year, Poco::DateTime received, mpfr_ptr sum)
-	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> allTransactions;
-		// received = max
-		// received - 2 month = min
-		Poco::DateTime searchDate = received;
-		auto mm = MemoryManager::getInstance();
-		for (int i = 0; i < 3; i++) {
-			auto transactions = findTransactions(address, searchDate.month(), searchDate.year());
-			// https://stackoverflow.com/questions/201718/concatenating-two-stdvectors
-			allTransactions.insert(
-				allTransactions.end(),
-				std::make_move_iterator(transactions.begin()),
-				std::make_move_iterator(transactions.end())
-			);
-			searchDate -= Poco::Timespan(Poco::DateTime::daysOfMonth(searchDate.year(), searchDate.month()), 0, 0, 0, 0);
-		}
-		//printf("[Group::calculateCreationSum] from group: %s\n", mGroupAlias.data());
-		auto amount = mm->getMathMemory();
-		for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
-			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());
-			auto body = gradidoBlock->getGradidoTransaction()->getTransactionBody();
-			if (body->getTransactionType() == model::gradido::TRANSACTION_CREATION) {
-				auto creation = body->getCreationTransaction();
-				auto targetDate = creation->getTargetDate();
-				if (targetDate.month() != month || targetDate.year() != year) {
-					continue;
-				}
-				//printf("added from transaction: %d \n", gradidoBlock->getID());
-				mpfr_set_str(amount, creation->getAmount().data(), 10, gDefaultRound);
-				mpfr_add(sum, sum, amount, gDefaultRound);
-			}
-		}
-		mm->releaseMathMemory(amount);
-		// TODO: if user has moved from another blockchain, get also creation transactions from origin group, recursive
-		// TODO: check also address type, because only for human account creation is allowed
-		// New idea from Bernd: User can be in multiple groups gather creations in different groups in different colors
-		// maybe using a link transaction
-	}
-
 	Poco::SharedPtr<model::TransactionEntry> Group::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
@@ -394,10 +353,10 @@ namespace controller {
 		return transactionEntries;
 	}
 
-	std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> Group::findTransactions(const std::string& address)
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactions(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> transactions;
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
@@ -450,6 +409,47 @@ namespace controller {
 		}
 
 		return transactions;
+	}
+
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactions(const std::string& address, int month, int year)
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::vector<Poco::SharedPtr<model::TransactionEntry>>  transactions;
+
+		auto index = mAddressIndex->getIndexForAddress(address);
+		if (!index) { return transactions; }
+
+		int blockCursor = mLastBlockNr;
+		while (blockCursor > 0) {
+			auto block = getBlock(blockCursor);
+			auto blockIndex = block->getBlockIndex();
+			auto transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
+			if (transactionNrs.size()) {
+				// sort nr ascending to possible speed up read from block file
+				// TODO: check if there not already perfectly sorted
+				std::sort(std::begin(transactionNrs), std::end(transactionNrs));
+				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
+					auto result = block->getTransaction(*it);
+					if (!result->getSerializedTransaction()->size()) {
+						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
+							(int)*it, mGroupAlias, result);
+						std::abort();
+					}
+					transactions.push_back(result);
+				}
+			}
+			else {
+				auto newestYearMonth = blockIndex->getNewestYearMonth();
+				if ((newestYearMonth.first < year) ||
+					(newestYearMonth.first == year && newestYearMonth.second < month)) {
+					break;
+				}
+			}
+			blockCursor--;
+		}
+
+		return std::move(transactions);
 	}
 
 	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter/* = nullptr*/)
@@ -713,48 +713,11 @@ namespace controller {
 		return nullptr;
 	}
 
-	std::vector<Poco::SharedPtr<model::NodeTransactionEntry>> Group::findTransactions(const std::string& address, int month, int year)
-	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::NodeTransactionEntry>>  transactions;
-
-		auto index = mAddressIndex->getIndexForAddress(address);
-		if (!index) { return transactions; }
-
-		int blockCursor = mLastBlockNr;
-		while (blockCursor > 0) {
-			auto block = getBlock(blockCursor);
-			auto blockIndex = block->getBlockIndex();
-			auto transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
-			if (transactionNrs.size()) {
-				// sort nr ascending to possible speed up read from block file
-				// TODO: check if there not already perfectly sorted
-				std::sort(std::begin(transactionNrs), std::end(transactionNrs));
-				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-					auto result = block->getTransaction(*it);
-					if (!result->getSerializedTransaction()->size()) {
-						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
-							(int)*it, mGroupAlias, result);
-						std::abort();
-					}
-					transactions.push_back(result);
-				}
-			}
-			else {
-				auto newestYearMonth = blockIndex->getNewestYearMonth();
-				if ((newestYearMonth.first < year) ||
-				    (newestYearMonth.first == year && newestYearMonth.second < month)) {
-					break;
-				}
-			}
-			blockCursor--;
-		}
-
-		return std::move(transactions);
-	}
-
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::getAllTransactions(std::function<bool(model::TransactionEntry*)> filter/* = nullptr*/)
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::searchTransactions(
+		uint64_t startTransactionNr/* = 0*/,
+		std::function<FilterResult(model::TransactionEntry*)> filter/* = nullptr*/,
+		SearchDirection order /*= SearchDirection::ASC*/
+	)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> result;
@@ -762,19 +725,52 @@ namespace controller {
 		if (!filter) {
 			result.reserve(lastBlock->getBlockIndex()->getMaxTransactionNr());
 		}
-		int blockCursor = 1;
-		while (blockCursor <= mLastBlockNr)
-		{
-			auto block = getBlock(blockCursor);
-			auto blockIndex = block->getBlockIndex();
-			for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
-				if (!i) break;
-				auto transaction = block->getTransaction(i);
-				if (!filter || filter(transaction)) {
-					result.push_back(block->getTransaction(i));
+		if (SearchDirection::ASC == order) {
+			int blockCursor = 1;
+			while (blockCursor <= mLastBlockNr)
+			{
+				auto block = getBlock(blockCursor);
+				auto blockIndex = block->getBlockIndex();
+				if (blockIndex->getMaxTransactionNr() < startTransactionNr) continue;
+				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); ++i) {
+					if (!i || i < startTransactionNr) break;
+					auto transaction = block->getTransaction(i);
+					FilterResult filterResult = FilterResult::USE;
+					if (filter) {
+						filterResult = filter(transaction);
+					}
+					if (filterResult == (filterResult & FilterResult::USE)) {
+						result.push_back(block->getTransaction(i));
+					}
+					if (filterResult == (filterResult & FilterResult::STOP)) {
+						return std::move(result);
+					}
 				}
+				blockCursor++;
 			}
-			blockCursor++;
+		}
+		else if (SearchDirection::DESC == order) {
+			int blockCursor = mLastBlockNr;
+			while (blockCursor > 0)
+			{
+				auto block = getBlock(blockCursor);
+				auto blockIndex = block->getBlockIndex();
+				for (int i = blockIndex->getMaxTransactionNr(); i >= blockIndex->getMinTransactionNr(); --i) {
+					if (!i) break;
+					auto transaction = block->getTransaction(i);
+					FilterResult filterResult = FilterResult::USE;
+					if (filter) {
+						filterResult = filter(transaction);
+					}
+					if (filterResult == (filterResult & FilterResult::USE)) {
+						result.push_back(block->getTransaction(i));
+					}
+					if (filterResult == (filterResult & FilterResult::STOP)) {
+						return std::move(result);
+					}
+				}
+				blockCursor--;
+			}
 		}
 		return std::move(result);
 	}
