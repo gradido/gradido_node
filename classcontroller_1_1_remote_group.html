@@ -113,9 +113,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a01094b88b2760052d57cc568209d5818"><td class="memItemLeft" align="right" valign="top"><a id="a01094b88b2760052d57cc568209d5818" name="a01094b88b2760052d57cc568209d5818"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>RemoteGroup</b> (const std::string &amp;groupAlias)</td></tr>
 <tr class="separator:a01094b88b2760052d57cc568209d5818"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1addf156708bd45fd606f1695f2465ce"><td class="memItemLeft" align="right" valign="top"><a id="a1addf156708bd45fd606f1695f2465ce" name="a1addf156708bd45fd606f1695f2465ce"></a>
-std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getAllTransactions</b> (std::function&lt; bool(model::TransactionEntry *)&gt; filter=nullptr)</td></tr>
-<tr class="separator:a1addf156708bd45fd606f1695f2465ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adaceccb3531fe55c9170597183ae2b6b"><td class="memItemLeft" align="right" valign="top"><a id="adaceccb3531fe55c9170597183ae2b6b" name="adaceccb3531fe55c9170597183ae2b6b"></a>
+std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>searchTransactions</b> (uint64_t startTransactionNr=0, std::function&lt; FilterResult(model::TransactionEntry *)&gt; filter=nullptr, SearchDirection order=SearchDirection::ASC)</td></tr>
+<tr class="separator:adaceccb3531fe55c9170597183ae2b6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdd11f77a6741cef27a3b36a8bf40c95"><td class="memItemLeft" align="right" valign="top"><a id="abdd11f77a6741cef27a3b36a8bf40c95" name="abdd11f77a6741cef27a3b36a8bf40c95"></a>
 Poco::SharedPtr&lt; model::gradido::GradidoBlock &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getLastTransaction</b> (std::function&lt; bool(const model::gradido::GradidoBlock *)&gt; filter=nullptr)</td></tr>
 <tr class="separator:abdd11f77a6741cef27a3b36a8bf40c95"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -134,9 +134,9 @@ Poco::SharedPtr&lt; model::TransactionEntry &gt;&#160;</td><td class="memItemRig
 <tr class="memitem:a476d4708629399bafca4acbdf079831e"><td class="memItemLeft" align="right" valign="top"><a id="a476d4708629399bafca4acbdf079831e" name="a476d4708629399bafca4acbdf079831e"></a>
 Poco::SharedPtr&lt; model::TransactionEntry &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>findByMessageId</b> (const MemoryBin *messageId, bool cachedOnly=true)</td></tr>
 <tr class="separator:a476d4708629399bafca4acbdf079831e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4364a0da4d5411a65957845c7b4466cc"><td class="memItemLeft" align="right" valign="top"><a id="a4364a0da4d5411a65957845c7b4466cc" name="a4364a0da4d5411a65957845c7b4466cc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>calculateCreationSum</b> (const std::string &amp;address, int month, int year, Poco::DateTime received, mpfr_ptr sum)</td></tr>
-<tr class="separator:a4364a0da4d5411a65957845c7b4466cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e5520c2a8620f4a7e4190f43da921a1"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_remote_group.html#a4e5520c2a8620f4a7e4190f43da921a1">findTransactions</a> (const std::string &amp;address, int month, int year)</td></tr>
+<tr class="memdesc:a4e5520c2a8620f4a7e4190f43da921a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find transactions of account from a specific month.  <a href="classcontroller_1_1_remote_group.html#a4e5520c2a8620f4a7e4190f43da921a1">More...</a><br /></td></tr>
+<tr class="separator:a4e5520c2a8620f4a7e4190f43da921a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74833e000883db71bd4031aa767d1680"><td class="memItemLeft" align="right" valign="top"><a id="a74833e000883db71bd4031aa767d1680" name="a74833e000883db71bd4031aa767d1680"></a>
 const std::string &amp;&#160;</td><td class="memItemRight" valign="bottom"><b>getGroupId</b> () const</td></tr>
 <tr class="separator:a74833e000883db71bd4031aa767d1680"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -151,7 +151,50 @@ std::string&#160;</td><td class="memItemRight" valign="bottom"><b>mGroupAlias</b
 <div class="textblock"><p >Class for accessing blockchain with this server don't listen, it will be call the transaction from another Gradido Node Server which is listening to this group. </p>
 <dl class="section author"><dt>Author</dt><dd>Dario Rekowski</dd></dl>
 <dl class="section date"><dt>Date</dt><dd>20.02.2022 </dd></dl>
-</div><hr/>The documentation for this class was generated from the following files:<ul>
+</div><h2 class="groupheader">Member Function Documentation</h2>
+<a id="a4e5520c2a8620f4a7e4190f43da921a1" name="a4e5520c2a8620f4a7e4190f43da921a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e5520c2a8620f4a7e4190f43da921a1">&#9670;&nbsp;</a></span>findTransactions()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt; controller::RemoteGroup::findTransactions </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;&#160;</td>
+          <td class="paramname"><em>address</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>month</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>year</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Find transactions of account from a specific month. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">address</td><td>User account public key. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/controller/<a class="el" href="_remote_group_8h_source.html">RemoteGroup.h</a></li>
 <li>src/controller/RemoteGroup.cpp</li>
 </ul>

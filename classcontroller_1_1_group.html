@@ -156,22 +156,19 @@ Poco::SharedPtr&lt; model::TransactionEntry &gt;&#160;</td><td class="memItemRig
 std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>findTransactionsFromXToLast</b> (uint64_t xTransactionId)</td></tr>
 <tr class="memdesc:a7eaeac959377da252a8b64758c497460"><td class="mdescLeft">&#160;</td><td class="mdescRight">return vector with transaction entries from xTransactionId until last known transaction <br /></td></tr>
 <tr class="separator:a7eaeac959377da252a8b64758c497460"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb1b8dd4ecb1c19e60c131ee42515381"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#abb1b8dd4ecb1c19e60c131ee42515381">findTransactions</a> (const std::string &amp;address)</td></tr>
-<tr class="memdesc:abb1b8dd4ecb1c19e60c131ee42515381"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find every transaction belonging to address account in memory or block chain, expensive.  <a href="classcontroller_1_1_group.html#abb1b8dd4ecb1c19e60c131ee42515381">More...</a><br /></td></tr>
-<tr class="separator:abb1b8dd4ecb1c19e60c131ee42515381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae41706f4b768687c68738ce4e7a140af"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#ae41706f4b768687c68738ce4e7a140af">findTransactions</a> (const std::string &amp;address)</td></tr>
+<tr class="memdesc:ae41706f4b768687c68738ce4e7a140af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find every transaction belonging to address account in memory or block chain, expensive.  <a href="classcontroller_1_1_group.html#ae41706f4b768687c68738ce4e7a140af">More...</a><br /></td></tr>
+<tr class="separator:ae41706f4b768687c68738ce4e7a140af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b9ec4a539b5c6a6365c1ab2ca7ea402"><td class="memItemLeft" align="right" valign="top">std::vector&lt; uint64_t &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#a7b9ec4a539b5c6a6365c1ab2ca7ea402">findTransactionIds</a> (const std::string &amp;address)</td></tr>
 <tr class="memdesc:a7b9ec4a539b5c6a6365c1ab2ca7ea402"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find every transaction belonging to address account in memory or block chain, expensive.  <a href="classcontroller_1_1_group.html#a7b9ec4a539b5c6a6365c1ab2ca7ea402">More...</a><br /></td></tr>
 <tr class="separator:a7b9ec4a539b5c6a6365c1ab2ca7ea402"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc3932a895ed25dcf49c7d5b3c9f7b7e"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#adc3932a895ed25dcf49c7d5b3c9f7b7e">findTransactions</a> (const std::string &amp;address, int month, int year)</td></tr>
-<tr class="memdesc:adc3932a895ed25dcf49c7d5b3c9f7b7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find transactions of account in memory or block chain from a specific month.  <a href="classcontroller_1_1_group.html#adc3932a895ed25dcf49c7d5b3c9f7b7e">More...</a><br /></td></tr>
-<tr class="separator:adc3932a895ed25dcf49c7d5b3c9f7b7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c1a84ed729c0a5f7e1cf16eaf47fb22"><td class="memItemLeft" align="right" valign="top"><a id="a5c1a84ed729c0a5f7e1cf16eaf47fb22" name="a5c1a84ed729c0a5f7e1cf16eaf47fb22"></a>
-std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getAllTransactions</b> (std::function&lt; bool(model::TransactionEntry *)&gt; filter=nullptr)</td></tr>
-<tr class="memdesc:a5c1a84ed729c0a5f7e1cf16eaf47fb22"><td class="mdescLeft">&#160;</td><td class="mdescRight">go through all transaction and return transactions <br /></td></tr>
-<tr class="separator:a5c1a84ed729c0a5f7e1cf16eaf47fb22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0105a8d818b88ce7dd8841266340e7ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#a0105a8d818b88ce7dd8841266340e7ee">calculateCreationSum</a> (const std::string &amp;address, int month, int year, Poco::DateTime received, mpfr_ptr sum)</td></tr>
-<tr class="memdesc:a0105a8d818b88ce7dd8841266340e7ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Search for creation transactions from specific month and add balances together.  <a href="classcontroller_1_1_group.html#a0105a8d818b88ce7dd8841266340e7ee">More...</a><br /></td></tr>
-<tr class="separator:a0105a8d818b88ce7dd8841266340e7ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8816305bc1d25d0bbc823dcad8a4aab3"><td class="memItemLeft" align="right" valign="top">std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcontroller_1_1_group.html#a8816305bc1d25d0bbc823dcad8a4aab3">findTransactions</a> (const std::string &amp;address, int month, int year)</td></tr>
+<tr class="memdesc:a8816305bc1d25d0bbc823dcad8a4aab3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find transactions of account in memory or block chain from a specific month.  <a href="classcontroller_1_1_group.html#a8816305bc1d25d0bbc823dcad8a4aab3">More...</a><br /></td></tr>
+<tr class="separator:a8816305bc1d25d0bbc823dcad8a4aab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49a73093d097e80926b7bb0da0ee1097"><td class="memItemLeft" align="right" valign="top"><a id="a49a73093d097e80926b7bb0da0ee1097" name="a49a73093d097e80926b7bb0da0ee1097"></a>
+std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>searchTransactions</b> (uint64_t startTransactionNr=0, std::function&lt; FilterResult(model::TransactionEntry *)&gt; filter=nullptr, SearchDirection order=SearchDirection::ASC)</td></tr>
+<tr class="memdesc:a49a73093d097e80926b7bb0da0ee1097"><td class="mdescLeft">&#160;</td><td class="mdescRight">go through all transaction and return transactions <br /></td></tr>
+<tr class="separator:a49a73093d097e80926b7bb0da0ee1097"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2e1239301f6ad94daa16003f7ddfa47"><td class="memItemLeft" align="right" valign="top"><a id="ad2e1239301f6ad94daa16003f7ddfa47" name="ad2e1239301f6ad94daa16003f7ddfa47"></a>
 Poco::SharedPtr&lt; <a class="el" href="classcontroller_1_1_address_index.html">AddressIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getAddressIndex</b> ()</td></tr>
 <tr class="separator:ad2e1239301f6ad94daa16003f7ddfa47"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -298,60 +295,6 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
 <dl class="section author"><dt>Author</dt><dd>Dario Rekowski </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2020-02-06 </dd></dl>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a0105a8d818b88ce7dd8841266340e7ee" name="a0105a8d818b88ce7dd8841266340e7ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0105a8d818b88ce7dd8841266340e7ee">&#9670;&nbsp;</a></span>calculateCreationSum()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void controller::Group::calculateCreationSum </td>
-          <td>(</td>
-          <td class="paramtype">const std::string &amp;&#160;</td>
-          <td class="paramname"><em>address</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>month</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>year</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Poco::DateTime&#160;</td>
-          <td class="paramname"><em>received</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">mpfr_ptr&#160;</td>
-          <td class="paramname"><em>sum</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Search for creation transactions from specific month and add balances together. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">address</td><td>User account public key. </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="a435aeeda6dd38bf86f72653d78869387" name="a435aeeda6dd38bf86f72653d78869387"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a435aeeda6dd38bf86f72653d78869387">&#9670;&nbsp;</a></span>fillSignatureCacheOnStartup()</h2>
 
@@ -440,14 +383,14 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
 
 </div>
 </div>
-<a id="abb1b8dd4ecb1c19e60c131ee42515381" name="abb1b8dd4ecb1c19e60c131ee42515381"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb1b8dd4ecb1c19e60c131ee42515381">&#9670;&nbsp;</a></span>findTransactions() <span class="overload">[1/2]</span></h2>
+<a id="ae41706f4b768687c68738ce4e7a140af" name="ae41706f4b768687c68738ce4e7a140af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae41706f4b768687c68738ce4e7a140af">&#9670;&nbsp;</a></span>findTransactions() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt; &gt; controller::Group::findTransactions </td>
+          <td class="memname">std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt; controller::Group::findTransactions </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>address</em></td><td>)</td>
@@ -466,14 +409,14 @@ Poco::Mutex&#160;</td><td class="memItemRight" valign="bottom"><b>mWorkingMutex<
 
 </div>
 </div>
-<a id="adc3932a895ed25dcf49c7d5b3c9f7b7e" name="adc3932a895ed25dcf49c7d5b3c9f7b7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc3932a895ed25dcf49c7d5b3c9f7b7e">&#9670;&nbsp;</a></span>findTransactions() <span class="overload">[2/2]</span></h2>
+<a id="a8816305bc1d25d0bbc823dcad8a4aab3" name="a8816305bc1d25d0bbc823dcad8a4aab3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8816305bc1d25d0bbc823dcad8a4aab3">&#9670;&nbsp;</a></span>findTransactions() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt; &gt; controller::Group::findTransactions </td>
+          <td class="memname">std::vector&lt; Poco::SharedPtr&lt; model::TransactionEntry &gt; &gt; controller::Group::findTransactions </td>
           <td>(</td>
           <td class="paramtype">const std::string &amp;&#160;</td>
           <td class="paramname"><em>address</em>, </td>

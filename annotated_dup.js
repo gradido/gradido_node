@@ -21,7 +21,7 @@ var annotated_dup =
       [ "GroupIndex", "classcontroller_1_1_group_index.html", "classcontroller_1_1_group_index" ],
       [ "GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
       [ "MemoryAddressIndex", "classcontroller_1_1_memory_address_index.html", "classcontroller_1_1_memory_address_index" ],
-      [ "RemoteGroup", "classcontroller_1_1_remote_group.html", null ],
+      [ "RemoteGroup", "classcontroller_1_1_remote_group.html", "classcontroller_1_1_remote_group" ],
       [ "SerializeBlockIndexTask", "classcontroller_1_1_serialize_block_index_task.html", "classcontroller_1_1_serialize_block_index_task" ],
       [ "WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ]
     ] ],

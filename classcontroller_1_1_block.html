@@ -123,10 +123,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>exit</b> ()</td></tr>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>pushTransaction</b> (Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt; transaction)</td></tr>
 <tr class="memdesc:ae0b013698f55857b6ad968e43f4e2c64"><td class="mdescLeft">&#160;</td><td class="mdescRight">put new transaction to cache and file system <br /></td></tr>
 <tr class="separator:ae0b013698f55857b6ad968e43f4e2c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97df480795c7d7c66b7a29dca1de7d66"><td class="memItemLeft" align="right" valign="top"><a id="a97df480795c7d7c66b7a29dca1de7d66" name="a97df480795c7d7c66b7a29dca1de7d66"></a>
-Poco::SharedPtr&lt; <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getTransaction</b> (uint64_t transactionNr)</td></tr>
-<tr class="memdesc:a97df480795c7d7c66b7a29dca1de7d66"><td class="mdescLeft">&#160;</td><td class="mdescRight">load transaction from cache or file system <br /></td></tr>
-<tr class="separator:a97df480795c7d7c66b7a29dca1de7d66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a217f74a346ca5dd0a2bce29425628c34"><td class="memItemLeft" align="right" valign="top"><a id="a217f74a346ca5dd0a2bce29425628c34" name="a217f74a346ca5dd0a2bce29425628c34"></a>
+Poco::SharedPtr&lt; model::TransactionEntry &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>getTransaction</b> (uint64_t transactionNr)</td></tr>
+<tr class="memdesc:a217f74a346ca5dd0a2bce29425628c34"><td class="mdescLeft">&#160;</td><td class="mdescRight">load transaction from cache or file system <br /></td></tr>
+<tr class="separator:a217f74a346ca5dd0a2bce29425628c34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84e2679d229c4fa6b0e3267c4c07ab1e"><td class="memItemLeft" align="right" valign="top"><a id="a84e2679d229c4fa6b0e3267c4c07ab1e" name="a84e2679d229c4fa6b0e3267c4c07ab1e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>checkTimeout</b> (Poco::Timer &amp;timer)</td></tr>
 <tr class="memdesc:a84e2679d229c4fa6b0e3267c4c07ab1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">called from timeout manager for scheduling <a class="el" href="class_write_transactions_to_block_task.html" title="Task for collecting transactions and write it to block chain after timeout.">WriteTransactionsToBlockTask</a> <br /></td></tr>
@@ -162,9 +162,9 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>mBlockNr</b></td>
 <tr class="memitem:a00be6d4b38cffb2b493b4902845f4f5e"><td class="memItemLeft" align="right" valign="top"><a id="a00be6d4b38cffb2b493b4902845f4f5e" name="a00be6d4b38cffb2b493b4902845f4f5e"></a>
 <a class="el" href="class_task_observer.html">TaskObserver</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>mTaskObserver</b></td></tr>
 <tr class="separator:a00be6d4b38cffb2b493b4902845f4f5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6a00422286a6d014745e34377da4711"><td class="memItemLeft" align="right" valign="top"><a id="ab6a00422286a6d014745e34377da4711" name="ab6a00422286a6d014745e34377da4711"></a>
-Poco::AccessExpireCache&lt; uint64_t, <a class="el" href="classmodel_1_1_node_transaction_entry.html">model::NodeTransactionEntry</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mSerializedTransactions</b></td></tr>
-<tr class="separator:ab6a00422286a6d014745e34377da4711"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae16c35e4352a9684c3b5ff93c03332a1"><td class="memItemLeft" align="right" valign="top"><a id="ae16c35e4352a9684c3b5ff93c03332a1" name="ae16c35e4352a9684c3b5ff93c03332a1"></a>
+Poco::AccessExpireCache&lt; uint64_t, model::TransactionEntry &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mSerializedTransactions</b></td></tr>
+<tr class="separator:ae16c35e4352a9684c3b5ff93c03332a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad896670abe803e101a3436f6bff81c76"><td class="memItemLeft" align="right" valign="top"><a id="ad896670abe803e101a3436f6bff81c76" name="ad896670abe803e101a3436f6bff81c76"></a>
 Poco::SharedPtr&lt; <a class="el" href="classcontroller_1_1_block_index.html">BlockIndex</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>mBlockIndex</b></td></tr>
 <tr class="separator:ad896670abe803e101a3436f6bff81c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
