@@ -70,7 +70,7 @@ namespace model {
 			//! put blocks into binary file format
 			std::unique_ptr<VirtualFile> serialize();
 
-			bool BlockIndex::writeToFile();
+			bool writeToFile();
 
 			//! \brief clear data blocks
 			void reset();
