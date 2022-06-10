@@ -110,30 +110,33 @@ $(document).ready(function(){initNavTree('_write_transactions_to_block_task_8h_s
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="class_write_transactions_to_block_task.html#adef0e6b3c84745a854bddf2e16119183">   37</a></span>    <span class="keyword">inline</span> Poco::Timestamp <a class="code hl_function" href="class_write_transactions_to_block_task.html#adef0e6b3c84745a854bddf2e16119183">getCreationDate</a>() { <span class="keywordflow">return</span> mCreationDate; }</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keyword">inline</span> <span class="keywordtype">void</span> addSerializedTransaction(Poco::SharedPtr&lt;model::NodeTransactionEntry&gt; transaction) {</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        Poco::FastMutex::ScopedLock lock(mFastMutex);    </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        mTransactions.push_back(transaction);</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        mBlockIndex-&gt;addIndicesForTransaction(transaction);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    }</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    Poco::SharedPtr&lt;model::NodeTransactionEntry&gt; <a class="code hl_function" href="class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39">getTransaction</a>(uint64_t nr);</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    std::vector&lt;uint64_t&gt; <a class="code hl_function" href="class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9">getTransactionNrs</a>();</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    Poco::AutoPtr&lt;model::files::Block&gt; mBlockFile;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    Poco::SharedPtr&lt;controller::BlockIndex&gt; mBlockIndex;</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    Poco::Timestamp mCreationDate;</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    Poco::FastMutex mFastMutex;</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    std::list&lt;Poco::SharedPtr&lt;model::NodeTransactionEntry&gt;&gt; mTransactions;</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>};</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#endif </span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        assert(!isTaskSheduled());</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        assert(!<a class="code hl_function" href="classtask_1_1_task.html#aef3ee7384dd44e6274025f49e9405561">isTaskFinished</a>());      </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        Poco::FastMutex::ScopedLock lock(mFastMutex);    </div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        mTransactions.push_back(transaction);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        mBlockIndex-&gt;addIndicesForTransaction(transaction);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    }</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    Poco::SharedPtr&lt;model::NodeTransactionEntry&gt; <a class="code hl_function" href="class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39">getTransaction</a>(uint64_t nr);</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    std::vector&lt;uint64_t&gt; <a class="code hl_function" href="class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9">getTransactionNrs</a>();</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    Poco::AutoPtr&lt;model::files::Block&gt; mBlockFile;</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    Poco::SharedPtr&lt;controller::BlockIndex&gt; mBlockIndex;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    Poco::Timestamp mCreationDate;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    Poco::FastMutex mFastMutex;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    std::list&lt;Poco::SharedPtr&lt;model::NodeTransactionEntry&gt;&gt; mTransactions;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>};</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="preprocessor">#endif </span></div>
 <div class="ttc" id="aclass_write_transactions_to_block_task_html"><div class="ttname"><a href="class_write_transactions_to_block_task.html">WriteTransactionsToBlockTask</a></div><div class="ttdoc">Task for collecting transactions and write it to block chain after timeout.</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.h:26</div></div>
-<div class="ttc" id="aclass_write_transactions_to_block_task_html_a2781ea4f272af4eda3dc5cf420b2eb39"><div class="ttname"><a href="class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39">WriteTransactionsToBlockTask::getTransaction</a></div><div class="ttdeci">Poco::SharedPtr&lt; model::NodeTransactionEntry &gt; getTransaction(uint64_t nr)</div><div class="ttdoc">return transaction by nr</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.cpp:73</div></div>
-<div class="ttc" id="aclass_write_transactions_to_block_task_html_ac09321e307b6d017ac340e220e3cb8e9"><div class="ttname"><a href="class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9">WriteTransactionsToBlockTask::getTransactionNrs</a></div><div class="ttdeci">std::vector&lt; uint64_t &gt; getTransactionNrs()</div><div class="ttdoc">collect all transaction nrs from transactions</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.cpp:62</div></div>
+<div class="ttc" id="aclass_write_transactions_to_block_task_html_a2781ea4f272af4eda3dc5cf420b2eb39"><div class="ttname"><a href="class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39">WriteTransactionsToBlockTask::getTransaction</a></div><div class="ttdeci">Poco::SharedPtr&lt; model::NodeTransactionEntry &gt; getTransaction(uint64_t nr)</div><div class="ttdoc">return transaction by nr</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.cpp:66</div></div>
+<div class="ttc" id="aclass_write_transactions_to_block_task_html_ac09321e307b6d017ac340e220e3cb8e9"><div class="ttname"><a href="class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9">WriteTransactionsToBlockTask::getTransactionNrs</a></div><div class="ttdeci">std::vector&lt; uint64_t &gt; getTransactionNrs()</div><div class="ttdoc">collect all transaction nrs from transactions</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.cpp:55</div></div>
 <div class="ttc" id="aclass_write_transactions_to_block_task_html_acdece707eb9e0e3e49c78ef1c986917f"><div class="ttname"><a href="class_write_transactions_to_block_task.html#acdece707eb9e0e3e49c78ef1c986917f">WriteTransactionsToBlockTask::run</a></div><div class="ttdeci">int run()</div><div class="ttdoc">called from task scheduler, maybe from another thread</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.cpp:18</div></div>
 <div class="ttc" id="aclass_write_transactions_to_block_task_html_adef0e6b3c84745a854bddf2e16119183"><div class="ttname"><a href="class_write_transactions_to_block_task.html#adef0e6b3c84745a854bddf2e16119183">WriteTransactionsToBlockTask::getCreationDate</a></div><div class="ttdeci">Poco::Timestamp getCreationDate()</div><div class="ttdoc">return creation date of object</div><div class="ttdef"><b>Definition:</b> WriteTransactionsToBlockTask.h:37</div></div>
 <div class="ttc" id="aclasstask_1_1_c_p_u_task_html"><div class="ttname"><a href="classtask_1_1_c_p_u_task.html">task::CPUTask</a></div><div class="ttdef"><b>Definition:</b> CPUTask.h:48</div></div>
+<div class="ttc" id="aclasstask_1_1_task_html_aef3ee7384dd44e6274025f49e9405561"><div class="ttname"><a href="classtask_1_1_task.html#aef3ee7384dd44e6274025f49e9405561">task::Task::isTaskFinished</a></div><div class="ttdeci">virtual bool isTaskFinished()</div><div class="ttdoc">return true if task has finished, else false automatic scheduling of task if he isn't finished and sh...</div><div class="ttdef"><b>Definition:</b> Task.h:66</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
