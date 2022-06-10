@@ -27,7 +27,7 @@ int WriteTransactionsToBlockTask::run()
 
 	int lastTransactionNr = 0;
 
-	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
+	for (auto it = mTransactions.begin(); it != mTransactions.end(); ++it) {
 		auto transactionEntry = *it;
 		auto base64 = DataTypeConverter::binToBase64(*transactionEntry->getSerializedTransaction());
 		//printf("serialized transaction: %s\n", base64.data());
@@ -41,7 +41,7 @@ int WriteTransactionsToBlockTask::run()
 	assert(resultingCursorPositions.size() == lines.size());
 	
 	size_t cursor = 0;
-	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
+	for (auto it = mTransactions.begin(); it != mTransactions.end(); ++it) {
 		assert(it == mTransactions.begin() || resultingCursorPositions[cursor]);
 		(*it)->setFileCursor(resultingCursorPositions[cursor]);
 		mBlockIndex->addFileCursorForTransaction((*it)->getTransactionNr(), resultingCursorPositions[cursor]);
@@ -49,13 +49,6 @@ int WriteTransactionsToBlockTask::run()
 	}
 	// save also block index
 	mBlockIndex->writeIntoFile();
-	auto lastEntry = mTransactions.end();
-	lastEntry--;
-	LoggerManager::getInstance()->mErrorLogging.debug(
-		"write transactions from: %u to %u into file",
-		(unsigned)(*mTransactions.begin())->getTransactionNr(),
-		(unsigned)(*lastEntry)->getTransactionNr()
-	);
 	return 0;
 }
 

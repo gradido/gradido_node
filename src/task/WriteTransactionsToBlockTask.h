@@ -37,6 +37,8 @@ public:
 	inline Poco::Timestamp getCreationDate() { return mCreationDate; }
 
 	inline void addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction) {
+		assert(!isTaskSheduled());
+		assert(!isTaskFinished());		
 		Poco::FastMutex::ScopedLock lock(mFastMutex);	 
 		mTransactions.push_back(transaction);
 		mBlockIndex->addIndicesForTransaction(transaction);

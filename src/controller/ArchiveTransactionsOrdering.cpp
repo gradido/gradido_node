@@ -28,7 +28,7 @@ namespace controller {
 		}
 		if (nextTransactionId == transactionNr) {
 			insertTransactionToGroup(std::move(transaction));
-			printf("\radded transaction: %d, pending: %d", transactionNr, mPendingTransactions.size());
+			printf("\radded transaction: %d/%d", transactionNr, mPendingTransactions.size());
 		}
 		else {
 			auto lastTransaction = mParentGroup->getLastTransaction();

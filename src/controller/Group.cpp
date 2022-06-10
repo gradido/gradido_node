@@ -123,6 +123,7 @@ namespace controller {
 
 	ArchiveTransactionsOrdering* Group::getArchiveTransactionsOrderer()
 	{
+		Poco::ScopedLock _lock(mWorkingMutex);
 		if (!mArchiveTransactionOrdering) {
 			mArchiveTransactionOrdering = new ArchiveTransactionsOrdering(this);
 		}

@@ -103,6 +103,7 @@ namespace controller {
 		auto transaction = std::make_unique<model::gradido::GradidoBlock>(serializedTransaction.get());
 		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry(new model::NodeTransactionEntry(transaction.get(), group->getAddressIndex(), fileCursor));
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		if (mExitCalled) return;
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}
 
@@ -182,7 +183,7 @@ namespace controller {
 	TimerReturn Block::callFromTimer()
 	{
 		// if called from timer, while deconstruct was called, prevent dead lock
-		if (!mWorkingMutex.tryLock()) GO_ON;
+		if (!mWorkingMutex.tryLock()) return GO_ON;
 		if (mExitCalled) {
 			mWorkingMutex.unlock();
 			return REMOVE_ME;
