@@ -161,18 +161,18 @@ namespace controller {
 
 	bool Group::addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp)
 	{
-		{
-			if (!mWorkingMutex.tryLock(100)) {
-				// TODO: use exception
-				printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->toJson().data());
-			}
-			else{
-				mWorkingMutex.unlock();
-			}
-
-			Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-			if (mExitCalled) return false;
+		
+		if (!mWorkingMutex.tryLock(100)) {
+			// TODO: use exception
+			printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->toJson().data());
 		}
+		else{
+			mWorkingMutex.unlock();
+		}
+
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		if (mExitCalled) return false;
+		
 
 		if (isTransactionAlreadyExist(newTransaction.get())) {
 			throw GradidoBlockchainTransactionAlreadyExistException("[Group::addTransaction] skip because already exist");
@@ -195,7 +195,6 @@ namespace controller {
 				}
 			}
 		}
-
 
 		try {
 			// calculate final balance
@@ -252,7 +251,6 @@ namespace controller {
 			throw;
 		}
 
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto block = getCurrentBlock();
 		if (block.isNull()) {
 			throw BlockNotLoadedException("don't get a valid current block", mGroupAlias, mLastBlockNr);

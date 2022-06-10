@@ -2,6 +2,7 @@
 #include "sodium.h"
 #include "../ServerGlobals.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../SingletonManager/CacheManager.h"
 #include "Group.h"
 #include "../model/files/FileExceptions.h"
 
@@ -18,8 +19,17 @@ namespace controller {
 			LoggerManager::getInstance()->mErrorLogging.critical(ex.getFullString());
 			mParent->resetAllIndices();
 			Poco::SharedPtr<model::files::AddressIndex> newAddressIndex(new model::files::AddressIndex(addressIndexPath));
+		}		
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(addressIndexPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
+	}
+
+	AddressIndex::~AddressIndex()
+	{
+		Poco::Path addressIndexPath(mGroupPath);
+		addressIndexPath.append(getAddressIndexFilePathForAddress("HalloWelt"));
+		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(addressIndexPath.toString()) != 1) {
+			printf("[controller::~AddressIndex]] error removing timer\n");
 		}
-		
 	}
 
 	bool AddressIndex::addAddressIndex(const std::string& address, uint32_t index)
@@ -113,6 +123,21 @@ namespace controller {
 		addressIndexPath.append("pubkeys.index");
 
 		return addressIndexPath;
+	}
+
+	TimerReturn AddressIndex::callFromTimer()
+	{
+		Poco::ScopedLock _lock(mWorkingMutex);
+
+		if (Poco::Timespan(Poco::DateTime() - mWaitingForNextFileWrite).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+			mWaitingForNextFileWrite = Poco::DateTime();
+			if (!mAddressIndexFile->isFileWritten()) {
+				task::TaskPtr serializeAndWriteToFileTask = new task::SerializeToVFileTask(mAddressIndexFile);
+				serializeAndWriteToFileTask->setFinishCommand(new model::files::SuccessfullWrittenToFileCommand(mAddressIndexFile));
+				serializeAndWriteToFileTask->scheduleTask(serializeAndWriteToFileTask);
+			}			
+		}
+		return GO_ON;
 	}
 
 }

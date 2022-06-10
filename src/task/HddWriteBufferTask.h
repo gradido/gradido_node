@@ -10,14 +10,14 @@ namespace task {
 	class HddWriteBufferTask: public CPUTask
 	{
 	public:
-		HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, const Poco::Path& path);
+		HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, Poco::Path path);
 
 		const char* getResourceType() const { return "HddWriteBufferTask"; };
 		int run();
 
 	protected:
 		std::unique_ptr<VirtualFile> mVirtualFile;
-		std::string mFileName;
+		Poco::Path mFilePath;
 	};
 }
 

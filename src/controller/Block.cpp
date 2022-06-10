@@ -172,8 +172,8 @@ namespace controller {
 		if (!mTransactionWriteTask.isNull()) {
 			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
 				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
-				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
 				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
+				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);				
 				mTransactionWriteTask = nullptr;
 			}
 		}
@@ -194,6 +194,7 @@ namespace controller {
 				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
 				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
 				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
+				
 				mTransactionWriteTask = nullptr;
 			}
 		}

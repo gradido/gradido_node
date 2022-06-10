@@ -184,8 +184,7 @@ namespace model {
 			fileStream->seekp(mCurrentFileSize);
 
 			// create new hash
-			crypto_generichash_state state;
-			
+			crypto_generichash_state state;			
 
 			for (auto itLines = lines.begin(); itLines != lines.end(); itLines++)
 			{
@@ -194,6 +193,7 @@ namespace model {
 				Poco::UInt16 size = (*itLines)->size();
 				// check data type overflow
 				assert((Poco::UInt32)size == (*itLines)->size());
+
 				resultingCursorPositions.push_back(cursorPos);
 				
 				fileStream->write((char*)&size, sizeof(Poco::UInt16));
@@ -212,7 +212,7 @@ namespace model {
 			fileStream->flush();
 			fl->unlock(filePath);
 			mm->releaseMemory(hash);
-			return resultingCursorPositions;
+			return std::move(resultingCursorPositions);
 		}
 
 		MemoryBin* Block::calculateHash()

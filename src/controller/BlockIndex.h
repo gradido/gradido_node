@@ -102,24 +102,6 @@ namespace controller {
 		Poco::Mutex mSlowWorkingMutex;
 		bool mDirty;
 	};
-
-	/*!
-	* @author einhornimmond
-	* @date 27.05.2022
-	* @brief bring block index in serialized format
-	*
-	*/
-	class SerializeBlockIndexTask : public task::CPUTask
-	{
-	public:
-		SerializeBlockIndexTask(Poco::SharedPtr<BlockIndex> blockIndex);
-
-		const char* getResourceType() const { return "SerializeBlockIndexTask"; };
-		int run();
-	protected:
-		Poco::SharedPtr<BlockIndex> mBlockIndex;
-	};
-
 }
 
 #endif //__GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H

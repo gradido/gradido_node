@@ -1,4 +1,5 @@
 #include "BlockIndex.h"
+#include "ControllerExceptions.h"
 
 #include "Poco/Logger.h"
 #include "../SingletonManager/LoggerManager.h"
@@ -255,6 +256,12 @@ namespace controller {
 	bool BlockIndex::addFileCursorForTransaction(uint64_t transactionNr, int32_t fileCursor)
 	{
 		if (fileCursor < 0) return false;
+		if (!fileCursor) {
+			LoggerManager::getInstance()->mErrorLogging.debug("[BlockIndex::addFileCursorForTransaction] fileCursor is 0, transactionNr: %u", (unsigned)transactionNr);
+		}
+		if (!fileCursor && transactionNr > mMinTransactionNr) {
+			throw BlockIndexInvalidFileCursorException("file curser is invalid", fileCursor, transactionNr, mMinTransactionNr);
+		}
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		mDirty = true;
 		auto result = mTransactionNrsFileCursors.insert(TransactionNrsFileCursorsPair(transactionNr, fileCursor));
@@ -454,24 +461,6 @@ namespace controller {
 		mBlockIndexFile.reset();
 		mMaxTransactionNr = 0;
 		mMinTransactionNr = 0;
-	}
-
-	// ******************** Serialize Block Index Task **************************
-	SerializeBlockIndexTask::SerializeBlockIndexTask(Poco::SharedPtr<BlockIndex> blockIndex)
-		: task::CPUTask(ServerGlobals::g_CPUScheduler), mBlockIndex(blockIndex)
-	{
-
-	}
-
-	int SerializeBlockIndexTask::run()
-	{
-		auto blockIndexFile = mBlockIndex->serialize();
-		if (blockIndexFile) {
-			auto vFile = blockIndexFile->serialize();
-			task::TaskPtr hddWriteTask = new task::HddWriteBufferTask(std::move(vFile), blockIndexFile->getFileName());
-			hddWriteTask->scheduleTask(hddWriteTask);
-		}
-		return 0;
-	}
+	}	
 
 }

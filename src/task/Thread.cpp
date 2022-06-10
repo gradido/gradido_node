@@ -46,11 +46,6 @@ namespace task {
     int Thread::condSignal()
     {
 		condition.signal();
-        /*if(SDL_CondSignal(condition)== -1) //LOG_ERROR_SDL(DR_ERROR);
-        {
-            LOG_WARNING("Fehler beim Aufruf von SDL_CondSignal"); 
-            LOG_ERROR_SDL(DR_ERROR);
-        }*/
         return 0;
     }
 
@@ -66,34 +61,29 @@ namespace task {
 				//break;
 				if (exitCalled) return;
 				// Lock work mutex
-				threadLock();
+				Poco::ScopedLock _lock(mutex);
 				//int status = SDL_CondWait(t->condition, t->mutex);
 				try {
 					condition.wait(mutex);
 					if (exitCalled) {
-						threadUnlock();
 						return;
 					}
 					int ret = ThreadFunction();
-					threadUnlock();
 					if (ret) {
 						errorLog.error("[Thread::%s] error running thread functon: %d, exit thread\n", threadName, ret);
 						return;
 					}
 				}
 				catch (Poco::NullPointerException& e) {
-					threadUnlock();
 					errorLog.error("[Thread::%s] null pointer exception", threadName);
 					return;
 				}
 				catch (Poco::Exception& e) {
 					//unlock mutex and exit
-					threadUnlock();
 					errorLog.error("[Thread::%s] Poco exception: %s\n", threadName, e.message());
 					return;
 				}
 				catch (GradidoBlockchainException& e) {
-					threadUnlock();
 					errorLog.error("[Thread::%s] Gradido Blockchain exception: %s\n", threadName, e.getFullString());
 				}
 

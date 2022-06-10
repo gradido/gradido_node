@@ -3,10 +3,18 @@
 
 #include "FileBase.h"
 #include "../../lib/VirtualFile.h"
+#include "../../lib/FuzzyTimer.h"
+#include "../../task/SerializeToVFileTask.h"
+
 #include "gradido_blockchain/MemoryManager.h"
 #include "proto/gradido/RegisterAddress.pb.h"
+
+#include "Poco/DateTime.h"
+#include "Poco/SharedPtr.h"
+
 #include <unordered_map>
 #include <map>
+
 
 
 namespace model {
@@ -21,9 +29,11 @@ namespace model {
 		* Store indices for every account public key.\n
 		*
 		*/
+		class SuccessfullWrittenToFileCommand;
 
-		class AddressIndex : public FileBase
+		class AddressIndex : public FileBase, public task::ISerializeToVFile
 		{
+			friend SuccessfullWrittenToFileCommand;
 		public:
 			/*! @brief Container for address details which where together saved in address index file
 			* TODO: Use this struct instead of only the index in map and in file, update all other code accordingly
@@ -57,10 +67,16 @@ namespace model {
 			//! serialize address indices for writing with hdd write buffer task
 			std::unique_ptr<VirtualFile> serialize();
 
+			std::string getFileNameString();
+
+			inline bool isFileWritten() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mFileWritten; }
+
 		protected:
 			//! \brief Check if index file contains current indices (compare sizes), fileLock via FileLockManager, I/O read.
 			//! \return True if calculated size from map entry count == file size, else return false.
 			bool checkFile();
+
+			void setFileWritten();
 
 			//! \brief Calculate file size from map entry count + space for hash, use Poco::FastMutex::ScopedLock.
 			//! \return Theoretical file site in bytes.
@@ -78,6 +94,16 @@ namespace model {
 			std::unordered_map<std::string, uint32_t> mAddressesIndices;
 			//! Indicate if current index set is written to file (true) or not (false).
 			bool mFileWritten;
+		};
+
+		class SuccessfullWrittenToFileCommand : public task::Command
+		{
+		public:
+			SuccessfullWrittenToFileCommand(Poco::SharedPtr<AddressIndex> parent) : mParent(parent) {};
+			int taskFinished(task::Task* task) { mParent->setFileWritten(); return 0; };
+
+		protected:
+			Poco::SharedPtr<AddressIndex> mParent;
 		};
 	}
 }

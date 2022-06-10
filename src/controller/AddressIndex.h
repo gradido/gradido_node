@@ -10,8 +10,6 @@
 
 #include "../model/files/AddressIndex.h"
 
-
-
 namespace controller {
 
 	/*!
@@ -36,10 +34,11 @@ namespace controller {
 
 	class Group;
 
-	class AddressIndex : public ControllerBase
+	class AddressIndex : public ControllerBase, public TimerCallback
 	{
 	public:
 		AddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent);
+		~AddressIndex();
 
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
 		//! \return Index or 0 if address didn't exist.
@@ -67,6 +66,8 @@ namespace controller {
 		//!  ./94/93.index
 		static Poco::Path getAddressIndexFilePathForAddress(const std::string& address);
 
+		TimerReturn callFromTimer();
+
 	protected:
 		//! \brief reading model::files::AddressIndex from cache or if not exist in cache, creating model::files::AddressIndex which load from file if exist
 		//!
@@ -79,6 +80,7 @@ namespace controller {
 		Poco::SharedPtr<model::files::AddressIndex> mAddressIndexFile;
 
 		Group* mParent;
+		Poco::DateTime mWaitingForNextFileWrite;
 	};
 }
 

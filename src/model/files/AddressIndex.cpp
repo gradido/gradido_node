@@ -5,8 +5,10 @@
 
 #include "Poco/File.h"
 #include "Poco/FileStream.h"
+#include "Poco/Timespan.h"
 
 #include "../../SingletonManager/FileLockManager.h"
+#include "../../ServerGlobals.h"
 
 namespace model {
 	namespace files {
@@ -14,12 +16,14 @@ namespace model {
 		AddressIndex::AddressIndex(Poco::Path filePath)
 			: mFilePath(filePath), mFileWritten(false)
 		{
-			loadFromFile();
+			if (loadFromFile()) {
+				mFileWritten = true;
+			}
 		}
 
 		AddressIndex::~AddressIndex()
 		{
-			if (!mFileWritten) {
+			if (!isFileWritten()) {
 				writeToFile();
 			}
 		}
@@ -34,11 +38,6 @@ namespace model {
 			bool result = mAddressesIndices.insert(std::pair<std::string, uint32_t>(address, index)).second;
 			mFastMutex.unlock();
 
-			if (result) {
-				// write update direct to file
-				// TODO: optimize, write not every time, maybe better like block after a certain timeout
-				writeToFile();
-			}
 			return result;
 		}
 
@@ -71,6 +70,12 @@ namespace model {
 			}
 			fl->unlock(filePath);
 			return false;
+		}
+
+		void AddressIndex::setFileWritten()
+		{
+			Poco::FastMutex::ScopedLock lock(mFastMutex);
+			mFileWritten = true;
 		}
 
 		size_t AddressIndex::calculateFileSize()
@@ -143,7 +148,7 @@ namespace model {
 		std::unique_ptr<VirtualFile> AddressIndex::serialize()
 		{
 			if (checkFile()) {
-				// current file seems containing address indices 
+				// current file seems containing all address indices 
 				mFileWritten = true;
 				return nullptr;
 			}
@@ -152,7 +157,7 @@ namespace model {
 			std::map<int, std::string> sortedMap;
 			auto filePath = mFilePath.toString();
 			
-			auto vFile = std::make_unique<VirtualFile>(mAddressesIndices.size() * ( 32 + sizeof(int32_t)  + crypto_generichash_BYTES));
+			auto vFile = std::make_unique<VirtualFile>(mAddressesIndices.size() * ( 32 + sizeof(int32_t) ) + crypto_generichash_BYTES);
 			//Poco::FileOutputStream file(filePath);
 
 			for (auto it = mAddressesIndices.begin(); it != mAddressesIndices.end(); it++) {
@@ -170,6 +175,12 @@ namespace model {
 			mm->releaseMemory(hash);
 			return std::move(vFile);
 		}
+
+		std::string AddressIndex::getFileNameString()
+		{
+			return std::move(mFilePath.toString(Poco::Path::PATH_NATIVE));
+		}
+
 
 		bool AddressIndex::loadFromFile()
 		{
@@ -225,6 +236,7 @@ namespace model {
 			return true;
 		}
 
+		
 		
 	}
 

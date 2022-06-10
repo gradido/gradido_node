@@ -64,8 +64,6 @@ namespace task {
         //! \return if return isn't 0, thread will exit
         virtual int ThreadFunction() = 0;
 
-            
-
         Poco::Mutex		   mutex;
         Poco::Thread*      mPocoThread;
         Poco::Condition	   condition;

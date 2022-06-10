@@ -77,6 +77,11 @@ bool VirtualFile::writeToFile(const char* filename)
 	return true;
 }
 
+bool VirtualFile::writeToFile(Poco::Path filePath)
+{
+	return writeToFile(filePath.toString(Poco::Path::Style::PATH_NATIVE).data());
+}
+
 VirtualFile* VirtualFile::readFromFile(const char* filename)
 {
 	auto fl = FileLockManager::getInstance();

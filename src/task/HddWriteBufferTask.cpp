@@ -5,21 +5,23 @@
 #include "Poco/File.h"
 
 namespace task {
-	HddWriteBufferTask::HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, const Poco::Path& path)
-		: CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mVirtualFile(std::move(vFile)), mFileName(path.toString(Poco::Path::PATH_NATIVE))
+	HddWriteBufferTask::HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, Poco::Path path)
+		: CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mVirtualFile(std::move(vFile)), mFilePath(std::move(path))
 	{
 #ifdef _UNI_LIB_DEBUG
-		setName(mFileName.data());
+		setName(mFilePath.toString().data());
 #endif
 	}
 
 	int HddWriteBufferTask::run()
 	{
-		Poco::File fileFolder(mFileName);
+		Poco::Path pathDir = mFilePath;
+		pathDir.makeDirectory().popDirectory();
+		Poco::File fileFolder(pathDir);
 		fileFolder.createDirectories();
 
-		if (!mVirtualFile->writeToFile(mFileName.data())) {
-			LoggerManager::getInstance()->mErrorLogging.error("error locking file for writing: %s", mFileName);
+		if (!mVirtualFile->writeToFile(mFilePath)) {
+			LoggerManager::getInstance()->mErrorLogging.error("error locking file for writing: %s", mFilePath.toString());
 		}
 		return 0;
 	}

@@ -88,7 +88,7 @@ void MainServer::createConsoleFileAsyncLogger(std::string name, std::string file
 
 	Poco::Logger& log = Poco::Logger::get(name);
 	log.setChannel(logAsyncChannel);
-	log.setLevel("information");
+	log.setLevel("debug");
 }
 
 void MainServer::createFileAsyncLogger(std::string name, std::string filePath)
@@ -99,7 +99,7 @@ void MainServer::createFileAsyncLogger(std::string name, std::string filePath)
 
 	Poco::Logger& log = Poco::Logger::get(name);
 	log.setChannel(logAsyncChannel);
-	log.setLevel("information");
+	log.setLevel("debug");
 }
 
 int MainServer::main(const std::vector<std::string>& args)

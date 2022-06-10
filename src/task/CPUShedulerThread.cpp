@@ -3,6 +3,8 @@
 #include "Task.h"
 //#include "debug/CPUSchedulerTasksLog.h"
 
+#include "../ServerGlobals.h"
+
 #ifdef _UNI_LIB_DEBUG
 //#include "lib/TimeCounter.h"
 #include "gradido_blockchain/lib/Profiler.h"
@@ -77,7 +79,7 @@ namespace task {
 				printf("task name: %s\n", name.data());
 #endif
 			}
-				
+			ServerGlobals::g_NumberExistingTasks;
 			mWaitingTask = mParent->getNextUndoneTask(this);
 		}
 		return 0;

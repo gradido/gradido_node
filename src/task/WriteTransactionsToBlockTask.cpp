@@ -1,6 +1,7 @@
 #include "WriteTransactionsToBlockTask.h"
 #include "../ServerGlobals.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "../SingletonManager/LoggerManager.h"
 
 WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex)
 	: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
@@ -36,18 +37,25 @@ int WriteTransactionsToBlockTask::run()
 		}
 		lastTransactionNr = transactionEntry->getTransactionNr();
 	}
-
 	auto resultingCursorPositions = mBlockFile->appendLines(lines);
+	assert(resultingCursorPositions.size() == lines.size());
 	
 	size_t cursor = 0;
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
+		assert(it == mTransactions.begin() || resultingCursorPositions[cursor]);
 		(*it)->setFileCursor(resultingCursorPositions[cursor]);
 		mBlockIndex->addFileCursorForTransaction((*it)->getTransactionNr(), resultingCursorPositions[cursor]);
 		cursor++;
 	}
 	// save also block index
 	mBlockIndex->writeIntoFile();
-
+	auto lastEntry = mTransactions.end();
+	lastEntry--;
+	LoggerManager::getInstance()->mErrorLogging.debug(
+		"write transactions from: %u to %u into file",
+		(unsigned)(*mTransactions.begin())->getTransactionNr(),
+		(unsigned)(*lastEntry)->getTransactionNr()
+	);
 	return 0;
 }
 

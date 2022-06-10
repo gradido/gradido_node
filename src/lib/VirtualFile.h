@@ -16,6 +16,8 @@
 #include "gradido_blockchain/MemoryManager.h"
 #include <assert.h>
 
+#include "Poco/Path.h"
+
 class VirtualFile
 {
 public:
@@ -45,6 +47,8 @@ public:
 
 	//! \brief write memory bin content to file, until cursor position
 	bool writeToFile(const char* filename);
+
+	bool writeToFile(Poco::Path filePath);
 
 	//! \brief get memory bin in file size and fill it with file content
 	//! \return nullptr if file wasn't found or couldn't be locked within 100ms
