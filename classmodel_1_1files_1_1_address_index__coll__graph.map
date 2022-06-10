@@ -1,5 +1,6 @@
 <map id="model::files::AddressIndex" name="model::files::AddressIndex">
-<area shape="rect" id="node1" title="File for storing account address indices." alt="" coords="5,155,200,181"/>
-<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_file_base.html" title=" " alt="" coords="22,80,183,107"/>
-<area shape="rect" id="node3" title=" " alt="" coords="13,5,192,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="91,155,285,181"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_file_base.html" title=" " alt="" coords="14,80,175,107"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,184,32"/>
+<area shape="rect" id="node4" href="$classtask_1_1_i_serialize_to_v_file.html" title=" " alt="" coords="199,80,363,107"/>
 </map>

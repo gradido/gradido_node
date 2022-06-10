@@ -14,6 +14,7 @@ var annotated_dup =
       [ "Block", "classcontroller_1_1_block.html", "classcontroller_1_1_block" ],
       [ "BlockIndex", "classcontroller_1_1_block_index.html", "classcontroller_1_1_block_index" ],
       [ "BlockIndexException", "classcontroller_1_1_block_index_exception.html", null ],
+      [ "BlockIndexInvalidFileCursorException", "classcontroller_1_1_block_index_invalid_file_cursor_exception.html", null ],
       [ "BlockNotLoadedException", "classcontroller_1_1_block_not_loaded_exception.html", null ],
       [ "ControllerBase", "classcontroller_1_1_controller_base.html", null ],
       [ "DeferredTransfer", "classcontroller_1_1_deferred_transfer.html", null ],
@@ -22,7 +23,6 @@ var annotated_dup =
       [ "GroupNotFoundException", "classcontroller_1_1_group_not_found_exception.html", null ],
       [ "MemoryAddressIndex", "classcontroller_1_1_memory_address_index.html", "classcontroller_1_1_memory_address_index" ],
       [ "RemoteGroup", "classcontroller_1_1_remote_group.html", "classcontroller_1_1_remote_group" ],
-      [ "SerializeBlockIndexTask", "classcontroller_1_1_serialize_block_index_task.html", "classcontroller_1_1_serialize_block_index_task" ],
       [ "WrongTransactionTypeException", "classcontroller_1_1_wrong_transaction_type_exception.html", null ]
     ] ],
     [ "iota", null, [
@@ -53,7 +53,8 @@ var annotated_dup =
         [ "InvalidReadBlockSize", "classmodel_1_1files_1_1_invalid_read_block_size.html", null ],
         [ "LockException", "classmodel_1_1files_1_1_lock_exception.html", null ],
         [ "RebuildBlockIndexTask", "classmodel_1_1files_1_1_rebuild_block_index_task.html", "classmodel_1_1files_1_1_rebuild_block_index_task" ],
-        [ "State", "classmodel_1_1files_1_1_state.html", "classmodel_1_1files_1_1_state" ]
+        [ "State", "classmodel_1_1files_1_1_state.html", "classmodel_1_1files_1_1_state" ],
+        [ "SuccessfullWrittenToFileCommand", "classmodel_1_1files_1_1_successfull_written_to_file_command.html", null ]
       ] ],
       [ "NodeTransactionEntry", "classmodel_1_1_node_transaction_entry.html", "classmodel_1_1_node_transaction_entry" ]
     ] ],
@@ -66,6 +67,8 @@ var annotated_dup =
       [ "CPUShedulerThread", "classtask_1_1_c_p_u_sheduler_thread.html", "classtask_1_1_c_p_u_sheduler_thread" ],
       [ "CPUTask", "classtask_1_1_c_p_u_task.html", "classtask_1_1_c_p_u_task" ],
       [ "HddWriteBufferTask", "classtask_1_1_hdd_write_buffer_task.html", "classtask_1_1_hdd_write_buffer_task" ],
+      [ "ISerializeToVFile", "classtask_1_1_i_serialize_to_v_file.html", "classtask_1_1_i_serialize_to_v_file" ],
+      [ "SerializeToVFileTask", "classtask_1_1_serialize_to_v_file_task.html", "classtask_1_1_serialize_to_v_file_task" ],
       [ "Task", "classtask_1_1_task.html", "classtask_1_1_task" ],
       [ "Thread", "classtask_1_1_thread.html", "classtask_1_1_thread" ]
     ] ],

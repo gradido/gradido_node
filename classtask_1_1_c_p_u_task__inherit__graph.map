@@ -1,11 +1,11 @@
 <map id="task::CPUTask" name="task::CPUTask">
-<area shape="rect" id="node1" title=" " alt="" coords="140,173,255,200"/>
+<area shape="rect" id="node1" title=" " alt="" coords="140,165,255,192"/>
 <area shape="rect" id="node3" href="$class_iota_message_to_transaction_task.html" title=": Get confirmed transaction id from Iota, process it" alt="" coords="303,5,525,32"/>
 <area shape="rect" id="node4" href="$class_write_transactions_to_block_task.html" title="Task for collecting transactions and write it to block chain after timeout." alt="" coords="305,56,523,83"/>
-<area shape="rect" id="node5" href="$classcontroller_1_1_serialize_block_index_task.html" title="bring block index in serialized format" alt="" coords="322,107,506,149"/>
-<area shape="rect" id="node6" href="$classiota_1_1_milestone_loading_task.html" title=" " alt="" coords="315,173,513,200"/>
-<area shape="rect" id="node7" href="$classmodel_1_1files_1_1_block_append_line_task.html" title=" " alt="" coords="319,225,509,266"/>
-<area shape="rect" id="node8" href="$classmodel_1_1files_1_1_rebuild_block_index_task.html" title=" " alt="" coords="319,290,509,331"/>
-<area shape="rect" id="node9" href="$classtask_1_1_hdd_write_buffer_task.html" title=" " alt="" coords="321,356,507,383"/>
-<area shape="rect" id="node2" href="$classtask_1_1_task.html" title=" " alt="" coords="5,173,92,200"/>
+<area shape="rect" id="node5" href="$classiota_1_1_milestone_loading_task.html" title=" " alt="" coords="315,107,513,133"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block_append_line_task.html" title=" " alt="" coords="319,158,509,199"/>
+<area shape="rect" id="node7" href="$classmodel_1_1files_1_1_rebuild_block_index_task.html" title=" " alt="" coords="319,223,509,265"/>
+<area shape="rect" id="node8" href="$classtask_1_1_hdd_write_buffer_task.html" title=" " alt="" coords="321,289,507,316"/>
+<area shape="rect" id="node9" href="$classtask_1_1_serialize_to_v_file_task.html" title="Task for serializing binary data in preparing for saving in file." alt="" coords="319,340,509,367"/>
+<area shape="rect" id="node2" href="$classtask_1_1_task.html" title=" " alt="" coords="5,165,92,192"/>
 </map>

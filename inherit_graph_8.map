@@ -9,14 +9,15 @@
 <area shape="rect" id="node8" href="$classcontroller_1_1_archive_pending_transactions_map_full.html" title=" " alt="" coords="288,325,481,366"/>
 <area shape="rect" id="node9" href="$classcontroller_1_1_archive_transaction_doublette_exception.html" title=" " alt="" coords="277,390,492,431"/>
 <area shape="rect" id="node10" href="$classcontroller_1_1_block_index_exception.html" title=" " alt="" coords="271,456,499,483"/>
-<area shape="rect" id="node11" href="$classcontroller_1_1_block_not_loaded_exception.html" title=" " alt="" coords="285,507,484,549"/>
-<area shape="rect" id="node12" href="$classcontroller_1_1_group_not_found_exception.html" title=" " alt="" coords="288,573,481,614"/>
-<area shape="rect" id="node13" href="$classcontroller_1_1_wrong_transaction_type_exception.html" title=" " alt="" coords="281,638,489,679"/>
-<area shape="rect" id="node14" href="$classmodel_1_1files_1_1_end_reaching_exception.html" title=" " alt="" coords="289,703,480,745"/>
-<area shape="rect" id="node16" href="$classmodel_1_1files_1_1_file_stream_exception.html" title=" " alt="" coords="297,769,473,810"/>
-<area shape="rect" id="node17" href="$classmodel_1_1files_1_1_hash_mismatch_exception.html" title=" " alt="" coords="283,834,486,875"/>
-<area shape="rect" id="node18" href="$classmodel_1_1files_1_1_hash_missing_exception.html" title=" " alt="" coords="290,899,479,941"/>
-<area shape="rect" id="node19" href="$classmodel_1_1files_1_1_index_address_pair_already_exist_exception.html" title=" " alt="" coords="287,965,482,1006"/>
-<area shape="rect" id="node20" href="$classmodel_1_1files_1_1_lock_exception.html" title=" " alt="" coords="285,1031,485,1057"/>
-<area shape="rect" id="node15" href="$classmodel_1_1files_1_1_invalid_read_block_size.html" title=" " alt="" coords="556,703,739,745"/>
+<area shape="rect" id="node12" href="$classcontroller_1_1_block_not_loaded_exception.html" title=" " alt="" coords="285,507,484,549"/>
+<area shape="rect" id="node13" href="$classcontroller_1_1_group_not_found_exception.html" title=" " alt="" coords="288,573,481,614"/>
+<area shape="rect" id="node14" href="$classcontroller_1_1_wrong_transaction_type_exception.html" title=" " alt="" coords="281,638,489,679"/>
+<area shape="rect" id="node15" href="$classmodel_1_1files_1_1_end_reaching_exception.html" title=" " alt="" coords="289,703,480,745"/>
+<area shape="rect" id="node17" href="$classmodel_1_1files_1_1_file_stream_exception.html" title=" " alt="" coords="297,769,473,810"/>
+<area shape="rect" id="node18" href="$classmodel_1_1files_1_1_hash_mismatch_exception.html" title=" " alt="" coords="283,834,486,875"/>
+<area shape="rect" id="node19" href="$classmodel_1_1files_1_1_hash_missing_exception.html" title=" " alt="" coords="290,899,479,941"/>
+<area shape="rect" id="node20" href="$classmodel_1_1files_1_1_index_address_pair_already_exist_exception.html" title=" " alt="" coords="287,965,482,1006"/>
+<area shape="rect" id="node21" href="$classmodel_1_1files_1_1_lock_exception.html" title=" " alt="" coords="285,1031,485,1057"/>
+<area shape="rect" id="node11" href="$classcontroller_1_1_block_index_invalid_file_cursor_exception.html" title=" " alt="" coords="556,449,764,490"/>
+<area shape="rect" id="node16" href="$classmodel_1_1files_1_1_invalid_read_block_size.html" title=" " alt="" coords="569,703,751,745"/>
 </map>

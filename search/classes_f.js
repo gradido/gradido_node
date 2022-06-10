@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['serializeblockindextask_0',['SerializeBlockIndexTask',['../classcontroller_1_1_serialize_block_index_task.html',1,'controller']]],
-  ['state_1',['State',['../classmodel_1_1files_1_1_state.html',1,'model::files']]]
+  ['serializetovfiletask_0',['SerializeToVFileTask',['../classtask_1_1_serialize_to_v_file_task.html',1,'task']]],
+  ['state_1',['State',['../classmodel_1_1files_1_1_state.html',1,'model::files']]],
+  ['successfullwrittentofilecommand_2',['SuccessfullWrittenToFileCommand',['../classmodel_1_1files_1_1_successfull_written_to_file_command.html',1,'model::files']]]
 ];

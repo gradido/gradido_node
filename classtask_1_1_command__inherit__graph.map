@@ -1,4 +1,5 @@
 <map id="task::Command" name="task::Command">
-<area shape="rect" id="node1" title=" " alt="" coords="50,5,175,32"/>
-<area shape="rect" id="node2" href="$class_task_observer_finish_command.html" title=" " alt="" coords="5,80,220,107"/>
+<area shape="rect" id="node1" title=" " alt="" coords="161,5,286,32"/>
+<area shape="rect" id="node2" href="$class_task_observer_finish_command.html" title=" " alt="" coords="5,87,220,114"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_successfull_written_to_file_command.html" title=" " alt="" coords="245,80,423,121"/>
 </map>

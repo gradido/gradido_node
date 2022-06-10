@@ -1,7 +1,6 @@
 <map id="model::files::AddressIndex::calculateFileSize" name="model::files::AddressIndex::calculateFileSize">
-<area shape="rect" id="node1" title="Calculate file size from map entry count + space for hash, use Poco::FastMutex::ScopedLock." alt="" coords="765,39,960,80"/>
-<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_address_index.html#af316cd9ce255efa0b2cfd80d6778d7b1" title="Check if index file contains current indices (compare sizes), fileLock via FileLockManager,..." alt="" coords="523,39,717,80"/>
-<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_address_index.html#a2d88a425287729406bd2331e83c00451" title="serialize address indices for writing with hdd write buffer task" alt="" coords="280,5,475,47"/>
-<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea" title="Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLock..." alt="" coords="280,71,475,112"/>
-<area shape="rect" id="node5" href="$classmodel_1_1files_1_1_address_index.html#a4ae311bf893bc8b199071575a0610000" title="Adding new index, account address public key pair into memory, use Poco::FastMutex::ScopedLock." alt="" coords="5,78,232,105"/>
+<area shape="rect" id="node1" title="Calculate file size from map entry count + space for hash, use Poco::FastMutex::ScopedLock." alt="" coords="491,39,685,80"/>
+<area shape="rect" id="node2" href="$classmodel_1_1files_1_1_address_index.html#af316cd9ce255efa0b2cfd80d6778d7b1" title="Check if index file contains current indices (compare sizes), fileLock via FileLockManager,..." alt="" coords="248,39,443,80"/>
+<area shape="rect" id="node3" href="$classmodel_1_1files_1_1_address_index.html#a2d88a425287729406bd2331e83c00451" title="serialize address indices for writing with hdd write buffer task" alt="" coords="5,5,200,47"/>
+<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea" title="Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLock..." alt="" coords="5,71,200,112"/>
 </map>

@@ -21,8 +21,8 @@
 <!-- Node3 -->
 <g id="node3" class="node">
 <title>Node3</title>
-<g id="a_node3"><a xlink:href="classmodel_1_1files_1_1_address_index.html" target="_top" xlink:title="File for storing account address indices.">
-<polygon fill="white" stroke="black" points="327,-114.5 327,-133.5 473,-133.5 473,-114.5 327,-114.5"/>
+<g id="a_node3"><a xlink:href="classmodel_1_1files_1_1_address_index.html" target="_top" xlink:title=" ">
+<polygon fill="white" stroke="#bfbfbf" points="327,-114.5 327,-133.5 473,-133.5 473,-114.5 327,-114.5"/>
 <text text-anchor="middle" x="400" y="-121.5" font-family="Helvetica,sans-Serif" font-size="10.00">model::files::AddressIndex</text>
 </a>
 </g>

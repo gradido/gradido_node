@@ -1,6 +1,8 @@
 <map id="TimerCallback" name="TimerCallback">
-<area shape="rect" id="node1" title=" " alt="" coords="182,5,298,32"/>
-<area shape="rect" id="node2" href="$classcontroller_1_1_block.html" title="interface for adding and getting transactions from specific block" alt="" coords="5,80,133,107"/>
-<area shape="rect" id="node3" href="$classiota_1_1_message_listener.html" title="call iota regular and check if new message on the listening index are available" alt="" coords="157,80,323,107"/>
-<area shape="rect" id="node4" href="$classmodel_1_1files_1_1_block.html" title=" " alt="" coords="347,80,490,107"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,89,121,115"/>
+<area shape="rect" id="node2" href="$classcontroller_1_1_address_index.html" title=" " alt="" coords="169,13,349,39"/>
+<area shape="rect" id="node4" href="$classcontroller_1_1_block.html" title="interface for adding and getting transactions from specific block" alt="" coords="195,63,323,90"/>
+<area shape="rect" id="node5" href="$classiota_1_1_message_listener.html" title="call iota regular and check if new message on the listening index are available" alt="" coords="177,114,342,141"/>
+<area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block.html" title=" " alt="" coords="188,165,331,191"/>
+<area shape="rect" id="node3" href="$classcontroller_1_1_memory_address_index.html" title=" " alt="" coords="397,5,596,47"/>
 </map>

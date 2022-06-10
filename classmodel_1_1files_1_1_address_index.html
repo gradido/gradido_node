@@ -93,21 +93,16 @@ $(document).ready(function(){initNavTree('classmodel_1_1files_1_1_address_index.
   <div class="headertitle"><div class="title">model::files::AddressIndex Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>File for storing account address indices.  
- <a href="classmodel_1_1files_1_1_address_index.html#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="model_2files_2_address_index_8h_source.html">AddressIndex.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for model::files::AddressIndex:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index__inherit__graph.svg" width="206" height="187"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index__inherit__graph.svg" width="370" height="187"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
 Collaboration diagram for model::files::AddressIndex:</div>
 <div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index__coll__graph.svg" width="206" height="187"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index__coll__graph.svg" width="370" height="187"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -132,16 +127,29 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac530703f10a574559e0885acd257a2ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea">writeToFile</a> ()</td></tr>
 <tr class="memdesc:ac530703f10a574559e0885acd257a2ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via <a class="el" href="class_file_lock_manager.html" title="For working with files, prevent access from multiple threads at the same time to a file.">FileLockManager</a>, I/O write.  <a href="classmodel_1_1files_1_1_address_index.html#ac530703f10a574559e0885acd257a2ea">More...</a><br /></td></tr>
 <tr class="separator:ac530703f10a574559e0885acd257a2ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d88a425287729406bd2331e83c00451"><td class="memItemLeft" align="right" valign="top"><a id="a2d88a425287729406bd2331e83c00451" name="a2d88a425287729406bd2331e83c00451"></a>
-std::unique_ptr&lt; <a class="el" href="class_virtual_file.html">VirtualFile</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><b>serialize</b> ()</td></tr>
-<tr class="memdesc:a2d88a425287729406bd2331e83c00451"><td class="mdescLeft">&#160;</td><td class="mdescRight">serialize address indices for writing with hdd write buffer task <br /></td></tr>
+<tr class="memitem:a2d88a425287729406bd2331e83c00451"><td class="memItemLeft" align="right" valign="top">std::unique_ptr&lt; <a class="el" href="class_virtual_file.html">VirtualFile</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_address_index.html#a2d88a425287729406bd2331e83c00451">serialize</a> ()</td></tr>
+<tr class="memdesc:a2d88a425287729406bd2331e83c00451"><td class="mdescLeft">&#160;</td><td class="mdescRight">serialize address indices for writing with hdd write buffer task  <a href="classmodel_1_1files_1_1_address_index.html#a2d88a425287729406bd2331e83c00451">More...</a><br /></td></tr>
 <tr class="separator:a2d88a425287729406bd2331e83c00451"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad21581ac39520d4dd802faeb8e1e9b2d"><td class="memItemLeft" align="right" valign="top">std::string&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_address_index.html#ad21581ac39520d4dd802faeb8e1e9b2d">getFileNameString</a> ()</td></tr>
+<tr class="separator:ad21581ac39520d4dd802faeb8e1e9b2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6067c86fe7f32ac765d70dc62984337"><td class="memItemLeft" align="right" valign="top"><a id="ae6067c86fe7f32ac765d70dc62984337" name="ae6067c86fe7f32ac765d70dc62984337"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isFileWritten</b> ()</td></tr>
+<tr class="separator:ae6067c86fe7f32ac765d70dc62984337"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeccffd3f2d100008dcb20f2310fbfee6"><td class="memItemLeft" align="right" valign="top">virtual std::unique_ptr&lt; <a class="el" href="class_virtual_file.html">VirtualFile</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask_1_1_i_serialize_to_v_file.html#aeccffd3f2d100008dcb20f2310fbfee6">serialize</a> ()=0</td></tr>
+<tr class="memdesc:aeccffd3f2d100008dcb20f2310fbfee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">serialize for writing with hdd write buffer task  <a href="classtask_1_1_i_serialize_to_v_file.html#aeccffd3f2d100008dcb20f2310fbfee6">More...</a><br /></td></tr>
+<tr class="separator:aeccffd3f2d100008dcb20f2310fbfee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af8bbb296c5a6f43be45c33fb444152ff"><td class="memItemLeft" align="right" valign="top"><a id="af8bbb296c5a6f43be45c33fb444152ff" name="af8bbb296c5a6f43be45c33fb444152ff"></a>
+virtual std::string&#160;</td><td class="memItemRight" valign="bottom"><b>getFileNameString</b> ()=0</td></tr>
+<tr class="separator:af8bbb296c5a6f43be45c33fb444152ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:af316cd9ce255efa0b2cfd80d6778d7b1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_address_index.html#af316cd9ce255efa0b2cfd80d6778d7b1">checkFile</a> ()</td></tr>
 <tr class="memdesc:af316cd9ce255efa0b2cfd80d6778d7b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if index file contains current indices (compare sizes), fileLock via <a class="el" href="class_file_lock_manager.html" title="For working with files, prevent access from multiple threads at the same time to a file.">FileLockManager</a>, I/O read.  <a href="classmodel_1_1files_1_1_address_index.html#af316cd9ce255efa0b2cfd80d6778d7b1">More...</a><br /></td></tr>
 <tr class="separator:af316cd9ce255efa0b2cfd80d6778d7b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a460ab890ea3645141775ef9f3d1999c8"><td class="memItemLeft" align="right" valign="top"><a id="a460ab890ea3645141775ef9f3d1999c8" name="a460ab890ea3645141775ef9f3d1999c8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setFileWritten</b> ()</td></tr>
+<tr class="separator:a460ab890ea3645141775ef9f3d1999c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45a9ec196ac5eea967c8eb11f77ac6cb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmodel_1_1files_1_1_address_index.html#a45a9ec196ac5eea967c8eb11f77ac6cb">calculateFileSize</a> ()</td></tr>
 <tr class="memdesc:a45a9ec196ac5eea967c8eb11f77ac6cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate file size from map entry count + space for hash, use Poco::FastMutex::ScopedLock.  <a href="classmodel_1_1files_1_1_address_index.html#a45a9ec196ac5eea967c8eb11f77ac6cb">More...</a><br /></td></tr>
 <tr class="separator:a45a9ec196ac5eea967c8eb11f77ac6cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -183,13 +191,7 @@ Poco::FastMutex&#160;</td><td class="memItemRight" valign="bottom"><b>mReference
 int&#160;</td><td class="memItemRight" valign="bottom"><b>mRefCount</b></td></tr>
 <tr class="separator:a64f4d6f46da601d2050299c701c64936 inherit pro_attribs_classmodel_1_1files_1_1_file_base"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p >File for storing account address indices. </p>
-<dl class="section author"><dt>Author</dt><dd>Dario Rekowski </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>2020-01-29</dd></dl>
-<p>Store indices for every account public key.<br  />
-</p>
-</div><h2 class="groupheader">Member Function Documentation</h2>
+<h2 class="groupheader">Member Function Documentation</h2>
 <a id="a4ae311bf893bc8b199071575a0610000" name="a4ae311bf893bc8b199071575a0610000"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ae311bf893bc8b199071575a0610000">&#9670;&nbsp;</a></span>add()</h2>
 
@@ -224,12 +226,6 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>mRefCount</b></td></tr
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if ok or false if address already exist. </dd></dl>
-<div class="dynheader">
-Here is the call graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index_a4ae311bf893bc8b199071575a0610000_cgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
 
 </div>
 </div>
@@ -336,9 +332,36 @@ Here is the call graph for this function:</div>
 <div class="dynheader">
 Here is the caller graph for this function:</div>
 <div class="dyncontent">
-<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index_af316cd9ce255efa0b2cfd80d6778d7b1_icgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index_af316cd9ce255efa0b2cfd80d6778d7b1_icgraph.svg" width="448" height="118"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
+
+</div>
+</div>
+<a id="ad21581ac39520d4dd802faeb8e1e9b2d" name="ad21581ac39520d4dd802faeb8e1e9b2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad21581ac39520d4dd802faeb8e1e9b2d">&#9670;&nbsp;</a></span>getFileNameString()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::string model::files::AddressIndex::getFileNameString </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements <a class="el" href="classtask_1_1_i_serialize_to_v_file.html">task::ISerializeToVFile</a>.</p>
 
 </div>
 </div>
@@ -403,6 +426,41 @@ Here is the caller graph for this function:</div>
 
 </div>
 </div>
+<a id="a2d88a425287729406bd2331e83c00451" name="a2d88a425287729406bd2331e83c00451"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d88a425287729406bd2331e83c00451">&#9670;&nbsp;</a></span>serialize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt; <a class="el" href="class_virtual_file.html">VirtualFile</a> &gt; model::files::AddressIndex::serialize </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>serialize address indices for writing with hdd write buffer task </p>
+
+<p>Implements <a class="el" href="classtask_1_1_i_serialize_to_v_file.html#aeccffd3f2d100008dcb20f2310fbfee6">task::ISerializeToVFile</a>.</p>
+<div class="dynheader">
+Here is the call graph for this function:</div>
+<div class="dyncontent">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index_a2d88a425287729406bd2331e83c00451_cgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+</div>
+</div>
+
+</div>
+</div>
 <a id="ac530703f10a574559e0885acd257a2ea" name="ac530703f10a574559e0885acd257a2ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac530703f10a574559e0885acd257a2ea">&#9670;&nbsp;</a></span>writeToFile()</h2>
 
@@ -424,12 +482,6 @@ Here is the caller graph for this function:</div>
 Here is the call graph for this function:</div>
 <div class="dyncontent">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index_ac530703f10a574559e0885acd257a2ea_cgraph.svg" width="100%" height="388"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-</div>
-</div>
-<div class="dynheader">
-Here is the caller graph for this function:</div>
-<div class="dyncontent">
-<div class="center"><iframe scrolling="no" frameborder="0" src="classmodel_1_1files_1_1_address_index_ac530703f10a574559e0885acd257a2ea_icgraph.svg" width="480" height="52"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe>
 </div>
 </div>
 

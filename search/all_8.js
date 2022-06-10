@@ -6,6 +6,7 @@ var searchData=
   ['invalidreadblocksize_3',['InvalidReadBlockSize',['../classmodel_1_1files_1_1_invalid_read_block_size.html',1,'model::files']]],
   ['iotamessagetotransactiontask_4',['IotaMessageToTransactionTask',['../class_iota_message_to_transaction_task.html',1,'']]],
   ['isallparentsready_5',['isAllParentsReady',['../classtask_1_1_task.html#a83f2a80b04661d7e2732dc8934a2e8cc',1,'task::Task']]],
-  ['istaskfinished_6',['isTaskFinished',['../classtask_1_1_task.html#aef3ee7384dd44e6274025f49e9405561',1,'task::Task']]],
-  ['istransactionpending_7',['isTransactionPending',['../class_task_observer.html#abeb34686883d83b867322852750fcc27',1,'TaskObserver']]]
+  ['iserializetovfile_6',['ISerializeToVFile',['../classtask_1_1_i_serialize_to_v_file.html',1,'task']]],
+  ['istaskfinished_7',['isTaskFinished',['../classtask_1_1_task.html#aef3ee7384dd44e6274025f49e9405561',1,'task::Task']]],
+  ['istransactionpending_8',['isTransactionPending',['../class_task_observer.html#abeb34686883d83b867322852750fcc27',1,'TaskObserver']]]
 ];
