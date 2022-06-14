@@ -132,7 +132,7 @@ $(document).ready(function(){initNavTree('model_2files_2_block_8h_source.html','
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            std::vector&lt;Poco::UInt32&gt; appendLines(<span class="keyword">const</span> std::vector&lt;const std::string*&gt;&amp; lines);</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            <span class="keyword">inline</span> Poco::UInt32 getCurrentFileSize() { Poco::FastMutex::ScopedLock lock(mFastMutex); <span class="keywordflow">return</span> mCurrentFileSize; }</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            <span class="keyword">inline</span> <span class="keyword">const</span> std::string getBlockPath()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> mBlockPath.toString(); }</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            <span class="keyword">inline</span> std::string getBlockPath()<span class="keyword"> const </span>{ <span class="keywordflow">return</span> mBlockPath.toString(); }</div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>            <span class="comment">// very expensive, read in whole file and calculate hash</span></div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            <span class="keywordtype">bool</span> validateHash();</div>
