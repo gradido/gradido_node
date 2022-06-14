@@ -3,6 +3,8 @@
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "../SingletonManager/LoggerManager.h"
 
+#include "Poco/Logger.h"
+
 WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex)
 	: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
 {
@@ -12,23 +14,18 @@ WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::
 
 WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()
 {
-	
 }
 
 int WriteTransactionsToBlockTask::run()
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
-	// sort in ascending order by transaction nr
-	mTransactions.sort([](Poco::SharedPtr<model::TransactionEntry> a, Poco::SharedPtr<model::TransactionEntry> b) {
-		return a->getTransactionNr() < b->getTransactionNr();
-	});
 	std::vector<const std::string*> lines;
 	lines.reserve(mTransactions.size());
 
 	int lastTransactionNr = 0;
 
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); ++it) {
-		auto transactionEntry = *it;
+		auto transactionEntry = it->second;
 		auto base64 = DataTypeConverter::binToBase64(*transactionEntry->getSerializedTransaction());
 		//printf("serialized transaction: %s\n", base64.data());
 		lines.push_back(transactionEntry->getSerializedTransaction());
@@ -37,38 +34,37 @@ int WriteTransactionsToBlockTask::run()
 		}
 		lastTransactionNr = transactionEntry->getTransactionNr();
 	}
+	
 	auto resultingCursorPositions = mBlockFile->appendLines(lines);
 	assert(resultingCursorPositions.size() == lines.size());
-	
+
 	size_t cursor = 0;
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); ++it) {
 		assert(it == mTransactions.begin() || resultingCursorPositions[cursor]);
-		(*it)->setFileCursor(resultingCursorPositions[cursor]);
-		mBlockIndex->addFileCursorForTransaction((*it)->getTransactionNr(), resultingCursorPositions[cursor]);
+		it->second->setFileCursor(resultingCursorPositions[cursor]);
+		mBlockIndex->addFileCursorForTransaction(it->second->getTransactionNr(), resultingCursorPositions[cursor]);
 		cursor++;
 	}
 	// save also block index
 	mBlockIndex->writeIntoFile();
+	std::clog << "[" << mTransactions.begin()->first << ";" << mTransactions.begin()->first + cursor << "] transactions written to block file";
 	return 0;
 }
 
-std::vector<uint64_t> WriteTransactionsToBlockTask::getTransactionNrs()
+void WriteTransactionsToBlockTask::addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction) 
 {
-	Poco::FastMutex::ScopedLock lock(mFastMutex);
-	std::vector<uint64_t> transactionNrs;
-	transactionNrs.reserve(mTransactions.size());
-	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
-		transactionNrs.push_back((*it)->getTransactionNr());
-	}
-	return transactionNrs;
+	assert(!isTaskSheduled());
+	assert(!isTaskFinished());		
+	Poco::FastMutex::ScopedLock lock(mFastMutex);	 
+	mTransactions.insert({transaction->getTransactionNr(), transaction});
+	mBlockIndex->addIndicesForTransaction(transaction);
 }
 
 Poco::SharedPtr<model::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
 {
-	for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
-		if ((*it)->getTransactionNr() == nr) {
-			return *it;
-		}
+	auto it = mTransactions.find(nr);
+	if(it == mTransactions.end()) {
+		return nullptr;
 	}
-	return nullptr;
+	return it->second;
 }

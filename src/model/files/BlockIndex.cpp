@@ -197,6 +197,7 @@ namespace model {
 				case YEAR_BLOCK: block = new YearBlock; break;
 				case HASH_BLOCK: vFile->read(*hashFromFile, crypto_generichash_BYTES); break;
 				}
+				int32_t debugFileCursor = 0;
 				// read block
 				if (block) {
 					// file end reached
@@ -215,6 +216,11 @@ namespace model {
 						auto dataBlock = static_cast<DataBlock*>(block);
 						//receiver->addIndicesForTransaction(dataBlock->createTransactionEntry(monthCursor, yearCursor));
 						//bool addIndicesForTransaction(uint16_t year, uint8_t month, uint64_t transactionNr, const std::vector<uint32_t>& addressIndices);
+						if(dataBlock->fileCursor < debugFileCursor) {
+							std::clog << "error reading blockindex from file, file cursor is: " << dataBlock->fileCursor 
+							        << " , last value was: " << debugFileCursor << std::endl;
+						}
+						debugFileCursor = dataBlock->fileCursor;
 						receiver->addIndicesForTransaction(
 							dataBlock->coinGroupId,
 							yearCursor, monthCursor, 

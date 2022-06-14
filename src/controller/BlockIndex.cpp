@@ -22,6 +22,7 @@ namespace controller {
 
 	BlockIndex::~BlockIndex()
 	{
+		std::clog << "~BlockIndex";
 		writeIntoFile();
 	}
 
@@ -264,6 +265,30 @@ namespace controller {
 		}
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		mDirty = true;
+
+		// check file cursors
+		int countZeros = 0;
+		std::vector<uint64_t> invalidTransactionNrs;
+		for(auto it = mTransactionNrsFileCursors.begin(); it != mTransactionNrsFileCursors.end(); it++) {
+			if(!it->second) {
+				countZeros++;
+				invalidTransactionNrs.push_back(it->first);
+			}
+		}
+		if(countZeros) {
+			std::clog << "find " << countZeros << " 0 by " << mTransactionNrsFileCursors.size() << " entries" << std::endl;
+			int newLineCount = 0;
+			for(auto it = invalidTransactionNrs.begin(); it != invalidTransactionNrs.end(); it++) {
+				std::clog << *it << " ";
+				newLineCount++;
+				if(newLineCount == 10) {
+					std::clog << std::endl;
+					newLineCount = 0;
+				}				
+			}
+			std::clog << std::endl;
+		}
+
 		auto result = mTransactionNrsFileCursors.insert(TransactionNrsFileCursorsPair(transactionNr, fileCursor));
 		return result.second;
 	}
@@ -424,8 +449,33 @@ namespace controller {
 	bool BlockIndex::getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor)
 	{
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+
 		auto it = mTransactionNrsFileCursors.find(transactionNr);
 		if (it != mTransactionNrsFileCursors.end()) {
+			if(!it->second && transactionNr) {
+				auto lastTransaction = mTransactionNrsFileCursors.end();
+				lastTransaction--;
+				std::clog << "file cursor for transaction: " << transactionNr 
+				          << " is : " << it->second 
+						  << ", last transaction: " << lastTransaction->first
+						  << ", cursor: " << lastTransaction->second
+						  << std::endl;
+				long timeout = 100;
+			    do {
+					it = mTransactionNrsFileCursors.find(transactionNr);
+					if (it == mTransactionNrsFileCursors.end()) {
+						return false;
+					}
+					if(it->second) break;
+					mSlowWorkingMutex.unlock();
+					Poco::Thread::sleep(20);
+					mSlowWorkingMutex.lock();
+					timeout--;					
+				} while(!it->second && timeout > 0);
+				std::clog << "timeout: " << timeout 
+						  << ", file cursor: " << it->second
+						  << std::endl;
+			}
 			fileCursor = it->second;
 			return true;
 		} 
@@ -455,6 +505,7 @@ namespace controller {
 
 	void BlockIndex::reset()
 	{
+		std::clog << "BlockIndex::reset called" << std::endl;
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		mTransactionNrsFileCursors.clear();
 		mYearMonthAddressIndexEntrys.clear();

@@ -116,18 +116,25 @@ namespace controller {
 		if (transactionEntry.isNull()) {
 			// maybe it was already deleted from cache but not written to file yet, especially happen while debugging
 			// happen also if cache timeout is shorter than file write timeout
+			bool writeTransactionTaskExist = false;
+			bool writeTransactionTaskIsObserved = false;
 			Poco::SharedPtr<model::NodeTransactionEntry> transaction;
 			if (!mTransactionWriteTask.isNull()) {
 				transaction = mTransactionWriteTask->getTransaction(transactionNr);
+				writeTransactionTaskExist = true;
 				if (!transaction.isNull()) return transaction;
 			}
 			if (mTaskObserver->isTransactionPending(transactionNr)) {
 				transaction = mTaskObserver->getTransaction(transactionNr);
+				writeTransactionTaskIsObserved = true;
 				if (!transaction.isNull()) return transaction;
 			}
 			// read from file system
 			int32_t fileCursor = 0;
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
+				std::clog << "writeTransactionTaskExist: " << writeTransactionTaskExist 
+						  << ", writeTransactionTaskIsObserved: " << writeTransactionTaskIsObserved
+						  << std::endl;
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
 			}
 			if (!fileCursor && transactionNr < mBlockIndex->getMaxTransactionNr()) {
@@ -154,10 +161,14 @@ namespace controller {
 				auto blockLine = mBlockFile->readLine(fileCursor);
 				auto block = std::make_unique<model::gradido::GradidoBlock>(blockLine.get());
 				printf("block: %s\n", block->toJson().data());
-				throw GradidoBlockchainTransactionNotFoundException("transaction not found after reading from block file").setTransactionId(transactionNr);
+				throw GradidoBlockchainTransactionNotFoundException("transaction not found after reading from block file")
+					.setTransactionId(transactionNr);
 			}			
 		}
-		
+		if(transactionEntry.isNull()) {
+			throw GradidoBlockchainTransactionNotFoundException("transaction is still null, after all checks")
+				.setTransactionId(transactionNr);
+		}
 		return transactionEntry;		
 	}
 
@@ -188,15 +199,16 @@ namespace controller {
 			mWorkingMutex.unlock();
 			return REMOVE_ME;
 		}
-		//Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
 		if (!mTransactionWriteTask.isNull()) {
 			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
-				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
-				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
-				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
-				
+				auto copyTask = mTransactionWriteTask;
+				mTaskObserver->addBlockWriteTask(copyTask);
 				mTransactionWriteTask = nullptr;
+
+				copyTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
+				copyTask->scheduleTask(copyTask);				
 			}
 		}
 		mWorkingMutex.unlock();

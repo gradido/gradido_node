@@ -76,7 +76,7 @@ protected:
 	typedef std::pair<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
 	std::map<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
 	typedef std::pair<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
-	std::map<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> mTransactionsForTasks;
+	std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>> mTransactionsFromPendingTasks;
 	
 };
 

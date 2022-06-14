@@ -20,10 +20,9 @@ bool TaskObserver::addBlockWriteTask(Poco::AutoPtr<WriteTransactionsToBlockTask>
 	if (!result.second) {
 		return false;
 	}
-	auto transactionNrs = blockWriteTask->getTransactionNrs();
-	for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-		mTransactionsForTasks.insert(TransactionsForTasksPair(*it, blockWriteTask));
-	}
+	auto transactions = blockWriteTask->getTransactionEntriesList();
+	mTransactionsFromPendingTasks.insert(transactions->begin(), transactions->end());
+	
 	return true;
 }
 
@@ -44,12 +43,12 @@ bool TaskObserver::removeBlockWriteTask(WriteTransactionsToBlockTask* blockWrite
 	if (entry == mBlockWriteTasks.end()) {
 		return false;
 	}
-	mBlockWriteTasks.erase(entry);
-	auto transactionNrs = blockWriteTask->getTransactionNrs();
-	for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-		//mTransactionsForTasks.insert(TransactionsForTasksPair(*it, blockWriteTask));
-		mTransactionsForTasks.erase(*it);
+	auto transactions = blockWriteTask->getTransactionEntriesList();
+	for(auto it = transactions->begin(); it != transactions->end(); it++) {
+		mTransactionsFromPendingTasks.erase(it->first);
 	}
+
+	mBlockWriteTasks.erase(entry);
 	return true;
 
 }
@@ -57,7 +56,7 @@ bool TaskObserver::removeBlockWriteTask(WriteTransactionsToBlockTask* blockWrite
 bool TaskObserver::isTransactionPending(uint64_t transactionNr)
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
-	if (mTransactionsForTasks.find(transactionNr) != mTransactionsForTasks.end()) {
+	if (mTransactionsFromPendingTasks.find(transactionNr) != mTransactionsFromPendingTasks.end()) {
 		return true;
 	}
 	return false;
@@ -66,10 +65,18 @@ bool TaskObserver::isTransactionPending(uint64_t transactionNr)
 Poco::SharedPtr<model::NodeTransactionEntry> TaskObserver::getTransaction(uint64_t transactionNr)
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
-	auto it = mTransactionsForTasks.find(transactionNr);
-	if (it != mTransactionsForTasks.end()) {
-		return it->second->getTransaction(transactionNr);
+	for(auto it = mBlockWriteTasks.begin(); it != mBlockWriteTasks.end(); it++) {
+		auto transactionEntry = it->second->getTransaction(transactionNr);
+		if(!transactionEntry.isNull()) {
+			return transactionEntry;
+		}
 	}
+	std::clog << "cannot find transaction " << transactionNr << " in write task" << std::endl;
+	auto it = mTransactionsFromPendingTasks.find(transactionNr);
+	if (it != mTransactionsFromPendingTasks.end()) {
+		return it->second;
+	}
+	std::clog << "cannot find transaction " << transactionNr << " in map" << std::endl;
 	return nullptr;
 }
 

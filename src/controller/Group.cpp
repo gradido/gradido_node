@@ -174,19 +174,18 @@ namespace controller {
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mExitCalled) return false;
 		
-
 		if (isTransactionAlreadyExist(newTransaction.get())) {
 			throw GradidoBlockchainTransactionAlreadyExistException("[Group::addTransaction] skip because already exist");
 		}
 
 		auto lastTransaction = getLastTransaction();
 		uint64_t id = 1;
-		if (lastTransaction) {
+		if (!lastTransaction.isNull()) {
 			id = lastTransaction->getID() + 1;
 		}
 
 		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
-		if (lastTransaction) {
+		if (!lastTransaction.isNull()) {
 			if (newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
 				throw BlockchainOrderException("previous transaction is younger");
 			}
@@ -208,7 +207,7 @@ namespace controller {
 
 		// calculate tx hash
 		MemoryBin* txHash = nullptr;
-		if (lastTransaction) {
+		if (!lastTransaction.isNull()) {
 			txHash = newGradidoBlock->calculateTxHash(lastTransaction.get());
 		}
 		else {
@@ -279,7 +278,8 @@ namespace controller {
 				mMessageIdTransactionNrCacheMutex.unlock();
 			}
 
-			//std::clog << "add transaction: " << mLastTransaction->getID() << ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
+			//std::clog << "add transaction: " << mLastTransaction->getID() << std::endl;
+			// ", memo: " << newTransaction->getTransactionBody()->getMemo() << std::endl;
 			/*printf("[%s] nr: %d, group: %s, messageId: %s, received: %d, transaction: %s",
 				__FUNCTION__, mLastTransaction->getID(), mGroupAlias.data(), mLastTransaction->getMessageIdHex().data(),
 				mLastTransaction->getReceived(), mLastTransaction->getGradidoTransaction()->toJson().data()
@@ -421,14 +421,31 @@ namespace controller {
 		int blockCursor = mLastBlockNr;
 		while (blockCursor > 0) {
 			auto block = getBlock(blockCursor);
+			if(block.isNull()) {
+				throw BlockNotLoadedException("block not found", mGroupAlias, blockCursor);
+			}
 			auto blockIndex = block->getBlockIndex();
-			auto transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
+			if(blockIndex.isNull()) {
+				throw BlockIndexException("block return a invalid block index");
+			}
+			
+			std::vector<uint64_t> transactionNrs;
+			try {
+				transactionNrs = blockIndex->findTransactionsForAddressMonthYear(index, year, month);
+			} catch(Poco::NullPointerException& ex) {
+				std::clog << "Null Pointer Exception in Group::findTransactions by calling blockIndex->findTransactionsForAddressMonthYear" << std::endl;
+				throw;
+			}
 			if (transactionNrs.size()) {
 				// sort nr ascending to possible speed up read from block file
 				// TODO: check if there not already perfectly sorted
 				std::sort(std::begin(transactionNrs), std::end(transactionNrs));
 				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
 					auto result = block->getTransaction(*it);
+					if(result.isNull()) {
+						throw GradidoBlockchainTransactionNotFoundException("getTransaction result is empty")
+							.setTransactionId(*it);
+					}
 					if (!result->getSerializedTransaction()->size()) {
 						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
@@ -521,7 +538,13 @@ namespace controller {
 			if (blockIndex.isNull()) {
 				throw BlockIndexException("[Group::calculateAddressBalance] block index is null");
 			}
-			auto transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinGroupId);
+			std::vector<uint64_t> transactionNrs;
+			try {
+				transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinGroupId);
+			} catch(Poco::NullPointerException& ex) {
+				std::clog << "Null Pointer Exception by calling findTransactionsForAddress" << std::endl;
+				throw;
+			}
 
 			std::sort(transactionNrs.begin(), transactionNrs.end());
 			// begin on last transaction

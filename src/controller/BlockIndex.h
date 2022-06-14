@@ -28,7 +28,7 @@ namespace controller {
 
 	class BlockIndex : public ControllerBase, public model::files::IBlockIndexReceiver
 	{
-		friend model::files::BlockIndex;
+		//friend model::files::BlockIndex;
 	public:
 		BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 		~BlockIndex();
