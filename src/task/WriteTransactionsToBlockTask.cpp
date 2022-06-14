@@ -39,10 +39,22 @@ int WriteTransactionsToBlockTask::run()
 	assert(resultingCursorPositions.size() == lines.size());
 
 	size_t cursor = 0;
+	uint32_t fileCursor = 0;
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); ++it) {
 		assert(it == mTransactions.begin() || resultingCursorPositions[cursor]);
-		it->second->setFileCursor(resultingCursorPositions[cursor]);
-		mBlockIndex->addFileCursorForTransaction(it->second->getTransactionNr(), resultingCursorPositions[cursor]);
+		if (fileCursor > resultingCursorPositions[cursor]) {
+			std::clog << "file cursor ordering is wrong" << std::endl;
+		}
+		fileCursor = resultingCursorPositions[cursor];
+		it->second->setFileCursor(fileCursor);
+		mBlockIndex->addFileCursorForTransaction(it->second->getTransactionNr(), fileCursor);
+		int32_t temp;
+		mBlockIndex->getFileCursorForTransactionNr(it->second->getTransactionNr(), temp);
+		if (fileCursor != temp) {
+			std::clog << "file cursor isn't correct in block index" 
+					  << ", fileCursor: " << fileCursor << ", temp: " << temp
+					  << std::endl;
+		}
 		cursor++;
 	}
 	// save also block index
