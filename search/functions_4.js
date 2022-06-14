@@ -16,9 +16,8 @@ var searchData=
   ['getnexttransactionid_13',['getNextTransactionId',['../classcontroller_1_1_archive_transactions_ordering.html#ad26a316a11a100861a7c9761b4de5dd4',1,'controller::ArchiveTransactionsOrdering']]],
   ['getopenfile_14',['getOpenFile',['../classmodel_1_1files_1_1_block.html#ab5cd6a6f2c7ecc61d98a2f990bc59c5b',1,'model::files::Block']]],
   ['getoraddindexforaddress_15',['getOrAddIndexForAddress',['../classcontroller_1_1_address_index.html#a92b7d0e02e5577732d436b40eea13ffa',1,'controller::AddressIndex::getOrAddIndexForAddress()'],['../classcontroller_1_1_memory_address_index.html#a520b93946e0f8f77cb38bc862891046b',1,'controller::MemoryAddressIndex::getOrAddIndexForAddress()']]],
-  ['gettransaction_16',['getTransaction',['../classcontroller_1_1_block.html#a217f74a346ca5dd0a2bce29425628c34',1,'controller::Block::getTransaction()'],['../class_task_observer.html#a02a776cbcced1d5018e89d3243df8468',1,'TaskObserver::getTransaction()'],['../class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39',1,'WriteTransactionsToBlockTask::getTransaction(uint64_t nr)']]],
-  ['gettransactionnrs_17',['getTransactionNrs',['../class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9',1,'WriteTransactionsToBlockTask']]],
-  ['getvalueforkey_18',['getValueForKey',['../classmodel_1_1files_1_1_state.html#a79a8eda8772fae8f6b8a67fd3720952a',1,'model::files::State']]],
-  ['group_19',['Group',['../classcontroller_1_1_group.html#a99b11874c6ddc1e1496ec35e062aff72',1,'controller::Group']]],
-  ['groupindex_20',['GroupIndex',['../classmodel_1_1files_1_1_group_index.html#a3cb88fba269e07278bbce30bf9110e92',1,'model::files::GroupIndex']]]
+  ['gettransaction_16',['getTransaction',['../classcontroller_1_1_block.html#a217f74a346ca5dd0a2bce29425628c34',1,'controller::Block::getTransaction()'],['../class_task_observer.html#a02a776cbcced1d5018e89d3243df8468',1,'TaskObserver::getTransaction()'],['../class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39',1,'WriteTransactionsToBlockTask::getTransaction()']]],
+  ['getvalueforkey_17',['getValueForKey',['../classmodel_1_1files_1_1_state.html#a79a8eda8772fae8f6b8a67fd3720952a',1,'model::files::State']]],
+  ['group_18',['Group',['../classcontroller_1_1_group.html#a99b11874c6ddc1e1496ec35e062aff72',1,'controller::Group']]],
+  ['groupindex_19',['GroupIndex',['../classmodel_1_1files_1_1_group_index.html#a3cb88fba269e07278bbce30bf9110e92',1,'model::files::GroupIndex']]]
 ];

@@ -92,8 +92,7 @@ var NAVTREEINDEX0 =
 "class_virtual_file.html#ae4c57d9f6e5a4a5e2711be3359906870":[2,0,26,0],
 "class_write_transactions_to_block_task.html":[2,0,27],
 "class_write_transactions_to_block_task.html#a2781ea4f272af4eda3dc5cf420b2eb39":[2,0,27,1],
-"class_write_transactions_to_block_task.html#ac09321e307b6d017ac340e220e3cb8e9":[2,0,27,2],
-"class_write_transactions_to_block_task.html#acdece707eb9e0e3e49c78ef1c986917f":[2,0,27,3],
+"class_write_transactions_to_block_task.html#acdece707eb9e0e3e49c78ef1c986917f":[2,0,27,2],
 "class_write_transactions_to_block_task.html#adef0e6b3c84745a854bddf2e16119183":[2,0,27,0],
 "classclient_1_1_base.html":[2,0,0,0],
 "classclient_1_1_graph_q_l.html":[2,0,0,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX0 =
 "classtask_1_1_task.html#ad8c22b5c383ef8cbf608fc523bd1c95e":[2,0,5,7,2],
 "classtask_1_1_task.html#aef3ee7384dd44e6274025f49e9405561":[2,0,5,7,1],
 "classtask_1_1_thread.html":[2,0,5,8],
-"classtask_1_1_thread.html#a0cf84f940aad3e45a2f34fae4a1caa42":[2,0,5,8,0]
+"classtask_1_1_thread.html#a0cf84f940aad3e45a2f34fae4a1caa42":[2,0,5,8,0],
+"classtask_1_1_thread.html#ae5ce05044ed9d9a0675b622fc66209d0":[2,0,5,8,2]
 };
