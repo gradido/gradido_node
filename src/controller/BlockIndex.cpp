@@ -266,64 +266,25 @@ namespace controller {
 		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
 		mDirty = true;
 
-		// check file cursors
-		int countZeros = 0;
-		std::vector<uint64_t> invalidTransactionNrs;
-		for(auto it = mTransactionNrsFileCursors.begin(); it != mTransactionNrsFileCursors.end(); it++) {
-			if(!it->second && it->first > 1) {
-				countZeros++;
-				invalidTransactionNrs.push_back(it->first);
-			}
-		}
-		if(countZeros) {
-			//std::clog << "find " << countZeros << " 0 by " << mTransactionNrsFileCursors.size() << " entries" << std::endl;
-			int newLineCount = 0;
-			for(auto it = invalidTransactionNrs.begin(); it != invalidTransactionNrs.end(); it++) {
-				//std::clog << *it << " ";
-				newLineCount++;
-				if(newLineCount == 10) {
-					//std::clog << std::endl;
-					newLineCount = 0;
-				}				
-			}
-			std::clog << std::endl;
-		}
+		// check first if map entry already exist
+		// I don't know why, but with small values for caching the block index map contains entries for transactions nrs
+		// with 0 for fileCursor, but this is the only place where insert is called and fileCursor is only allowed to be 0 for
+		// the first transaction per block!
 		auto it = mTransactionNrsFileCursors.find(transactionNr);
 		if (it == mTransactionNrsFileCursors.end()) {
 			auto result = mTransactionNrsFileCursors.insert(TransactionNrsFileCursorsPair(transactionNr, fileCursor));
-			int countZerosAfter = 0;
-			for (auto it = mTransactionNrsFileCursors.begin(); it != mTransactionNrsFileCursors.end(); it++) {
-				if (!it->second && it->first > 1) {
-					countZerosAfter++;
-				}
-			}
-			if (countZerosAfter != countZeros) {
-				std::clog << "add zeros: " << countZerosAfter - countZeros << std::endl;
-			}
-
-
 			if (!result.second) {
-				std::clog << "error by inserting file cursor, this preventing inserting: ";
-				if (result.first != mTransactionNrsFileCursors.end()) {
-					std::clog << "nr: " << result.first->first << ", cursor: " << result.first->second;
-				}
-				std::clog << std::endl;
-			}
-			else {
-				if (result.first->second != fileCursor) {
-					std::clog << "file cursor value changed after successfully insert!!!" << std::endl;
-				}
+				throw BlockIndexException("error by inserting file cursor");
 			}
 			return result.second;
 		}
 		else {
 			if (!it->second) {
 				it->second = fileCursor;
-			}
-			else {
-				std::clog << "try to overwrite file cursor: " << it->second << " with: " << fileCursor << std::endl;
+				return true;
 			}
 		}
+		return false;
 	}
 
 	std::vector<uint64_t> BlockIndex::findTransactionsForAddressMonthYear(uint32_t addressIndex, uint16_t year, uint8_t month)

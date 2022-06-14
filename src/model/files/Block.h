@@ -53,7 +53,7 @@ namespace model {
 			std::vector<Poco::UInt32> appendLines(const std::vector<const std::string*>& lines);
 
 			inline Poco::UInt32 getCurrentFileSize() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mCurrentFileSize; }
-			inline const std::string getBlockPath() const { return mBlockPath.toString(); }
+			inline std::string getBlockPath() const { return mBlockPath.toString(); }
 
 			// very expensive, read in whole file and calculate hash
 			bool validateHash();
