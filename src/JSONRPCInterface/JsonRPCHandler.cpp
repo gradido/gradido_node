@@ -51,7 +51,7 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	std::string pubkey;
 	std::string pubkeyHex;
 	std::set<std::string> noNeedForPubkey = {
-		"puttransaction"
+		"puttransaction", "getlasttransaction"
 	};
 	if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
 		if (!getStringParameter(params, "pubkey", pubkeyHex)) {
@@ -64,8 +64,18 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 	int timezoneDifferential = Poco::Timezone::tzd();
 
 	if (method == "getlasttransaction") {
-		stateSuccess();
-		mResponseResult.AddMember("transaction", "", alloc);
+		auto lastTransaction = group->getLastTransaction();
+		if (!lastTransaction.isNull()) {
+			stateSuccess();
+			auto serializedTransaction = lastTransaction->getSerialized();
+			auto base64Transaction = DataTypeConverter::binToBase64(std::move(serializedTransaction));
+			mResponseResult.AddMember("transaction", Value(base64Transaction->data(), alloc), alloc);
+		}
+		else {
+			stateError("no transaction");
+			mResponseErrorCode = JSON_RPC_ERROR_GRADIDO_NODE_ERROR;
+		}
+		
 	}
 	// TODO: rename to listsinceblock
 	else if (method == "getTransactions") {

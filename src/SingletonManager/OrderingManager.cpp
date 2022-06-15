@@ -124,7 +124,7 @@ int OrderingManager::ThreadFunction()
                 auto transaction = itTransaction->transaction.get();
                 auto type = transaction->getTransactionBody()->getTransactionType();
                 auto seconds = transaction->getTransactionBody()->getCreatedSeconds();
-                printf("transaction type: %d, created: %d\n", type, seconds);
+//                printf("transaction type: %d, created: %d\n", type, seconds);
               
                 // TODO: check if it is really necessary
                 auto transactionCopy = std::make_unique<model::gradido::GradidoTransaction>(transaction->getSerialized().get());
