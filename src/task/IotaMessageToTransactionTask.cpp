@@ -78,8 +78,9 @@ int IotaMessageToTransactionTask::run()
     // if simple validation already failed, we can stop here
     try {
         transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
-        if (transaction->getTransactionBody()->isCreation()) {
-            transaction->getTransactionBody()->getCreationTransaction()->validateTargetDate(mTimestamp);
+        auto body = transaction->getTransactionBody();
+        if (body->isCreation()) {
+            body->getCreationTransaction()->validateTargetDate(body->getCreatedSeconds());
         }
     } catch(model::gradido::TransactionValidationException& e) {
         errorLog.error(e.getFullString());
