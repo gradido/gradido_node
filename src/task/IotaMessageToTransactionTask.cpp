@@ -3,6 +3,7 @@
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 #include "gradido_blockchain/model/protobufWrapper/ProtobufExceptions.h"
+#include "gradido_blockchain/lib/Profiler.h"
 
 #include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/GroupManager.h"
@@ -40,7 +41,9 @@ int IotaMessageToTransactionTask::run()
     std::pair<std::unique_ptr<std::string>, std::unique_ptr<std::string>> dataIndex;
     auto iotaMessageIdHex = mMessageId.toHex();
     try {
+        Profiler getIndexDataTime;
         dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);
+        LoggerManager::getInstance()->mSpeedLogging.error("time for getting indexiation message from iota: %s", getIndexDataTime.string());
     }
     catch (...) {
         IotaRequest::defaultExceptionHandler(errorLog, false);
