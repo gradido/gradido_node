@@ -49,7 +49,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "_archive_transactions_ordering_8h_source.html",
-"classtask_1_1_thread.html#af25c9f8ec5832f00abea9e2fc783411d"
+"classtask_1_1_thread.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

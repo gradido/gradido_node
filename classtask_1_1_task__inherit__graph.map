@@ -1,11 +1,12 @@
 <map id="task::Task" name="task::Task">
-<area shape="rect" id="node1" title=" " alt="" coords="5,165,92,192"/>
-<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="140,165,255,192"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,199,92,225"/>
+<area shape="rect" id="node2" href="$classtask_1_1_c_p_u_task.html" title=" " alt="" coords="140,199,255,225"/>
 <area shape="rect" id="node3" href="$class_iota_message_to_transaction_task.html" title=": Get confirmed transaction id from Iota, process it" alt="" coords="303,5,525,32"/>
 <area shape="rect" id="node4" href="$class_write_transactions_to_block_task.html" title="Task for collecting transactions and write it to block chain after timeout." alt="" coords="305,56,523,83"/>
 <area shape="rect" id="node5" href="$classiota_1_1_milestone_loading_task.html" title=" " alt="" coords="315,107,513,133"/>
 <area shape="rect" id="node6" href="$classmodel_1_1files_1_1_block_append_line_task.html" title=" " alt="" coords="319,158,509,199"/>
 <area shape="rect" id="node7" href="$classmodel_1_1files_1_1_rebuild_block_index_task.html" title=" " alt="" coords="319,223,509,265"/>
 <area shape="rect" id="node8" href="$classtask_1_1_hdd_write_buffer_task.html" title=" " alt="" coords="321,289,507,316"/>
-<area shape="rect" id="node9" href="$classtask_1_1_serialize_to_v_file_task.html" title="Task for serializing binary data in preparing for saving in file." alt="" coords="319,340,509,367"/>
+<area shape="rect" id="node9" href="$classtask_1_1_notify_client.html" title=" " alt="" coords="347,340,481,367"/>
+<area shape="rect" id="node10" href="$classtask_1_1_serialize_to_v_file_task.html" title="Task for serializing binary data in preparing for saving in file." alt="" coords="319,391,509,417"/>
 </map>

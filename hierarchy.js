@@ -113,6 +113,7 @@ var hierarchy =
         [ "model::files::BlockAppendLineTask", "classmodel_1_1files_1_1_block_append_line_task.html", null ],
         [ "model::files::RebuildBlockIndexTask", "classmodel_1_1files_1_1_rebuild_block_index_task.html", null ],
         [ "task::HddWriteBufferTask", "classtask_1_1_hdd_write_buffer_task.html", null ],
+        [ "task::NotifyClient", "classtask_1_1_notify_client.html", null ],
         [ "task::SerializeToVFileTask", "classtask_1_1_serialize_to_v_file_task.html", null ]
       ] ]
     ] ],

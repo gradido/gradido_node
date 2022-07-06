@@ -68,6 +68,7 @@ var annotated_dup =
       [ "CPUTask", "classtask_1_1_c_p_u_task.html", "classtask_1_1_c_p_u_task" ],
       [ "HddWriteBufferTask", "classtask_1_1_hdd_write_buffer_task.html", "classtask_1_1_hdd_write_buffer_task" ],
       [ "ISerializeToVFile", "classtask_1_1_i_serialize_to_v_file.html", "classtask_1_1_i_serialize_to_v_file" ],
+      [ "NotifyClient", "classtask_1_1_notify_client.html", "classtask_1_1_notify_client" ],
       [ "SerializeToVFileTask", "classtask_1_1_serialize_to_v_file_task.html", "classtask_1_1_serialize_to_v_file_task" ],
       [ "Task", "classtask_1_1_task.html", "classtask_1_1_task" ],
       [ "Thread", "classtask_1_1_thread.html", "classtask_1_1_thread" ]
