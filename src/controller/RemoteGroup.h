@@ -30,6 +30,7 @@ namespace controller {
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 		Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly = true);
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address);
 		//! \brief Find transactions of account from a specific month.
 		//! \param address User account public key.
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, int month, int year);
