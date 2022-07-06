@@ -17,6 +17,8 @@
 
 #include "Block.h"
 
+#include "../task/NotifyClient.h"
+
 #include <inttypes.h>
 
 #include "rapidjson/document.h"
@@ -286,13 +288,8 @@ namespace controller {
 			);*/
 			// say community server that a new transaction awaits him
 			if (mCommunityServer) {
-				try {
-					mCommunityServer->notificateNewTransaction(mLastTransaction);
-				}
-				catch (Poco::NullPointerException& ex) {
-					LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling notificateNewTransaction");
-					throw;
-				}
+				task::TaskPtr notifyClientTask = new task::NotifyClient(mCommunityServer, mLastTransaction);
+				notifyClientTask->scheduleTask(notifyClientTask);
 			}
 		}
 		return result;
