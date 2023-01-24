@@ -170,6 +170,13 @@ void JsonRPCHandler::handle(std::string method, const Value& params)
 
 		return listTransactions(groupAlias, pubkey, currentPage, pageSize, orderDESC, onlyCreations);
 	}
+	else if (method == "listtransactionsforaddress") {
+		uint64_t firstTransactionNr = 1;
+		uint32_t maxResultCount = 0;
+		getUIntParameter(params, "maxResultCount", maxResultCount);
+		getUInt64Parameter(params, "firstTransactionNr", firstTransactionNr);		
+		return listTransactionsForAddress(pubkey, firstTransactionNr, maxResultCount, group);
+	}
 	else if (method == "puttransaction") {
 		std::string base64Transaction;
 		if (!getStringParameter(params, "transaction", base64Transaction)) {
@@ -336,6 +343,26 @@ void JsonRPCHandler::listTransactions(
 	stateSuccess();
 	mResponseResult.AddMember("transactionList", transactionListValue, alloc);
 	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
+}
+
+void JsonRPCHandler::listTransactionsForAddress(
+	const std::string& userPublicKey,
+	uint64_t firstTransactionNr,
+	uint32_t maxResultCount,
+	Poco::SharedPtr<controller::Group> group
+)
+{
+	Profiler timeUsed;
+	auto transactions = group->findTransactions(userPublicKey, maxResultCount, firstTransactionNr);
+	auto alloc = mResponseJson.GetAllocator();
+	Value jsonTransactionsArray(kArrayType);
+	for (auto transaction : transactions) {
+		auto serializedTransactionBase64 = DataTypeConverter::binToBase64(*transaction->getSerializedTransaction());
+		jsonTransactionsArray.PushBack(Value(serializedTransactionBase64.data(), alloc), alloc);
+	}
+	stateSuccess();
+	mResponseResult.AddMember("transactions", jsonTransactionsArray, alloc);
+	mResponseResult.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);	
 }
 
 void JsonRPCHandler::putTransaction(

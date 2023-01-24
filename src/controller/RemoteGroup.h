@@ -34,6 +34,7 @@ namespace controller {
 		//! \brief Find transactions of account from a specific month.
 		//! \param address User account public key.
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, int month, int year);
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr);
 		const std::string& getGroupId() const;
 
 	protected:

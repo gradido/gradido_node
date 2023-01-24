@@ -381,6 +381,42 @@ namespace controller {
 		return transactions;
 	}
 
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
+	{
+		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactions;
+
+		auto index = mAddressIndex->getIndexForAddress(address);
+		if (!index || !maxResultCount) { return transactions; }
+
+		int blockCursor = 1;
+		while (blockCursor <= mLastBlockNr) {
+			auto block = getBlock(blockCursor);
+			auto blockIndex = block->getBlockIndex();
+			if(blockIndex->getMaxTransactionNr() < startTransactionNr) continue;
+			auto transactionNrs = blockIndex->findTransactionsForAddress(index);
+			if (transactionNrs.size()) {
+				for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
+					if(*it < startTransactionNr) continue;
+					auto result = block->getTransaction(*it);
+					if (!result->getSerializedTransaction()->size()) {
+						Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
+						errorLog.fatal("corrupted data, get empty transaction for nr: %d, group: %s, result: %d",
+							(int)*it, mGroupAlias, result);
+						std::abort();
+					}
+					transactions.push_back(result);
+					if (transactions.size() >= maxResultCount) {
+						return transactions;
+					}
+				}
+			}
+			blockCursor--;
+		}
+
+		return transactions;
+	}
+
 	std::vector<uint64_t> Group::findTransactionIds(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);

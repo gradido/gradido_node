@@ -36,14 +36,14 @@ namespace controller {
 				throw BlockchainOrderException("previous transaction is younger");
 			}
 			int timeout = 10000;
-			while (mPendingTransactions.size() > 4000 && timeout > 0) {
+			while (mPendingTransactions.size() > 5000 && timeout > 0) {
 				Poco::Thread::sleep(350);
 				timeout -= 350;
 			}
 			std::scoped_lock<std::shared_mutex> _lock(mPendingTransactionsMutex);
 			// prevent that hackers can fill up the memory with pending archive transactions
 			// MAGIC NUMBER
-			if (mPendingTransactions.size() > 4000) {
+			if (mPendingTransactions.size() > 5000) {
 				throw ArchivePendingTransactionsMapFull("archive pending map exhausted", mPendingTransactions.size());
 			}
 			auto result = mPendingTransactions.insert({ transactionNr, std::move(transaction) });
