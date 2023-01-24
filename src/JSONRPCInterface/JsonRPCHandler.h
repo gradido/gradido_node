@@ -24,6 +24,12 @@ protected:
 		bool orderDESC = true, 
 		bool onlyCreations = false
 	);
+	void listTransactionsForAddress(
+		const std::string& userPublicKey,
+		uint64_t firstTransactionNr,
+		uint32_t maxResultCount,
+		Poco::SharedPtr<controller::Group> group
+	);
 	
 	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, const std::string& coinGroupId = "");
 	void getAddressType(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);

@@ -54,6 +54,10 @@ namespace controller {
 	{
 		throw std::runtime_error("not implemented yet");
 	}
+	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
 
 	const std::string& RemoteGroup::getGroupId() const
 	{

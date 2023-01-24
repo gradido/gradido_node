@@ -85,6 +85,9 @@ namespace controller {
 		//! \param address Address = user account public key.
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address);
 
+		//! \brief find transaction belonging to address account but with pagination
+		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr = 1);
+
 		/*! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 			
 			Faster than findTransactions because it need only reading block index
