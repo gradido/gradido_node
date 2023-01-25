@@ -35,34 +35,29 @@ public:
 	JsonRPCRequestHandler();
 
 	void handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response);
+	rapidjson::Value handleOneRpcCall(const rapidjson::Value& jsonRpcRequest);
 
 	//virtual Poco::JSON::Object* handle(Poco::Dynamic::Var params) = 0;
 	//virtual void handle(const jsonrpcpp::Request& request, Json& response) = 0;
-	virtual void handle(std::string method, const rapidjson::Value& params) { };
-
-	void parseJsonWithErrorPrintFile(std::istream& request_stream, rapidjson::Document& rapidParams);
+	virtual rapidjson::Value handle(std::string method, const rapidjson::Value& params) { return rapidjson::Value(); };
+	
 	static bool parseQueryParametersToRapidjson(const Poco::URI& uri, rapidjson::Document& rapidParams);
 
-	bool getIntParameter(const rapidjson::Value& params, const char* fieldName, int& iParameter);
-	bool getUIntParameter(const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter);
-	bool getBoolParameter(const rapidjson::Value& params, const char* fieldName, bool& bParameter);
-	bool getUInt64Parameter(const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter);
-	bool getStringParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter);
-	bool getStringIntParameter(const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter);
-	bool checkArrayParameter(const rapidjson::Value& params, const char* fieldName);
-	bool checkObjectParameter(const rapidjson::Value& params, const char* fieldName);
-	bool checkObjectOrArrayParameter(const rapidjson::Value& params, const char* fieldName);
+	bool getIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, int& iParameter);
+	bool getUIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter);
+	bool getBoolParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, bool& bParameter);
+	bool getUInt64Parameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter);
+	bool getStringParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter);
+	bool getStringIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter);
+	bool checkArrayParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName);
+	bool checkObjectParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName);
+	bool checkObjectOrArrayParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName);
 
-	void stateError(const char* msg, std::string details = "");
-	void stateError(const char* msg, GradidoBlockchainException& ex);
-	void customStateError(const char* state, const char* msg, std::string details = "");
-	void stateSuccess();
-	void stateWarning(const char* msg, std::string details = "");
+	void error(rapidjson::Value& responseJson, JsonRPCErrorCodes code, const char* message, rapidjson::Value& data = rapidjson::Value());
+	void error(rapidjson::Value& responseJson, JsonRPCErrorCodes code, GradidoBlockchainException& ex);
 
 protected:
-	rapidjson::Document mResponseJson;
-	rapidjson::Value    mResponseResult;
-	JsonRPCErrorCodes   mResponseErrorCode;
+	rapidjson::Document mRootJson;
 
 };
 
