@@ -14,6 +14,7 @@ enum JsonRPCErrorCodes : int
 	JSON_RPC_ERROR_NONE = 0,
 	JSON_RPC_ERROR_GRADIDO_NODE_ERROR = -10000,
 	JSON_RPC_ERROR_UNKNOWN_GROUP = -10001,
+	JSON_RPC_ERROR_NOT_IMPLEMENTED = -10002,
 	// default errors from json rpc standard: https://www.jsonrpc.org/specification
 	// -32700 	Parse error 	Invalid JSON was received by the server.
 	JSON_RPC_ERROR_PARSE_ERROR = -32700,
@@ -39,7 +40,7 @@ public:
 
 	//virtual Poco::JSON::Object* handle(Poco::Dynamic::Var params) = 0;
 	//virtual void handle(const jsonrpcpp::Request& request, Json& response) = 0;
-	virtual rapidjson::Value handle(std::string method, const rapidjson::Value& params) { return rapidjson::Value(); };
+	virtual void handle(rapidjson::Value& responseJson, std::string method, const rapidjson::Value& params) { };
 	
 	static bool parseQueryParametersToRapidjson(const Poco::URI& uri, rapidjson::Document& rapidParams);
 

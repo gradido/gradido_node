@@ -11,13 +11,26 @@
 class JsonRPCHandler : public JsonRPCRequestHandler
 {
 public:
-	void handle(std::string method, const rapidjson::Value& params);
+	void handle(rapidjson::Value& responseJson, std::string method, const rapidjson::Value& params);
 
 protected:
-	void getTransactions(int64_t fromTransactionId, const std::string& groupAlias, const std::string& format);
-	void getCreationSumForMonth(const std::string& pubkey, int month, int year, Poco::DateTime searchStartDate, Poco::SharedPtr<controller::Group> group);
+	void getTransactions(
+		rapidjson::Value& resultJson, 
+		int64_t fromTransactionId,
+		Poco::SharedPtr<controller::Group> group, 
+		const std::string& format
+	);
+	void getCreationSumForMonth(
+		rapidjson::Value& resultJson, 
+		const std::string& pubkey, 
+		int month, 
+		int year, 
+		Poco::DateTime searchStartDate, 
+		Poco::SharedPtr<controller::Group> group
+	);
 	void listTransactions(
-		const std::string& groupAlias, 
+		rapidjson::Value& resultJson,
+		Poco::SharedPtr<controller::Group> group,
 		const std::string& publicKeyHex, 
 		int currentPage = 1, 
 		int pageSize = 25, 
@@ -25,17 +38,25 @@ protected:
 		bool onlyCreations = false
 	);
 	void listTransactionsForAddress(
+		rapidjson::Value& resultJson,
 		const std::string& userPublicKey,
 		uint64_t firstTransactionNr,
 		uint32_t maxResultCount,
 		Poco::SharedPtr<controller::Group> group
 	);
 	
-	void getAddressBalance(const std::string& pubkey, Poco::DateTime date, Poco::SharedPtr<controller::Group> group, const std::string& coinGroupId = "");
-	void getAddressType(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
-	void getAddressTxids(const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
+	void getAddressBalance(
+		rapidjson::Value& resultJson,
+		const std::string& pubkey,
+		Poco::DateTime date, 
+		Poco::SharedPtr<controller::Group> group,
+		const std::string& coinGroupId = ""
+	);
+	void getAddressType(rapidjson::Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
+	void getAddressTxids(rapidjson::Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
 	void putTransaction(
-		uint64_t transactionNr, 
+		rapidjson::Value& resultJson,
+		uint64_t transactionNr,
 		std::unique_ptr<model::gradido::GradidoTransaction> transaction,
 		Poco::SharedPtr<controller::Group> group
 	);

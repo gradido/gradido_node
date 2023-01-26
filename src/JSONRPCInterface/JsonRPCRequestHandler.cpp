@@ -38,7 +38,7 @@ Value JsonRPCRequestHandler::handleOneRpcCall(const rapidjson::Value& jsonRpcReq
 
 	if (checkObjectOrArrayParameter(responseJson, jsonRpcRequest, "params") && getStringParameter(responseJson, jsonRpcRequest, "method", method)) {
 		try {
-			responseJson = handle(method, jsonRpcRequest["params"]);
+			handle(responseJson, method, jsonRpcRequest["params"]);
 		}
 		catch (GradidoBlockchainException& ex) {
 			LoggerManager::getInstance()->mErrorLogging.error("gradido node exception in Json RPC handle: %s", ex.getFullString());
