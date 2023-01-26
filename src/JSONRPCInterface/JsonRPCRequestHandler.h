@@ -6,29 +6,10 @@
 #include "Poco/Logger.h"
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/http/JsonRPCRequest.h"
 
 #include "rapidjson/document.h"
 
-enum JsonRPCErrorCodes : int
-{
-	JSON_RPC_ERROR_NONE = 0,
-	JSON_RPC_ERROR_GRADIDO_NODE_ERROR = -10000,
-	JSON_RPC_ERROR_UNKNOWN_GROUP = -10001,
-	JSON_RPC_ERROR_NOT_IMPLEMENTED = -10002,
-	// default errors from json rpc standard: https://www.jsonrpc.org/specification
-	// -32700 	Parse error 	Invalid JSON was received by the server.
-	JSON_RPC_ERROR_PARSE_ERROR = -32700,
-	// -32600 	Invalid Request The JSON sent is not a valid Request object.
-	JSON_RPC_ERROR_INVALID_REQUEST = -32600,
-	// -32601 	Method not found 	The method does not exist / is not available.
-	JSON_RPC_ERROR_METHODE_NOT_FOUND = -32601,
-	// -32602 	Invalid params 	Invalid method parameter(s).
-	JSON_RPC_ERROR_INVALID_PARAMS = -32602,
-	// -32603 	Internal error 	Internal JSON - RPC error.
-	JSON_RPC_ERROR_INTERNAL_ERROR = -32603,
-	// -32000 to -32099 	Server error 	Reserved for implementation-defined server-errors.
-
-};
 
 class JsonRPCRequestHandler : public Poco::Net::HTTPRequestHandler
 {
