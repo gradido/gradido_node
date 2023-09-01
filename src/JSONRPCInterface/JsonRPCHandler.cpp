@@ -107,7 +107,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 		catch (Poco::Exception& ex) {
 			Value data(kObjectType);
 			data.AddMember("PocoException", Value(ex.what(), alloc), alloc);
-			error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "cannot parse date", data);
+			error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "cannot parse date", &data);
 			return;
 		}
 		std::string coinGroupId = "";
@@ -161,7 +161,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 		catch (Poco::Exception& ex) {
 			Value data(kObjectType);
 			data.AddMember("PocoException", Value(ex.what(), alloc), alloc);
-			error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "cannot parse date", data);
+			error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "cannot parse date", &data);
 			return;
 		}
 		getCreationSumForMonth(resultJson, pubkey, month, year, date, group);
