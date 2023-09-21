@@ -96,7 +96,7 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 			Value data(kObjectType);
 			data.AddMember("parseError", Value(GetParseError_En(rapidjson_params.GetParseError()), alloc), alloc);
 			data.AddMember("errorOffset", rapidjson_params.GetErrorOffset(), alloc);
-			error(responseJson, JSON_RPC_ERROR_PARSE_ERROR, "error parsing request to json", data);
+			error(responseJson, JSON_RPC_ERROR_PARSE_ERROR, "error parsing request to json", &data);
 		}
 		else 
 		{
@@ -155,20 +155,21 @@ bool JsonRPCRequestHandler::parseQueryParametersToRapidjson(const Poco::URI& uri
 	return true;
 }
 
-void JsonRPCRequestHandler::error(Value& responseJson, JsonRPCErrorCodes code, const char* message, rapidjson::Value& data/* = rapidjson::Value()*/)
+void JsonRPCRequestHandler::error(Value& responseJson, JsonRPCErrorCodes code, const char* message, rapidjson::Value* data/* = nullptr*/)
 {
 	Value error(kObjectType);
 	auto alloc = mRootJson.GetAllocator();
 	error.AddMember("code", code, alloc);
 	error.AddMember("message", Value(message, alloc), alloc);
-	if (!data.IsNull()) {
-		error.AddMember("data", data, alloc);
+	if (data && !data->IsNull()) {
+		error.AddMember("data", *data, alloc);
 	}
 	responseJson.AddMember("error", error, alloc);
 }
 void JsonRPCRequestHandler::error(Value& responseJson, JsonRPCErrorCodes code, GradidoBlockchainException& ex)
 {
-	error(responseJson, code, ex.getFullString().data(), ex.getDetails(mRootJson.GetAllocator()));
+	auto errorDetails = ex.getDetails(mRootJson.GetAllocator());
+	error(responseJson, code, ex.getFullString().data(), &errorDetails);
 }
 
 
