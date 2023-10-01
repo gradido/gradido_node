@@ -9,7 +9,7 @@
 #include "DeferredTransfer.h"
 #include "ArchiveTransactionsOrdering.h"
 
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
 #include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "../model/files/State.h"
 
@@ -64,7 +64,7 @@ namespace controller {
 		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 
 		//! \brief return last transaction which was added to this blockchain
-		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter = nullptr);
+		Poco::SharedPtr<model::gradido::ConfirmedTransaction> getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter = nullptr);
 
 		//! \brief get last transaction for this user for this coin color with a final balance
 		// TODO: make UML diagram for function
@@ -110,7 +110,7 @@ namespace controller {
 		//! \brief group alias or group id, the single identifier for group blockchain and group coins
 		inline const std::string& getGroupAlias() const { return mGroupAlias; }
 		//! \brief group id is the same as group alias
-		inline const std::string& getGroupId() const { return mGroupAlias; }
+		inline const std::string& getCommunityId() const { return mGroupAlias; }
 
 		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
 		void setListeningCommunityServer(client::Base* client);
@@ -127,7 +127,7 @@ namespace controller {
 		void updateLastTransactionId(int lastTransactionId);
 
 		
-		void addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock);
+		void addSignatureToCache(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		virtual void fillSignatureCacheOnStartup();
@@ -142,7 +142,7 @@ namespace controller {
 
 		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> getTimeoutedDeferredTransferReturnedAmounts(uint32_t addressIndex, Poco::DateTime beginDate, Poco::DateTime endDate);
 
-		Poco::SharedPtr<model::gradido::GradidoBlock> mLastTransaction;
+		Poco::SharedPtr<model::gradido::ConfirmedTransaction> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;

@@ -3,7 +3,7 @@
 #include "../ServerGlobals.h"
 
 namespace task {
-	NotifyClient::NotifyClient(client::Base* client, Poco::SharedPtr<model::gradido::GradidoBlock> transactionBlock)
+	NotifyClient::NotifyClient(client::Base* client, Poco::SharedPtr<model::gradido::ConfirmedTransaction> transactionBlock)
 		: CPUTask(ServerGlobals::g_CPUScheduler), mClient(client), mTransactionBlock(transactionBlock)
 	{
 

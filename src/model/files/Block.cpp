@@ -5,7 +5,7 @@
 #include "../../SingletonManager/LoggerManager.h"
 #include "../../SingletonManager/CacheManager.h"
 #include "../../controller/AddressIndex.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
 #include "../../ServerGlobals.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -389,7 +389,7 @@ namespace model {
 				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
 					throw std::runtime_error("don't get next file cursor line");
 				}
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(&fileCursorLine.second);
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(&fileCursorLine.second);
 				lock();
 				Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(
 					gradidoBlock.get(), 

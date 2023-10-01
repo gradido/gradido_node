@@ -16,7 +16,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::gradido::GradidoBlock> RemoteGroup::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter /*= nullptr*/)
+	Poco::SharedPtr<model::gradido::ConfirmedTransaction> RemoteGroup::getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter /*= nullptr*/)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
@@ -59,7 +59,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	const std::string& RemoteGroup::getGroupId() const
+	const std::string& RemoteGroup::getCommunityId() const
 	{
 		return mGroupAlias;
 	}

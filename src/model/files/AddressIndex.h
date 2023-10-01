@@ -7,7 +7,7 @@
 #include "../../task/SerializeToVFileTask.h"
 
 #include "gradido_blockchain/MemoryManager.h"
-#include "proto/gradido/RegisterAddress.pb.h"
+#include "proto/gradido/register_address.pb.h"
 
 #include "Poco/DateTime.h"
 #include "Poco/SharedPtr.h"

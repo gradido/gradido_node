@@ -25,7 +25,7 @@ namespace client {
 
 	}
 
-	bool Base::notificateNewTransaction(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock)
+	bool Base::notificateNewTransaction(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock)
 	{
 		Poco::Net::NameValueCollection params;
 		

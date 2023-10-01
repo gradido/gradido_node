@@ -24,7 +24,7 @@ namespace controller {
 			std::function<FilterResult(model::TransactionEntry*)> filter = nullptr,
 			SearchDirection order = SearchDirection::ASC
 		);
-		Poco::SharedPtr<model::gradido::GradidoBlock> getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter = nullptr);
+		Poco::SharedPtr<model::gradido::ConfirmedTransaction> getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter = nullptr);
 		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date);
 		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
@@ -35,7 +35,7 @@ namespace controller {
 		//! \param address User account public key.
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, int month, int year);
 		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr);
-		const std::string& getGroupId() const;
+		const std::string& getCommunityId() const;
 
 	protected:
 		std::string mGroupAlias;

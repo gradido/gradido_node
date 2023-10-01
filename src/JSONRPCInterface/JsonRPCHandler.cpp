@@ -5,7 +5,7 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
 
 #include "Poco/AutoPtr.h"
@@ -235,13 +235,13 @@ void JsonRPCHandler::getTransactions(
 		resultJson.AddMember("type", "base64", alloc);
 	}
 	Value jsonTransactionArray(kArrayType);
-	Poco::AutoPtr<model::gradido::GradidoBlock> prevTransaction;
+	Poco::AutoPtr<model::gradido::ConfirmedTransaction> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
 			if (format == "json") {
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionSerialized);
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionSerialized);
 				//auto jsonTransaction = Value(gradidoBlock->toJson().data(), alloc);
 				auto jsonTransaction = gradidoBlock->toJson(mRootJson);
 				jsonTransactionArray.PushBack(jsonTransaction, alloc);

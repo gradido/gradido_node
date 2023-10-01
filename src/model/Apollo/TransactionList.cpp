@@ -63,7 +63,7 @@ namespace model {
 				}
 				
 
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>((*it)->getSerializedTransaction());
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>((*it)->getSerializedTransaction());
 				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
 				if (transactionBody->isRegisterAddress()) {
 					auto registerAddress = transactionBody->getRegisterAddress();

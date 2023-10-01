@@ -7,7 +7,7 @@ namespace model {
 	namespace Apollo {
 
 
-		Transaction::Transaction(const model::gradido::GradidoBlock* gradidoBlock, const std::string& pubkey)
+		Transaction::Transaction(const model::gradido::ConfirmedTransaction* gradidoBlock, const std::string& pubkey)
 			: mAmount(nullptr), mBalance(nullptr), mDecay(nullptr), mFirstTransaction(false)
 		{			
 			auto mm = MemoryManager::getInstance();

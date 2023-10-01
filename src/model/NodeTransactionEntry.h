@@ -26,7 +26,7 @@ namespace model {
 		NodeTransactionEntry()
 			: mFileCursor(0) {}
 
-		NodeTransactionEntry(gradido::GradidoBlock* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex, int32_t fileCursor = -10);
+		NodeTransactionEntry(gradido::ConfirmedTransaction* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex, int32_t fileCursor = -10);
 
 		//! \brief init entry object from details e.g. by loading from file
 		NodeTransactionEntry(uint64_t transactionNr, uint8_t month, uint16_t year, const std::string& coinGroupId, const uint32_t* addressIndices, uint8_t addressIndiceCount);

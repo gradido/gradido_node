@@ -186,7 +186,7 @@ namespace controller {
 			id = lastTransaction->getID() + 1;
 		}
 
-		auto newGradidoBlock = TransactionFactory::createGradidoBlock(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
+		auto newGradidoBlock = TransactionFactory::createConfirmedTransaction(std::move(newTransaction), id, iotaMilestoneTimestamp, messageId);
 		if (!lastTransaction.isNull()) {
 			if (newGradidoBlock->getReceived() < lastTransaction->getReceived()) {
 				throw BlockchainOrderException("previous transaction is younger");
@@ -200,7 +200,7 @@ namespace controller {
 
 		try {
 			// calculate final balance
-			newGradidoBlock->calculateFinalGDD(this);
+			newGradidoBlock->calculateAccountBalance(this);
 		}
 		catch (Poco::NullPointerException& ex) {
 			LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling GradidoBlock::calculateFinalGDD");
@@ -501,7 +501,7 @@ namespace controller {
 		return std::move(transactions);
 	}
 
-	Poco::SharedPtr<model::gradido::GradidoBlock> Group::getLastTransaction(std::function<bool(const model::gradido::GradidoBlock*)> filter/* = nullptr*/)
+	Poco::SharedPtr<model::gradido::ConfirmedTransaction> Group::getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter/* = nullptr*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (filter) {
@@ -514,7 +514,7 @@ namespace controller {
 				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
 					if (!i) break;
 					auto transaction = block->getTransaction(i);
-					Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock(new model::gradido::GradidoBlock(transaction->getSerializedTransaction()));
+					Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock(new model::gradido::ConfirmedTransaction(transaction->getSerializedTransaction()));
 					if (filter(gradidoBlock.get())) {
 						return gradidoBlock;
 					}
@@ -540,7 +540,7 @@ namespace controller {
 		auto transaction = block->getTransaction(lastTransactionId);
 		if (!transaction.isNull()) {
 			updateLastTransactionId(lastTransactionId);
-			mLastTransaction = new model::gradido::GradidoBlock(transaction->getSerializedTransaction());
+			mLastTransaction = new model::gradido::ConfirmedTransaction(transaction->getSerializedTransaction());
 			return mLastTransaction;
 		}
 		return nullptr;
@@ -558,7 +558,7 @@ namespace controller {
 		auto blockNr = mLastBlockNr;
 		auto temp = MathMemory::create();
 
-		std::unique_ptr<model::gradido::GradidoBlock> lastGradidoBlockWithFinalBalance;
+		std::unique_ptr<model::gradido::ConfirmedTransaction> lastGradidoBlockWithFinalBalance;
 		std::list<std::pair<mpfr_ptr, Poco::DateTime>> receiveTransfers;
 
 		do
@@ -587,7 +587,7 @@ namespace controller {
 				if (transactionEntry.isNull()) {
 					throw GradidoBlockchainTransactionNotFoundException("[Group::calculateAddressBalance] transactionEntry is null");
 				}
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				if (gradidoBlock->getReceivedAsTimestamp() > date.timestamp()) {
 					continue;
 				}
@@ -708,7 +708,7 @@ namespace controller {
 			auto transactionNr = block->getBlockIndex()->findFirstTransactionForAddress(addressIndex);
 			if (transactionNr) {
 				auto transactionEntry = block->getTransaction(transactionNr);
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
 				if (!transactionBody->isRegisterAddress()) {
 					throw WrongTransactionTypeException(
@@ -754,7 +754,7 @@ namespace controller {
 			auto blockIndex = block->getBlockIndex();
 			for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
 				auto transactionEntry = block->getTransaction(i);
-				auto transaction = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				auto transaction = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				iota::MessageId transactionMessageId;
 				auto messageIdMemoryBin = transaction->getMessageId();
 				transactionMessageId.fromMemoryBin(messageIdMemoryBin);
@@ -895,7 +895,7 @@ namespace controller {
 		if (mCachedSignatureTransactionNrs.has(transactionSign)) {
 			// additional check if transaction really exactly the same, because hash collisions are possible, albeit with a very low probability
 			auto transactionNr = mCachedSignatureTransactionNrs.get(transactionSign);
-			auto cachedGradidoBlock = std::make_unique<model::gradido::GradidoBlock>(getTransactionForId(*transactionNr)->getSerializedTransaction());
+			auto cachedGradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(getTransactionForId(*transactionNr)->getSerializedTransaction());
 			// compare return 0 if strings are the same
 			if (!cachedGradidoBlock->getGradidoTransaction()->getSerializedConst()->compare(*transaction->getSerializedConst())) {
 				return true;
@@ -907,7 +907,7 @@ namespace controller {
 		return false;
 	}
 
-	void Group::addSignatureToCache(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock)
+	void Group::addSignatureToCache(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());
@@ -920,7 +920,7 @@ namespace controller {
 		int blockNr = mLastBlockNr;
 		int transactionNr = mLastTransactionId;
 
-		std::unique_ptr<model::gradido::GradidoBlock> transaction;
+		std::unique_ptr<model::gradido::ConfirmedTransaction> transaction;
 		Poco::Timestamp border = Poco::Timestamp() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
 
 		do {
@@ -935,7 +935,7 @@ namespace controller {
 			// TODO: reverse order to read in transactions ascending to prevent jumping back in forth in file (seek trigger a new block read from mostly 8K)
 			try {
 				auto transactionEntry = block->getTransaction(transactionNr);
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());
 			}
 			catch (GradidoBlockchainTransactionNotFoundException& ex) {
@@ -960,7 +960,7 @@ namespace controller {
 		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> timeoutedDeferredTransfers;
 		for (auto it = deferredTransfers.begin(); it != deferredTransfers.end(); it++) {
 			auto transactionEntry = getTransactionForId(*it);
-			auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(transactionEntry->getSerializedTransaction());
+			auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 			auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
 			// little error correction
 			if (!transactionBody->isDeferredTransfer()) {

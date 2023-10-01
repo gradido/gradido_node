@@ -100,7 +100,7 @@ namespace controller {
 	{
 		auto gm = GroupManager::getInstance();
 		auto group = gm->findGroup(mGroupAlias);
-		auto transaction = std::make_unique<model::gradido::GradidoBlock>(serializedTransaction.get());
+		auto transaction = std::make_unique<model::gradido::ConfirmedTransaction>(serializedTransaction.get());
 		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry(new model::NodeTransactionEntry(transaction.get(), group->getAddressIndex(), fileCursor));
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mExitCalled) return;
@@ -159,7 +159,7 @@ namespace controller {
 			if (transactionEntry.isNull()) {
 				printf("fileCursor: %d\n", fileCursor);
 				auto blockLine = mBlockFile->readLine(fileCursor);
-				auto block = std::make_unique<model::gradido::GradidoBlock>(blockLine.get());
+				auto block = std::make_unique<model::gradido::ConfirmedTransaction>(blockLine.get());
 				printf("block: %s\n", block->toJson().data());
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found after reading from block file")
 					.setTransactionId(transactionNr);

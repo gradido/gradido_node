@@ -1,11 +1,11 @@
 #include "NodeTransactionEntry.h"
 
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
 
 namespace model {
 
 	
-	NodeTransactionEntry::NodeTransactionEntry(gradido::GradidoBlock* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex, int32_t fileCursor /*= -10*/)
+	NodeTransactionEntry::NodeTransactionEntry(gradido::ConfirmedTransaction* transaction, Poco::SharedPtr<controller::AddressIndex> addressIndex, int32_t fileCursor /*= -10*/)
 		: TransactionEntry(transaction), mFileCursor(fileCursor)
 	{
 		auto transactionBase = transaction->getGradidoTransaction()->getTransactionBody()->getTransactionBase();		

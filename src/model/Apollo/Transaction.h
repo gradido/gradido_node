@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_H
 
 #include "Decay.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
 
 
 namespace model {
@@ -18,7 +18,7 @@ namespace model {
 		class Transaction
 		{
 		public:
-			Transaction(const model::gradido::GradidoBlock* gradidoBlock, const std::string& pubkey);
+			Transaction(const model::gradido::ConfirmedTransaction* gradidoBlock, const std::string& pubkey);
 			Transaction(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance);
 
 			// Move Constrcutor
