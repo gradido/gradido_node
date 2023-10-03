@@ -6,6 +6,7 @@
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/http/ServerConfig.h"
 
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
@@ -70,6 +71,11 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 	response.setChunkedTransferEncoding(false);
 	response.setContentType("application/json");
 
+	if (ServerConfig::g_AllowUnsecureFlags & ServerConfig::UNSECURE_CORS_ALL) {
+		response.set("Access-Control-Allow-Origin", "*");
+		response.set("Access-Control-Allow-Headers", "Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+	}
+
 	bool _compressResponse(request.hasToken("Accept-Encoding", "gzip"));
 	if (_compressResponse) response.set("Content-Encoding", "gzip");
 
@@ -104,7 +110,7 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 				responseJson = handleOneRpcCall(rapidjson_params);
 			}
 			else if (rapidjson_params.IsArray()) {
-				Value responseJson = Value(kArrayType);
+				responseJson = Value(kArrayType);
 				for (auto& v : rapidjson_params.GetArray()) {
 					responseJson.PushBack(handleOneRpcCall(v), alloc);
 				}
@@ -122,7 +128,13 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 		//rapid_json_result = handle(rapidjson_params);
 		printf("[%s] must be implemented\n", __FUNCTION__);
 	}
-	else {
+	else if (method == "OPTIONS")
+	{
+		if (_compressResponse) _gzipStream.close();
+		return;
+	} 
+	else 
+	{
 		error(responseJson, JSON_RPC_ERROR_INVALID_REQUEST, "HTTP method unknown");
 	}
 

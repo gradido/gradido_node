@@ -3,9 +3,9 @@
 
 //#include "Poco/Timer.h"
 #include "Poco/Logger.h"
+
 #include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "../lib/FuzzyTimer.h"
-
 #include "MessageId.h"
 
 #include <vector>
@@ -64,7 +64,6 @@ namespace iota
         void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
 
         std::string mIndex; 
-        //Poco::Timer mListenerTimer;
         Poco::Logger& mErrorLog;
 
         enum MessageState 

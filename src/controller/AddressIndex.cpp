@@ -137,7 +137,7 @@ namespace controller {
 				serializeAndWriteToFileTask->scheduleTask(serializeAndWriteToFileTask);
 			}			
 		}
-		return GO_ON;
+		return TimerReturn::GO_ON;
 	}
 
 }

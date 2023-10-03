@@ -79,7 +79,8 @@ namespace model {
 					}
 				}
 				
-				if (!onlyCreations && (transactionBody->isTransfer() || transactionBody->isDeferredTransfer()) || transactionBody->isCreation()) {
+				if (!onlyCreations && (transactionBody->isTransfer() || transactionBody->isDeferredTransfer())
+					|| transactionBody->isCreation()) {
 					countTransactions++;
 
 					if (!orderDESC && pageIterator == currentPage - 1) {

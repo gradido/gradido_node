@@ -58,7 +58,10 @@ int IotaMessageToTransactionTask::run()
 		}
     }
     
-
+    if (!dataIndex.first->size()) {
+        errorLog.information("invalid gradido transaction, iota message ID: %s, empty body", iotaMessageIdHex);
+        return 0;
+    }
     auto gm = GroupManager::getInstance();
     auto group = gm->findGroup(getGradidoGroupAlias(*dataIndex.second.get()));
     

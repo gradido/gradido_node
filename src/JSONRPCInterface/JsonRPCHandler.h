@@ -20,6 +20,7 @@ protected:
 		Poco::SharedPtr<controller::Group> group, 
 		const std::string& format
 	);
+	//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
 	void getCreationSumForMonth(
 		rapidjson::Value& resultJson, 
 		const std::string& pubkey, 

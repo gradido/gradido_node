@@ -53,7 +53,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	std::string pubkey;
 	std::string pubkeyHex;
 	std::set<std::string> noNeedForPubkey = {
-		"puttransaction", "getlasttransaction"
+		"puttransaction", "getlasttransaction", "getTransactions"
 	};
 	if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
 		if (!getStringParameter(responseJson, params, "pubkey", pubkeyHex)) {
