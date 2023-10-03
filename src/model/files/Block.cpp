@@ -75,12 +75,12 @@ namespace model {
 		*/
 		TimerReturn Block::callFromTimer()
 		{
-			if (!mFastMutex.tryLock()) return GO_ON;
+			if (!mFastMutex.tryLock()) return TimerReturn::GO_ON;
 			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
-			return GO_ON;
+			return TimerReturn::GO_ON;
 		}
 
 		Poco::UInt16 Block::readLine(Poco::UInt32 startReading, std::string& strBuffer)

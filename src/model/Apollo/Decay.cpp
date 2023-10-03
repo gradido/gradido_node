@@ -14,6 +14,7 @@ namespace model {
 		Decay::Decay(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance)
 			: mDecayStart(decayStart), mDecayEnd(decayEnd), mDecayAmount(nullptr)
 		{
+			// TODO: sometimes triggered
 			assert(mDecayEnd >= mDecayStart);
 			if (mDecayStart < DECAY_START_TIME) {
 				mDecayStart = DECAY_START_TIME;

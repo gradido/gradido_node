@@ -1,6 +1,7 @@
 
 #include "main.h"
 #include "MainServer.h"
+#include "MQTTAsync.h"
 
 #include "proto/gradido/TransactionBody.pb.h"
 #include <sodium.h>
@@ -22,7 +23,9 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	initDefaultDecayFactors();
-
+	MQTTAsync_init_options options = MQTTAsync_init_options_initializer;
+	options.do_openssl_init = 0;
+	MQTTAsync_global_init(&options);
 	
 	MainServer app;
 	int result = 0;

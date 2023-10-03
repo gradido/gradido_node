@@ -27,6 +27,7 @@
 #include "SingletonManager/GroupManager.h"
 #include "SingletonManager/OrderingManager.h"
 #include "SingletonManager/CacheManager.h"
+#include "iota/MqttClientWrapper.h"
 
 MainServer::MainServer()
 	: _helpRequested(false)
@@ -136,6 +137,10 @@ int MainServer::main(const std::vector<std::string>& args)
 
 		// logging for request handling
 		createConsoleFileAsyncLogger("requestLog", log_Path + "requestLog.txt");
+		// logging for mqtt client 
+		createConsoleFileAsyncLogger("mqttLog", log_Path + "mqttLog.txt");
+		Poco::Logger& mqttLog = Poco::Logger::get("mqttLog");
+		mqttLog.setLevel("information");
 
 		// error logging
 		createConsoleFileAsyncLogger("errorLog", log_Path + "errorLog.txt");
@@ -175,6 +180,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		if (!ServerConfig::initSSLClientContext(cacertPath.data())) {
 			return Application::EXIT_CANTCREAT;
 		}
+		ServerConfig::readUnsecureFlags(config());
 		ServerGlobals::initIota(config());
 
 		// start cpu scheduler
@@ -184,6 +190,10 @@ int MainServer::main(const std::vector<std::string>& args)
 		ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
 		ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
 		ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
+		iota::MqttClientWrapper::getInstance()->init();
+		// 484f524e4554205370616d6d6572 => HORNET Spammer
+		//iota::MqttClientWrapper::getInstance()->subscribe("messages/indexation/484f524e4554205370616d6d6572");
+		//iota::MqttClientWrapper::getInstance()->subscribe("milestones/latest");
 
 		auto gm = GroupManager::getInstance();
 		if (GroupManager::getInstance()->init("group.index", config())) {

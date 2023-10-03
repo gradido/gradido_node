@@ -56,7 +56,7 @@ namespace iota
 	TimerReturn MessageListener::callFromTimer()
 	{
 		// main loop, called regularly in separate thread
-		if (!tryLock()) return GO_ON;
+		if (!tryLock()) return TimerReturn::GO_ON;
 		//lock();
 		static const char* function_name = "MessageListener::listener";
 
@@ -68,7 +68,7 @@ namespace iota
 		catch (...) {
 			unlock();
 			IotaRequest::defaultExceptionHandler(mErrorLog, true);
-			return EXCEPTION;
+			return TimerReturn::EXCEPTION;
 		}
 	
 		//printf("called getMessageIdsForIndexiation and get %d message ids %s\n", messageIds.size(), timeUsed.string().data());
@@ -76,7 +76,7 @@ namespace iota
 			updateStoredMessages(messageIds);
 		}
 		unlock();
-		return GO_ON;
+		return TimerReturn::GO_ON;
 	}
 
     void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)

@@ -25,7 +25,8 @@ namespace ServerGlobals {
 	extern Poco::UInt16						g_TimeoutCheck;
 	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
 	extern Poco::UInt16						g_WriteToDiskTimeout;	
-	extern IotaRequest* g_IotaRequestHandler;
+	extern IotaRequest*						g_IotaRequestHandler;
+	extern Poco::URI						g_IotaMqttBrokerUri;
 	extern Poco::AtomicCounter              g_NumberExistingTasks;
 	extern bool								g_LogTransactions;
 

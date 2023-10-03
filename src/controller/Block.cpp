@@ -194,10 +194,10 @@ namespace controller {
 	TimerReturn Block::callFromTimer()
 	{
 		// if called from timer, while deconstruct was called, prevent dead lock
-		if (!mWorkingMutex.tryLock()) return GO_ON;
+		if (!mWorkingMutex.tryLock()) return TimerReturn::GO_ON;
 		if (mExitCalled) {
 			mWorkingMutex.unlock();
-			return REMOVE_ME;
+			return TimerReturn::REMOVE_ME;
 		}
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
@@ -212,7 +212,7 @@ namespace controller {
 			}
 		}
 		mWorkingMutex.unlock();
-		return GO_ON;
+		return TimerReturn::GO_ON;
 	}
 
 }

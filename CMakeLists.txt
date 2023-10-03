@@ -19,6 +19,7 @@ include_directories(
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
+	"dependencies/paho.mqtt.c/src"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
@@ -106,6 +107,10 @@ IF(UNIX)
 
 	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL Poco::JWT)
 ENDIF()
+
+############################## mqtt client ############################################
+add_subdirectory("dependencies/paho.mqtt.c")
+
 ############################## find protobuf  #########################################
 #add_subdirectory(dependencies/protobuf/cmake)
 
@@ -128,7 +133,7 @@ add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(NOT BUILD_SHARED_LIBS)
 	target_link_libraries(GradidoNode libprotobuf)
 endif()

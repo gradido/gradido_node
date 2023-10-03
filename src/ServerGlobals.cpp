@@ -25,8 +25,9 @@ namespace ServerGlobals {
 	Poco::UInt16						g_CacheTimeout = 600;
 	Poco::UInt16						g_TimeoutCheck = 60;
 	Poco::UInt16						g_WriteToDiskTimeout = 10;
-	IotaRequest* g_IotaRequestHandler = nullptr;
-	Poco::AtomicCounter              g_NumberExistingTasks;
+	IotaRequest*						g_IotaRequestHandler = nullptr;
+	Poco::URI							g_IotaMqttBrokerUri;
+	Poco::AtomicCounter		            g_NumberExistingTasks;
 	bool								g_LogTransactions = false;
 
 	void clearMemory()
@@ -63,6 +64,9 @@ namespace ServerGlobals {
 		// chrysalis-nodes.iota.org
         int iota_port = cfg.getInt("iota.port", 443);
 		g_IotaRequestHandler = new IotaRequest(iota_host, iota_port, "/api/v1/");
+
+		int mqtt_port = cfg.getInt("iota.mqtt.port", 1883);
+		g_IotaMqttBrokerUri = Poco::URI(iota_host + ":" + std::to_string(mqtt_port));
 
         return true;
 	}
