@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.18.2)
 project(GradidoNode C CXX)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "bin" )
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 IF(WIN32)
 	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
@@ -119,10 +120,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(protobuf_BUILD_TESTS "Build tests" OFF)
 
 #message("binary dir: ${CMAKE_BINARY_DIR}")
-add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf/cmake)
+add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf)
 
 ############################## add gradido blockchain  #########################################
 add_subdirectory("dependencies/gradido_blockchain")
+SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 
 if(NOT BUILD_SHARED_LIBS)
 	#option(protobuf_BUILD_TESTS "Build tests" OFF)
@@ -145,6 +147,22 @@ else()
 	target_link_libraries(GradidoNode ${POCO_LIBS} sodium -pthread)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
+
+IF(WIN32)
+  add_custom_command(TARGET GradidoNode POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
+	#COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	 # "${PROJECT_BINARY_DIR}/dependencies/gradido_blockchain/dependencies/ed25519_bip32_c_interface/x86_64-pc-windows-msvc/${CMAKE_BUILD_TYPE}/ed25519_bip32_c_interface.dll"
+	  #"$<TARGET_FILE_DIR:GradidoNode>"
+	#COMMAND ${CMAKE_COMMAND} -E copy_if_different
+	#  "${PROJECT_BINARY_DIR}/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/${CMAKE_BUILD_TYPE}/iota_rust_clib.dll"
+	 # "$<TARGET_FILE_DIR:GradidoNode>"
+	#COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
+	#IOTA_RUST_C_LIB
+	#ED25519_BIP32_RUST_C_LIB
+    COMMAND_EXPAND_LISTS
+  )
+ENDIF()
 
 # install 
 if(UNIX)

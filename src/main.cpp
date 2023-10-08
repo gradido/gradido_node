@@ -3,7 +3,7 @@
 #include "MainServer.h"
 #include "MQTTAsync.h"
 
-#include "proto/gradido/TransactionBody.pb.h"
+#include "proto/gradido/transaction_body.pb.h"
 #include <sodium.h>
 #include <exception>
 #include "gradido_blockchain/lib/Profiler.h"

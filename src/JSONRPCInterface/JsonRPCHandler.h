@@ -20,6 +20,18 @@ protected:
 		Poco::SharedPtr<controller::Group> group, 
 		const std::string& format
 	);
+	/*!
+	* TODO: implement index for iota message id if it is used much
+	* @param transactionId: this parameter or
+	* @param iotaMessageId: this parameter for finding transaction
+	*/
+	void getTransaction(
+		rapidjson::Value& resultJson,
+		Poco::SharedPtr<controller::Group> group,
+		const std::string& format,
+		int64_t transactionId = 0,
+		MemoryBin* iotaMessageId = nullptr
+	);
 	//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
 	void getCreationSumForMonth(
 		rapidjson::Value& resultJson, 

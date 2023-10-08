@@ -39,10 +39,13 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	std::string groupAlias;
 
 	// load group for all requests
-	if (!getStringParameter(responseJson, params, "groupAlias", groupAlias)) {
+	if (!getStringParameter(responseJson, params, "groupAlias", groupAlias, true) && 
+		!getStringParameter(responseJson, params, "communityId", groupAlias, true)) {
+		error(responseJson, JSON_RPC_ERROR_UNKNOWN_GROUP, "neither groupAlias nor communityId were specified");
 		return;
 	}
 	auto gm = GroupManager::getInstance();
+	auto mm = MemoryManager::getInstance();
 	group = gm->findGroup(groupAlias);
 	if (group.isNull()) {
 		error(responseJson, JSON_RPC_ERROR_UNKNOWN_GROUP, "group not known");
@@ -53,7 +56,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	std::string pubkey;
 	std::string pubkeyHex;
 	std::set<std::string> noNeedForPubkey = {
-		"puttransaction", "getlasttransaction", "getTransactions"
+		"puttransaction", "getlasttransaction", "getTransactions", "gettransaction"
 	};
 	if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
 		if (!getStringParameter(responseJson, params, "pubkey", pubkeyHex)) {
@@ -80,11 +83,6 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	}
 	// TODO: rename to listsinceblock
 	else if (method == "getTransactions") {
-		//printf("getTransactions called\n");
-		if(!params.IsObject()) {
-			error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "params not an object");
-			return;
-		}
 		std::string format;
 		uint64_t transactionId = 0;
 
@@ -140,8 +138,25 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 		return;
 	}
 	else if (method == "gettransaction") {
-		error(responseJson, JSON_RPC_ERROR_NOT_IMPLEMENTED, "gettransaction not implemented yet");
-		return;
+		std::string format;
+		uint64_t transactionId = 0;
+		MemoryBin* iotaMessageId = nullptr;
+
+		if (!getStringParameter(responseJson, params, "format", format)) {
+			return;
+		}
+		getUInt64Parameter(responseJson, params, "transactionId", transactionId, true);
+		getBinaryFromHexStringParameter(responseJson, params, "iotaMessageId", &iotaMessageId, true);
+		if (!transactionId && !iotaMessageId) {
+			error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "transactionId or iotaMessageId needed");
+			return;
+		}
+
+		getTransaction(resultJson, group, format, transactionId, iotaMessageId);
+		if (iotaMessageId) {
+			mm->releaseMemory(iotaMessageId);
+			iotaMessageId = nullptr;
+		}
 	}
 	else if (method == "getcreationsumformonth") {
 		int month = 0, year = 0;
@@ -252,6 +267,55 @@ void JsonRPCHandler::getTransactions(
 		}
 	}
 	resultJson.AddMember("transactions", jsonTransactionArray, alloc);
+	resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
+}
+
+void JsonRPCHandler::getTransaction(
+	rapidjson::Value& resultJson,
+	Poco::SharedPtr<controller::Group> group,
+	const std::string& format,
+	int64_t transactionId/* = 0*/,
+	MemoryBin* iotaMessageId /* = nullptr*/ 
+)
+{
+	Profiler timeUsed;
+	auto alloc = mRootJson.GetAllocator();
+	
+	//printf("group found and loaded\n");
+	try {
+		Poco::SharedPtr<model::TransactionEntry> transaction;
+		if (iotaMessageId) {
+			transaction = group->findByMessageId(iotaMessageId);
+		}
+		else if (transactionId) {
+			transaction = group->getTransactionForId(transactionId);
+		}
+		if (transaction.isNull()) {
+			error(resultJson, JSON_RPC_ERROR_TRANSACTION_NOT_FOUND, "transaction not found");
+			return;
+		}
+		auto transactionSerialized = transaction->getSerializedTransaction();
+		if (transactionSerialized->size() > 0) {
+			if (format == "json") {
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionSerialized);
+				resultJson.AddMember("transaction", gradidoBlock->toJson(mRootJson), alloc);
+			}
+			else {
+				resultJson.AddMember("transaction", Value(DataTypeConverter::binToBase64(*transactionSerialized).data(), alloc), alloc);
+			}
+		}
+		
+	}
+	catch (GradidoBlockchainTransactionNotFoundException& notFound) {
+		error(resultJson, JSON_RPC_ERROR_TRANSACTION_NOT_FOUND, "transaction not found");
+		return;
+	}
+	if (format == "json") {
+		resultJson.AddMember("type", "json", alloc);
+	}
+	else {
+		resultJson.AddMember("type", "base64", alloc);
+	}
 	resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 }
 

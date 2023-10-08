@@ -180,8 +180,8 @@ int MainServer::main(const std::vector<std::string>& args)
 		if (!ServerConfig::initSSLClientContext(cacertPath.data())) {
 			return Application::EXIT_CANTCREAT;
 		}
-		ServerConfig::readUnsecureFlags(config());
 		ServerGlobals::initIota(config());
+		ServerConfig::readUnsecureFlags(config());		
 
 		// start cpu scheduler
 		uint8_t worker_count = Poco::Environment::processorCount() * 2;

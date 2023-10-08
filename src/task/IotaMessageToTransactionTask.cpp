@@ -75,12 +75,13 @@ int IotaMessageToTransactionTask::run()
         errorLog.information("serialized: %s", hex);
         return 0;
     }
-        
+           
     Poco::Logger& transactionLog = LoggerManager::getInstance()->mTransactionLog;
     transactionLog.information("%d %d %s %s\n%s", 
         (int)mMilestoneIndex, (int)mTimestamp, *dataIndex.second.get(), mMessageId.toHex(),
         transaction->toJson()
     );
+
     // if simple validation already failed, we can stop here
     try {
         transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
@@ -141,6 +142,7 @@ int IotaMessageToTransactionTask::run()
             }
         }
     }
+
    
     // check if transaction already exist
     // if this transaction doesn't belong to us, we can quit here 
@@ -159,7 +161,7 @@ int IotaMessageToTransactionTask::run()
         errorLog.information("%s, messageId: %s", message, mMessageId.toHex());
         return 0;
     }
-        
+
     // hand over to OrderingManager
     //std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
     OrderingManager::getInstance()->pushTransaction(
@@ -176,6 +178,10 @@ std::string IotaMessageToTransactionTask::getGradidoGroupAlias(const std::string
 	if (findPos != iotaIndex.npos) {
 		return iotaIndex.substr(8);
 	}
+    // it is a binary index from node js gradido implementation
+    if (iotaIndex.size() == 32) {
+        return DataTypeConverter::binToHex(iotaIndex).substr(0, 64);
+    }
 	return "";
 }
 

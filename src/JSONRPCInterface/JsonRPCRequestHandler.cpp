@@ -185,102 +185,120 @@ void JsonRPCRequestHandler::error(Value& responseJson, JsonRPCErrorCodes code, G
 }
 
 
-bool JsonRPCRequestHandler::getIntParameter(Value& responseJson, const Value& params, const char* fieldName, int& iParameter)
+bool JsonRPCRequestHandler::getIntParameter(Value& responseJson, const Value& params, const char* fieldName, int& iParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if(!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	if (!itr->value.IsInt()) {
 		message = "invalid " + message;
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	iParameter = itr->value.GetInt();
 	return true;
 }
 
-bool JsonRPCRequestHandler::getBoolParameter(Value& responseJson, const Value& params, const char* fieldName, bool& bParameter)
+bool JsonRPCRequestHandler::getBoolParameter(Value& responseJson, const Value& params, const char* fieldName, bool& bParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	if (!itr->value.IsBool()) {
 		message = "invalid " + message;
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	bParameter = itr->value.GetBool();
 	return true;
 }
 
-bool JsonRPCRequestHandler::getUIntParameter(Value& responseJson, const Value& params, const char* fieldName, unsigned int& iParameter)
+bool JsonRPCRequestHandler::getUIntParameter(Value& responseJson, const Value& params, const char* fieldName, unsigned int& iParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	if (!itr->value.IsUint()) {
 		message = "invalid " + message;
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	iParameter = itr->value.GetUint();
 	return true;
 }
 
-bool JsonRPCRequestHandler::getUInt64Parameter(Value& responseJson, const Value& params, const char* fieldName, Poco::UInt64& iParameter)
+bool JsonRPCRequestHandler::getUInt64Parameter(Value& responseJson, const Value& params, const char* fieldName, Poco::UInt64& iParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	if (!itr->value.IsUint64()) {
 		message = "invalid " + message;
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	iParameter = itr->value.GetUint64();
 	return true;
 }
-bool JsonRPCRequestHandler::getStringParameter(Value& responseJson, const Value& params, const char* fieldName, std::string& strParameter)
+bool JsonRPCRequestHandler::getStringParameter(Value& responseJson, const Value& params, const char* fieldName, std::string& strParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	if (!itr->value.IsString()) {
 		message = "invalid " + message;
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	strParameter = std::string(itr->value.GetString(), itr->value.GetStringLength());
 	return true;
 }
 
-bool JsonRPCRequestHandler::getStringIntParameter(Value& responseJson, const Value& params, const char* fieldName, std::string& strParameter, int& iParameter)
+bool JsonRPCRequestHandler::getBinaryFromHexStringParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, MemoryBin** binaryParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		return false;
+	}
+	if (!itr->value.IsString()) {
+		message = "invalid " + message;
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		return false;
+	}
+	*binaryParameter = DataTypeConverter::hexToBin(itr->value.GetString(), itr->value.GetStringLength());
+	return true;
+}
+
+bool JsonRPCRequestHandler::getStringIntParameter(Value& responseJson, const Value& params, const char* fieldName, std::string& strParameter, int& iParameter, bool optional /*= false*/)
+{
+	Value::ConstMemberIterator itr = params.FindMember(fieldName);
+	std::string message = fieldName;
+	if (itr == params.MemberEnd()) {
+		message += " not found";
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 	if (itr->value.IsString()) {
@@ -291,65 +309,65 @@ bool JsonRPCRequestHandler::getStringIntParameter(Value& responseJson, const Val
 	}
 	else {
 		message += " isn't neither int or string";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 
 	return true;
 }
 
-bool JsonRPCRequestHandler::checkArrayParameter(Value& responseJson, const Value& params, const char* fieldName)
+bool JsonRPCRequestHandler::checkArrayParameter(Value& responseJson, const Value& params, const char* fieldName, bool optional /*= false*/)
 {
 
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 
 	if (!itr->value.IsArray()) {
 		message += " is not a array";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 
 	return true;
 }
 
-bool JsonRPCRequestHandler::checkObjectParameter(Value& responseJson, const Value& params, const char* fieldName)
+bool JsonRPCRequestHandler::checkObjectParameter(Value& responseJson, const Value& params, const char* fieldName, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 
 	if (!itr->value.IsObject()) {
 		message += " is not a object";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 
 	return true;
 }
 
-bool JsonRPCRequestHandler::checkObjectOrArrayParameter(Value& responseJson, const Value& params, const char* fieldName)
+bool JsonRPCRequestHandler::checkObjectOrArrayParameter(Value& responseJson, const Value& params, const char* fieldName, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;
 	if (itr == params.MemberEnd()) {
 		message += " not found";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 
 	if (!itr->value.IsObject() && !itr->value.IsArray()) {
 		message += " is not a object or array";
-		error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
+		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
 

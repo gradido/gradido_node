@@ -446,7 +446,8 @@ namespace controller {
 
 		auto it = mTransactionNrsFileCursors.find(transactionNr);
 		if (it != mTransactionNrsFileCursors.end()) {
-			if(!it->second && transactionNr) {
+			// by transaction nr 1 file cursor starts with 0
+			if(!it->second && transactionNr > 1) {
 				auto lastTransaction = mTransactionNrsFileCursors.end();
 				lastTransaction--;
 				std::clog << "file cursor for transaction: " << transactionNr 

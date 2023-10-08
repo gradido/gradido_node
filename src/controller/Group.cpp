@@ -33,7 +33,7 @@ using namespace rapidjson;
 namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath)
-		: mIotaMessageListener(new iota::MessageListener("GRADIDO." + groupAlias)), mGroupAlias(groupAlias),
+		: mIotaMessageListener(new iota::MessageListener(groupAlias)), mGroupAlias(groupAlias),
 		mFolderPath(folderPath), mGroupState(Poco::Path(folderPath, ".state")), mDeferredTransfersCache(folderPath),
 		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
 		mCachedSignatureTransactionNrs(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),

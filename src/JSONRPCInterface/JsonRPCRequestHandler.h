@@ -7,6 +7,7 @@
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/JsonRPCRequest.h"
+#include "gradido_blockchain/MemoryManager.h"
 
 #include "rapidjson/document.h"
 
@@ -25,15 +26,18 @@ public:
 	
 	static bool parseQueryParametersToRapidjson(const Poco::URI& uri, rapidjson::Document& rapidParams);
 
-	bool getIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, int& iParameter);
-	bool getUIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter);
-	bool getBoolParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, bool& bParameter);
-	bool getUInt64Parameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter);
-	bool getStringParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter);
-	bool getStringIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter);
-	bool checkArrayParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName);
-	bool checkObjectParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName);
-	bool checkObjectOrArrayParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName);
+	//* \param optional if set to true, no error message will be generated
+
+	bool getIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, int& iParameter, bool optional = false);
+	bool getUIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, unsigned int& iParameter, bool optional = false);
+	bool getBoolParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, bool& bParameter, bool optional = false);
+	bool getUInt64Parameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, Poco::UInt64& iParameter, bool optional = false);
+	bool getStringParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter, bool optional = false);
+	bool getBinaryFromHexStringParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, MemoryBin** binaryParameter, bool optional = false);
+	bool getStringIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter, bool optional = false);
+	bool checkArrayParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, bool optional = false);
+	bool checkObjectParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, bool optional = false);
+	bool checkObjectOrArrayParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, bool optional = false);
 
 	void error(rapidjson::Value& responseJson, JsonRPCErrorCodes code, const char* message, rapidjson::Value* data = nullptr);
 	void error(rapidjson::Value& responseJson, JsonRPCErrorCodes code, GradidoBlockchainException& ex);
