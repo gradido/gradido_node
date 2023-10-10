@@ -42,6 +42,7 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 	mWorkMutex.unlock();
 
 	auto groups = mGroupIndex->listGroupAliases();
+	auto& errorLog = LoggerManager::getInstance()->mErrorLogging;
 	for (auto it = groups.begin(); it != groups.end(); it++) {
 		// load all groups to start iota message listener from all groups
 		try {
@@ -63,20 +64,22 @@ int GroupManager::init(const char* groupIndexFileName, Poco::Util::LayeredConfig
 					clientBase = new client::GraphQL(uri);
 				}
 				else {
-					LoggerManager::getInstance()->mErrorLogging.error("unknown new block uri type: %s", communityNewBlockUriType);
+					errorLog.error("unknown new block uri type: %s", communityNewBlockUriType);
 				}
 				if (clientBase) {					
+					clientBase->setGroupAlias(*it);
 					group->setListeningCommunityServer(clientBase);
+					errorLog.information("[GroupManager::init] notification of community: %s", *it);
 				}
 			}
 
 		}
 		catch (GradidoBlockchainTransactionNotFoundException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[GroupManager::init] transaction not found exception: %s in group: %s", ex.getFullString(), *it);
+			errorLog.error("[GroupManager::init] transaction not found exception: %s in group: %s", ex.getFullString(), *it);
 			return -1;
 		}
 		catch (GradidoBlockchainException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[GroupManager::init] gradido blockchain exception: %s in group: %s", ex.getFullString(), *it);
+			errorLog.error("[GroupManager::init] gradido blockchain exception: %s in group: %s", ex.getFullString(), *it);
 			return -2;
 		}
 	}

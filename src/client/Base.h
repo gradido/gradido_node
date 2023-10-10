@@ -29,6 +29,8 @@ namespace client
 		bool notificateNewTransaction(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock);
 		bool notificateFailedTransaction(const model::gradido::GradidoTransaction* gradidoTransaction, const std::string& errorMessage, const std::string& messageId);
 		virtual bool postRequest(const Poco::Net::NameValueCollection& parameterValuePairs) = 0;
+
+		inline void setGroupAlias(const std::string& groupAlias) {mGroupAlias = groupAlias;}
 	protected:		
 		bool notificate(Poco::Net::NameValueCollection params);
 		enum NotificationFormat : int
@@ -40,7 +42,7 @@ namespace client
 
 		Poco::URI mUri;
 		NotificationFormat mFormat;
-
+		std::string mGroupAlias;
 	};
 }
 

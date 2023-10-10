@@ -87,7 +87,7 @@ protected:
         Poco::FastMutex mutex;
     };
 
-     iota::MessageValidator mMessageValidator;
+    iota::MessageValidator mMessageValidator;
 
     std::map<int32_t, int32_t> mMilestoneTaskObserver;
     Poco::FastMutex mMilestoneTaskObserverMutex;
