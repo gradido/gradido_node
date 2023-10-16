@@ -68,7 +68,7 @@ namespace model {
 				if (transactionBody->isRegisterAddress()) {
 					auto registerAddress = transactionBody->getRegisterAddress();
 					if (transactionBody->isLocal()) {
-						if ((registerAddress->isSubaccount() && registerAddress->getSubaccountPubkeyString() == *mPubkey.get()) ||
+						if ((registerAddress->isSubaccount() && registerAddress->getAccountPubkeyString() == *mPubkey.get()) ||
 							(!registerAddress->isSubaccount() && registerAddress->getUserPubkeyString() == *mPubkey.get())) {
 							foundRegisterAddressTransaction = 1;
 						}

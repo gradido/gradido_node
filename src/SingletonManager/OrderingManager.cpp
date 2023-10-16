@@ -143,6 +143,12 @@ int OrderingManager::ThreadFunction()
                         communityServer->notificateFailedTransaction(transactionCopy.get(), ex.what(), *itTransaction->messageId->convertToHex().get());
                     }
                     errorLog.information("[OrderingManager] transaction not added: %s", ex.getFullString());
+                    try {
+                        printf("[OrderingManager] transaction: %s\n", transactionCopy->toJson().data());
+                    } catch(std::exception& ex) {
+                        printf("exception on parsing transaction: %s\n", ex.what());
+                    }
+                    //errorLog.debug("[OrderingManager] transaction: %s", transaction->toJson());
                 }
             }
         }

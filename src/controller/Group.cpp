@@ -700,6 +700,7 @@ namespace controller {
 	{
 		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
 		// if return zero, no transaction for this address exist on this blockchain
+		LoggerManager::getInstance()->mErrorLogging.debug("[Group::getAddressType] addressIndex: %u found for %s", addressIndex, DataTypeConverter::binToHex(address));
 		if (!addressIndex) return proto::gradido::RegisterAddress_AddressType_NONE;
 
 		int blockNr = 1;

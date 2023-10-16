@@ -145,7 +145,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		// error logging
 		createConsoleFileAsyncLogger("errorLog", log_Path + "errorLog.txt");
 		Poco::Logger& errorLog = Poco::Logger::get("errorLog");
-		errorLog.setLevel('information');
+		errorLog.setLevel("debug");
 
 		createFileAsyncLogger("logTransactions", log_Path + "receivedTransactions.txt");
 
