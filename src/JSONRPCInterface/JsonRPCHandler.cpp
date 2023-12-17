@@ -69,11 +69,22 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 
 	Value resultJson(kObjectType);
 	if (method == "getlasttransaction") {
+		Profiler timeUsed;
+		std::string format = "base64";
+		getStringParameter(responseJson, params, "format", format);
 		auto lastTransaction = group->getLastTransaction();
 		if (!lastTransaction.isNull()) {
 			auto serializedTransaction = lastTransaction->getSerialized();
-			auto base64Transaction = DataTypeConverter::binToBase64(std::move(serializedTransaction));
-			resultJson.AddMember("transaction", Value(base64Transaction->data(), alloc), alloc);
+			if("base64" == format) {
+				auto base64Transaction = DataTypeConverter::binToBase64(std::move(serializedTransaction));
+				resultJson.AddMember("transaction", Value(base64Transaction->data(), alloc), alloc);
+			} else if("json" == format) {
+				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(serializedTransaction.get());
+				resultJson.AddMember("transaction", gradidoBlock->toJson(mRootJson), alloc);
+			} else {
+				error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "unsupported format");
+			}
+			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 		}
 		else {
 			error(responseJson, JSON_RPC_ERROR_GRADIDO_NODE_ERROR, "no transaction");
@@ -252,7 +263,6 @@ void JsonRPCHandler::getTransactions(
 	Value jsonTransactionArray(kArrayType);
 	Poco::AutoPtr<model::gradido::ConfirmedTransaction> prevTransaction;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
-
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
 			if (format == "json") {
