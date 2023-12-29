@@ -547,7 +547,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	mpfr_ptr Group::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date)
+	mpfr_ptr Group::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date, uint64_t ownTransactionNr)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto mm = MemoryManager::getInstance();
@@ -590,6 +590,9 @@ namespace controller {
 				}
 				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				if (gradidoBlock->getReceivedAsTimestamp() > date.timestamp()) {
+					continue;
+				}
+				if (gradidoBlock->getID() >= ownTransactionNr) {
 					continue;
 				}
 				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
@@ -976,7 +979,7 @@ namespace controller {
 			}
 
 			// check if someone has already used it
-			auto balance = calculateAddressBalance(deferredTransfer->getRecipientPublicKeyString(), deferredTransfer->getCoinGroupId(), timeout);
+			auto balance = calculateAddressBalance(deferredTransfer->getRecipientPublicKeyString(), deferredTransfer->getCoinGroupId(), timeout, mLastTransactionId+1);
 			if (mpfr_cmp_si(balance, 0) > 0) {
 				timeoutedDeferredTransfers.push_back({ balance, timeout });
 			}

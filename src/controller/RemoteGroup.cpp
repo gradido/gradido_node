@@ -21,7 +21,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	mpfr_ptr RemoteGroup::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date)
+	mpfr_ptr RemoteGroup::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date, uint64_t ownTransactionNr)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

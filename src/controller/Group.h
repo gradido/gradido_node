@@ -68,7 +68,7 @@ namespace controller {
 
 		//! \brief get last transaction for this user for this coin color with a final balance
 		// TODO: make UML diagram for function
-		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& groupId, Poco::DateTime date);
+		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& groupId, Poco::DateTime date, uint64_t ownTransactionNr);
 
 		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
 

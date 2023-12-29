@@ -96,12 +96,14 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	else if (method == "getTransactions") {
 		std::string format;
 		uint64_t transactionId = 0;
+		uint32_t maxResultCount = 100;
 
 		if (!getUInt64Parameter(responseJson, params, "fromTransactionId", transactionId) || !getStringParameter(responseJson, params, "format", format)) {
 			return;
 		}
+		getUIntParameter(responseJson, params, "maxResultCount", maxResultCount, true);
 		//printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
-		getTransactions(resultJson, transactionId, group, format);
+		getTransactions(resultJson, transactionId, maxResultCount, group, format);
 	}
 	else if (method == "getaddressbalance") {
 		std::string date_string;
@@ -242,7 +244,8 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 
 void JsonRPCHandler::getTransactions(
 	Value& resultJson, 
-	int64_t fromTransactionId, 
+	uint64_t fromTransactionId, 
+	uint32_t maxResultCount,
 	Poco::SharedPtr<controller::Group> group, 
 	const std::string& format
 )
@@ -262,6 +265,7 @@ void JsonRPCHandler::getTransactions(
 	}
 	Value jsonTransactionArray(kArrayType);
 	Poco::AutoPtr<model::gradido::ConfirmedTransaction> prevTransaction;
+	int count = 0;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
@@ -274,6 +278,8 @@ void JsonRPCHandler::getTransactions(
 				auto base64Transaction = Value(DataTypeConverter::binToBase64(*transactionSerialized).data(), alloc);
 				jsonTransactionArray.PushBack(base64Transaction, alloc);
 			}
+			count++;
+			if(count >= maxResultCount) break;
 		}
 	}
 	resultJson.AddMember("transactions", jsonTransactionArray, alloc);
@@ -284,7 +290,7 @@ void JsonRPCHandler::getTransaction(
 	rapidjson::Value& resultJson,
 	Poco::SharedPtr<controller::Group> group,
 	const std::string& format,
-	int64_t transactionId/* = 0*/,
+	uint64_t transactionId/* = 0*/,
 	MemoryBin* iotaMessageId /* = nullptr*/ 
 )
 {
@@ -340,7 +346,7 @@ void JsonRPCHandler::getAddressBalance(
 	assert(!group.isNull());
 	auto alloc = mRootJson.GetAllocator();
 
-	auto balance = group->calculateAddressBalance(pubkey, coinGroupId, date);
+	auto balance = group->calculateAddressBalance(pubkey, coinGroupId, date, group->getLastTransaction()->getID()+1);
 	std::string balanceString;
 	model::gradido::TransactionBase::amountToString(&balanceString, balance);
 	MemoryManager::getInstance()->releaseMathMemory(balance);
@@ -421,7 +427,7 @@ void JsonRPCHandler::listTransactions(
 	Poco::Timestamp now;
 	auto transactionListValue = transactionList.generateList(allTransactions, now, currentPage, pageSize, orderDESC, onlyCreations);
 
-	auto balance = group->calculateAddressBalance(pubkey, "", now);
+	auto balance = group->calculateAddressBalance(pubkey, "", now, group->getLastTransaction()->getID()+1);
 	std::string balanceString;
 	model::gradido::TransactionBase::amountToString(&balanceString, balance);
 	transactionListValue.AddMember("balance", Value(balanceString.data(), alloc), alloc);

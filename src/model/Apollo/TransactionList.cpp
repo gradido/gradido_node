@@ -165,7 +165,7 @@ namespace model {
 		)
 		{
 			if (!*balance) {
-				*balance = mGroup->calculateAddressBalance(*mPubkey.get(), 0, prevTransactionDate);
+				*balance = mGroup->calculateAddressBalance(*mPubkey.get(), 0, prevTransactionDate, mGroup->getLastTransaction()->getID() + 1);
 			}
 			currentTransaction->calculateDecay(prevTransactionDate, currentTransaction->getDate(), *balance);
 			mpfr_add(*balance, *balance, currentTransaction->getDecay()->getDecayAmount(), gDefaultRound);

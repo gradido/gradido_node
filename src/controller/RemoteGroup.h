@@ -25,7 +25,7 @@ namespace controller {
 			SearchDirection order = SearchDirection::ASC
 		);
 		Poco::SharedPtr<model::gradido::ConfirmedTransaction> getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter = nullptr);
-		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date);
+		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date, uint64_t ownTransactionNr);
 		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
 		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
 		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");

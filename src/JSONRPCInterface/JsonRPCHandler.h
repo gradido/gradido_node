@@ -16,7 +16,8 @@ public:
 protected:
 	void getTransactions(
 		rapidjson::Value& resultJson, 
-		int64_t fromTransactionId,
+		uint64_t fromTransactionId,
+		uint32_t maxResultCount,
 		Poco::SharedPtr<controller::Group> group, 
 		const std::string& format
 	);
@@ -29,7 +30,7 @@ protected:
 		rapidjson::Value& resultJson,
 		Poco::SharedPtr<controller::Group> group,
 		const std::string& format,
-		int64_t transactionId = 0,
+		uint64_t transactionId = 0,
 		MemoryBin* iotaMessageId = nullptr
 	);
 	//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
