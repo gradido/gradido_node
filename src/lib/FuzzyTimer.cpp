@@ -2,6 +2,7 @@
 #include "Poco/Timestamp.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "../SystemExceptions.h"
 #include "../iota/IotaExceptions.h"
 
 FuzzyTimer::FuzzyTimer()
@@ -9,12 +10,10 @@ FuzzyTimer::FuzzyTimer()
 {
 	mThread.setName("FuzzyTimer");
 	mThread.start(*this);
-	//printf("FuzzyTimer::FuzzyTimer\n");
 }
 
 FuzzyTimer::~FuzzyTimer()
 {
-	//printf("FuzzyTimer::~FuzzyTimer\n");
 	mMutex.lock();
 	exit = true;
 	mMutex.unlock();
@@ -26,7 +25,7 @@ FuzzyTimer::~FuzzyTimer()
 
 bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount/* = -1*/)
 {
-	//printf("FuzzyTimer::addTimer: %s\n", name.data());
+	LOG_DEBUG("[FuzzyTimer::addTimer] %s", name);
 	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 	if (exit) return false;
 
@@ -39,19 +38,16 @@ bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, uint6
 
 int FuzzyTimer::removeTimer(std::string name)
 {
-	//printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
 	if (mMutex.tryLock(100)) {
 		mMutex.unlock();
 	}
 	else {
-		return -2;
+		throw CannotLockMutexAfterTimeout("FuzzyTimer::RemoveTimer", 100);
 	}
 	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 	if (exit) return -1;
-	//printf("mRegisteredAtTimer size: %d\n", mRegisteredAtTimer.size());
 
-	size_t eraseCount = 0;
-				
+	size_t eraseCount = 0;				
 	for (auto it = mRegisteredAtTimer.begin(); it != mRegisteredAtTimer.end();)
 	{
 		if (name == it->second.name)
@@ -61,18 +57,15 @@ int FuzzyTimer::removeTimer(std::string name)
 			eraseCount++;
 		}
 		else {
-			//printf("not removed: %s\n", it->second.name.data());
 			it++;
 		}
 	}
-	//printf("removed %d timer with name: %s\n", eraseCount, name.data());
-	//printf("mRegisteredAtTimer size: %d\n", mRegisteredAtTimer.size());
+	LOG_DEBUG("[FuzzyTimer::removeTimer] removed %d timer with name: %s", eraseCount, name);
 	return eraseCount;
 }
 
 bool FuzzyTimer::move()
 {
-	//printf("FuzzyTimer::move\n");
 	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 	if (exit) return false;
 			
@@ -84,12 +77,9 @@ bool FuzzyTimer::move()
 
 	if (it->first <= nowMilliseconds) {
 		if (!it->second.callback) {
-			printf("[FuzzyTimer::move] empty callback\n");
-			printf("name: %s\n", it->second.name.data());
-			//printf("type: %s\n", it->second.callback->getResourceType());
+			LOG_WARN("[FuzzyTimer::move] empty callback, name: %s", it->second.name);
 		}
 		else {
-			//printf("[FuzzyTimer::move] about to call: %s\n", it->second.name.data());
 			Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 			TimerReturn ret = TimerReturn::NOT_SET;
 			try {

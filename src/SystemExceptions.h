@@ -10,7 +10,15 @@ public:
 	std::string getFullString() const;
 protected:
 	std::string mFileName;
+};
 
+class CannotLockMutexAfterTimeout : public GradidoBlockchainException
+{
+public:
+	explicit CannotLockMutexAfterTimeout(const char* what, int timeoutMs) noexcept;
+	std::string getFullString() const;
+protected:
+	int mTimeoutMs;
 };
 
 

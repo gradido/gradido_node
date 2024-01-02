@@ -28,6 +28,8 @@ protected:
 };
 
 #define LOG_INFO(fmt, ...) LoggerManager::getInstance()->mInfoLogging.information(fmt, __VA_ARGS__)
-#define LOG_ERROR(fmt, ...) LoggerManager::getInstance()->mErrorLogging.information(fmt, __VA_ARGS__)
+#define LOG_DEBUG(fmt, ...) LoggerManager::getInstance()->mInfoLogging.debug(fmt, __VA_ARGS__)
+#define LOG_WARN(fmt, ...) LoggerManager::getInstance()->mInfoLogging.warning(fmt, __VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LoggerManager::getInstance()->mErrorLogging.error(fmt, __VA_ARGS__)
 
 #endif //__GRADIDO_NODE_SINGLETONE_MANAGER_LOGGER_MANAGER_H

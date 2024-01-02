@@ -21,12 +21,11 @@ namespace iota
 
 	MessageListener::~MessageListener()
 	{
-
-		LOG_INFO("[iota::MessageListener] Stop Listen to: %s\n", mIndex);
+		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex);
 		lock();
 		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
-		if (removedTimer != 1) {
-			LOG_ERROR("[%s] error removing timer, acutally removed timer count: %d", __FUNCTION__, removedTimer);
+		if (removedTimer != 1 && removedTimer != -1) {
+			LOG_ERROR("[iota::MessageListener] error removing timer, actually removed timer count: %d", removedTimer);
 		}
 		//mListenerTimer.stop();
 		unlock();
@@ -35,7 +34,6 @@ namespace iota
 	void MessageListener::run()
 	{
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, mIntervalMilliseconds, -1);
-		LoggerManager::getInstance()->mInfoLogging.information("");
 		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex);
 	}
 

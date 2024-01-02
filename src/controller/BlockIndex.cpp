@@ -22,7 +22,6 @@ namespace controller {
 
 	BlockIndex::~BlockIndex()
 	{
-		std::clog << "~BlockIndex";
 		writeIntoFile();
 	}
 

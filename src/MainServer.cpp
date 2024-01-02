@@ -150,7 +150,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		// info logging
 		createConsoleFileAsyncLogger("infoLog", log_Path + "infoLog.txt");
 		Poco::Logger& infoLogger = Poco::Logger::get("infoLog");
-		infoLogger.setLevel("information");
+		infoLogger.setLevel("debug");
 
 		createFileAsyncLogger("logTransactions", log_Path + "receivedTransactions.txt");
 

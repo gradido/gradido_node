@@ -28,8 +28,9 @@ namespace controller {
 		exit();
 		//printf("[controller::~Block]\n");
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath()) != 1) {
-			printf("[controller::~Block]] error removing timer\n");
+		auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath());
+		if (result != 1 && result != -1) {
+			LOG_ERROR("[controller::~Block]] error removing timer");
 		}
 		// deadlock, because it is triggered from expire cache?
 		//mTimer.stop();

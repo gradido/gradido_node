@@ -50,11 +50,10 @@ namespace controller {
 			updateLastTransactionId(lastBlock->getBlockIndex()->getMaxTransactionNr());
 		}
 
-		std::clog << "[Group " << groupAlias << "] "
-			<< "loaded from state: last address index : " << std::to_string(mLastAddressIndex)
-			<< ", last block nr: " << std::to_string(mLastBlockNr)
-			<< ", last transaction id: " << std::to_string(mLastTransactionId)
-			<< std::endl;
+		LOG_INFO(
+			"[Group %s] loaded from state: last address index: %d, last block nr: %d, last transaction id: %d",
+			groupAlias, mLastAddressIndex, mLastBlockNr, mLastTransactionId
+		);
 		mAddressIndex = new AddressIndex(folderPath, mLastAddressIndex, this);
 	}
 

@@ -99,7 +99,12 @@ namespace iota {
 	}
 	void MqttClientWrapper::onFailure(MQTTAsync_failureData* response)
 	{
-		mMqttLog.error("on failure, token: %d, code: %d, error: %s", response->token, response->code, std::string(response->message));
+		if (response->message) {
+			mMqttLog.error("on failure, token: %d, code: %d, error: %s", response->token, response->code, std::string(response->message));
+		}
+		else {
+			mMqttLog.error("on failure, token: %d, code: %d, no error message", response->token, response->code);
+		}
 	}
 	int  MqttClientWrapper::messageArrived(char* topicName, int topicLen, MQTTAsync_message* message)
 	{

@@ -27,8 +27,9 @@ namespace controller {
 	{
 		Poco::Path addressIndexPath(mGroupPath);
 		addressIndexPath.append(getAddressIndexFilePathForAddress("HalloWelt"));
-		if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer(addressIndexPath.toString()) != 1) {
-			printf("[controller::~AddressIndex]] error removing timer\n");
+		auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(addressIndexPath.toString());
+		if (result != 1 && result != -1) {
+			LOG_ERROR("[controller::~AddressIndex]] error removing timer");
 		}
 	}
 

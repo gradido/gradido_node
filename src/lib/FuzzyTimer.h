@@ -74,7 +74,7 @@ public:
 		\brief remove all timer with name
 		function is not really fast, because all appended timerCallback will be checked
 
-		\return removed timer, or -1 by error
+		\return removed timer count, or -1 if all timer were already stopped
 	*/
 	int removeTimer(std::string name);
 

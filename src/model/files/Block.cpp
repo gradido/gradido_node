@@ -41,10 +41,10 @@ namespace model {
 		Block::~Block()
 		{
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
-			if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("model::file::" + mBlockPath.toString()) != 1) {
-				printf("[model::files::~Block] error removing timer\n");
+			auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer("model::file::" + mBlockPath.toString());
+			if (result != 1 && result != -1) {
+				LOG_ERROR("[model::files::~Block] error removing timer");
 			}
-			//printf("[model::files::~Block]\n");
 			//mTimer.stop();
 		}
 
