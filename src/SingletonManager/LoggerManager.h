@@ -18,6 +18,7 @@ public:
 	static LoggerManager* getInstance();
 
 	Poco::Logger&		  mErrorLogging;
+	Poco::Logger&         mInfoLogging;
 	Poco::Logger&		  mSpeedLogging;
 	Poco::Logger&		  mTransactionLog;
 protected:
@@ -25,5 +26,8 @@ protected:
 
 	LoggerManager();
 };
+
+#define LOG_INFO(fmt, ...) LoggerManager::getInstance()->mInfoLogging.information(fmt, __VA_ARGS__)
+#define LOG_ERROR(fmt, ...) LoggerManager::getInstance()->mErrorLogging.information(fmt, __VA_ARGS__)
 
 #endif //__GRADIDO_NODE_SINGLETONE_MANAGER_LOGGER_MANAGER_H

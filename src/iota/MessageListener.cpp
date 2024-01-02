@@ -2,6 +2,7 @@
 
 #include "../SingletonManager/OrderingManager.h"
 #include "../SingletonManager/CacheManager.h"
+#include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "../ServerGlobals.h"
@@ -10,27 +11,32 @@ namespace iota
 {
     MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 1000*/)
     : mIndex(index),
-      //mListenerTimer(0, intervalMilliseconds), 
-		mErrorLog(Poco::Logger::get("errorLog")),
-		mFirstRun(true)
+	  mIntervalMilliseconds(intervalMilliseconds),
+	  mErrorLog(Poco::Logger::get("errorLog")),
+	  mFirstRun(true)
     {
         //Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
 	    //mListenerTimer.start(callback);
-		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, intervalMilliseconds, -1);
-		printf("[MessageListener::MessageListener] %s\n", index.data());
     }
 
 	MessageListener::~MessageListener()
 	{
 
-		printf("[iota::~MessageListener] %s\n", mIndex.data());
+		LOG_INFO("[iota::MessageListener] Stop Listen to: %s\n", mIndex);
 		lock();
 		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
 		if (removedTimer != 1) {
-			printf("[iota::~MessageListener] error removing timer, acutally removed timer count: %d\n", removedTimer);
+			LOG_ERROR("[%s] error removing timer, acutally removed timer count: %d", __FUNCTION__, removedTimer);
 		}
 		//mListenerTimer.stop();
 		unlock();
+	}
+
+	void MessageListener::run()
+	{
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, mIntervalMilliseconds, -1);
+		LoggerManager::getInstance()->mInfoLogging.information("");
+		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex);
 	}
 
     /*void MessageListener::listener(Poco::Timer& timer)
@@ -117,7 +123,7 @@ namespace iota
 			}
 			else {
 				// add if not exist
-				printf("[MessageListener::updateStoredMessages] %s add message: %s\n",  mIndex.data(), messageId.toHex().data());
+				LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex, messageId.toHex());
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);

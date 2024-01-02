@@ -56,6 +56,9 @@ namespace iota
         
         //virtual void listener(Poco::Timer& timer);
 
+        // start running, call after init existing signatures cache!
+        void run();
+
 		TimerReturn callFromTimer();
 		const char* getResourceType() const { return "iota::MessageListener"; };
 
@@ -64,6 +67,7 @@ namespace iota
         void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
 
         std::string mIndex; 
+        long mIntervalMilliseconds;
         Poco::Logger& mErrorLog;
 
         enum MessageState 

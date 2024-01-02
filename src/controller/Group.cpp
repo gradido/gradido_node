@@ -80,7 +80,7 @@ namespace controller {
 	bool Group::init()
 	{
 		fillSignatureCacheOnStartup();
-		//mIotaMessageListener = new iota::MessageListener("GRADIDO." + mGroupAlias);
+		mIotaMessageListener->run();
 		return true;
 	}
 
