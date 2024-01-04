@@ -19,7 +19,7 @@ namespace controller {
 			LoggerManager::getInstance()->mErrorLogging.critical(ex.getFullString());
 			mParent->resetAllIndices();
 			Poco::SharedPtr<model::files::AddressIndex> newAddressIndex(new model::files::AddressIndex(addressIndexPath));
-		}		
+		}
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(addressIndexPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
 	}
 
@@ -29,7 +29,7 @@ namespace controller {
 		addressIndexPath.append(getAddressIndexFilePathForAddress("HalloWelt"));
 		auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(addressIndexPath.toString());
 		if (result != 1 && result != -1) {
-			LOG_ERROR("[controller::~AddressIndex]] error removing timer");
+			LOG_ERROR("[controller::~AddressIndex] error removing timer");
 		}
 	}
 
@@ -51,7 +51,7 @@ namespace controller {
 		return getAddressIndex(address)->getIndexForAddress(address);
 	}
 
-	
+
 	uint32_t AddressIndex::getOrAddIndexForAddress(const std::string& address)
 	{
 		auto addressIndex = getAddressIndex(address);
@@ -89,7 +89,7 @@ namespace controller {
 		auto entry = mAddressIndicesCache.get(firstBytes);
 
 		if (entry.isNull()) {
-			
+
 			Poco::Path addressIndexPath(mGroupPath);
 			addressIndexPath.append(getAddressIndexFilePathForAddress(address));
 			try {
@@ -105,7 +105,7 @@ namespace controller {
 				return newAddressIndex;
 			}
 		}
-		
+
 		return entry;*/
 	}
 
@@ -136,7 +136,7 @@ namespace controller {
 				task::TaskPtr serializeAndWriteToFileTask = new task::SerializeToVFileTask(mAddressIndexFile);
 				serializeAndWriteToFileTask->setFinishCommand(new model::files::SuccessfullWrittenToFileCommand(mAddressIndexFile));
 				serializeAndWriteToFileTask->scheduleTask(serializeAndWriteToFileTask);
-			}			
+			}
 		}
 		return TimerReturn::GO_ON;
 	}

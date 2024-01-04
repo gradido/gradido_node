@@ -30,14 +30,14 @@ namespace controller {
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath());
 		if (result != 1 && result != -1) {
-			LOG_ERROR("[controller::~Block]] error removing timer");
+			LOG_ERROR("[controller::~Block] error removing timer");
 		}
 		// deadlock, because it is triggered from expire cache?
 		//mTimer.stop();
 		//printf("after timer stop\n");
 		//checkTimeout(mTimer);
 		//printf("after call checkTimeout\n");
-		mSerializedTransactions.clear();		
+		mSerializedTransactions.clear();
 	}
 
 	bool Block::init(Poco::SharedPtr<controller::AddressIndex> addressIndex)
@@ -87,11 +87,11 @@ namespace controller {
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mExitCalled) return false;
-	
+
 		if (mTransactionWriteTask.isNull()) {
 			mTransactionWriteTask = new WriteTransactionsToBlockTask(mBlockFile, mBlockIndex);
 		}
-		mTransactionWriteTask->addSerializedTransaction(transaction);	
+		mTransactionWriteTask->addSerializedTransaction(transaction);
 		mSerializedTransactions.add(transaction->getTransactionNr(), transaction);
 		return true;
 
@@ -133,7 +133,7 @@ namespace controller {
 			// read from file system
 			int32_t fileCursor = 0;
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
-				std::clog << "writeTransactionTaskExist: " << writeTransactionTaskExist 
+				std::clog << "writeTransactionTaskExist: " << writeTransactionTaskExist
 						  << ", writeTransactionTaskIsObserved: " << writeTransactionTaskIsObserved
 						  << std::endl;
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
@@ -164,19 +164,19 @@ namespace controller {
 				printf("block: %s\n", block->toJson().data());
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found after reading from block file")
 					.setTransactionId(transactionNr);
-			}			
+			}
 		}
 		if(transactionEntry.isNull()) {
 			throw GradidoBlockchainTransactionNotFoundException("transaction is still null, after all checks")
 				.setTransactionId(transactionNr);
 		}
-		return transactionEntry;		
+		return transactionEntry;
 	}
 
 	void Block::checkTimeout(Poco::Timer& timer)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		
+
 		if (mExitCalled) {
 			timer.restart(0);
 			return;
@@ -186,7 +186,7 @@ namespace controller {
 			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
 				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
 				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
-				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);				
+				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
 				mTransactionWriteTask = nullptr;
 			}
 		}
@@ -209,7 +209,7 @@ namespace controller {
 				mTransactionWriteTask = nullptr;
 
 				copyTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
-				copyTask->scheduleTask(copyTask);				
+				copyTask->scheduleTask(copyTask);
 			}
 		}
 		mWorkingMutex.unlock();
