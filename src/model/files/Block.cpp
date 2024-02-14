@@ -76,7 +76,7 @@ namespace model {
 		TimerReturn Block::callFromTimer()
 		{
 			if (!mFastMutex.tryLock()) return TimerReturn::GO_ON;
-			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
+			if (Poco::Timestamp() - mLastUsed > std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_CacheTimeout).count()) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();

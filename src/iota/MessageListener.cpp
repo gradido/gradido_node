@@ -9,9 +9,9 @@
 
 namespace iota
 {
-    MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 1000*/)
+    MessageListener::MessageListener(const std::string& index, std::chrono::milliseconds interval/* = 1000*/)
     : mIndex(index),
-	  mIntervalMilliseconds(intervalMilliseconds),
+	  mInterval(interval),
 	  mErrorLog(Poco::Logger::get("errorLog")),
 	  mFirstRun(true)
     {
@@ -33,7 +33,7 @@ namespace iota
 
 	void MessageListener::run()
 	{
-		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, mIntervalMilliseconds, -1);
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, mInterval, -1);
 		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex);
 	}
 

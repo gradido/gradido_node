@@ -164,13 +164,9 @@ int MainServer::main(const std::vector<std::string>& args)
 			errorLog.error("error loading config: %s", ex.displayText());
 		}
 		unsigned short jsonrpc_port = (unsigned short)config().getInt("JSONRPCServer.port", 8340);
-		unsigned short tcp_port = (unsigned short)config().getInt("TCPServer.port", 8341);
-
-
+		
 		// timeouts
-		ServerGlobals::g_CacheTimeout = config().getUInt("CacheTimeout", ServerGlobals::g_CacheTimeout);
-		ServerGlobals::g_TimeoutCheck = config().getUInt("TimeoutChecks", ServerGlobals::g_TimeoutCheck);
-		ServerGlobals::g_WriteToDiskTimeout = config().getUInt("WriteToDiskTimeout", ServerGlobals::g_WriteToDiskTimeout);
+		ServerGlobals::loadTimeouts(config());
 		ServerGlobals::g_LogTransactions = config().getBool("LogTransactions", ServerGlobals::g_LogTransactions);
 		if (ServerGlobals::g_LogTransactions) {
 			Poco::Logger::get("logTransactions").setLevel("information");

@@ -34,12 +34,20 @@ using namespace rapidjson;
 namespace controller {
 
 	Group::Group(std::string groupAlias, Poco::Path folderPath)
-		: mIotaMessageListener(new iota::MessageListener(groupAlias)), mGroupAlias(groupAlias),
-		mFolderPath(folderPath), mGroupState(Poco::Path(folderPath, ".state")), mDeferredTransfersCache(folderPath),
-		mLastAddressIndex(0), mLastBlockNr(1), mLastTransactionId(0), mCachedBlocks(ServerGlobals::g_CacheTimeout * 1000),
-		mCachedSignatureTransactionNrs(static_cast<Poco::Timestamp::TimeDiff>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 1000 * 60)),
-		mMessageIdTransactionNrCache(ServerGlobals::g_CacheTimeout * 1000),
-		mCommunityServer(nullptr), mArchiveTransactionOrdering(nullptr), mExitCalled(false)
+		: mIotaMessageListener(new iota::MessageListener(groupAlias)),
+		  mGroupAlias(groupAlias),
+		  mFolderPath(folderPath), 
+		  mGroupState(Poco::Path(folderPath, ".state")), 
+		  mDeferredTransfersCache(folderPath),
+		  mLastAddressIndex(0),
+		  mLastBlockNr(1),
+		  mLastTransactionId(0),
+		  mCachedBlocks(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()),
+		  mCachedSignatureTransactionNrs(std::chrono::duration_cast<std::chrono::milliseconds>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES).count()),
+		  mMessageIdTransactionNrCache(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()),
+		  mCommunityServer(nullptr),
+		  mArchiveTransactionOrdering(nullptr),
+		  mExitCalled(false)
 	{
 		mLastAddressIndex = mGroupState.getInt32ValueForKey("lastAddressIndex", mLastAddressIndex);
 		mLastBlockNr = mGroupState.getInt32ValueForKey("lastBlockNr", mLastBlockNr);
@@ -925,7 +933,12 @@ namespace controller {
 		int transactionNr = mLastTransactionId;
 
 		std::unique_ptr<model::gradido::ConfirmedTransaction> transaction;
-		Poco::Timestamp border = Poco::Timestamp() - Poco::Timespan(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES * 60, 0);
+		Poco::Timestamp border = 
+			Poco::Timestamp() 
+			- Poco::Timespan(
+				std::chrono::duration_cast<std::chrono::seconds>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES).count(),
+				0
+			);
 
 		do {
 			if (transactionNr <= 0) break;

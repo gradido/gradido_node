@@ -1,6 +1,8 @@
 #ifndef __GRADIDO_NODE_CONTROLLER_GROUP_H
 #define __GRADIDO_NODE_CONTROLLER_GROUP_H
 
+#include <chrono>
+
 #include "ControllerBase.h"
 #include "MemoryAddressIndex.h"
 //#include "Block.h"
@@ -31,7 +33,7 @@
 // MAGIC NUMBER: how long signatures should be cached to prevent processing transactions more than once
 // should be at least MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION_IN_MINUTES minutes, 
 // this is the maximal allowed timespan between created and received date in transactions
-#define MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES std::max(10, MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION_IN_MINUTES)
+#define MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES std::chrono::minutes(std::max(10, MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION_IN_MINUTES))
 
 namespace controller {
 

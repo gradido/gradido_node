@@ -64,7 +64,7 @@ namespace iota
 		Poco::Logger& mMqttLog;
 
 		// for automatic reconnect attempts
-		uint64_t mReconnectTimeout;
+		std::chrono::milliseconds mReconnectTimeout;
 
 	};
 

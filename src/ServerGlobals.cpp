@@ -22,9 +22,9 @@ namespace ServerGlobals {
 	task::CPUSheduler*    g_IotaRequestCPUScheduler = nullptr;
 	controller::GroupIndex* 			g_GroupIndex = nullptr;
 	std::string							g_FilesPath;
-	Poco::UInt16						g_CacheTimeout = 600;
-	Poco::UInt16						g_TimeoutCheck = 60;
-	Poco::UInt16						g_WriteToDiskTimeout = 10;
+	std::chrono::seconds				g_CacheTimeout(600);
+	std::chrono::seconds				g_TimeoutCheck(60);
+	std::chrono::seconds				g_WriteToDiskTimeout(10);
 	IotaRequest*						g_IotaRequestHandler = nullptr;
 	Poco::URI							g_IotaMqttBrokerUri;
 	Poco::AtomicCounter		            g_NumberExistingTasks;
@@ -69,5 +69,12 @@ namespace ServerGlobals {
 		g_IotaMqttBrokerUri = Poco::URI(iota_host + ":" + std::to_string(mqtt_port));
 
         return true;
+	}
+
+	void loadTimeouts(const Poco::Util::LayeredConfiguration& cfg)
+	{
+		ServerGlobals::g_CacheTimeout = std::chrono::seconds(cfg.getUInt("CacheTimeout", ServerGlobals::g_CacheTimeout.count()));
+		ServerGlobals::g_TimeoutCheck = std::chrono::seconds(cfg.getUInt("TimeoutChecks", ServerGlobals::g_TimeoutCheck.count()));
+		ServerGlobals::g_WriteToDiskTimeout = std::chrono::seconds(cfg.getUInt("WriteToDiskTimeout", ServerGlobals::g_WriteToDiskTimeout.count()));
 	}
 };

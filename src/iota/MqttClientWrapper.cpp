@@ -69,7 +69,7 @@ namespace iota {
 			causeString = std::string(cause);
 		}
 		mMqttLog.error("connection lost: %s", causeString);
-		mReconnectTimeout = GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS;
+		mReconnectTimeout = std::chrono::milliseconds(GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS);
 		reconnectAttempt();
 	}
 	void MqttClientWrapper::connected(char* cause)

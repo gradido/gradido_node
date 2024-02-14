@@ -27,6 +27,7 @@
 #include "Poco/Mutex.h"
 #include "Poco/Thread.h"
 #include <string>
+#include <chrono>
 #include <map>
 
 // refactored from my game engine for gradido
@@ -65,10 +66,10 @@ public:
 
 	/*!
 		add timer callback object
-		\param timeIntervall intervall in milliseconds
+		\param timeInterval interval in milliseconds
 		\param loopCount 0 for one call, -1 for loop
 	*/
-	bool addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount = -1);
+	bool addTimer(std::string name, TimerCallback* callbackObject, std::chrono::milliseconds timeInterval, int loopCount = -1);
 
 	/*!
 		\brief remove all timer with name
@@ -89,8 +90,8 @@ public:
 private:
 	struct TimerEntry {
 		// functions
-		TimerEntry(TimerCallback* _callback, uint64_t _timeIntervall, int _loopCount, std::string _name)
-			: callback(_callback), timeIntervall(_timeIntervall), initLoopCount(_loopCount), currentLoopCount(0), name(_name) {}
+		TimerEntry(TimerCallback* _callback, std::chrono::milliseconds  _timeInterval, int _loopCount, std::string _name)
+			: callback(_callback), timeInterval(_timeInterval), initLoopCount(_loopCount), currentLoopCount(0), name(_name) {}
 		~TimerEntry() {}
 		// \return true if we can run once again
 		bool nextLoop() {
@@ -101,14 +102,14 @@ private:
 
 		// variables
 		TimerCallback* callback;
-		uint64_t timeIntervall;
+		std::chrono::milliseconds timeInterval;
 		int initLoopCount;
 		int currentLoopCount;
 		std::string name;
 	};
-	// int key = time since programm start to run
-	std::multimap<uint64_t, TimerEntry> mRegisteredAtTimer;
-	typedef std::pair<uint64_t, TimerEntry> TIMER_TIMER_ENTRY;
+	// int key = time since program start to run
+	std::multimap<std::chrono::milliseconds, TimerEntry> mRegisteredAtTimer;
+	typedef std::pair<std::chrono::milliseconds, TimerEntry> TIMER_TIMER_ENTRY;
 	Poco::Mutex mMutex;
 	bool		exit;
 	Poco::Thread mThread;

@@ -23,15 +23,15 @@ FuzzyTimer::~FuzzyTimer()
 
 // -----------------------------------------------------------------------------------------------------
 
-bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount/* = -1*/)
+bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::chrono::milliseconds timeInterval, int loopCount/* = -1*/)
 {
 	LOG_DEBUG("[FuzzyTimer::addTimer] %s", name);
 	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 	if (exit) return false;
 
 	Poco::Timestamp now;
-	auto nowMilliseconds = (now.epochMicroseconds() / 1000);
-	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeIntervall, TimerEntry(callbackObject, timeIntervall, loopCount, name)));
+	std::chrono::milliseconds nowMilliseconds(now.epochMicroseconds() / 1000);
+	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeInterval, TimerEntry(callbackObject, timeInterval, loopCount, name)));
 
 	return true;
 }
@@ -73,7 +73,7 @@ bool FuzzyTimer::move()
 	if (it == mRegisteredAtTimer.end()) return true;
 
 	Poco::Timestamp now;
-	auto nowMilliseconds = (now.epochMicroseconds() / 1000);
+	std::chrono::milliseconds nowMilliseconds(now.epochMicroseconds() / 1000);
 
 	if (it->first <= nowMilliseconds) {
 		if (!it->second.callback) {
@@ -102,7 +102,7 @@ bool FuzzyTimer::move()
 				ret = TimerReturn::EXCEPTION;
 			}
 			if (it->second.nextLoop() && ret == TimerReturn::GO_ON) {
-				mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));
+				mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeInterval, it->second));
 			}
 
 			if (ret == TimerReturn::REPORT_ERROR) {

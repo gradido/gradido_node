@@ -13,7 +13,8 @@
 namespace controller {
 	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
 		: //mTimer(0, ServerGlobals::g_TimeoutCheck),
-		  mBlockNr(blockNr), mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+		  mBlockNr(blockNr),
+		  mSerializedTransactions(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()),
 		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
 		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias),
    		  mExitCalled(false)
@@ -183,7 +184,10 @@ namespace controller {
 		}
 
 		if (!mTransactionWriteTask.isNull()) {
-			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+			if (
+				Poco::DateTime() - mTransactionWriteTask->getCreationDate()
+				> std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
+			) {
 				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
 				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
 				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
@@ -203,7 +207,10 @@ namespace controller {
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 
 		if (!mTransactionWriteTask.isNull()) {
-			if (Poco::Timespan(Poco::DateTime() - mTransactionWriteTask->getCreationDate()).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+			if (
+				Poco::DateTime() - mTransactionWriteTask->getCreationDate()
+				> std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
+			) {
 				auto copyTask = mTransactionWriteTask;
 				mTaskObserver->addBlockWriteTask(copyTask);
 				mTransactionWriteTask = nullptr;

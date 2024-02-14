@@ -8,7 +8,9 @@
 
 namespace controller {
 	AddressIndex::AddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent)
-		: mGroupPath(path), mLastIndex(lastIndex), mAddressIndicesCache(ServerGlobals::g_CacheTimeout), mParent(parent)
+		: mGroupPath(path), mLastIndex(lastIndex), 
+		  mAddressIndicesCache(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()), 
+		  mParent(parent)
 	{
 		Poco::Path addressIndexPath(mGroupPath);
 		addressIndexPath.append(getAddressIndexFilePathForAddress("HalloWelt"));
@@ -130,7 +132,9 @@ namespace controller {
 	{
 		Poco::ScopedLock _lock(mWorkingMutex);
 
-		if (Poco::Timespan(Poco::DateTime() - mWaitingForNextFileWrite).totalSeconds() > ServerGlobals::g_WriteToDiskTimeout) {
+		if (Poco::DateTime() - mWaitingForNextFileWrite 
+			> std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
+		) {
 			mWaitingForNextFileWrite = Poco::DateTime();
 			if (!mAddressIndexFile->isFileWritten()) {
 				task::TaskPtr serializeAndWriteToFileTask = new task::SerializeToVFileTask(mAddressIndexFile);
