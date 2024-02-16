@@ -1,6 +1,8 @@
 #ifndef __GRADIDO_NODE_IOTA_MESSAGE_LISTENER_
 #define __GRADIDO_NODE_IOTA_MESSAGE_LISTENER_
 
+#include "MQTTAsync.h"
+
 //#include "Poco/Timer.h"
 #include "Poco/Logger.h"
 
@@ -60,6 +62,7 @@ namespace iota
         void run();
 
 		TimerReturn callFromTimer();
+    int  messageArrived(MQTTAsync_message* message);
 		const char* getResourceType() const { return "iota::MessageListener"; };
 
     protected:

@@ -8,6 +8,7 @@
 
 #include "../SingletonManager/GroupManager.h"
 #include "../SingletonManager/LoggerManager.h"
+#include "../iota/MqttClientWrapper.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/Decay.h"
@@ -87,7 +88,8 @@ namespace controller {
 	bool Group::init()
 	{
 		fillSignatureCacheOnStartup();
-		mIotaMessageListener->run();
+		//mIotaMessageListener->run();
+		iota::MqttClientWrapper::getInstance()->subscribeIndexation(mGroupAlias);
 		return true;
 	}
 
@@ -144,6 +146,7 @@ namespace controller {
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		mExitCalled = true;
+		iota::MqttClientWrapper::getInstance()->unsubscribeIndexation(mGroupAlias);
 		if (mIotaMessageListener) {
 			delete mIotaMessageListener;
 			mIotaMessageListener = nullptr;

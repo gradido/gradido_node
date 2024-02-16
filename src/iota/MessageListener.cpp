@@ -83,6 +83,11 @@ namespace iota
 		return TimerReturn::GO_ON;
 	}
 
+	int MessageListener::messageArrived(MQTTAsync_message* message)
+	{
+
+	}
+
     void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
     {
 		auto om = OrderingManager::getInstance();

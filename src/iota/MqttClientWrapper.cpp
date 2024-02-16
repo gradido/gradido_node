@@ -61,6 +61,25 @@ namespace iota {
 		return true;
 	}
 
+	void MqttClientWrapper::subscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer)
+	{
+		std::lock_guard _lock(mWorkMutex);
+		auto it = mTopicObserver.find(topic.getTopicString());
+		if(it == mTopicObserver.end()) {
+			auto result = mTopicObserver.insert({topic.getTopicString(), std::make_unique<TopicObserver>(topic)});
+			if(result.second) {
+				it = result.first;
+			} else {
+				throw std::runtime_error("error inserting missing topic observer");
+			}
+		}
+	}
+
+	void MqttClientWrapper::unsubscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer)
+	{
+		std::lock_guard _lock(mWorkMutex);
+	}
+
 	// ------- Callback functions -------
 	void MqttClientWrapper::connectionLost(char* cause)
 	{
@@ -109,9 +128,20 @@ namespace iota {
 	int  MqttClientWrapper::messageArrived(char* topicName, int topicLen, MQTTAsync_message* message)
 	{
 		std::string payload((const char*)message->payload, message->payloadlen);
-		mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s",
-			std::string(topicName), message->qos, message->retained, message->dup, message->msgid, payload
-		);
+		if(0 == strcmp(topicName, "messages/indexation/484f524e4554205370616d6d6572")) {
+			auto startPos = payload.find("HORNET");
+			auto binDataHex = DataTypeConverter::binToHex(payload.substr(0, startPos-1));
+
+			mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%s\n%d",
+				std::string(topicName), message->qos, message->retained, message->dup, message->msgid, binDataHex, payload.substr(startPos), message->payloadlen
+			);
+		} else {
+			mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%d",
+				std::string(topicName), message->qos, message->retained, message->dup, message->msgid, payload, message->payloadlen
+			);
+		}
+		MQTTAsync_freeMessage(&message);
+        MQTTAsync_free(topicName);
 		return true;
 	}
 	void MqttClientWrapper::deliveryComplete(MQTTAsync_token token)

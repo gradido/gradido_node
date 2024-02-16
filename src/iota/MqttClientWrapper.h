@@ -2,8 +2,12 @@
 #define __GRADIDO_NODE_IOTA_MQTT_CLIENT_WRAPPER_H
 
 #include "MQTTAsync.h"
+
 #include "gradido_blockchain/GradidoBlockchainException.h"
+
 #include "../lib/FuzzyTimer.h"
+#include "TopicObserver.h"
+
 #include "Poco/URI.h"
 #include "Poco/Logger.h"
 #include <mutex>
@@ -16,6 +20,15 @@
 
 namespace iota
 {
+    //! Base Class for derivation to receive mqtt messages from the topic
+    class IMessageObserver
+    {
+    public:
+        virtual void messageArrived(MQTTAsync_message* message) = 0;
+    protected:
+    };
+
+
 	/*!
 	*  @author einhornimmond
 	*  @date 22.02.2023
@@ -29,6 +42,10 @@ namespace iota
 
 		bool init();
 
+		void subscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer);
+		void unsubscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer);
+
+
 		// callbacks called from MQTT
 		void connectionLost(char* cause);
 		void connected(char* cause);
@@ -38,9 +55,6 @@ namespace iota
 		int  messageArrived(char* topicName, int topicLen, MQTTAsync_message* message);
 		void deliveryComplete(MQTTAsync_token token);
 
-		void subscribe(const std::string& topic);
-		void unsubscribe(const std::string& topic);
-
 		inline bool isConnected() const { return mbConnected; }
 
 		const char* getResourceType() const { return "MqttClientWrapper"; }
@@ -49,6 +63,9 @@ namespace iota
 		TimerReturn callFromTimer();
 
 	protected:
+		void subscribe(const std::string& topic);
+		void unsubscribe(const std::string& topic);
+
 		void connect();
 		void disconnect();
 		void reconnectAttempt();
@@ -58,7 +75,8 @@ namespace iota
 		std::recursive_mutex mWorkMutex;
 		// member bool connected
 		bool mbConnected;
-		std::set<std::string> mTopics;
+		//! topic string as key
+		std::unordered_map<std::string, std::unique_ptr<TopicObserver>> mTopicObserver;
 		//! waiting for subscribing
 		std::queue<std::string> mWaitingTopics;
 		Poco::Logger& mMqttLog;

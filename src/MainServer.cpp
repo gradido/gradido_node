@@ -194,8 +194,8 @@ int MainServer::main(const std::vector<std::string>& args)
 		ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
 		iota::MqttClientWrapper::getInstance()->init();
 		// 484f524e4554205370616d6d6572 => HORNET Spammer
-		//iota::MqttClientWrapper::getInstance()->subscribe("messages/indexation/484f524e4554205370616d6d6572");
-		//iota::MqttClientWrapper::getInstance()->subscribe("milestones/latest");
+		// iota::MqttClientWrapper::getInstance()->subscribe("messages/indexation/484f524e4554205370616d6d6572");
+		iota::MqttClientWrapper::getInstance()->subscribe("milestones/latest");
 
 		auto gm = GroupManager::getInstance();
 		if (GroupManager::getInstance()->init("group.index", config())) {
