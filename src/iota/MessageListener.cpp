@@ -20,7 +20,7 @@ namespace iota
 
 	MessageListener::~MessageListener()
 	{
-		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex);
+		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex.getHexString());
 		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
 		lock();
 		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
@@ -35,7 +35,7 @@ namespace iota
 	{
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
 		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
-		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex);
+		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex.getHexString());
 	}
 
     /*void MessageListener::listener(Poco::Timer& timer)
@@ -128,7 +128,7 @@ namespace iota
 			}
 			else {
 				// add if not exist
-				LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex, messageId.toHex());
+				LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), messageId.toHex());
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);

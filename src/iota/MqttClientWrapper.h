@@ -54,6 +54,8 @@ namespace iota
 
 		inline Poco::Logger& getLogger() {return mMqttLog; }
 
+		TopicObserver* findTopicObserver(const char* topicString);
+
 	protected:
 		void connect();
 		void disconnect();

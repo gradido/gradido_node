@@ -14,22 +14,26 @@ namespace iota {
 		}
 
 		rc = MQTTAsync_setCallbacks(
-			mMqttClient, 
-			this, 
-			[](void* context, char* cause) {static_cast<MqttClientWrapper*>(context)->connectionLost(cause); },
-			[](void* context, char* topicName, int topicLen, MQTTAsync_message* message) -> int {return static_cast<MqttClientWrapper*>(context)->messageArrived(topicName, topicLen, message); },
-			[](void* context, MQTTAsync_token token) {static_cast<MqttClientWrapper*>(context)->deliveryComplete(token); }
-		);
+				mMqttClient,
+				this,
+				[](void *context, char *cause)
+				{ MqttClientWrapper::getInstance()->connectionLost(cause); },
+				[](void *context, char *topicName, int topicLen, MQTTAsync_message *message) -> int
+				{ return MqttClientWrapper::getInstance()->messageArrived(topicName, topicLen, message); },
+				[](void *context, MQTTAsync_token token)
+				{ MqttClientWrapper::getInstance()->deliveryComplete(token); });
 		if (rc != MQTTASYNC_SUCCESS) {
 			throw MqttSetCallbacksException("couldn't set callbacks", rc);
 		}
 
-		rc = MQTTAsync_setConnected(mMqttClient, this, [](void* context, char* cause) {static_cast<MqttClientWrapper*>(context)->connected(cause); });
+		rc = MQTTAsync_setConnected(mMqttClient, this, [](void *context, char *cause)
+																{ MqttClientWrapper::getInstance()->connected(cause); });
 		if (rc != MQTTASYNC_SUCCESS) {
 			throw MqttSetCallbacksException("couldn't set connected callback", rc);
 		}
 
-		rc = MQTTAsync_setDisconnected(mMqttClient, this, [](void* context, MQTTProperties* properties, MQTTReasonCodes reasonCode) {static_cast<MqttClientWrapper*>(context)->disconnected(properties, reasonCode); });
+		rc = MQTTAsync_setDisconnected(mMqttClient, this, [](void *context, MQTTProperties *properties, MQTTReasonCodes reasonCode)
+																	 { MqttClientWrapper::getInstance()->disconnected(properties, reasonCode); });
 		if (rc != MQTTASYNC_SUCCESS) {
 			throw MqttSetCallbacksException("couldn't set disconnected callback", rc);
 		}
@@ -72,11 +76,11 @@ namespace iota {
 				it = result.first;
 			} else {
 				throw std::runtime_error("error inserting missing topic observer");
-			}			
+			}
 		} 
 		if(mbConnected && it->second->isUnsubscribed()) {
 			it->second->subscribe(mMqttClient);
-		}
+		}	
 		it->second->addObserver(observer);
 	}
 
@@ -114,8 +118,10 @@ namespace iota {
 		reconnectAttempt();
 	}
 	void MqttClientWrapper::connected(char* cause)
-	{
-		mMqttLog.information("connected: %s", std::string(cause));
+	{		
+		if(cause) {
+			mMqttLog.information("connected: %s", std::string(cause));
+		}
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = true;
 		for(auto& topicObserver: mTopicObserver) {
@@ -196,13 +202,16 @@ namespace iota {
 		conn_opts.keepAliveInterval = 20;
 		conn_opts.cleansession = 1;
 		conn_opts.context = this;
-		conn_opts.onSuccess = [](void* context, MQTTAsync_successData* response) {
-			auto& logger = MqttClientWrapper::getInstance()->getLogger();
+		conn_opts.onSuccess = [](void *context, MQTTAsync_successData *response)
+		{
+			auto mCW = MqttClientWrapper::getInstance();
+			auto &logger = mCW->getLogger();
 			auto& connect = response->alt.connect;
 			logger.information(
 				"connected to server: %s with mqtt version: %d, session present: %d", 
 				std::string(connect.serverURI), connect.MQTTVersion, connect.sessionPresent
 			);
+			// mCW->connected("connection call");
 		};
 		conn_opts.onFailure = [](void* context, MQTTAsync_failureData* response) {
 			auto& logger = MqttClientWrapper::getInstance()->getLogger();
@@ -223,9 +232,12 @@ namespace iota {
 	{
 		MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
 		options.context = this;
-		options.onSuccess = [](void* context, MQTTAsync_successData* response) {
-			auto& logger = MqttClientWrapper::getInstance()->getLogger();
+		options.onSuccess = [](void *context, MQTTAsync_successData *response)
+		{
+			auto mCW = MqttClientWrapper::getInstance();
+			auto &logger = mCW->getLogger();
 			logger.information("disconnect from server");
+			// mCW->disconnected(nullptr, MQTTREASONCODE_ADMINISTRATIVE_ACTION);
 		};
 		options.onFailure = [](void* context, MQTTAsync_failureData* response) {
 			auto& logger = MqttClientWrapper::getInstance()->getLogger();
@@ -249,5 +261,14 @@ namespace iota {
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(
 			GRADIDO_NODE_MQTT_TIMER_NAME, this, mReconnectTimeout, 0
 		);
+	}
+
+	TopicObserver *MqttClientWrapper::findTopicObserver(const char* topicString)
+	{
+		auto it = mTopicObserver.find(topicString);
+		if(it != mTopicObserver.end()) {
+			return it->second.get();
+		}
+		return nullptr;
 	}
 }

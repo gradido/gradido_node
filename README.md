@@ -15,6 +15,7 @@ cmake -DCMAKE_BUILD_TYPE=Debug -G"Visual Studio 16 2019" ..
 Code doc: https://gradido.github.io/gradido_node/html/index.html
 
 ## Install Linux
+On my Debian 12
 ```bash 
 sudo apt install libsodium-dev libmpfr-dev libssl-dev
 ``` 
