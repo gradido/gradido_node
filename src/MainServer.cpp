@@ -193,10 +193,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
 		ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
 		iota::MqttClientWrapper::getInstance()->init();
-		// 484f524e4554205370616d6d6572 => HORNET Spammer
-		// iota::MqttClientWrapper::getInstance()->subscribe("messages/indexation/484f524e4554205370616d6d6572");
-		iota::MqttClientWrapper::getInstance()->subscribe("milestones/latest");
-
+		
 		auto gm = GroupManager::getInstance();
 		if (GroupManager::getInstance()->init("group.index", config())) {
 			std::clog << "Error loading group, please try to delete group folders and try again!" << std::endl;

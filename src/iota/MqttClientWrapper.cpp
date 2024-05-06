@@ -1,4 +1,5 @@
 #include "MqttClientWrapper.h"
+#include "MqttExceptions.h"
 #include "../SingletonManager/CacheManager.h"
 #include "../ServerGlobals.h"
 
@@ -61,7 +62,7 @@ namespace iota {
 		return true;
 	}
 
-	void MqttClientWrapper::subscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer)
+	void MqttClientWrapper::subscribe(const Topic& topic, IMessageObserver* observer)
 	{
 		std::lock_guard _lock(mWorkMutex);
 		auto it = mTopicObserver.find(topic.getTopicString());
@@ -71,13 +72,34 @@ namespace iota {
 				it = result.first;
 			} else {
 				throw std::runtime_error("error inserting missing topic observer");
+			}			
+		} 
+		if(mbConnected && it->second->isUnsubscribed()) {
+			it->second->subscribe(mMqttClient);
+		}
+		it->second->addObserver(observer);
+	}
+
+	void MqttClientWrapper::unsubscribe(const Topic& topic, IMessageObserver* observer)
+	{
+		std::lock_guard _lock(mWorkMutex);
+		auto it = mTopicObserver.find(topic.getTopicString());
+		if(it != mTopicObserver.end()) {
+			auto observerCount = it->second->removeObserver(observer);
+			if(!observerCount && mbConnected) {
+				it->second->unsubscribe(mMqttClient);
 			}
 		}
 	}
-
-	void MqttClientWrapper::unsubscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer)
+	void MqttClientWrapper::removeTopicObserver(const std::string& topicString)
 	{
 		std::lock_guard _lock(mWorkMutex);
+		auto it = mTopicObserver.find(topicString);
+		if(it != mTopicObserver.end()) {
+			if(it->second->isUnsubscribed() && !it->second->getObserverCount()) {
+				mTopicObserver.erase(it);
+			}
+		}
 	}
 
 	// ------- Callback functions -------
@@ -96,10 +118,10 @@ namespace iota {
 		mMqttLog.information("connected: %s", std::string(cause));
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = true;
-		while (mWaitingTopics.size()) {
-			auto topic = mWaitingTopics.front();
-			mWaitingTopics.pop();
-			subscribe(topic);
+		for(auto& topicObserver: mTopicObserver) {
+			if(topicObserver.second->getObserverCount()) {
+				topicObserver.second->subscribe(mMqttClient);
+			}
 		}
 	}
 	void MqttClientWrapper::disconnected(MQTTProperties* properties, MQTTReasonCodes reasonCode)
@@ -107,10 +129,9 @@ namespace iota {
 		mMqttLog.information("disconnected: %s", std::string(MQTTReasonCode_toString(reasonCode)));
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = false;
-		for (auto topic : mTopics) {
-			mWaitingTopics.push(topic);
+		for(auto& topicObserver: mTopicObserver) {
+			topicObserver.second->setUnsubscribed();
 		}
-		mTopics.clear();
 	}
 	void MqttClientWrapper::onSuccess(MQTTAsync_successData* response)
 	{
@@ -127,6 +148,11 @@ namespace iota {
 	}
 	int  MqttClientWrapper::messageArrived(char* topicName, int topicLen, MQTTAsync_message* message)
 	{
+		std::lock_guard _lock(mWorkMutex);
+		auto it = mTopicObserver.find(topicName);
+		if(it != mTopicObserver.end()) {
+			it->second->messageArrived(message);
+		}
 		std::string payload((const char*)message->payload, message->payloadlen);
 		if(0 == strcmp(topicName, "messages/indexation/484f524e4554205370616d6d6572")) {
 			auto startPos = payload.find("HORNET");
@@ -151,51 +177,6 @@ namespace iota {
 
 	// ------- Callback functions end -------
 
-	void MqttClientWrapper::subscribe(const std::string& topic)
-	{
-		std::lock_guard _lock(mWorkMutex);
-		if (!mbConnected) {
-			mWaitingTopics.push(topic);
-		}
-		else {
-			auto it = mTopics.insert(topic);
-			if (it.second) {
-				MQTTAsync_responseOptions options = MQTTAsync_responseOptions_initializer;
-				options.context = this;
-				options.onSuccess = [](void* context, MQTTAsync_successData* response) {static_cast<MqttClientWrapper*>(context)->onSuccess(response); };
-				options.onFailure = [](void* context, MQTTAsync_failureData* response) {static_cast<MqttClientWrapper*>(context)->onFailure(response); };
-				auto rc = MQTTAsync_subscribe(mMqttClient, topic.data(), 1, &options);
-
-				if (rc != MQTTASYNC_SUCCESS) {
-					throw MqttSubscribeException("error subscribing", rc, topic);
-				}
-				mMqttLog.information("subscribe for topic: %s", topic);
-			}
-		}
-	}
-
-	void MqttClientWrapper::unsubscribe(const std::string& topic)
-	{
-		std::lock_guard _lock(mWorkMutex);
-		auto it = mTopics.find(topic);
-		if (it == mTopics.end()) {
-			throw MqttSubscribeException("topic not found for unsubscribe", 0, topic);
-		}
-		mTopics.erase(it);
-		if (mbConnected) {
-			MQTTAsync_responseOptions options = MQTTAsync_responseOptions_initializer;
-			options.context = this;
-			options.onSuccess = [](void* context, MQTTAsync_successData* response) {static_cast<MqttClientWrapper*>(context)->onSuccess(response); };
-			options.onFailure = [](void* context, MQTTAsync_failureData* response) {static_cast<MqttClientWrapper*>(context)->onFailure(response); };
-			auto rc = MQTTAsync_unsubscribe(mMqttClient, topic.data(), &options);
-
-			if (rc != MQTTASYNC_SUCCESS) {
-				throw MqttSubscribeException("error unsubscribing", rc, topic);
-			}
-			mMqttLog.information("subscribe for topic: %s", topic);
-		}
-	}
-
 	TimerReturn MqttClientWrapper::callFromTimer()
 	{
 		if (!mbConnected) {
@@ -215,8 +196,22 @@ namespace iota {
 		conn_opts.keepAliveInterval = 20;
 		conn_opts.cleansession = 1;
 		conn_opts.context = this;
-		conn_opts.onSuccess = [](void* context, MQTTAsync_successData* response) {static_cast<MqttClientWrapper*>(context)->onSuccess(response); };
-		conn_opts.onFailure = [](void* context, MQTTAsync_failureData* response) {static_cast<MqttClientWrapper*>(context)->onFailure(response); };
+		conn_opts.onSuccess = [](void* context, MQTTAsync_successData* response) {
+			auto& logger = MqttClientWrapper::getInstance()->getLogger();
+			auto& connect = response->alt.connect;
+			logger.information(
+				"connected to server: %s with mqtt version: %d, session present: %d", 
+				std::string(connect.serverURI), connect.MQTTVersion, connect.sessionPresent
+			);
+		};
+		conn_opts.onFailure = [](void* context, MQTTAsync_failureData* response) {
+			auto& logger = MqttClientWrapper::getInstance()->getLogger();
+			std::string errorString("empty");
+			if(response->message) {
+				errorString = std::string(response->message);
+			}
+			logger.error("error connecting to server, error code: %d, details: %s", response->code, errorString);
+		};
 		auto rc = MQTTAsync_connect(mMqttClient, &conn_opts);
 
 		if (rc != MQTTASYNC_SUCCESS) {
@@ -228,8 +223,18 @@ namespace iota {
 	{
 		MQTTAsync_disconnectOptions options = MQTTAsync_disconnectOptions_initializer;
 		options.context = this;
-		options.onSuccess = [](void* context, MQTTAsync_successData* response) {static_cast<MqttClientWrapper*>(context)->onSuccess(response); };
-		options.onFailure = [](void* context, MQTTAsync_failureData* response) {static_cast<MqttClientWrapper*>(context)->onFailure(response); };
+		options.onSuccess = [](void* context, MQTTAsync_successData* response) {
+			auto& logger = MqttClientWrapper::getInstance()->getLogger();
+			logger.information("disconnect from server");
+		};
+		options.onFailure = [](void* context, MQTTAsync_failureData* response) {
+			auto& logger = MqttClientWrapper::getInstance()->getLogger();
+			std::string errorString("empty");
+			if(response->message) {
+				errorString = std::string(response->message);
+			}
+			logger.error("couldn't disconnect from server, error code: %d, details: %s", response->code, errorString);
+		};
 		auto rc = MQTTAsync_disconnect(mMqttClient, &options);
 
 		if (rc != MQTTASYNC_SUCCESS) {
@@ -244,27 +249,5 @@ namespace iota {
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(
 			GRADIDO_NODE_MQTT_TIMER_NAME, this, mReconnectTimeout, 0
 		);
-	}
-
-	// +++++++++++++++ Exceptions ++++++++++++++++++++++
-	std::string MqttException::getFullString() const
-	{
-		std::string result = what();
-		result += ", error code: " + std::to_string(mErrorCode);
-		return std::move(result);
-	}
-
-	std::string MqttConnectionException::getFullString() const
-	{
-		std::string result = MqttException::getFullString();
-		result += ", uri: " + mUri.toString();
-		return std::move(result);
-	}
-
-	std::string MqttSubscribeException::getFullString() const
-	{
-		std::string result = MqttException::getFullString();
-		result += ", topic: " + mTopic;
-		return std::move(result);
 	}
 }

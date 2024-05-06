@@ -8,7 +8,6 @@
 #include "../lib/FuzzyTimer.h"
 #include "TopicObserver.h"
 
-#include "Poco/URI.h"
 #include "Poco/Logger.h"
 #include <mutex>
 #include <set>
@@ -20,16 +19,7 @@
 
 namespace iota
 {
-    //! Base Class for derivation to receive mqtt messages from the topic
-    class IMessageObserver
-    {
-    public:
-        virtual void messageArrived(MQTTAsync_message* message) = 0;
-    protected:
-    };
-
-
-	/*!
+   /*!
 	*  @author einhornimmond
 	*  @date 22.02.2023
 	*  @brief manage mqtt client 
@@ -42,8 +32,9 @@ namespace iota
 
 		bool init();
 
-		void subscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer);
-		void unsubscribe(const Topic& topic, std::shared_ptr<IMessageObserver> observer);
+		void subscribe(const Topic& topic, IMessageObserver* observer);
+		void unsubscribe(const Topic& topic, IMessageObserver* observer);
+		void removeTopicObserver(const std::string& topicString);
 
 
 		// callbacks called from MQTT
@@ -58,14 +49,12 @@ namespace iota
 		inline bool isConnected() const { return mbConnected; }
 
 		const char* getResourceType() const { return "MqttClientWrapper"; }
-
-		
+	
 		TimerReturn callFromTimer();
 
-	protected:
-		void subscribe(const std::string& topic);
-		void unsubscribe(const std::string& topic);
+		inline Poco::Logger& getLogger() {return mMqttLog; }
 
+	protected:
 		void connect();
 		void disconnect();
 		void reconnectAttempt();
@@ -77,8 +66,6 @@ namespace iota
 		bool mbConnected;
 		//! topic string as key
 		std::unordered_map<std::string, std::unique_ptr<TopicObserver>> mTopicObserver;
-		//! waiting for subscribing
-		std::queue<std::string> mWaitingTopics;
 		Poco::Logger& mMqttLog;
 
 		// for automatic reconnect attempts
@@ -86,46 +73,6 @@ namespace iota
 
 	};
 
-	class MqttException : public GradidoBlockchainException
-	{
-	public: 
-		explicit MqttException(const char* what, int errorCode) noexcept : GradidoBlockchainException(what), mErrorCode(errorCode) {}
-		std::string getFullString() const;
-	protected:
-		int mErrorCode;
-	};
-
-	class MqttCreationException : public MqttException
-	{
-	public:
-		explicit MqttCreationException(const char* what, int errorCode) noexcept : MqttException(what, errorCode) {}
-	};
-
-	class MqttSetCallbacksException : public MqttException
-	{
-	public: 
-		explicit MqttSetCallbacksException(const char* what, int errorCode) noexcept : MqttException(what, errorCode) {}
-	};
-
-	class MqttConnectionException : public MqttException
-	{
-	public:
-		explicit MqttConnectionException(const char* what, int errorCode, Poco::URI uri) noexcept : MqttException(what, errorCode), mUri(uri) {}
-		std::string getFullString() const;
-
-	protected:
-		Poco::URI mUri;
-	};
-
-	class MqttSubscribeException : public MqttException
-	{
-	public:
-		explicit MqttSubscribeException(const char* what, int errorCode, const std::string& topic) noexcept : MqttException(what, errorCode), mTopic(topic) {}
-		std::string getFullString() const;
-
-	protected:
-		std::string mTopic;
-	};
 
 }
 

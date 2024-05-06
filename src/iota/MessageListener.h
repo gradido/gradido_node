@@ -7,8 +7,10 @@
 #include "Poco/Logger.h"
 
 #include "gradido_blockchain/lib/MultithreadContainer.h"
+#include "gradido_blockchain/model/iota/TopicIndex.h"
 #include "../lib/FuzzyTimer.h"
 #include "MessageId.h"
+#include "IMessageObserver.h"
 
 #include <vector>
 #include <map>
@@ -49,11 +51,11 @@ namespace iota
       \enduml
      */    
     
-    class MessageListener : public MultithreadContainer, public TimerCallback
+    class MessageListener : public MultithreadContainer, public TimerCallback, public IMessageObserver
     {
     public:
         //! \param index should be something like GRADIDO.gdd1
-        MessageListener(const std::string& index, std::chrono::milliseconds interval = std::chrono::milliseconds(1000));
+        MessageListener(const TopicIndex& index, std::chrono::milliseconds interval = std::chrono::milliseconds(1000));
         ~MessageListener();
         
         //virtual void listener(Poco::Timer& timer);
@@ -61,15 +63,19 @@ namespace iota
         // start running, call after init existing signatures cache!
         void run();
 
-		TimerReturn callFromTimer();
-    int  messageArrived(MQTTAsync_message* message);
-		const char* getResourceType() const { return "iota::MessageListener"; };
+
+		    TimerReturn callFromTimer();
+
+        //! called for every new transaction arriving on iota for this topic
+        void messageArrived(MQTTAsync_message* message);
+
+		    const char* getResourceType() const { return "iota::MessageListener"; };
 
     protected:
 
         void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
 
-        std::string mIndex; 
+        TopicIndex mIndex; 
         std::chrono::milliseconds mInterval;
         Poco::Logger& mErrorLog;
 

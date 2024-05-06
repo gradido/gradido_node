@@ -6,24 +6,24 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "../ServerGlobals.h"
+#include "MqttClientWrapper.h"
 
 namespace iota
 {
-    MessageListener::MessageListener(const std::string& index, std::chrono::milliseconds interval/* = 1000*/)
+    MessageListener::MessageListener(const TopicIndex& index, std::chrono::milliseconds interval/* = 1000*/)
     : mIndex(index),
 	  mInterval(interval),
 	  mErrorLog(Poco::Logger::get("errorLog")),
 	  mFirstRun(true)
     {
-        //Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
-	    //mListenerTimer.start(callback);
     }
 
 	MessageListener::~MessageListener()
 	{
 		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex);
+		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
 		lock();
-		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
+		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
 		if (removedTimer != 1 && removedTimer != -1) {
 			LOG_ERROR("[iota::MessageListener] error removing timer, actually removed timer count: %d", removedTimer);
 		}
@@ -33,7 +33,8 @@ namespace iota
 
 	void MessageListener::run()
 	{
-		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, mInterval, -1);
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
+		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
 		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex);
 	}
 
@@ -83,9 +84,10 @@ namespace iota
 		return TimerReturn::GO_ON;
 	}
 
-	int MessageListener::messageArrived(MQTTAsync_message* message)
+	void MessageListener::messageArrived(MQTTAsync_message* message)
 	{
-
+		std::string payload((const char*)message->payload, message->payloadlen);
+		LOG_INFO("message arrived: %s", payload);
 	}
 
     void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)

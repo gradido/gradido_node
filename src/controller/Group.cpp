@@ -88,8 +88,7 @@ namespace controller {
 	bool Group::init()
 	{
 		fillSignatureCacheOnStartup();
-		//mIotaMessageListener->run();
-		iota::MqttClientWrapper::getInstance()->subscribeIndexation(mGroupAlias);
+		mIotaMessageListener->run();
 		return true;
 	}
 
@@ -146,7 +145,6 @@ namespace controller {
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		mExitCalled = true;
-		iota::MqttClientWrapper::getInstance()->unsubscribeIndexation(mGroupAlias);
 		if (mIotaMessageListener) {
 			delete mIotaMessageListener;
 			mIotaMessageListener = nullptr;

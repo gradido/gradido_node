@@ -1,15 +1,15 @@
 #ifndef __GRADIDO_NODE_IOTA_TOPIC_H
 #define __GRADIDO_NODE_IOTA_TOPIC_H
 
-#include "TopicIndex.h"
+#include "gradido_blockchain/model/iota/TopicIndex.h"
 #include "MessageId.h"
 
 namespace iota {
-
     enum class TopicType: uint8_t {
         MESSAGES_INDEXATION = 0, // topicMessagesIndexation = "messages/indexation/{index}"
         MILESTONES_CONFIRMED = 1, // topicMilestonesConfirmed = "milestones/confirmed"
-        MESSAGES_METADATA = 2 // topicMessagesMetadata = "messages/{messageId}/metadata"
+        MILESTONES_LATEST = 2, // topicMilestonesLatest = "milestones/latest"
+        MESSAGES_METADATA = 3 // topicMessagesMetadata = "messages/{messageId}/metadata"
     };
 
     class Topic 
