@@ -3,6 +3,21 @@
 - Manage Blockchain for every group configured
 - Manage Blockchain containing all groups, find more here: [GroupRegisterGroup](https://gradido.github.io/gradido_node/classcontroller_1_1_group_register_group.html)
 
+## Install Linux
+
+### Dependencies
+```bash
+apt install libsodium-dev libmpfr-dev libssl-dev
+```
+
+### Build
+```bash
+mkdir build
+cd build
+cmake ..
+make protoc -j$(nproc) # needed for parsing protobuf files
+make GradidoNode -j$(nproc)
+```
 ## Install Windows
 
 ### Debug
