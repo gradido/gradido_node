@@ -114,6 +114,11 @@ namespace iota {
 			causeString = std::string(cause);
 		}
 		mMqttLog.error("connection lost: %s", causeString);
+		std::lock_guard _lock(mWorkMutex);
+		mbConnected = false;
+		for (auto &topicObserver : mTopicObserver) {
+			topicObserver.second->setUnsubscribed();
+		}
 		mReconnectTimeout = std::chrono::milliseconds(GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS);
 		reconnectAttempt();
 	}

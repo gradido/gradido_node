@@ -88,6 +88,7 @@ namespace iota
             MESSAGE_REMOVED // not longer returned from iota
         };
         bool mFirstRun;
+        // TODO: use timeout cache with mqtt
         std::map<MessageId, MessageState> mStoredMessageIds;            
     };
 }
