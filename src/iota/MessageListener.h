@@ -74,6 +74,7 @@ namespace iota
     protected:
 
         void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
+        void updateStoredMessage(const MessageId& newMessageId);
 
         TopicIndex mIndex; 
         std::chrono::milliseconds mInterval;

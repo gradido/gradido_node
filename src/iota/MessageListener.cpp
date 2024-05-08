@@ -7,6 +7,7 @@
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "../ServerGlobals.h"
 #include "MqttClientWrapper.h"
+#include "MessageParser.h"
 
 namespace iota
 {
@@ -21,19 +22,22 @@ namespace iota
 	MessageListener::~MessageListener()
 	{
 		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex.getHexString());
-		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
 		lock();
-		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
+		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
+		
+		/*auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
 		if (removedTimer != 1 && removedTimer != -1) {
 			LOG_ERROR("[iota::MessageListener] error removing timer, actually removed timer count: %d", removedTimer);
 		}
+		*/
 		//mListenerTimer.stop();
 		unlock();
 	}
 
 	void MessageListener::run()
 	{
-		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
+		//CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
+		callFromTimer();
 		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
 		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex.getHexString());
 	}
@@ -86,12 +90,48 @@ namespace iota
 
 	void MessageListener::messageArrived(MQTTAsync_message* message)
 	{
-		std::string payload((const char*)message->payload, message->payloadlen);
-		LOG_INFO("message arrived: %s", payload);
+		// calculate iota message id from serialized message
+		// it is simply a BLAKE2b-256 hash (https://tools.ietf.org/html/rfc7693)
+		auto mm = MemoryManager::getInstance();
+		auto hash = mm->getMemory(crypto_generichash_BYTES);
+		crypto_generichash(hash->data(), crypto_generichash_BYTES, (const unsigned char *)message->payload, message->payloadlen, nullptr, 0);
+		MessageId messageId;
+		messageId.fromMemoryBin(hash);
+		mm->releaseMemory(hash);
+
+		updateStoredMessage(messageId);
+
+		LOG_DEBUG("message arrived: %s", messageId.toHex());
 	}
 
-    void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
-    {
+	void MessageListener::updateStoredMessage(const MessageId &newMessageId)
+	{
+		auto om = OrderingManager::getInstance();
+		auto validator = om->getIotaMessageValidator();
+
+		lock();
+		if(mFirstRun) return;
+		auto storedIt = mStoredMessageIds.find(newMessageId);
+		if (storedIt != mStoredMessageIds.end())
+		{
+			// update status if already exist
+			storedIt->second = MESSAGE_EXIST;
+			LOG_ERROR("mqtt deliver a transaction the second time!", newMessageId.toHex());
+		}
+		else
+		{
+			// add if not exist
+			LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), newMessageId.toHex());
+			mStoredMessageIds.insert({newMessageId, MESSAGE_NEW});
+			// and send to message validator
+			validator->pushMessageId(newMessageId);
+			validator->signal();
+		}
+		unlock();
+	}
+
+	void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
+  {
 		auto om = OrderingManager::getInstance();
 		auto mm = MemoryManager::getInstance();
 		auto validator = om->getIotaMessageValidator();
@@ -143,5 +183,5 @@ namespace iota
 		if (atLeastOneNewMessagePushed) {
 			validator->signal();
 		}
-    }
+  }
 }

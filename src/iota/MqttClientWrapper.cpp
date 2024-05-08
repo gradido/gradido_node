@@ -168,12 +168,12 @@ namespace iota {
 				std::string(topicName), message->qos, message->retained, message->dup, message->msgid, binDataHex, payload.substr(startPos), message->payloadlen
 			);
 		} else {
-			mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%d",
+			/*mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%d",
 				std::string(topicName), message->qos, message->retained, message->dup, message->msgid, payload, message->payloadlen
-			);
+			);*/
 		}
 		MQTTAsync_freeMessage(&message);
-        MQTTAsync_free(topicName);
+		MQTTAsync_free(topicName);
 		return true;
 	}
 	void MqttClientWrapper::deliveryComplete(MQTTAsync_token token)
