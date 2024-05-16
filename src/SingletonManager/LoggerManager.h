@@ -18,7 +18,7 @@ public:
 	static LoggerManager* getInstance();
 
 	Poco::Logger&		  mErrorLogging;
-	Poco::Logger&         mInfoLogging;
+	Poco::Logger&     mInfoLogging;
 	Poco::Logger&		  mSpeedLogging;
 	Poco::Logger&		  mTransactionLog;
 protected:

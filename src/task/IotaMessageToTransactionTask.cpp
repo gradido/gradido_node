@@ -67,11 +67,14 @@ int IotaMessageToTransactionTask::run()
     
     std::unique_ptr<model::gradido::GradidoTransaction> transaction;
     try {
+        auto hex = DataTypeConverter::binToHex((const unsigned char*)dataIndex.first.get()->data(), dataIndex.first.get()->size());
+        printf("[IotaMessageToTransactionTask::run] iota message id hex: %s\n", iotaMessageIdHex.data());
+        printf("[IotaMessageToTransactionTask::run] gradido transaction (%d): %s\n", dataIndex.first.get()->size(), hex.data());
         transaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
     }
     catch (ProtobufParseException& ex) {
         errorLog.information("invalid gradido transaction, iota message ID: %s", iotaMessageIdHex);
-        auto hex = DataTypeConverter::binToHex(*dataIndex.first.get());
+        auto hex = DataTypeConverter::binToHex((const unsigned char *)dataIndex.first.get()->data(), dataIndex.first.get()->size());
         errorLog.information("serialized: %s", hex);
         return 0;
     }

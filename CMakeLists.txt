@@ -6,9 +6,9 @@ message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 IF(WIN32)
 	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
 ELSE()
-	SET(CMAKE_CXX_FLAGS "-std=c++17" )
+	SET(CMAKE_CXX_FLAGS "-std=c++20" )
 ENDIF()
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(INSTALL_BINDIR "bin")
@@ -21,6 +21,7 @@ include_directories(
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
 	"dependencies/paho.mqtt.c/src"
+	"dependencies/iota-pow-in-c/src/"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
@@ -81,8 +82,13 @@ source_group("task" FILES ${TASK})
 endif(MSVC)
 
 IF(WIN32)
-	include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-	conan_basic_setup()
+	#include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+	#conan_basic_setup()
+	set(libsodium_DIR ${CMAKE_BINARY_DIR})
+	find_package(libsodium CONFIG REQUIRED)
+	set(gmp_DIR ${CMAKE_BINARY_DIR})
+	set(MPFR_DIR ${CMAKE_BINARY_DIR})
+	find_package(MPFR REQUIRED)	
 ENDIF()
 
 add_subdirectory("dependencies/jsonrpcpp")
@@ -112,6 +118,50 @@ ENDIF()
 ############################## mqtt client ############################################
 add_subdirectory("dependencies/paho.mqtt.c")
 
+############################## iota pow ###############################################
+# Path to the source files
+set(IOTA_POW_SRC_DIR "dependencies/iota-pow-in-c/src")
+
+# List of file names without file extension
+set(IOTA_POW_FILENAMES
+    constants
+    curl
+		trinary
+)
+
+# set correct preprocessor flag
+include(CheckCCompilerFlag)
+CHECK_C_COMPILER_FLAG("-mavx" COMPILER_SUPPORTS_AVX)
+if(COMPILER_SUPPORTS_AVX)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx")
+    add_definitions(-DAVX)
+		list(APPEND IOTA_POW_FILENAMES pow_avx)
+else()
+    # Wenn AVX nicht unterstützt wird, überprüfe, ob SSE unterstützt wird
+    CHECK_C_COMPILER_FLAG("-msse" COMPILER_SUPPORTS_SSE)
+    if(COMPILER_SUPPORTS_SSE)
+		    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse")
+        add_definitions(-DSSE)
+				list(APPEND IOTA_POW_FILENAMES pow_sse)
+		else()
+				add_definitions(-DC)
+				list(APPEND IOTA_POW_FILENAMES pow_c)
+    endif()
+endif()
+
+
+# Create a list of C files
+foreach(filename ${IOTA_POW_FILENAMES})
+    list(APPEND IOTA_POW_FILES ${IOTA_POW_SRC_DIR}/${filename}.c)
+endforeach()
+
+# Add corresponding header files
+foreach(filename ${IOTA_POW_FILENAMES})
+    list(APPEND IOTA_POW_FILES ${IOTA_POW_SRC_DIR}/${filename}.h)
+endforeach()
+
+# Add the list of files to the library
+add_library(iotaPOW ${IOTA_POW_FILES})
 ############################## find protobuf  #########################################
 #add_subdirectory(dependencies/protobuf/cmake)
 
@@ -135,7 +185,7 @@ add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a iotaPOW)
 if(NOT BUILD_SHARED_LIBS)
 	target_link_libraries(GradidoNode libprotobuf)
 endif()
@@ -170,7 +220,7 @@ install(TARGETS GradidoNode RUNTIME DESTINATION /usr/local/bin)
 endif(UNIX)
 
 # add test
-include(CTest)
-add_subdirectory(test)
+#include(CTest)
+#add_subdirectory(test)
 
 

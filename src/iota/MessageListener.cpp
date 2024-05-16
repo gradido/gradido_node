@@ -90,18 +90,9 @@ namespace iota
 
 	void MessageListener::messageArrived(MQTTAsync_message* message)
 	{
-		// calculate iota message id from serialized message
-		// it is simply a BLAKE2b-256 hash (https://tools.ietf.org/html/rfc7693)
-		auto mm = MemoryManager::getInstance();
-		auto hash = mm->getMemory(crypto_generichash_BYTES);
-		crypto_generichash(hash->data(), crypto_generichash_BYTES, (const unsigned char *)message->payload, message->payloadlen, nullptr, 0);
-		MessageId messageId;
-		messageId.fromMemoryBin(hash);
-		mm->releaseMemory(hash);
-
-		updateStoredMessage(messageId);
-
-		LOG_DEBUG("message arrived: %s", messageId.toHex());
+		MessageParser parser(message->payload, message->payloadlen);
+		updateStoredMessage(parser.getMessageId());
+		LOG_DEBUG("message arrived: %s", parser.getMessageId().toHex());
 	}
 
 	void MessageListener::updateStoredMessage(const MessageId &newMessageId)
