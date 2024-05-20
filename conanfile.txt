@@ -1,21 +1,20 @@
 [requires]
-poco/1.11.1
+poco/1.11.3
 libsodium/1.0.18
+gtest/1.10.0
 mpfr/4.2.1
 
 [options]
-poco/1.11.1:enable_data=False
-poco/1.11.1:enable_data_mysql=False
-poco/1.11.1:enable_data_postgresql=False
-poco/1.11.1:enable_data_sqlite=False
-poco/1.11.1:enable_activerecord=False
-poco/1.11.1:enable_encodings=False
-poco/1.11.1:enable_redis=False
-poco/1.11.1:enable_jwt=True
-#poco/1.11.1:enable_xml=False
-poco/1.11.1:enable_json=True
-#poco/1.11.1:enable_data_mongo_db=False
-#poco/1.11.1:enable_zip=False
+#*:shared=False
+poco/1.11.3:enable_data=False
+poco/1.11.3:enable_data_mysql=False
+poco/1.11.3:enable_data_postgresql=False
+poco/1.11.3:enable_data_sqlite=False
+poco/1.11.3:enable_activerecord=False
+poco/1.11.3:enable_encodings=False
+poco/1.11.3:enable_redis=False
+poco/1.11.3:enable_jwt=True
+poco/1.11.3:enable_json=True
 
 [generators]
 CMakeDeps

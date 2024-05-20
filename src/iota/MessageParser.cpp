@@ -8,6 +8,7 @@
 namespace iota {
   MessageParser::MessageParser(const void *data, size_t size)
   {
+    const uint8_t* dataPtr = static_cast<const uint8_t*>(data);
     calculateMessageId(data, size);
     size_t offset = 0;
     // network protocol
@@ -16,7 +17,7 @@ namespace iota {
 
     // parents
     uint8_t parentCount = 0;
-    memcpy(&parentCount, data + offset, sizeof(uint8_t));
+    memcpy(&parentCount, dataPtr + offset, sizeof(uint8_t));
     offset += sizeof(uint8_t);
 
     //mMessage.parents.reserve(parentCount);
@@ -31,11 +32,11 @@ namespace iota {
 
     // payload
     uint32_t payloadSize;
-    memcpy(&payloadSize, data + offset, sizeof(payloadSize));
+    memcpy(&payloadSize, dataPtr + offset, sizeof(payloadSize));
     offset += sizeof(payloadSize);
 
     uint32_t payload_type = 0;
-    memcpy(&payload_type, data + offset, sizeof(payload_type));
+    memcpy(&payload_type, dataPtr + offset, sizeof(payload_type));
     offset += sizeof(payload_type);
     auto mm = MemoryManager::getInstance();
 
@@ -44,7 +45,7 @@ namespace iota {
       //indexation_t indexStruc;
       // indexation
       uint16_t indexSize;
-      memcpy(&indexSize, data + offset, sizeof(uint16_t));
+      memcpy(&indexSize, dataPtr + offset, sizeof(uint16_t));
       offset += sizeof(uint16_t);
 
       // index
@@ -53,10 +54,10 @@ namespace iota {
       offset += indexSize;
 
       uint32_t dataSize;
-      memcpy(&dataSize, data + offset, sizeof(uint32_t));
+      memcpy(&dataSize, dataPtr + offset, sizeof(uint32_t));
       offset += sizeof(uint32_t);
 
-      mTransaction = std::make_unique<model::gradido::GradidoTransaction>(data + offset, dataSize);
+      mTransaction = std::make_unique<model::gradido::GradidoTransaction>(dataPtr + offset, dataSize);
 
       //auto hexData = DataTypeConverter::binToHex((const unsigned char*)data + offset, dataSize);
       //printf("hex indexation data: %s\n", hexData.data());
@@ -66,12 +67,12 @@ namespace iota {
     else if (payload_type == 7)
     {
       // milestone
-      LoggerManager::getInstance()->mErrorLogging.error("milestone must be implemented: %d", mMessage.payload_type);
+      LoggerManager::getInstance()->mErrorLogging.error("milestone must be implemented: %d", payload_type);
       return;
     }
     else
     {
-      LoggerManager::getInstance()->mErrorLogging.error("not supported iota message payload type: %d", mMessage.payload_type);
+      LoggerManager::getInstance()->mErrorLogging.error("not supported iota message payload type: %d", payload_type);
       return;
     }
 

@@ -3,13 +3,16 @@ project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
+option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 IF(WIN32)
 	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 ELSE()
-	SET(CMAKE_CXX_FLAGS "-std=c++20" )
+	SET(CMAKE_CXX_FLAGS "-std=c++17" )
 ENDIF()
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
@@ -81,25 +84,16 @@ source_group("task" FILES ${TASK})
 
 endif(MSVC)
 
-IF(WIN32)
-	#include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-	#conan_basic_setup()
-	set(libsodium_DIR ${CMAKE_BINARY_DIR})
-	find_package(libsodium CONFIG REQUIRED)
-	set(gmp_DIR ${CMAKE_BINARY_DIR})
-	set(MPFR_DIR ${CMAKE_BINARY_DIR})
-	find_package(MPFR REQUIRED)	
-ENDIF()
+############################## add dependencies  #########################################
+
+add_subdirectory("dependencies/gradido_blockchain")
+SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
-
-if(NOT BUILD_SHARED_LIBS)
-	#add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf")
-endif()
 
 ############################## config and add poco ###################################
 #SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
@@ -118,63 +112,29 @@ ENDIF()
 ############################## mqtt client ############################################
 add_subdirectory("dependencies/paho.mqtt.c")
 
-############################## iota pow ###############################################
-# Path to the source files
-set(IOTA_POW_SRC_DIR "dependencies/iota-pow-in-c/src")
-
-# List of file names without file extension
-set(IOTA_POW_FILENAMES
-    constants
-    curl
-		trinary
-)
-
-# set correct preprocessor flag
-include(CheckCCompilerFlag)
-CHECK_C_COMPILER_FLAG("-mavx" COMPILER_SUPPORTS_AVX)
-if(COMPILER_SUPPORTS_AVX)
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx")
-    add_definitions(-DAVX)
-		list(APPEND IOTA_POW_FILENAMES pow_avx)
-else()
-    # Wenn AVX nicht unterstützt wird, überprüfe, ob SSE unterstützt wird
-    CHECK_C_COMPILER_FLAG("-msse" COMPILER_SUPPORTS_SSE)
-    if(COMPILER_SUPPORTS_SSE)
-		    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse")
-        add_definitions(-DSSE)
-				list(APPEND IOTA_POW_FILENAMES pow_sse)
-		else()
-				add_definitions(-DC)
-				list(APPEND IOTA_POW_FILENAMES pow_c)
-    endif()
+if(WIN32)
+find_package(poco REQUIRED)
+find_package(mpfr REQUIRED)
+find_package(libsodium REQUIRED)
+include_directories(
+		${mpfr_INCLUDE_DIRS}
+		${gmp_INCLUDE_DIRS}
+		${libsodium_INCLUDE_DIR}
+		${OPENSSL_INCLUDE_DIR}
+		${Poco_INCLUDE_DIRS}
+	)
 endif()
 
-
-# Create a list of C files
-foreach(filename ${IOTA_POW_FILENAMES})
-    list(APPEND IOTA_POW_FILES ${IOTA_POW_SRC_DIR}/${filename}.c)
-endforeach()
-
-# Add corresponding header files
-foreach(filename ${IOTA_POW_FILENAMES})
-    list(APPEND IOTA_POW_FILES ${IOTA_POW_SRC_DIR}/${filename}.h)
-endforeach()
-
-# Add the list of files to the library
-add_library(iotaPOW ${IOTA_POW_FILES})
 ############################## find protobuf  #########################################
 #add_subdirectory(dependencies/protobuf/cmake)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # prevent problems with two libs including googletest 
-option(protobuf_BUILD_TESTS "Build tests" OFF)
+#option(protobuf_BUILD_TESTS "Build tests" OFF)
 
 #message("binary dir: ${CMAKE_BINARY_DIR}")
-add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf)
+#add_subdirectory(dependencies/gradido_blockchain/dependencies/protobuf)
 
-############################## add gradido blockchain  #########################################
-add_subdirectory("dependencies/gradido_blockchain")
-SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 
 if(NOT BUILD_SHARED_LIBS)
 	#option(protobuf_BUILD_TESTS "Build tests" OFF)
@@ -184,13 +144,12 @@ endif()
 add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
-
-target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a iotaPOW)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(NOT BUILD_SHARED_LIBS)
 	target_link_libraries(GradidoNode libprotobuf)
 endif()
 if(WIN32)
-	target_link_libraries(GradidoNode ${CONAN_LIBS})
+	target_link_libraries(GradidoNode ${Poco_LIBRARIES})
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
 else()
