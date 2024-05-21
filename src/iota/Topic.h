@@ -20,8 +20,10 @@ namespace iota {
         Topic(const MessageId& messageId);    
            
         const std::string& getTopicString() const { return mTopicString; }
+        TopicType getType() const { return mTopic; }
     protected:
         std::string mTopicString;
+        TopicType mTopic;
     };
 }
 

@@ -5,9 +5,12 @@
 #include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
+#include "gradido_blockchain/lib/RapidjsonHelper.h"
 #include "../ServerGlobals.h"
 #include "MqttClientWrapper.h"
 #include "MessageParser.h"
+
+using namespace rapidjson;
 
 namespace iota
 {
@@ -23,22 +26,25 @@ namespace iota
 	{
 		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex.getHexString());
 		lock();
-		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
-		
-		/*auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
+#ifdef IOTA_WITHOUT_MQTT
+		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
 		if (removedTimer != 1 && removedTimer != -1) {
 			LOG_ERROR("[iota::MessageListener] error removing timer, actually removed timer count: %d", removedTimer);
 		}
-		*/
-		//mListenerTimer.stop();
+#else
+		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
+#endif
 		unlock();
 	}
 
 	void MessageListener::run()
 	{
-		//CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
 		callFromTimer();
+#ifdef IOTA_WITHOUT_MQTT
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
+#else
 		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
+#endif 
 		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex.getHexString());
 	}
 
@@ -84,30 +90,59 @@ namespace iota
 		if (messageIds.size()) {
 			updateStoredMessages(messageIds);
 		}
+		mFirstRun = false;
 		unlock();
 		return TimerReturn::GO_ON;
 	}
 
-	void MessageListener::messageArrived(MQTTAsync_message* message)
+	void MessageListener::messageArrived(MQTTAsync_message* message, TopicType type)
 	{
-		MessageParser parser(message->payload, message->payloadlen);
-		updateStoredMessage(parser.getMessageId());
-		LOG_DEBUG("message arrived: %s", parser.getMessageId().toHex());
+		if (TopicType::MESSAGES_INDEXATION == type) {
+			MessageParser parser(message->payload, message->payloadlen);
+			auto messageId = parser.getMessageId();
+			if (addStoredMessage(messageId)) {
+				MqttClientWrapper::getInstance()->subscribe(messageId, this);
+			}
+			// LOG_DEBUG("message arrived: %s", messageId.toHex());
+		}
+		else if (TopicType::MESSAGES_METADATA == type) {
+			std::string messageString((const char*)message->payload, message->payloadlen);
+			Document document;
+			document.Parse((const char*)message->payload);
+
+			rapidjson_helper::checkMember(document, "messageId", rapidjson_helper::MemberType::STRING, "iota milestone/metadata");
+			
+			if (!document.HasMember("referencedByMilestoneIndex")) {
+				std::string messageIdString(document["messageId"].GetString());
+				// LOG_DEBUG("metadata message received without milestone for message id: %s", messageIdString);
+				return;
+			}
+			assert(document["referencedByMilestoneIndex"].IsInt());
+
+			MessageId messageId;			
+			messageId.fromHex(document["messageId"].GetString());
+			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
+			LOG_DEBUG("[MessageListener::messageArrived] message arrived: %s confirmed in %d", messageId.toHex(), milestoneId);
+			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
+		}		
 	}
 
-	void MessageListener::updateStoredMessage(const MessageId &newMessageId)
+	bool MessageListener::addStoredMessage(const MessageId &newMessageId)
 	{
 		auto om = OrderingManager::getInstance();
-		auto validator = om->getIotaMessageValidator();
+		auto validator = om->getIotaMessageValidator();		
 
 		lock();
-		if(mFirstRun) return;
+		assert(!mFirstRun);
+
 		auto storedIt = mStoredMessageIds.find(newMessageId);
 		if (storedIt != mStoredMessageIds.end())
 		{
 			// update status if already exist
 			storedIt->second = MESSAGE_EXIST;
 			LOG_ERROR("mqtt deliver a transaction the second time!", newMessageId.toHex());
+			unlock();
+			return false;
 		}
 		else
 		{
@@ -115,10 +150,11 @@ namespace iota
 			LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), newMessageId.toHex());
 			mStoredMessageIds.insert({newMessageId, MESSAGE_NEW});
 			// and send to message validator
-			validator->pushMessageId(newMessageId);
-			validator->signal();
+			// validator->pushMessageId(newMessageId);
+			// validator->signal();
 		}
 		unlock();
+		return true;
 	}
 
 	void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
@@ -169,7 +205,6 @@ namespace iota
 		// signal condition separate to make sure that by loading from the past, all known messages are in list before processing start
 		if (mFirstRun) {
 			validator->firstRunFinished();
-			mFirstRun = false;
 		}
 		if (atLeastOneNewMessagePushed) {
 			validator->signal();

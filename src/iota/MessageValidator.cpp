@@ -1,12 +1,18 @@
 #include "MessageValidator.h"
+#include "MessageParser.h"
+#include "MqttClientWrapper.h"
 #include "../task/IotaMessageToTransactionTask.h"
 #include "gradido_blockchain/MemoryManager.h"
+#include "gradido_blockchain/lib/RapidjsonHelper.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
+
 #include "sodium.h"
 #include <assert.h>
 #include <stdexcept>
+
+using namespace rapidjson;
 
 namespace iota {
     MessageValidator::MessageValidator()
@@ -15,26 +21,29 @@ namespace iota {
       mMessageListenerFirstRunCount(0),
         mWaitOnEmptyQueue(0)
     {
-        mThread.setName("messVal");
-        mThread.start(*this);
+		mThread.setName("messVal");
+		mThread.start(*this);
+        MqttClientWrapper::getInstance()->subscribe(TopicType::MILESTONES_CONFIRMED, this);
     }
 
     MessageValidator::~MessageValidator()
     {
-        mExitMutex.lock();
-        mExitCalled = true;
-        mExitMutex.unlock();
-        if(mWorkMutex.tryLock()) {
-            mWorkMutex.unlock();
-            mCondition.signal();
-        }
-        try {
-            mThread.join(100);
-        } catch(Poco::Exception& e) {
-            std::clog << "error by shutdown MessageValidator thread: " << e.displayText() << std::endl;
-        }
-        std::clog << "Message Validator shutdown: " << std::endl;
-
+        MqttClientWrapper::getInstance()->unsubscribe(TopicType::MILESTONES_CONFIRMED, this);
+		mExitMutex.lock();
+		mExitCalled = true;
+		mExitMutex.unlock();
+		if (mWorkMutex.tryLock()) {
+			mWorkMutex.unlock();
+			mCondition.signal();
+		}
+		try {
+			mThread.join(100);
+		}
+		catch (Poco::Exception& e) {
+			std::clog << "error by shutdown MessageValidator thread: " << e.displayText() << std::endl;
+		}
+		std::clog << "Message Validator shutdown: " << std::endl;
+        
 		mConfirmedMessagesMutex.lock();
 		mConfirmedMessages.clear();
 		mConfirmedMessagesMutex.unlock();
@@ -43,7 +52,6 @@ namespace iota {
         std::clog << "Milestones count: " << std::to_string(mMilestones.size()) << std::endl;
         mMilestones.clear();
         mMilestonesMutex.unlock();
-
     }
 
     void MessageValidator::run()
@@ -75,38 +83,11 @@ namespace iota {
                 auto milestoneId = ServerGlobals::g_IotaRequestHandler->getMessageMilestoneId(messageId.toHex());
                 // if messages was already confirmed from iota
                 if (milestoneId) {
-                    // pop will be called in IotaMessageToTransactionTask
-                    OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneId);
                     notConfirmedCount = 0;
-                    // check if other messages for this milestone exist and the milestone loading was started
-                    { // scoped lock mConfirmedMessages
-                        Poco::ScopedLock<Poco::FastMutex> lock(mConfirmedMessagesMutex);
-                        auto it = mConfirmedMessages.find(milestoneId);
-                        if (it != mConfirmedMessages.end()) {
-                            // found others messages which are confirmed from the same milestone
-                            // push to list which will be processed after the milestone loading task was finished
-                            it->second.push_back(messageId);
-                            continue;
-                        }
-                    } // scoped lock mConfirmedMessages end
-
-                    // check if milestone for this was already loaded
-                    { // scoped lock milestones 
-                        Poco::ScopedLock<Poco::FastMutex> lock(mMilestonesMutex);
-                        auto it = mMilestones.find(milestoneId);
-                        if (it != mMilestones.end()) {
-                            Poco::AutoPtr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(milestoneId, it->second, messageId));
-                            task->scheduleTask(task);
-                            continue;
-                        }
-                    } // scoped lock milestones end
-
-                    // milestone wasn't loaded and other messages for this milestone doesn't exist, so create entry for this milestone and start loading task for it
-                    mConfirmedMessagesMutex.lock();
-                    mConfirmedMessages.insert({ milestoneId, std::list<MessageId>(1, messageId) });
-                    mConfirmedMessagesMutex.unlock();
-                    Poco::AutoPtr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
-                    task->scheduleTask(task);
+                    messageConfirmed(messageId, milestoneId);
+					// and start loading task for it
+					Poco::AutoPtr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
+					task->scheduleTask(task);
                 }
                 else {
                     ++notConfirmedCount;
@@ -132,16 +113,62 @@ namespace iota {
             }
             mConfirmedMessages.erase(it);
         }
+#ifdef IOTA_WITHOUT_MQTT
         else {
-            LoggerManager::getInstance()->mErrorLogging.error("[%s] loaded milestone %d but no messages for it where found", __FUNCTION__, id);
+            LoggerManager::getInstance()->mErrorLogging.error("[%s] loaded milestone %d but no messages for it where found", std::string(__FUNCTION__), id);
         }
-
+#endif
         mMilestonesMutex.lock();
         while (mMilestones.size() > MILESTONES_MAX_CACHED) {
             mMilestones.erase(mMilestones.begin());
         }
         mMilestones.insert({ id, timestamp });
         mMilestonesMutex.unlock();        
+    }
+
+    void MessageValidator::messageConfirmed(const iota::MessageId& messageId, int32_t milestoneId)
+    {
+		// pop will be called in IotaMessageToTransactionTask
+		OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneId);
+		
+		// check if other messages for this milestone exist and the milestone loading was started
+		{ // scoped lock mConfirmedMessages
+			Poco::ScopedLock<Poco::FastMutex> lock(mConfirmedMessagesMutex);
+			auto it = mConfirmedMessages.find(milestoneId);
+			if (it != mConfirmedMessages.end()) {
+				// found others messages which are confirmed from the same milestone
+				// push to list which will be processed after the milestone loading task was finished
+				it->second.push_back(messageId);
+                return;
+			}
+		} // scoped lock mConfirmedMessages end
+
+		// check if milestone for this was already loaded
+		{ // scoped lock milestones 
+			Poco::ScopedLock<Poco::FastMutex> lock(mMilestonesMutex);
+			auto it = mMilestones.find(milestoneId);
+			if (it != mMilestones.end()) {
+				Poco::AutoPtr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(milestoneId, it->second, messageId));
+				task->scheduleTask(task);
+				return;
+			}
+		} // scoped lock milestones end
+
+		// milestone wasn't loaded and other messages for this milestone doesn't exist, so create entry for this milestone 
+		mConfirmedMessagesMutex.lock();
+		mConfirmedMessages.insert({ milestoneId, std::list<MessageId>(1, messageId) });
+		mConfirmedMessagesMutex.unlock();
+    }
+
+    void MessageValidator::messageArrived(MQTTAsync_message* message, TopicType type)
+    {
+        //MessageParser parsedMessage(message->payload, message->payloadlen);
+        //std::string messageString((const char*)message->payload, message->payloadlen);
+		Document document;
+		document.Parse((const char*)message->payload);
+        rapidjson_helper::checkMember(document, "index", rapidjson_helper::MemberType::INTEGER, "iota milestone/confirmed");
+        rapidjson_helper::checkMember(document, "timestamp", rapidjson_helper::MemberType::INTEGER, "iota milestone/confirmed");
+        pushMilestone(document["index"].GetInt(), document["timestamp"].GetInt());
     }
 
 

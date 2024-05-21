@@ -64,17 +64,18 @@ namespace iota
         void run();
 
 
-		    TimerReturn callFromTimer();
+		TimerReturn callFromTimer();
 
         //! called for every new transaction arriving on iota for this topic
-        void messageArrived(MQTTAsync_message* message);
+        void messageArrived(MQTTAsync_message* message, TopicType type);
 
-		    const char* getResourceType() const { return "iota::MessageListener"; };
+		const char* getResourceType() const { return "iota::MessageListener"; };
 
     protected:
 
         void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
-        void updateStoredMessage(const MessageId& newMessageId);
+        //! \return false if message already exist
+        bool addStoredMessage(const MessageId& newMessageId);
 
         TopicIndex mIndex; 
         std::chrono::milliseconds mInterval;

@@ -49,6 +49,7 @@ namespace iota {
 
     protected:
         std::string mTopicString;
+        TopicType mType;
         std::list<IMessageObserver*> mObservers;
         std::mutex mMutex;
         std::mutex mStateMutex;

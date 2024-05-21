@@ -7,6 +7,7 @@
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "../task/CPUTask.h"
 #include "MessageId.h"
+#include "IMessageObserver.h"
 
 
 #include <unordered_map>
@@ -85,7 +86,7 @@ namespace iota {
 
     
 
-    class MessageValidator : public Poco::Runnable
+    class MessageValidator : public Poco::Runnable, public IMessageObserver
     {
     public:
         MessageValidator();
@@ -98,8 +99,12 @@ namespace iota {
         inline void pushMessageId(const iota::MessageId& messageId) { mPendingMessages.push(messageId); }
         void run();
         void pushMilestone(int32_t id, int64_t timestamp);
+        void messageConfirmed(const iota::MessageId& messageId, int32_t milestoneId);
 
         inline void signal() { mCondition.signal(); }
+
+        // implemented from IMessageObserver, called via mqtt from iota server
+        virtual void messageArrived(MQTTAsync_message* message, TopicType type);
 
     protected:
 

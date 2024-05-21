@@ -32,6 +32,11 @@ namespace iota {
     uint64_t nonce;         ///< The nonce which lets this message fulfill the Proof-of-Work requirement.
   };
 
+  enum class MessageType {
+      INDEXIATION_MESSAGE,
+      MESSAGE_METADATA
+  };
+
   class MessageParser
   {
   public:
@@ -41,11 +46,15 @@ namespace iota {
 
     inline std::unique_ptr<model::gradido::GradidoTransaction> getTransaction() {return std::move(mTransaction);}
     inline MessageId getMessageId() const { return mMessageId;}
+    inline MessageType getMessageType() const { return mType; }
+    inline int32_t getMilestoneId() const { return mMilestoneId; }
 
   protected:
     // core_message_t mMessage;
     std::unique_ptr<model::gradido::GradidoTransaction> mTransaction;
     MessageId mMessageId;
+    MessageType mType;
+    int32_t mMilestoneId;
 
   private: 
     void calculateMessageId(const void *data, size_t size);

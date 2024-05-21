@@ -10,7 +10,7 @@ namespace iota
 {
 
     TopicObserver::TopicObserver(const Topic &topic)
-        : mTopicString(topic.getTopicString()), mState(State::UNSUBSCRIBED)
+        : mTopicString(topic.getTopicString()), mType(topic.getType()), mState(State::UNSUBSCRIBED)
     {
     }
 
@@ -20,7 +20,7 @@ namespace iota
         // Notify all registered observers
         for (const auto &observer : mObservers)
         {
-            observer->messageArrived(message);
+            observer->messageArrived(message, mType);
         }
     }
 

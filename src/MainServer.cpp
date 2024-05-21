@@ -156,7 +156,7 @@ int MainServer::main(const std::vector<std::string>& args)
 
 		// *************** load from config ********************************************
 
-		std::string cfg_Path = Poco::Path::home() + ".gradido/";
+		std::string cfg_Path = Poco::Path::home() + ".gradido" + Poco::Path::separator();
 		try {
 			loadConfiguration(cfg_Path + "gradido.properties");
 		}
@@ -178,9 +178,10 @@ int MainServer::main(const std::vector<std::string>& args)
 			homeFolder.createDirectory();
 		}
 
-		std::string cacertPath = Poco::Path::home() + ".gradido/cacert.pem";
+		std::string cacertPath = Poco::Path::home() + ".gradido" + Poco::Path::separator() + "cacert.pem";
 		if (!ServerConfig::initSSLClientContext(cacertPath.data())) {
-			return Application::EXIT_CANTCREAT;
+			//return Application::EXIT_CANTCREAT;
+			printf("WARNING!!!: Problems with ssl, cannot request data from ssl servers\n");
 		}
 		ServerGlobals::initIota(config());
 		ServerConfig::readUnsecureFlags(config());		
