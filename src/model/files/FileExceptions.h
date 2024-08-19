@@ -2,7 +2,6 @@
 #define _GRADIDO_NODE_MODEL_FILES_FILE_EXCEPTIONS_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
-#include "gradido_blockchain/MemoryManager.h"
 
 namespace model {
 	namespace files {
@@ -27,17 +26,11 @@ namespace model {
 			std::string mFileName;
 		};
 
-		class FileStreamException : public GradidoBlockchainException
-		{
-		public:
-			explicit FileStreamException(const char* what, const std::string& filename) noexcept;
-		};
-
 		class HashMismatchException : public GradidoBlockchainException
 		{
 		public:
 			explicit HashMismatchException(const char* what) noexcept;
-			explicit HashMismatchException(const char* what, MemoryBin* hash1, MemoryBin* hash2) noexcept;
+			explicit HashMismatchException(const char* what, const memory::Block& hash1, const memory::Block& hash2) noexcept;
 
 			std::string getFullString() const;
 		protected:

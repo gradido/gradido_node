@@ -12,10 +12,9 @@
 
 #ifndef __GRADIDO_NODE_LIB_VIRTUAL_FILE
 #define __GRADIDO_NODE_LIB_VIRTUAL_FILE
-
-#include "gradido_blockchain/MemoryManager.h"
 #include <assert.h>
 
+#include "gradido_blockchain/GradidoBlockchainException.h"
 #include "Poco/Path.h"
 
 class VirtualFile

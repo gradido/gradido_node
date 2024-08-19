@@ -8,6 +8,7 @@
 #include "Poco/Logger.h"
 #include "Poco/Net/Context.h"
 #include "Poco/AtomicCounter.h"
+#include "Poco/URI.h"
 
 #include "task/CPUSheduler.h"
 #include "gradido_blockchain/http/IotaRequest.h"

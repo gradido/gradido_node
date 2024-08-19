@@ -8,8 +8,10 @@
 ### Debug
 Visual Studio 16 is the max Visual Studio Version supported from this current conanfile.txt
 ```bash
-conan install .. -s build_type=Debug
-cmake -DCMAKE_BUILD_TYPE=Debug -G"Visual Studio 16 2019" ..
+cd gradido_node
+conan install . --output-folder=build --build=missing
+cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
 ```
 
 Code doc: https://gradido.github.io/gradido_node/html/index.html

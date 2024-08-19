@@ -3,14 +3,14 @@ project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
 IF(WIN32)
-	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++17")
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++20")
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 ELSE()
-	SET(CMAKE_CXX_FLAGS "-std=c++17" )
+	SET(CMAKE_CXX_FLAGS "-std=c++20" )
 ENDIF()
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -40,6 +40,7 @@ IF(UNIX)
 	)
 ENDIF()
 
+FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
@@ -57,6 +58,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 
 SET(LOCAL_SRCS 
+	${BLOCKCHAIN}
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
@@ -69,6 +71,7 @@ SET(LOCAL_SRCS
 
 if(MSVC)
 # src
+source_group("blockchain" FILES ${BLOCKCHAIN})
 source_group("container" FILES ${CONTAINER})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
@@ -114,11 +117,8 @@ add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
 find_package(poco REQUIRED)
-find_package(mpfr REQUIRED)
 find_package(libsodium REQUIRED)
 include_directories(
-		${mpfr_INCLUDE_DIRS}
-		${gmp_INCLUDE_DIRS}
 		${libsodium_INCLUDE_DIR}
 		${OPENSSL_INCLUDE_DIR}
 		${Poco_INCLUDE_DIRS}

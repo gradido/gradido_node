@@ -16,7 +16,7 @@ namespace model {
 			TransactionList(Poco::SharedPtr<controller::Group> group, std::unique_ptr<std::string> pubkey, rapidjson::Document::AllocatorType&);
 
 			rapidjson::Value generateList(
-				std::vector<Poco::SharedPtr<model::TransactionEntry>> allTransactions,
+				std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> allTransactions,
 				Poco::Timestamp now,
 				int currentPage = 1,
 				int pageSize = 25,

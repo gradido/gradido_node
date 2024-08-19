@@ -109,7 +109,7 @@ namespace controller {
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> Block::getTransaction(uint64_t transactionNr)
+	std::shared_ptr<gradido::blockchain::TransactionEntry> Block::getTransaction(uint64_t transactionNr)
 	{
 		assert(transactionNr);
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);

@@ -5,9 +5,7 @@
 #include "../../lib/VirtualFile.h"
 #include "../../lib/FuzzyTimer.h"
 #include "../../task/SerializeToVFileTask.h"
-
-#include "gradido_blockchain/MemoryManager.h"
-#include "proto/gradido/register_address.pb.h"
+#include "gradido_blockchain/data/AddressType.h"
 
 #include "Poco/DateTime.h"
 #include "Poco/SharedPtr.h"
@@ -40,10 +38,10 @@ namespace model {
 			*/
 			struct AddressDetails
 			{
-				AddressDetails(uint32_t _index, proto::gradido::RegisterAddress_AddressType _type)
+				AddressDetails(uint32_t _index, gradido::data::AddressType _type)
 					: index(_index), type(_type) {}
 				uint32_t index;
-				proto::gradido::RegisterAddress_AddressType type;
+				gradido::data::AddressType type;
 			};
 			//! Load from file if exist, fileLock via FileLockManager, I/O read if exist.
 			AddressIndex(Poco::Path filePath);
@@ -84,7 +82,7 @@ namespace model {
 
 			//! \brief Calculate file hash from map entrys sorted by indices.
 			//! \return MemoryBin with hash, must be release after using by MemoryManager.
-			static MemoryBin* calculateHash(const std::map<int, std::string>& sortedMap);
+			static MemoryBin calculateHash(const std::map<int, std::string>& sortedMap);
 
 			//! \brief Load index, public key pairs from file and check file integrity with sha256 hash at end of file, fileLock via FileLockManager, I/O read.
 			//! \return False if file isn't valid or file couldn't be locked, else true if ok.

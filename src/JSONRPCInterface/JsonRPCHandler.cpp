@@ -299,7 +299,7 @@ void JsonRPCHandler::getTransaction(
 	
 	//printf("group found and loaded\n");
 	try {
-		Poco::SharedPtr<model::TransactionEntry> transaction;
+		std::shared_ptr<gradido::blockchain::TransactionEntry> transaction;
 		if (iotaMessageId) {
 			transaction = group->findByMessageId(iotaMessageId);
 		}

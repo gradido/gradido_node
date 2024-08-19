@@ -43,7 +43,7 @@ namespace controller {
 		bool pushTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction);
 		
 		//! \brief load transaction from cache or file system
-		Poco::SharedPtr<model::TransactionEntry> getTransaction(uint64_t transactionNr);
+		std::shared_ptr<gradido::blockchain::TransactionEntry> getTransaction(uint64_t transactionNr);
 
 		//! \brief called from timeout manager for scheduling WriteTransactionsToBlockTask 
 		void checkTimeout(Poco::Timer& timer);

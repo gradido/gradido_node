@@ -5,7 +5,7 @@
 
 namespace iota {
 	MqttClientWrapper::MqttClientWrapper()
-		: mMqttClient(nullptr), mbConnected(false), mMqttLog(Poco::Logger::get("mqttLog")), mReconnectTimeout(0)
+		: mMqttClient(nullptr), mbConnected(false), mMqttLog(Poco::Logger::get("mqttLog")), mReconnectTimeout(GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS)
 	{
 		int rc = 0;
 		rc = MQTTAsync_create(&mMqttClient, ServerGlobals::g_IotaMqttBrokerUri.toString().data(), GRADIDO_NODE_MQTT_CLIENT_ID, MQTTCLIENT_PERSISTENCE_NONE, NULL);

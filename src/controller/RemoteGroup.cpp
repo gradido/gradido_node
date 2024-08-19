@@ -7,7 +7,7 @@ namespace controller {
 		// get coin color on first connect to remote group
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::searchTransactions(
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::searchTransactions(
 		uint64_t startTransactionNr/* = 0*/,
 		std::function<FilterResult(model::TransactionEntry*)> filter/* = nullptr*/,
 		SearchDirection order /*= SearchDirection::ASC*/
@@ -31,30 +31,30 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
+	std::shared_ptr<gradido::blockchain::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
+	std::shared_ptr<gradido::blockchain::TransactionEntry> RemoteGroup::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> RemoteGroup::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
+	std::shared_ptr<gradido::blockchain::TransactionEntry> RemoteGroup::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, int month, int year)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, int month, int year)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

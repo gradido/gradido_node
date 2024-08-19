@@ -11,8 +11,6 @@
 #include "DeferredTransfer.h"
 #include "ArchiveTransactionsOrdering.h"
 
-#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
 #include "../model/files/State.h"
 
 #include "gradido_blockchain/http/JsonRequest.h"
@@ -26,7 +24,7 @@
 #include "Poco/AccessExpireCache.h"
 #include "Poco/ExpireCache.h"
 
-#include "gradido_blockchain/model/IGradidoBlockchain.h"
+#include "gradido_blockchain/blockchain/Abstract.h"
 
 #include <algorithm> 
 
@@ -45,7 +43,7 @@ namespace controller {
 	* TODO: validate transaction on startup
 	*/
 
-	class Group : public ControllerBase, public model::IGradidoBlockchain
+	class Group : public ControllerBase, public gradido::blockchain::Abstract
 	{
 	public:
 		//! \brief Load group states via model::files::GroupState.
@@ -59,36 +57,38 @@ namespace controller {
 
 		
 		//! \brief add transaction from iota into blockchain, important! must be called in correct order
-		virtual bool addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp);
+		//! validate and generate confirmed transaction
+		//! throw if gradido transaction isn't valid
+		//! \return false if transaction already exist
+		virtual bool addGradidoTransaction(
+			gradido::data::ConstGradidoTransactionPtr newTransaction,
+			memory::ConstBlockPtr messageId, 
+			Timepoint confirmedAt
+		);
+
 
 		//! \brief Find last transaction of address account in memory or block chain.
 		//! \param address Address = user account public key.
-		Poco::SharedPtr<model::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
+		std::shared_ptr<gradido::blockchain::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 
 		//! \brief return last transaction which was added to this blockchain
 		Poco::SharedPtr<model::gradido::ConfirmedTransaction> getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter = nullptr);
 
-		//! \brief get last transaction for this user for this coin color with a final balance
-		// TODO: make UML diagram for function
-		mpfr_ptr calculateAddressBalance(const std::string& address, const std::string& groupId, Poco::DateTime date, uint64_t ownTransactionNr);
-
-		proto::gradido::RegisterAddress_AddressType getAddressType(const std::string& address);
-
-		Poco::SharedPtr<model::TransactionEntry> getTransactionForId(uint64_t transactionId);
+		std::shared_ptr<TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 
 		//! \brief find transaction by messageId, especially used for validate cross group transactions
-		Poco::SharedPtr<model::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly = true);
+		std::shared_ptr<gradido::blockchain::TransactionEntry> findByMessageId(const MemoryBin* messageId, bool cachedOnly = true);
 
 		//! \brief return vector with transaction entries from xTransactionId until last known transaction
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactionsFromXToLast(uint64_t xTransactionId);
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> findTransactionsFromXToLast(uint64_t xTransactionId);
 		//! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 		//!
 		//! Use with care, can need some time and return huge amount of data.
 		//! \param address Address = user account public key.
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address);
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> findTransactions(const std::string& address);
 
 		//! \brief find transaction belonging to address account but with pagination
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr = 1);
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr = 1);
 
 		/*! \brief Find every transaction belonging to address account in memory or block chain, expensive.
 			
@@ -98,14 +98,30 @@ namespace controller {
 		std::vector<uint64_t> findTransactionIds(const std::string& address);
 		//! \brief Find transactions of account in memory or block chain from a specific month.
 		//! \param address User account public key.
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> findTransactions(const std::string& address, int month, int year);
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> findTransactions(const std::string& address, int month, int year);
 
 		//! \brief go through all transaction and return transactions
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> searchTransactions(
-			uint64_t startTransactionNr = 0,
-			std::function<FilterResult(model::TransactionEntry*)> filter = nullptr,
-			SearchDirection order = SearchDirection::ASC
-		);
+		gradido::blockchain::TransactionEntries findAll(const gradido::blockchain::Filter& filter = gradido::blockchain::Filter::ALL_TRANSACTIONS) const;
+
+		//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
+		//! therefore boocked back to sender
+		//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
+		//! therefore boocked back to sender
+	    gradido::blockchain::TransactionEntries findTimeoutedDeferredTransfersInRange(
+			memory::ConstBlockPtr senderPublicKey,
+			TimepointInterval timepointInterval,
+			uint64_t maxTransactionNr
+		) const;
+
+		//! find all transfers which redeem a deferred transfer in date range
+		//! \param senderPublicKey sender public key of sending account of deferred transaction
+		//! \return list with transaction pairs, first is deferred transfer, second is redeeming transfer
+		std::list<gradido::blockchain::DeferredRedeemedTransferPair> findRedeemedDeferredTransfersInRange(
+			memory::ConstBlockPtr senderPublicKey,
+			TimepointInterval timepointInterval,
+			uint64_t maxTransactionNr
+		) const;
+
 
 		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 
@@ -142,8 +158,6 @@ namespace controller {
 		model::files::State mGroupState;
 		DeferredTransfer    mDeferredTransfersCache;
 
-		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> getTimeoutedDeferredTransferReturnedAmounts(uint32_t addressIndex, Poco::DateTime beginDate, Poco::DateTime endDate);
-
 		Poco::SharedPtr<model::gradido::ConfirmedTransaction> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
@@ -170,8 +184,6 @@ namespace controller {
 				}
 
 				memcpy(&sign, sigPairs[0]->data(), 32);
-				auto mm = MemoryManager::getInstance();
-				mm->releaseMemory(sigPairs[0]);
 			}
 			bool operator<(const HalfSignature& ob) const {
 				return

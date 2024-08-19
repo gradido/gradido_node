@@ -86,10 +86,9 @@ namespace model {
 			return mapEntryCount * (sizeof(uint32_t) + 32) + 32;
 		}
 
-		MemoryBin* AddressIndex::calculateHash(const std::map<int, std::string>& sortedMap)
+		MemoryBin AddressIndex::calculateHash(const std::map<int, std::string>& sortedMap)
 		{
-			auto mm = MemoryManager::getInstance();
-			auto hash = mm->getMemory(crypto_generichash_BYTES);
+			MemoryBin hash(crypto_generichash_BYTES);
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
@@ -99,7 +98,7 @@ namespace model {
 				crypto_generichash_update(&state, (const unsigned char*)line.data(), line.size());
 			}
 
-			crypto_generichash_final(&state, *hash, hash->size());
+			crypto_generichash_final(&state, hash.data(), hash.size());
 
 			return hash;
 		}
@@ -111,7 +110,6 @@ namespace model {
 				mFileWritten = true;
 				return;
 			}
-			auto mm = MemoryManager::getInstance();
 			auto fl = FileLockManager::getInstance();
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			std::map<int, std::string> sortedMap;
@@ -138,10 +136,9 @@ namespace model {
 				file.write((const char*)&it->second, sizeof(int32_t));
 			}
 			auto hash = calculateHash(sortedMap);
-			file.write((const char*)hash->data(), hash->size());
+			file.write((const char*)hash.data(), hash.size());
 			file.close();
-			fl->unlock(filePath);
-			mm->releaseMemory(hash);			
+			fl->unlock(filePath);		
 			mFileWritten = true;
 		}
 
@@ -152,7 +149,6 @@ namespace model {
 				mFileWritten = true;
 				return nullptr;
 			}
-			auto mm = MemoryManager::getInstance();
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			std::map<int, std::string> sortedMap;
 			auto filePath = mFilePath.toString();
@@ -171,8 +167,7 @@ namespace model {
 				vFile->write((const char*)&it->second, sizeof(int32_t));
 			}
 			auto hash = calculateHash(sortedMap);
-			vFile->write((const char*)hash->data(), hash->size());
-			mm->releaseMemory(hash);
+			vFile->write((const char*)hash.data(), hash.size());
 			return std::move(vFile);
 		}
 
@@ -185,7 +180,6 @@ namespace model {
 		bool AddressIndex::loadFromFile()
 		{
 			auto fl = FileLockManager::getInstance();
-			auto mm = MemoryManager::getInstance();
 			int timeoutRounds = 100;
 			auto filePath = mFilePath.toString();
 			if (!fl->tryLockTimeout(filePath, timeoutRounds)) {
@@ -202,19 +196,19 @@ namespace model {
 
 			auto readedSize = 0;
 			Poco::FileInputStream fileStream(filePath);
-			auto hash = mm->getMemory(32);
+			memory::Block hash(32);
 			uint32_t index = 0;
 			std::map<int, std::string> sortedMap;
 
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
 			
 			while (readedSize < fileSize) {
-				fileStream.read(*hash, 32);
+				fileStream.read((char*)hash.data(), 32);
 				readedSize += 32;
 				if (readedSize + sizeof(uint32_t) + 32 <= fileSize) {
 					fileStream.read((char*)&index, sizeof(uint32_t));
 					readedSize += sizeof(uint32_t);
-					std::string hashString((const char*)*hash, hash->size());
+					std::string hashString((const char*)hash.data(), hash.size());
 					mAddressesIndices.insert(std::pair<std::string, int>(hashString, index));
 					sortedMap.insert(std::pair<int, std::string>(index, hashString));
 				}
@@ -222,15 +216,10 @@ namespace model {
 					break;
 				}
 			}
-			auto compareHash = calculateHash(sortedMap);
-			auto compareResult = memcmp(*hash, *compareHash, 32);
 			fl->unlock(filePath);
-			HashMismatchException exception("address index file hash mismatch", hash, compareHash);
-			mm->releaseMemory(hash);
-			mm->releaseMemory(compareHash);
-
-			if (compareResult != 0) {
-				throw exception;
+			auto compareHash = calculateHash(sortedMap);
+			if (!hash.isTheSame(compareHash)) {
+				throw HashMismatchException("address index file hash mismatch", hash, compareHash);
 			}
 
 			return true;

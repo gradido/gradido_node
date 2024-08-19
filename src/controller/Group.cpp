@@ -11,7 +11,6 @@
 #include "../iota/MqttClientWrapper.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
-#include "gradido_blockchain/lib/Decay.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/model/TransactionFactory.h"
 #include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
@@ -31,6 +30,8 @@
 #include "Poco/Util/ServerApplication.h"
 
 using namespace rapidjson;
+using namespace gradido::blockchain;
+using namespace gradido::data;
 
 namespace controller {
 
@@ -170,10 +171,12 @@ namespace controller {
 		mLastTransactionId = lastTransactionId;
 		mGroupState.setKeyValue("lastTransactionId", std::to_string(mLastTransactionId));
 	}
-
-	bool Group::addTransaction(std::unique_ptr<model::gradido::GradidoTransaction> newTransaction, const MemoryBin* messageId, uint64_t iotaMilestoneTimestamp)
-	{
-		
+	bool Group::addGradidoTransaction(
+		gradido::data::ConstGradidoTransactionPtr newTransaction,
+		memory::ConstBlockPtr messageId,
+		Timepoint confirmedAt
+	)
+	{		
 		if (!mWorkingMutex.tryLock(100)) {
 			// TODO: use exception
 			printf("[Group::addTransactionFromIota] try lock failed with transaction: %s\n", newTransaction->toJson().data());
@@ -304,7 +307,7 @@ namespace controller {
 		return result;
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> Group::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
+	std::shared_ptr<gradido::blockchain::TransactionEntry> Group::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		auto index = mAddressIndex->getIndexForAddress(address);
@@ -331,10 +334,10 @@ namespace controller {
 	}
 
 	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactionsFromXToLast(uint64_t fromTransactionId)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::findTransactionsFromXToLast(uint64_t fromTransactionId)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactionEntries;
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> transactionEntries;
 		uint64_t transactionIdCursor = fromTransactionId;
 		// we cannot handle zero transaction id, starts with one,
 		// but if someone ask for zero he gets all
@@ -358,10 +361,10 @@ namespace controller {
 		return transactionEntries;
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactions(const std::string& address)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::findTransactions(const std::string& address)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactions;
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
@@ -390,10 +393,10 @@ namespace controller {
 		return transactions;
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> transactions;
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index || !maxResultCount) { return transactions; }
@@ -452,10 +455,10 @@ namespace controller {
 		return transactions;
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::findTransactions(const std::string& address, int month, int year)
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::findTransactions(const std::string& address, int month, int year)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::TransactionEntry>>  transactions;
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>>  transactions;
 
 		auto index = mAddressIndex->getIndexForAddress(address);
 		if (!index) { return transactions; }
@@ -510,6 +513,29 @@ namespace controller {
 		return std::move(transactions);
 	}
 
+	TransactionEntries Group::findAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const
+	{
+		return {};
+	}
+
+	TransactionEntries Group::findTimeoutedDeferredTransfersInRange(
+		memory::ConstBlockPtr senderPublicKey,
+		TimepointInterval timepointInterval,
+		uint64_t maxTransactionNr
+	) const
+	{
+		return {};
+	}
+
+	std::list<DeferredRedeemedTransferPair> Group::findRedeemedDeferredTransfersInRange(
+		memory::ConstBlockPtr senderPublicKey,
+		TimepointInterval timepointInterval,
+		uint64_t maxTransactionNr
+	) const
+	{
+		return {};
+	}
+
 	Poco::SharedPtr<model::gradido::ConfirmedTransaction> Group::getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter/* = nullptr*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
@@ -555,189 +581,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	mpfr_ptr Group::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date, uint64_t ownTransactionNr)
-	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		auto mm = MemoryManager::getInstance();
-		auto gdd = mm->getMathMemory();
-		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
-		// if return zero, no transaction for this address exist on this blockchain
-		if (!addressIndex) return gdd;
-
-		auto blockNr = mLastBlockNr;
-		auto temp = MathMemory::create();
-
-		std::unique_ptr<model::gradido::ConfirmedTransaction> lastGradidoBlockWithFinalBalance;
-		std::list<std::pair<mpfr_ptr, Poco::DateTime>> receiveTransfers;
-
-		do
-		{
-			auto block = getBlock(blockNr);
-			if (block.isNull()) {
-				throw BlockNotLoadedException("[Group::calculateAddressBalance] block is null", mGroupAlias, blockNr);
-			}
-			auto blockIndex = block->getBlockIndex();
-			if (blockIndex.isNull()) {
-				throw BlockIndexException("[Group::calculateAddressBalance] block index is null");
-			}
-			std::vector<uint64_t> transactionNrs;
-			try {
-				transactionNrs = blockIndex->findTransactionsForAddress(addressIndex, coinGroupId);
-			} catch(Poco::NullPointerException& ex) {
-				std::clog << "Null Pointer Exception by calling findTransactionsForAddress" << std::endl;
-				throw;
-			}
-
-			std::sort(transactionNrs.begin(), transactionNrs.end());
-			// begin on last transaction
-			for (auto it = transactionNrs.rbegin(); it != transactionNrs.rend(); ++it)
-			{
-				auto transactionEntry = block->getTransaction(*it);
-				if (transactionEntry.isNull()) {
-					throw GradidoBlockchainTransactionNotFoundException("[Group::calculateAddressBalance] transactionEntry is null");
-				}
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
-				if (gradidoBlock->getReceivedAsTimestamp() > date.timestamp()) {
-					continue;
-				}
-				if (gradidoBlock->getID() >= ownTransactionNr) {
-					continue;
-				}
-				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
-				if (transactionBody->isTransfer() || transactionBody->isDeferredTransfer()) {
-					auto transfer = transactionBody->getTransferTransaction();
-					if (transfer->getSenderPublicKeyString() == address) {
-						lastGradidoBlockWithFinalBalance = std::move(gradidoBlock);
-						break;
-					}
-					else {
-						auto receiveAmount = mm->getMathMemory();
-						if (mpfr_set_str(receiveAmount, transfer->getAmount().data(), 10, gDefaultRound)) {
-							throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
-						}
-						if (transactionBody->isDeferredTransfer()) {
-							auto deferredTransfer = transactionBody->getDeferredTransfer();
-							if (deferredTransfer->getTimeoutAsPocoDateTime() <= date) {
-								continue;
-							}
-							// subtract decay from time: date -> timeout
-							// later in code the decay for: received -> date will be subtracted automatic
-							// TODO: check if result is like expected
-							calculateDecayFactorForDuration(
-								temp->getData(), 
-								gDecayFactorGregorianCalender, 
-								date, deferredTransfer->getTimeoutAsPocoDateTime()
-							);
-							calculateDecayFast(temp->getData(), receiveAmount);
-						}
-
-						receiveTransfers.push_front({ receiveAmount , gradidoBlock->getReceivedAsTimestamp() });
-						if (transactionBody->isDeferredTransfer()) {
-							break;
-						}
-					}
-				}
-				else if (transactionBody->isCreation() || transactionBody->isRegisterAddress()) {
-					lastGradidoBlockWithFinalBalance = std::move(gradidoBlock);
-					break;
-				}
-			}
-
-			blockNr--;
-		} while (blockNr > 0 && !lastGradidoBlockWithFinalBalance);
-
-		// calculate decay
-		Poco::DateTime lastDate;
-		if (lastGradidoBlockWithFinalBalance) {
-			lastDate = lastGradidoBlockWithFinalBalance->getReceivedAsTimestamp();
-			if (mpfr_set_str(gdd, lastGradidoBlockWithFinalBalance->getFinalBalance().data(), 10, gDefaultRound)) {
-				throw model::gradido::TransactionValidationInvalidInputException("finalBalance cannot be parsed to a number", "finalBalance", "string");
-			}
-		}
-		else if(receiveTransfers.size()) {
-			// if no lastGradidoBlockWithFinalBalance was found because sender is deferred transfer or not registered
-			// use first received transfer as starting point
-			auto firstReceived = receiveTransfers.front();
-			mpfr_add(gdd, gdd, firstReceived.first, gDefaultRound);
-			lastDate = firstReceived.second;
-		}
-
-		// check for time outed deferred transfers which will be automatic booked back
-		auto deferredTransfers = getTimeoutedDeferredTransferReturnedAmounts(addressIndex, lastDate, date);
-		if (deferredTransfers.size()) {
-			auto deferredTransfersIt = deferredTransfers.begin();
-			for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
-				while (it->second > deferredTransfersIt->second && deferredTransfersIt != deferredTransfers.end()) {
-					receiveTransfers.insert(it, *deferredTransfersIt);
-					deferredTransfersIt++;
-
-				}
-				if (deferredTransfersIt == deferredTransfers.end()) {
-					break;
-				}
-			}
-		}
-		for (auto it = receiveTransfers.begin(); it != receiveTransfers.end(); it++) {
-			assert(it->second >= lastDate);
-			if (it->second > lastDate) {
-				calculateDecayFactorForDuration(
-					temp->getData(), 
-					gDecayFactorGregorianCalender, 
-					lastDate, it->second
-				);
-				calculateDecayFast(temp->getData(), gdd);
-				lastDate = it->second;
-			}
-			mpfr_add(gdd, gdd, it->first, gDefaultRound);
-			mm->releaseMathMemory(it->first);
-		}
-		// cmp return 0 if gdd == 0
-		if (!mpfr_cmp_si(gdd, 0)) {
-			return gdd;
-		}
-		assert(date >= lastDate);
-		if (Poco::Timespan(date - lastDate).totalSeconds()) {
-			calculateDecayFactorForDuration(
-				temp->getData(), 
-				gDecayFactorGregorianCalender, 
-				lastDate, date
-			);
-			calculateDecayFast(temp->getData(), gdd);
-		}
-
-		return gdd;
-	}
-
-	proto::gradido::RegisterAddress_AddressType Group::getAddressType(const std::string& address)
-	{
-		auto addressIndex = getAddressIndex()->getIndexForAddress(address);
-		// if return zero, no transaction for this address exist on this blockchain
-		LoggerManager::getInstance()->mErrorLogging.debug("[Group::getAddressType] addressIndex: %u found for %s", addressIndex, DataTypeConverter::binToHex(address));
-		if (!addressIndex) return proto::gradido::RegisterAddress_AddressType_NONE;
-
-		int blockNr = 1;
-		while (blockNr <= mLastBlockNr) {
-			auto block = getBlock(blockNr);
-			auto transactionNr = block->getBlockIndex()->findFirstTransactionForAddress(addressIndex);
-			if (transactionNr) {
-				auto transactionEntry = block->getTransaction(transactionNr);
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
-				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
-				if (!transactionBody->isRegisterAddress()) {
-					throw WrongTransactionTypeException(
-						"wrong transaction type for first transaction",
-						transactionBody->getTransactionType(),
-						std::move(DataTypeConverter::binToHex(address))
-					);
-				}
-				return transactionBody->getRegisterAddress()->getAddressType();
-			}
-			blockNr++;
-		}
-		return proto::gradido::RegisterAddress_AddressType_NONE;
-	}
-
-	Poco::SharedPtr<model::TransactionEntry> Group::getTransactionForId(uint64_t transactionId)
+	std::shared_ptr<TransactionEntry> Group::getTransactionForId(uint64_t transactionId) const
 	{
 		auto blockNr = mLastBlockNr;
 		Poco::SharedPtr<controller::Block> block;
@@ -749,7 +593,7 @@ namespace controller {
 		return block->getTransaction(transactionId);
 	}
 
-	Poco::SharedPtr<model::TransactionEntry> Group::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
+	std::shared_ptr<gradido::blockchain::TransactionEntry> Group::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
 	{
 		Poco::ScopedLock _lock(mMessageIdTransactionNrCacheMutex);
 		iota::MessageId mid;
@@ -781,14 +625,14 @@ namespace controller {
 		return nullptr;
 	}
 
-	std::vector<Poco::SharedPtr<model::TransactionEntry>> Group::searchTransactions(
+	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::searchTransactions(
 		uint64_t startTransactionNr/* = 0*/,
 		std::function<FilterResult(model::TransactionEntry*)> filter/* = nullptr*/,
 		SearchDirection order /*= SearchDirection::ASC*/
 	)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		std::vector<Poco::SharedPtr<model::TransactionEntry>> result;
+		std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> result;
 		auto lastBlock = getBlock(mLastBlockNr);
 		if (!filter) {
 			result.reserve(lastBlock->getBlockIndex()->getMaxTransactionNr());

@@ -45,11 +45,9 @@ namespace model {
 			: GradidoBlockchainException(what)
 		{
 		}
-		HashMismatchException::HashMismatchException(const char* what, MemoryBin* hash1, MemoryBin* hash2) noexcept
-			: GradidoBlockchainException(what)
+		HashMismatchException::HashMismatchException(const char* what, const memory::Block& hash1, const memory::Block& hash2) noexcept
+			: GradidoBlockchainException(what), mHash1Hex(hash1.convertToHex()), mHash2Hex(hash2.convertToHex())
 		{
-			mHash1Hex = DataTypeConverter::binToHex(hash1);
-			mHash2Hex = DataTypeConverter::binToHex(hash2);
 		}
 
 		std::string HashMismatchException::getFullString() const
