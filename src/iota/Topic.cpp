@@ -1,6 +1,8 @@
 #include "Topic.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 
+#include "magic_enum/magic_enum.hpp"
+
 namespace iota {
     Topic::Topic(TopicType type)
         : mTopic(type)
@@ -11,7 +13,7 @@ namespace iota {
             mTopicString = "milestones/latest";
         }
         else {
-            throw GradidoUnhandledEnum("need more data for this topic type", "TopicType", static_cast<int>(type));
+            throw GradidoUnhandledEnum("need more data for this topic type", "TopicType", magic_enum::enum_name(type).data());
         }
     }
 

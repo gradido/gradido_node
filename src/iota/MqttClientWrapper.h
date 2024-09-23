@@ -12,6 +12,7 @@
 #include <mutex>
 #include <set>
 #include <queue>
+#include <unordered_map>
 
 #define GRADIDO_NODE_MQTT_CLIENT_ID "Gradido Node Server C++"
 #define GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS 200 

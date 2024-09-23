@@ -1,69 +1,68 @@
 #include "Transaction.h"
-#include "gradido_blockchain/model/protobufWrapper/TransactionValidationExceptions.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
 
 using namespace rapidjson;
+using namespace gradido::interaction;
 
 namespace model {
 	namespace Apollo {
 
 
-		Transaction::Transaction(const model::gradido::ConfirmedTransaction* gradidoBlock, const std::string& pubkey)
-			: mAmount(nullptr), mBalance(nullptr), mDecay(nullptr), mFirstTransaction(false)
+		Transaction::Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey)
+			: mFirstTransaction(false)
 		{			
-			auto mm = MemoryManager::getInstance();
-			mBalance = mm->getMathMemory();
-			mAmount = mm->getMathMemory();
-			auto gradidoTransaction = gradidoBlock->getGradidoTransaction();
+			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
 			
-			if (transactionBody->getTransactionType() == model::gradido::TRANSACTION_CREATION) {
+			if (transactionBody->getTransactionType() == gradido::data::TransactionType::CREATION) {
 				mType = TRANSACTION_TYPE_CREATE;
-				auto creation = transactionBody->getCreationTransaction();
-				if (mpfr_set_str(mAmount, creation->getAmount().data(), 10, gDefaultRound)) {
-					throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
-				}
+				auto creation = transactionBody->getCreation();
+				mAmount = creation->getRecipient().getAmount();
 				mFirstName = "Gradido";
 				mLastName = "Akademie";
-				auto pubkeys = gradidoTransaction->getPublicKeysfromSignatureMap(true);
-				mPubkey = DataTypeConverter::binToHex(pubkeys.front());
-				for (auto it = pubkeys.begin(); it != pubkeys.end(); it++) {
-					mm->releaseMemory(*it);
-				}
-				pubkeys.clear();
+				mPubkey = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPubkey()->convertToHex();
 			}
-			else if (transactionBody->getTransactionType() == model::gradido::TRANSACTION_TRANSFER ||
-				transactionBody->getTransactionType() == model::gradido::TRANSACTION_DEFERRED_TRANSFER) {
-				auto transfer = transactionBody->getTransferTransaction();
-				if (mpfr_set_str(mAmount, transfer->getAmount().data(), 10, gDefaultRound)) {
-					throw model::gradido::TransactionValidationInvalidInputException("amount cannot be parsed to a number", "amount", "string");
-				}
-				if (transfer->getRecipientPublicKeyString() == pubkey) {
+			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::TRANSFER) {
+				auto transfer = transactionBody->getTransfer();
+				mAmount = transfer->getSender().getAmount();
+				if(transfer->getRecipient()->isTheSame(pubkey)) {
 					mType = TRANSACTION_TYPE_RECEIVE;
-					mPubkey = DataTypeConverter::binToHex(transfer->getSenderPublicKeyString());
+					mPubkey = transfer->getSender().getPubkey()->convertToHex();
 				}
-				else if (transfer->getSenderPublicKeyString() == pubkey) {
+				else if (transfer->getSender().getPubkey()->isTheSame(pubkey)) {
 					mType = TRANSACTION_TYPE_SEND;
-					mPubkey = DataTypeConverter::binToHex(transfer->getRecipientPublicKeyString());
-					mpfr_neg(mAmount, mAmount, gDefaultRound);
+					mPubkey = transfer->getRecipient()->convertToHex();
+					mAmount *= -1.0;
 				}				
+			}
+			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::DEFERRED_TRANSFER) {
+				auto transfer = transactionBody->getDeferredTransfer()->getTransfer();
+				mAmount = transfer.getSender().getAmount();
+				if (transfer.getRecipient()->isTheSame(pubkey)) {
+					mType = TRANSACTION_TYPE_RECEIVE;
+					mPubkey = transfer.getSender().getPubkey()->convertToHex();
+				}
+				else if (transfer.getSender().getPubkey()->isTheSame(pubkey)) {
+					mType = TRANSACTION_TYPE_SEND;
+					mPubkey = transfer.getRecipient()->convertToHex();
+					mAmount *= -1.0;
+				}
 			}
 			else {
 				throw std::runtime_error("transaction type not implemented yet");
 			}
 			mMemo = transactionBody->getMemo();
-			mId = gradidoBlock->getID();
-			mDate = gradidoBlock->getReceivedAsTimestamp();
+			mId = confirmedTransaction.getId();
+			mDate = confirmedTransaction.getConfirmedAt();
 		}
 
-		Transaction::Transaction(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance)
-			: mType(TRANSACTION_TYPE_DECAY), mAmount(nullptr), mBalance(nullptr), mId(-1), mDate(decayEnd), mDecay(nullptr), mFirstTransaction(false)
+		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
+			: mType(TRANSACTION_TYPE_DECAY), mId(-1), mDate(decayEnd), mFirstTransaction(false)
 		{
-			auto mm = MemoryManager::getInstance();
-			mBalance = mm->getMathMemory();
-			mAmount = mm->getMathMemory();
+		
 			calculateDecay(decayStart, decayEnd, startBalance);
-			mpfr_set(mAmount, mDecay->getDecayAmount(), gDefaultRound);
-			mpfr_add(mBalance, startBalance, mDecay->getDecayAmount(), gDefaultRound);
+			mAmount = mDecay->getDecayAmount();
+			mBalance = startBalance + mDecay->getDecayAmount();
 		}
 
 		/*
@@ -72,7 +71,7 @@ namespace model {
 			std::string     mName;
 			std::string		mMemo;
 			uint64_t		mTransactionNr;
-			Poco::Timestamp mDate;
+			Timepoint mDate;
 			Decay*			mDecay;
 			bool			mFirstTransaction;
 		*/
@@ -91,8 +90,6 @@ namespace model {
 			  mFirstTransaction(parent.mFirstTransaction)
 		{
 			parent.mDecay = nullptr;
-			parent.mAmount = nullptr;
-			parent.mBalance = nullptr;
 		}
 
 		Transaction::~Transaction()
@@ -101,17 +98,9 @@ namespace model {
 				delete mDecay;
 				mDecay = nullptr;
 			}
-			if (mAmount) {
-				MemoryManager::getInstance()->releaseMathMemory(mAmount);
-				mAmount = nullptr;
-			}
-			if (mBalance) {
-				MemoryManager::getInstance()->releaseMathMemory(mBalance);
-				mBalance = nullptr;
-			}
 		}
 
-		void Transaction::calculateDecay(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance)
+		void Transaction::calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
 		{
 			if (mDecay) {
 				delete mDecay;
@@ -120,21 +109,17 @@ namespace model {
 			mDecay = new Decay(decayStart, decayEnd, startBalance);
 		}
 
-		void Transaction::setBalance(mpfr_ptr balance)
+		void Transaction::setBalance(GradidoUnit balance)
 		{
-			mpfr_set(mBalance, balance, gDefaultRound);
+			mBalance = balance;
 		}
 
 		Value Transaction::toJson(Document::AllocatorType& alloc)
 		{
 			Value transaction(kObjectType);
 			transaction.AddMember("typeId", Value(transactionTypeToString(mType), alloc), alloc);
-			std::string tempString;
-			model::gradido::TransactionBase::amountToString(&tempString, mAmount);
-			transaction.AddMember("amount", Value(tempString.data(), alloc), alloc);
-			tempString.clear();
-			model::gradido::TransactionBase::amountToString(&tempString, mBalance);
-			transaction.AddMember("balance", Value(tempString.data(), alloc), alloc);
+			transaction.AddMember("amount", Value(mAmount.toString().data(), alloc), alloc);
+			transaction.AddMember("balance", Value(mBalance.toString().data(), alloc), alloc);
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
 			transaction.AddMember("id", mId, alloc);
 			Value linkedUser(kObjectType);
@@ -144,7 +129,7 @@ namespace model {
 			linkedUser.AddMember("__typename", "User", alloc);
 			transaction.AddMember("linkedUser", linkedUser, alloc);
 
-			auto dateString = Poco::DateTimeFormatter::format(mDate, jsDateTimeFormat);
+			auto dateString = DataTypeConverter::timePointToString(mDate, jsDateTimeFormat);
 			transaction.AddMember("balanceDate", Value(dateString.data(), alloc), alloc);
 			if (mDecay) {
 				transaction.AddMember("decay", mDecay->toJson(alloc), alloc);

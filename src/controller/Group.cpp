@@ -231,15 +231,15 @@ namespace controller {
 		MemoryManager::getInstance()->releaseMemory(txHash);
 
 		// intern validation
-		model::gradido::TransactionValidationLevel level = (model::gradido::TransactionValidationLevel)(
-			model::gradido::TRANSACTION_VALIDATION_SINGLE |
-			model::gradido::TRANSACTION_VALIDATION_SINGLE_PREVIOUS |
-			model::gradido::TRANSACTION_VALIDATION_DATE_RANGE |
-			model::gradido::TRANSACTION_VALIDATION_CONNECTED_GROUP
+		gradido::data::TransactionValidationLevel level = (gradido::data::TransactionValidationLevel)(
+			gradido::data::TRANSACTION_VALIDATION_SINGLE |
+			gradido::data::TRANSACTION_VALIDATION_SINGLE_PREVIOUS |
+			gradido::data::TRANSACTION_VALIDATION_DATE_RANGE |
+			gradido::data::TRANSACTION_VALIDATION_CONNECTED_GROUP
 			);
 		auto transactionBody = newGradidoBlock->getGradidoTransaction()->getTransactionBody();
 		if (!transactionBody->isLocal()) {
-			level = (model::gradido::TransactionValidationLevel)(level | model::gradido::TRANSACTION_VALIDATION_PAIRED);
+			level = (gradido::data::TransactionValidationLevel)(level | gradido::data::TRANSACTION_VALIDATION_PAIRED);
 		}
 		//printf("validate with level: %d\n", level);
 		auto otherGroup = transactionBody->getOtherGroup();
@@ -333,7 +333,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	//std::vector<Poco::AutoPtr<model::GradidoBlock>> Group::findTransactions(uint64_t fromTransactionId)
+	//std::vector<Poco::AutoPtr<gradido::dataBlock>> Group::findTransactions(uint64_t fromTransactionId)
 	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::findTransactionsFromXToLast(uint64_t fromTransactionId)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
@@ -536,7 +536,7 @@ namespace controller {
 		return {};
 	}
 
-	Poco::SharedPtr<model::gradido::ConfirmedTransaction> Group::getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter/* = nullptr*/)
+	Poco::SharedPtr<gradido::data::ConfirmedTransaction> Group::getLastTransaction(std::function<bool(const gradido::data::ConfirmedTransaction*)> filter/* = nullptr*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (filter) {
@@ -549,7 +549,7 @@ namespace controller {
 				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
 					if (!i) break;
 					auto transaction = block->getTransaction(i);
-					Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock(new model::gradido::ConfirmedTransaction(transaction->getSerializedTransaction()));
+					Poco::SharedPtr<gradido::data::ConfirmedTransaction> gradidoBlock(new gradido::data::ConfirmedTransaction(transaction->getSerializedTransaction()));
 					if (filter(gradidoBlock.get())) {
 						return gradidoBlock;
 					}
@@ -575,7 +575,7 @@ namespace controller {
 		auto transaction = block->getTransaction(lastTransactionId);
 		if (!transaction.isNull()) {
 			updateLastTransactionId(lastTransactionId);
-			mLastTransaction = new model::gradido::ConfirmedTransaction(transaction->getSerializedTransaction());
+			mLastTransaction = new gradido::data::ConfirmedTransaction(transaction->getSerializedTransaction());
 			return mLastTransaction;
 		}
 		return nullptr;
@@ -611,7 +611,7 @@ namespace controller {
 			auto blockIndex = block->getBlockIndex();
 			for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
 				auto transactionEntry = block->getTransaction(i);
-				auto transaction = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
+				auto transaction = std::make_unique<gradido::data::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				iota::MessageId transactionMessageId;
 				auto messageIdMemoryBin = transaction->getMessageId();
 				transactionMessageId.fromMemoryBin(messageIdMemoryBin);
@@ -744,7 +744,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	bool Group::isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction)
+	bool Group::isTransactionAlreadyExist(const gradido::data::GradidoTransaction* transaction)
 	{
 		HalfSignature transactionSign(transaction);
 
@@ -752,7 +752,7 @@ namespace controller {
 		if (mCachedSignatureTransactionNrs.has(transactionSign)) {
 			// additional check if transaction really exactly the same, because hash collisions are possible, albeit with a very low probability
 			auto transactionNr = mCachedSignatureTransactionNrs.get(transactionSign);
-			auto cachedGradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(getTransactionForId(*transactionNr)->getSerializedTransaction());
+			auto cachedGradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(getTransactionForId(*transactionNr)->getSerializedTransaction());
 			// compare return 0 if strings are the same
 			if (!cachedGradidoBlock->getGradidoTransaction()->getSerializedConst()->compare(*transaction->getSerializedConst())) {
 				return true;
@@ -764,7 +764,7 @@ namespace controller {
 		return false;
 	}
 
-	void Group::addSignatureToCache(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock)
+	void Group::addSignatureToCache(Poco::SharedPtr<gradido::data::ConfirmedTransaction> gradidoBlock)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());
@@ -777,9 +777,9 @@ namespace controller {
 		int blockNr = mLastBlockNr;
 		int transactionNr = mLastTransactionId;
 
-		std::unique_ptr<model::gradido::ConfirmedTransaction> transaction;
-		Poco::Timestamp border = 
-			Poco::Timestamp() 
+		std::unique_ptr<gradido::data::ConfirmedTransaction> transaction;
+		Timepoint border = 
+			Timepoint() 
 			- Poco::Timespan(
 				std::chrono::duration_cast<std::chrono::seconds>(MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES).count(),
 				0
@@ -797,7 +797,7 @@ namespace controller {
 			// TODO: reverse order to read in transactions ascending to prevent jumping back in forth in file (seek trigger a new block read from mostly 8K)
 			try {
 				auto transactionEntry = block->getTransaction(transactionNr);
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
+				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 				mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());
 			}
 			catch (GradidoBlockchainTransactionNotFoundException& ex) {
@@ -822,7 +822,7 @@ namespace controller {
 		std::vector<std::pair<mpfr_ptr, Poco::DateTime>> timeoutedDeferredTransfers;
 		for (auto it = deferredTransfers.begin(); it != deferredTransfers.end(); it++) {
 			auto transactionEntry = getTransactionForId(*it);
-			auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
+			auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(transactionEntry->getSerializedTransaction());
 			auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
 			// little error correction
 			if (!transactionBody->isDeferredTransfer()) {

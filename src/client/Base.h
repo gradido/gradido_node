@@ -1,11 +1,12 @@
 #ifndef __GRADIDO_NODE_CLIENT_BASE_H
 #define __GRADIDO_NODE_CLIENT_BASE_H
 
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
+
 #include "Poco/URI.h"
 #include "Poco/Net/NameValueCollection.h"
 
 #include "rapidjson/document.h"
-#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
 
 namespace client
 {
@@ -26,17 +27,21 @@ namespace client
 		Base(const Poco::URI& uri);
 		virtual ~Base();
 
-		bool notificateNewTransaction(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock);
-		bool notificateFailedTransaction(const model::gradido::GradidoTransaction* gradidoTransaction, const std::string& errorMessage, const std::string& messageId);
+		bool notificateNewTransaction(const gradido::data::ConfirmedTransaction& confirmedTransaction);
+		bool notificateFailedTransaction(
+			const gradido::data::GradidoTransaction& gradidoTransaction,
+			const std::string& errorMessage,
+			const std::string& messageId
+		);
 		virtual bool postRequest(const Poco::Net::NameValueCollection& parameterValuePairs) = 0;
 
 		inline void setGroupAlias(const std::string& groupAlias) {mGroupAlias = groupAlias;}
 	protected:		
 		bool notificate(Poco::Net::NameValueCollection params);
-		enum NotificationFormat : int
+		enum class NotificationFormat : int
 		{
-			NOTIFICATION_FORMAT_PROTOBUF_BASE64,
-			NOTIFICATION_FORMAT_JSON
+			PROTOBUF_BASE64 = 1,
+			JSON = 2
 		};
 		Base(const Poco::URI& uri, NotificationFormat format);
 

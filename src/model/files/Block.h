@@ -8,7 +8,6 @@
 #include "Poco/Timestamp.h"
 #include "Poco/Timer.h"
 
-#include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "../../model/NodeTransactionEntry.h"
 
@@ -67,7 +66,7 @@ namespace model {
 			//! \return block file stream
 			Poco::SharedPtr<Poco::FileStream> getOpenFile();
 			//! \brief very expensive, read in whole file and calculate hash
-			MemoryBin* calculateHash();
+			std::shared_ptr<memory::Block> calculateHash();
 
 			//Poco::Timer mTimer;
 
@@ -75,7 +74,7 @@ namespace model {
 			Poco::UInt32 mBlockNr;
 			Poco::UInt64 mLastWrittenTransactionNr;
 
-			Poco::Timestamp mLastUsed;
+			Timepoint mLastUsed;
 			Poco::SharedPtr<Poco::FileStream>	mBlockFile;
 			Poco::FastMutex mFastMutex;
 			Poco::UInt32    mCurrentFileSize;

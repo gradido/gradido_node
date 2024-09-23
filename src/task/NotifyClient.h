@@ -8,14 +8,14 @@ namespace task {
 	class NotifyClient : public CPUTask
 	{
 	public:
-		NotifyClient(client::Base* client, Poco::SharedPtr<model::gradido::ConfirmedTransaction> transactionBlock);
+		NotifyClient(client::Base* client, std::shared_ptr<gradido::data::ConfirmedTransaction> confirmedTransaction);
 
 		const char* getResourceType() const { return "task::NotifyClient"; };
 		int run();
 
 	protected:
 		client::Base* mClient;
-		Poco::SharedPtr<model::gradido::ConfirmedTransaction> mTransactionBlock;
+		std::shared_ptr<gradido::data::ConfirmedTransaction> mConfirmedTransaction;
 	};
 }
 

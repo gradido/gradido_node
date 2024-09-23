@@ -7,13 +7,15 @@
 
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/pointer.h"
+#include "magic_enum/magic_enum.hpp"
 
 using namespace rapidjson;
+using namespace magic_enum;
 
 namespace client
 {
 	GraphQL::GraphQL(const Poco::URI& uri)
-		: Base(uri, Base::NOTIFICATION_FORMAT_PROTOBUF_BASE64)
+		: Base(uri, Base::NotificationFormat::PROTOBUF_BASE64)
 	{
 
 	}
@@ -34,7 +36,7 @@ namespace client
 		std::string transactionMemberName;
 		std::string graphQLQuery;
 		switch(mFormat) {
-			case NOTIFICATION_FORMAT_PROTOBUF_BASE64:
+			case Base::NotificationFormat::PROTOBUF_BASE64:
 				transactionMemberName = "transactionBase64";
 				graphQLQuery = 
 "mutation NewGradidoBlock($data: ConfirmedTransactionInput!) { \
@@ -54,14 +56,14 @@ namespace client
   } \
 }";
 				break;
-			case NOTIFICATION_FORMAT_JSON:
+			case Base::NotificationFormat::JSON:
 				transactionMemberName = "transactionJson";
 				graphQLQuery = "mutation($transactionJson: String!, $iotaTopic: String!){newGradidoBlock(transactionJson: $transactionJson, iotaTopic: $iotaTopic)}";
 				break;
-			default: throw new GradidoUnhandledEnum("unhandled Notification format", "NotificationFormat", static_cast<int>(mFormat));
+			default: throw new GradidoUnhandledEnum("unhandled Notification format", "NotificationFormat", enum_name(mFormat).data());
 		}
 		
-		JsonRequest request(mUri);
+		JsonRequest request(mUri.toString());
 		auto it = parameterValuePairs.find(transactionMemberName);
 		if (it == parameterValuePairs.end()) {
 			throw MissingParameterException("missing parameter", transactionMemberName.data());
@@ -122,7 +124,7 @@ namespace client
 			return false;
 		}
 		catch (RapidjsonParseErrorException& ex) {
-			throw RequestResponseInvalidJsonException("NewGradidoBlock|FailedGradidoBlock", mUri, ex.getRawText());
+			throw RequestResponseInvalidJsonException("NewGradidoBlock|FailedGradidoBlock", mUri.toString(), ex.getRawText());
 		}		
 		return false;
 	}

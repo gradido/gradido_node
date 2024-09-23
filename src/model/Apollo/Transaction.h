@@ -2,8 +2,7 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_H
 
 #include "Decay.h"
-#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
-
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
 
 namespace model {
 	namespace Apollo
@@ -18,15 +17,15 @@ namespace model {
 		class Transaction
 		{
 		public:
-			Transaction(const model::gradido::ConfirmedTransaction* gradidoBlock, const std::string& pubkey);
-			Transaction(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance);
+			Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey);
+			Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 
 			// Move Constrcutor
 			Transaction(Transaction&& parent);
 			~Transaction();
 
-			void calculateDecay(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance);
-			void setBalance(mpfr_ptr balance);
+			void calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
+			void setBalance(GradidoUnit balance);
 
 			rapidjson::Value toJson(rapidjson::Document::AllocatorType& alloc);
 
@@ -35,24 +34,24 @@ namespace model {
 			void setFirstTransaction(bool firstTransaction);
 			inline bool isFirstTransaction() const { return mFirstTransaction; }
 
-			inline Poco::Timestamp getDate() const { return mDate; }
-			inline const mpfr_ptr getAmount() const { return mAmount; }
+			inline Timepoint getDate() const { return mDate; }
+			inline const GradidoUnit getAmount() const { return mAmount; }
 			inline const Decay* getDecay() const { return mDecay; }
 
 		protected:
 
 			TransactionType mType;
-			mpfr_ptr        mAmount;
-			mpfr_ptr		mBalance;
+			GradidoUnit     mAmount;
+			GradidoUnit		mBalance;
 			std::string     mPubkey;
 			std::string		mFirstName;
 			std::string		mLastName;
 			std::string		mMemo;
 			int64_t			mId;
-			Poco::Timestamp mDate;
+			Timepoint       mDate;
 			Decay*			mDecay;
 			bool			mFirstTransaction;
-		private: 
+		private:
 			// Disable copy constructor
 			Transaction(const Transaction&) {};
 		};

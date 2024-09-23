@@ -3,11 +3,9 @@
 #include "MainServer.h"
 #include "MQTTAsync.h"
 
-#include "proto/gradido/transaction_body.pb.h"
 #include <sodium.h>
 #include <exception>
 #include "gradido_blockchain/lib/Profiler.h"
-#include "gradido_blockchain/lib/Decay.h"
 
 #include "ServerGlobals.h"
 
@@ -16,13 +14,11 @@
 
 int main(int argc, char** argv)
 {
-	GOOGLE_PROTOBUF_VERIFY_VERSION;
 	if (sodium_init() < 0) {
 		/* panic! the library couldn't be initialized, it is not safe to use */
 		printf("error initing sodium, early exit\n");
 		return -1;
 	}
-	initDefaultDecayFactors();
 	MQTTAsync_init_options options = MQTTAsync_init_options_initializer;
 	options.do_openssl_init = 0;
 	MQTTAsync_global_init(&options);
@@ -34,16 +30,16 @@ int main(int argc, char** argv)
 	}
 	catch (Poco::Exception& ex) {
 		printf("Poco Exception while init: %s\n", ex.displayText().data());
-		unloadDefaultDecayFactors();
 		return -1;
+	}
+	catch (GradidoBlockchainException& ex) {
+		printf("Gradido Blockchain Exception while init: %s\n", ex.getFullString().data());
 	}
 	catch (std::exception& ex) {
 		printf("std exception while init: %s\n", ex.what());
-		unloadDefaultDecayFactors();
 		return -2;
 	}
 	ServerGlobals::clearMemory();
-	unloadDefaultDecayFactors();
 	return result;
 }
 #endif

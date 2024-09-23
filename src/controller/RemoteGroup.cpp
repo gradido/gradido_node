@@ -1,66 +1,77 @@
 #include "RemoteGroup.h"
 
+using namespace gradido::blockchain;
+using namespace gradido::data;
+
 namespace controller {
 	RemoteGroup::RemoteGroup(const std::string& groupAlias)
-		: mGroupAlias(groupAlias)
+		: Abstract(groupAlias)
 	{
 		// get coin color on first connect to remote group
 	}
-
-	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::searchTransactions(
-		uint64_t startTransactionNr/* = 0*/,
-		std::function<FilterResult(model::TransactionEntry*)> filter/* = nullptr*/,
-		SearchDirection order /*= SearchDirection::ASC*/
-	)
+	//! validate and generate confirmed transaction
+	//! throw if gradido transaction isn't valid
+	//! \return false if transaction already exist
+	bool RemoteGroup::addGradidoTransaction(
+		gradido::data::ConstGradidoTransactionPtr gradidoTransaction,
+		memory::ConstBlockPtr messageId,
+		Timepoint confirmedAt)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	Poco::SharedPtr<model::gradido::ConfirmedTransaction> RemoteGroup::getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter /*= nullptr*/)
+	// main search function, do all the work, reference from other functions
+	TransactionEntries RemoteGroup::findAll(const Filter& filter /*= Filter::ALL_TRANSACTIONS*/) const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	mpfr_ptr RemoteGroup::calculateAddressBalance(const std::string& address, const std::string& coinGroupId, Poco::DateTime date, uint64_t ownTransactionNr)
+	//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
+	//! therefore boocked back to sender
+	//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
+	//! therefore boocked back to sender
+	TransactionEntries RemoteGroup::findTimeoutedDeferredTransfersInRange(
+		memory::ConstBlockPtr senderPublicKey,
+		TimepointInterval timepointInterval,
+		uint64_t maxTransactionNr
+	) const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	proto::gradido::RegisterAddress_AddressType RemoteGroup::getAddressType(const std::string& address)
+	//! find all transfers which redeem a deferred transfer in date range
+	//! \param senderPublicKey sender public key of sending account of deferred transaction
+	//! \return list with transaction pairs, first is deferred transfer, second is redeeming transfer
+	std::list<DeferredRedeemedTransferPair> RemoteGroup::findRedeemedDeferredTransfersInRange(
+		memory::ConstBlockPtr senderPublicKey,
+		TimepointInterval timepointInterval,
+		uint64_t maxTransactionNr
+	) const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	std::shared_ptr<gradido::blockchain::TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId)
+	std::shared_ptr<TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId) const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	std::shared_ptr<gradido::blockchain::TransactionEntry> RemoteGroup::findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId/* = ""*/)
+	//! \param filter use to speed up search if infos exist to narrow down search transactions range
+	std::shared_ptr<TransactionEntry> RemoteGroup::findByMessageId(
+		memory::ConstBlockPtr messageId,
+		const Filter& filter/* = Filter::ALL_TRANSACTIONS */
+	) const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	std::shared_ptr<gradido::blockchain::TransactionEntry> RemoteGroup::findByMessageId(const MemoryBin* messageId, bool cachedOnly/* = true*/)
-	{
-		throw std::runtime_error("not implemented yet");
-	}
-	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address)
+	AbstractProvider* RemoteGroup::getProvider() const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
-	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, int month, int year)
+	void RemoteGroup::pushTransactionEntry(std::shared_ptr<gradido::blockchain::TransactionEntry> transactionEntry)
 	{
 		throw std::runtime_error("not implemented yet");
-	}
-	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> RemoteGroup::findTransactions(const std::string& address, uint32_t maxResultCount, uint64_t startTransactionNr)
-	{
-		throw std::runtime_error("not implemented yet");
-	}
-
-	const std::string& RemoteGroup::getCommunityId() const
-	{
-		return mGroupAlias;
 	}
 }

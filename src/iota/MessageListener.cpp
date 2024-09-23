@@ -76,13 +76,13 @@ namespace iota
 		static const char* function_name = "MessageListener::listener";
 
 		// collect message ids for index from iota
-		std::vector<MemoryBin*> messageIds;
+		std::vector<MemoryBin> messageIds;
 		try {
 			messageIds = ServerGlobals::g_IotaRequestHandler->findByIndex(mIndex);
 		}
 		catch (...) {
 			unlock();
-			IotaRequest::defaultExceptionHandler(mErrorLog, true);
+			IotaRequest::defaultExceptionHandler(true);
 			return TimerReturn::EXCEPTION;
 		}
 	
@@ -119,10 +119,9 @@ namespace iota
 			}
 			assert(document["referencedByMilestoneIndex"].IsInt());
 
-			MessageId messageId;			
-			messageId.fromHex(document["messageId"].GetString());
+			MessageId messageId(memory::Block::fromHex(document["messageId"].GetString()));			
 			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
-			LOG_DEBUG("[MessageListener::messageArrived] message arrived: %s confirmed in %d", messageId.toHex(), milestoneId);
+			LOG_DEBUG("[MessageListener::messageArrived] message arrived: %s confirmed in %d", messageId.toMemoryBin().convertToHex(), milestoneId);
 			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
 		}		
 	}
@@ -140,14 +139,14 @@ namespace iota
 		{
 			// update status if already exist
 			storedIt->second = MESSAGE_EXIST;
-			LOG_ERROR("mqtt deliver a transaction the second time!", newMessageId.toHex());
+			LOG_ERROR("mqtt deliver a transaction the second time!", newMessageId.toMemoryBin().convertToHex());
 			unlock();
 			return false;
 		}
 		else
 		{
 			// add if not exist
-			LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), newMessageId.toHex());
+			LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), newMessageId.toMemoryBin().convertToHex());
 			mStoredMessageIds.insert({newMessageId, MESSAGE_NEW});
 			// and send to message validator
 			// validator->pushMessageId(newMessageId);
@@ -157,10 +156,9 @@ namespace iota
 		return true;
 	}
 
-	void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
+	void MessageListener::updateStoredMessages(std::vector<MemoryBin>& currentMessageIds)
   {
 		auto om = OrderingManager::getInstance();
-		auto mm = MemoryManager::getInstance();
 		auto validator = om->getIotaMessageValidator();
 		if (mFirstRun) {
 			validator->firstRunStart();
@@ -185,9 +183,7 @@ namespace iota
 		for (auto it = currentMessageIds.begin(); it != currentMessageIds.end(); it++)
 		{
 			// check if it exist
-			MessageId messageId;
-			messageId.fromMemoryBin(*it);
-			mm->releaseMemory(*it);
+			MessageId messageId(*it);
 			auto storedIt = mStoredMessageIds.find(messageId);
 			if (storedIt != mStoredMessageIds.end()) {
 				// update status if already exist
@@ -195,7 +191,11 @@ namespace iota
 			}
 			else {
 				// add if not exist
-				LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), messageId.toHex());
+				LOG_INFO(
+					"[MessageListener::updateStoredMessages] %s add message: %s",
+					mIndex.getHexString(),
+					messageId.toMemoryBin().convertToHex()
+				);
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);

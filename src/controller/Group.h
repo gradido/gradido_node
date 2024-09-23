@@ -72,7 +72,7 @@ namespace controller {
 		std::shared_ptr<gradido::blockchain::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 
 		//! \brief return last transaction which was added to this blockchain
-		Poco::SharedPtr<model::gradido::ConfirmedTransaction> getLastTransaction(std::function<bool(const model::gradido::ConfirmedTransaction*)> filter = nullptr);
+		Poco::SharedPtr<gradido::data::ConfirmedTransaction> getLastTransaction(std::function<bool(const gradido::data::ConfirmedTransaction*)> filter = nullptr);
 
 		std::shared_ptr<TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 
@@ -130,7 +130,7 @@ namespace controller {
 		//! \brief group id is the same as group alias
 		inline const std::string& getCommunityId() const { return mGroupAlias; }
 
-		bool isTransactionAlreadyExist(const model::gradido::GradidoTransaction* transaction);
+		bool isTransactionAlreadyExist(const gradido::data::GradidoTransaction* transaction);
 		void setListeningCommunityServer(client::Base* client);
 		inline client::Base* getListeningCommunityServer() const { return mCommunityServer; }
 
@@ -145,7 +145,7 @@ namespace controller {
 		void updateLastTransactionId(int lastTransactionId);
 
 		
-		void addSignatureToCache(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock);
+		void addSignatureToCache(Poco::SharedPtr<gradido::data::ConfirmedTransaction> gradidoBlock);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		virtual void fillSignatureCacheOnStartup();
@@ -158,7 +158,7 @@ namespace controller {
 		model::files::State mGroupState;
 		DeferredTransfer    mDeferredTransfersCache;
 
-		Poco::SharedPtr<model::gradido::ConfirmedTransaction> mLastTransaction;
+		Poco::SharedPtr<gradido::data::ConfirmedTransaction> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;
@@ -177,7 +177,7 @@ namespace controller {
 			HalfSignature(const char* signature) {
 				memcpy(&sign, signature, 32);
 			}
-			HalfSignature(const model::gradido::GradidoTransaction* transaction) {
+			HalfSignature(const gradido::data::GradidoTransaction* transaction) {
 				auto sigPairs = transaction->getSignaturesfromSignatureMap(true);
 				if (sigPairs.size() == 0) {
 					throw std::runtime_error("[Group::addSignatureToCache] empty signatures");

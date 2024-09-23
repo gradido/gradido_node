@@ -16,6 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
+# needed for protopuf
+add_definitions(-DNOMINMAX)
 
 include_directories(
 	"dependencies" 
@@ -23,8 +25,12 @@ include_directories(
 	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
+	"dependencies/gradido_blockchain/dependencies"
+	"dependencies/gradido_blockchain/dependencies/date/include"
+	"dependencies/gradido_blockchain/dependencies/magic_enum/include"
+	"dependencies/gradido_blockchain/dependencies/protopuf/include"
+
 	"dependencies/paho.mqtt.c/src"
-	"dependencies/iota-pow-in-c/src/"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )

@@ -79,7 +79,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 				auto base64Transaction = DataTypeConverter::binToBase64(std::move(serializedTransaction));
 				resultJson.AddMember("transaction", Value(base64Transaction->data(), alloc), alloc);
 			} else if("json" == format) {
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(serializedTransaction.get());
+				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(serializedTransaction.get());
 				resultJson.AddMember("transaction", gradidoBlock->toJson(mRootJson), alloc);
 			} else {
 				error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "unsupported format");
@@ -232,7 +232,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 		}
 		
 		auto serializedTransaction = DataTypeConverter::base64ToBinString(base64Transaction);
-		auto transaction = std::make_unique<model::gradido::GradidoTransaction>(&serializedTransaction);
+		auto transaction = std::make_unique<gradido::data::GradidoTransaction>(&serializedTransaction);
 		putTransaction(resultJson, transactionNr, std::move(transaction), group);
 	}
 	else {
@@ -264,13 +264,13 @@ void JsonRPCHandler::getTransactions(
 		resultJson.AddMember("type", "base64", alloc);
 	}
 	Value jsonTransactionArray(kArrayType);
-	Poco::AutoPtr<model::gradido::ConfirmedTransaction> prevTransaction;
+	Poco::AutoPtr<gradido::data::ConfirmedTransaction> prevTransaction;
 	int count = 0;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
 			if (format == "json") {
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionSerialized);
+				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(transactionSerialized);
 				//auto jsonTransaction = Value(gradidoBlock->toJson().data(), alloc);
 				auto jsonTransaction = gradidoBlock->toJson(mRootJson);
 				jsonTransactionArray.PushBack(jsonTransaction, alloc);
@@ -313,7 +313,7 @@ void JsonRPCHandler::getTransaction(
 		auto transactionSerialized = transaction->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
 			if (format == "json") {
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(transactionSerialized);
+				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(transactionSerialized);
 				resultJson.AddMember("transaction", gradidoBlock->toJson(mRootJson), alloc);
 			}
 			else {
@@ -348,7 +348,7 @@ void JsonRPCHandler::getAddressBalance(
 
 	auto balance = group->calculateAddressBalance(pubkey, coinGroupId, date, group->getLastTransaction()->getID()+1);
 	std::string balanceString;
-	model::gradido::TransactionBase::amountToString(&balanceString, balance);
+	gradido::data::TransactionBase::amountToString(&balanceString, balance);
 	MemoryManager::getInstance()->releaseMathMemory(balance);
 
 	resultJson.AddMember("balance", Value(balanceString.data(), alloc), alloc);
@@ -360,7 +360,7 @@ void JsonRPCHandler::getAddressType(Value& resultJson, const std::string& pubkey
 	auto alloc = mRootJson.GetAllocator();
 	auto type = group->getAddressType(pubkey);
 
-	resultJson.AddMember("addressType", Value(model::gradido::RegisterAddress::getAddressStringFromType(type).data(), alloc), alloc);
+	resultJson.AddMember("addressType", Value(gradido::data::RegisterAddress::getAddressStringFromType(type).data(), alloc), alloc);
 }
 
 void JsonRPCHandler::getAddressTxids(Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group)
@@ -388,9 +388,9 @@ void JsonRPCHandler::getCreationSumForMonth(
 )
 {
 	assert(!group.isNull());
-	auto sum = model::gradido::TransactionCreation::calculateCreationSum(pubkey, month, year, searchStartDate, group);
+	auto sum = gradido::data::TransactionCreation::calculateCreationSum(pubkey, month, year, searchStartDate, group);
 	std::string sumString;
-	model::gradido::TransactionBase::amountToString(&sumString, sum);
+	gradido::data::TransactionBase::amountToString(&sumString, sum);
 	MemoryManager::getInstance()->releaseMathMemory(sum);
 	auto alloc = mRootJson.GetAllocator();
 	resultJson.AddMember("sum", Value(sumString.data(), alloc), alloc);
@@ -424,12 +424,12 @@ void JsonRPCHandler::listTransactions(
 	auto allTransactions = group->findTransactions(pubkey);
 
 	model::Apollo::TransactionList transactionList(group, std::move(std::make_unique<std::string>(pubkey)), alloc);
-	Poco::Timestamp now;
+	Timepoint now;
 	auto transactionListValue = transactionList.generateList(allTransactions, now, currentPage, pageSize, orderDESC, onlyCreations);
 
 	auto balance = group->calculateAddressBalance(pubkey, "", now, group->getLastTransaction()->getID()+1);
 	std::string balanceString;
-	model::gradido::TransactionBase::amountToString(&balanceString, balance);
+	gradido::data::TransactionBase::amountToString(&balanceString, balance);
 	transactionListValue.AddMember("balance", Value(balanceString.data(), alloc), alloc);
 
 	resultJson.AddMember("transactionList", transactionListValue, alloc);
@@ -459,14 +459,14 @@ void JsonRPCHandler::listTransactionsForAddress(
 void JsonRPCHandler::putTransaction(
 	Value& resultJson,
 	uint64_t transactionNr,
-	std::unique_ptr<model::gradido::GradidoTransaction> transaction,
+	std::unique_ptr<gradido::data::GradidoTransaction> transaction,
 	Poco::SharedPtr<controller::Group> group
 )
 {
 	assert(!group.isNull());
 	Profiler timeUsed;
 
-	transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+	transaction->validate(gradido::data::TRANSACTION_VALIDATION_SINGLE);
 	group->getArchiveTransactionsOrderer()->addPendingTransaction(std::move(transaction), transactionNr);
 	auto alloc = mRootJson.GetAllocator();
 	resultJson.AddMember("timeUsed", timeUsed.millis(), alloc);

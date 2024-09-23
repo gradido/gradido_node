@@ -4,6 +4,7 @@
 #include "gradido_blockchain/blockchain/AbstractProvider.h"
 #include "gradido_blockchain/lib/StringViewCompare.h"
 #include "FileBased.h"
+#include "../controller/GroupIndex.h"
 
 namespace gradido {
 	namespace blockchain {
@@ -18,8 +19,10 @@ namespace gradido {
 			static FileBasedProvider* getInstance();
 
 			std::shared_ptr<Abstract> findBlockchain(std::string_view communityId);
-			void clear();
+			void init(const std::string& communityConfigFile);
+			void exit();
 		protected:
+			void clear();
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
 			std::mutex mWorkMutex;
 
@@ -30,6 +33,12 @@ namespace gradido {
 			/* Explicitly disallow copying. */
 			FileBasedProvider(const FileBasedProvider&) = delete;
 			FileBasedProvider& operator= (const FileBasedProvider&) = delete;
+
+			//! load or create blockchain for community, not locking woking mutex!
+			void addCommunity(const std::string& alias, const std::string& folder);
+
+			controller::GroupIndex* mGroupIndex;
+			bool mInitalized;
 		};
 	}
 }

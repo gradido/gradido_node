@@ -1,12 +1,14 @@
 #include "GroupIndex.h"
+#include "ControllerExceptions.h"
 
 #include "../ServerGlobals.h"
+#include "gradido_blockchain/lib/RapidjsonHelper.h"
 
 #include "Poco/File.h"
 
 namespace controller {
-	GroupIndex::GroupIndex(model::files::GroupIndex* model)
-		: mModel(model)
+	GroupIndex::GroupIndex(const std::string& jsonConfigFileName)
+		: mConfig(jsonConfigFileName)
 	{
 
 	}
@@ -14,56 +16,83 @@ namespace controller {
 	GroupIndex::~GroupIndex()
 	{
 		clear();
-		delete mModel;
 	}
 
 	void GroupIndex::clear()
 	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-
+		mCommunities.clear();
 	}
 
 	size_t GroupIndex::update()
 	{
-		clear();
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		auto cfg = mModel->getConfig();
-		std::vector<std::string> keys;
-		cfg->keys(keys);
-		for (auto it = keys.begin(); it != keys.end(); it++) {
-			GroupIndexEntry entry;
-			entry.alias = *it;
-			entry.folderName = cfg->getString(*it);
+		std::scoped_lock _lock(mWorkMutex);
 
-			mGroups.insert({entry.alias, entry});
+		clear();
+		auto& cfg = mConfig.load();
+		if (cfg.IsArray()) {
+			auto communitiesArray = cfg.GetArray();
+			for (rapidjson::SizeType i = 0; i < communitiesArray.Size(); i++) {
+				auto& communityEntry = communitiesArray[i];
+				CommunityIndexEntry entry;
+				rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
+				rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
+				entry.alias = communityEntry["alias"].GetString();
+				entry.folderName = communityEntry["folder"].GetString();
+				if (communityEntry.HasMember("newBlockUri")) {
+					entry.newBlockUri = communityEntry["newBlockUri"].GetString();
+				}
+				if (communityEntry.HasMember("blockUriType")) {
+					entry.blockUriType = communityEntry["blockUriType"].GetString();
+				}
+				mCommunities.insert({ entry.alias, entry });
+			}
 		}
-		return mGroups.size();
+		else {
+			throw RapidjsonInvalidMemberException("expected array as root node in commuities config", "", "array");
+		}
+		
+		return mCommunities.size();
 	}
 
-	Poco::Path GroupIndex::getFolder(const std::string& groupAlias)
+	std::string GroupIndex::getFolder(const std::string& communityAlias)
 	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-		auto it = mGroups.find(groupAlias);
-		if(it != mGroups.end()) {
-			auto folder = Poco::Path(Poco::Path(ServerGlobals::g_FilesPath + '/'));
-			folder.pushDirectory(it->second.folderName);
-			Poco::File file(folder);
-			if (!file.exists()) {
-				file.createDirectory();
+		std::scoped_lock _lock(mWorkMutex);
+
+		auto it = mCommunities.find(communityAlias);
+		if(it != mCommunities.end()) {
+			std::string folder = ServerGlobals::g_FilesPath + '/';
+			folder += it->second.folderName;
+			FILE* f = fopen(folder.data(), "r");
+			if (!f) {
+				// TODO: create directory
+				throw std::runtime_error("missing implementation for create directory in controller::GroupIndex::getFolder");
+			}
+			else {
+				fclose(f);
 			}
 			return folder;
 		}
+		return "";
+	}
+	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const std::string& communityAlias) const
+	{
+		std::scoped_lock _lock(mWorkMutex);
 
-		return Poco::Path();
+		auto it = mCommunities.find(communityAlias);
+		if (it != mCommunities.end()) {
+			return it->second;
+		}
+		throw GroupNotFoundException("couldn't found config details for community", communityAlias);
 	}
 
 	std::vector<std::string> GroupIndex::listGroupAliases()
 	{
+		std::scoped_lock _lock(mWorkMutex);
 		std::vector<std::string> result;
-		result.reserve(mGroups.size());
-		for(auto it = mGroups.begin(); it != mGroups.end(); it++) {
+		std::copy(mCommunities.begin(), mCommunities.end(), result);
+		/*for (auto it = mCommunities.begin(); it != mCommunities.end(); it++) {
 			result.push_back(it->first);
-		}
+		}*/
 		return result;
 	}
 }

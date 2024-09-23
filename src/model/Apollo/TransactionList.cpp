@@ -1,28 +1,30 @@
 #include "TransactionList.h"
-
-#include "gradido_blockchain/MemoryManager.h"
+#include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
 using namespace rapidjson;
+using namespace gradido::interaction;
 
 namespace model {
 	namespace Apollo {
 
-		TransactionList::TransactionList(Poco::SharedPtr<controller::Group> group, std::unique_ptr<std::string> pubkey, rapidjson::Document::AllocatorType& alloc)
-			: mGroup(group), mPubkey(std::move(pubkey)), mJsonAllocator(alloc)
+		TransactionList::TransactionList(
+			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
+			memory::ConstBlockPtr pubkey,
+			rapidjson::Document::AllocatorType& alloc
+		) : mBlockchain(blockchain), mPubkey(std::move(pubkey)), mJsonAllocator(alloc)
 		{
 
 		}
 
 		Value TransactionList::generateList(
-			std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> allTransactions,
-			Poco::Timestamp now,
+			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactions,
+			Timepoint now,
 			int currentPage /*= 1*/,
 			int pageSize /*= 25*/,
 			bool orderDESC /*= true*/,
 			bool onlyCreations /*= false*/			
 		)
 		{
-			auto mm = MemoryManager::getInstance();
 			Value transactionList(kObjectType);
 			transactionList.AddMember("balanceGDT", "0", mJsonAllocator);			
 			// TODO: add number of active deferred transfers
@@ -35,24 +37,24 @@ namespace model {
 			if (orderDESC) {
 				// sort in descending order
 				std::sort(allTransactions.begin(), allTransactions.end(), [](
-					const std::shared_ptr<gradido::blockchain::TransactionEntry>& x,
-					const std::shared_ptr<gradido::blockchain::TransactionEntry>& y) {
+					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& x,
+					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& y) {
 						return x->getTransactionNr() > y->getTransactionNr();
 					});
 			}
 			else {
 				// sort in ascending order
 				std::sort(allTransactions.begin(), allTransactions.end(), [](
-					const std::shared_ptr<gradido::blockchain::TransactionEntry>& x,
-					const std::shared_ptr<gradido::blockchain::TransactionEntry>& y) {
+					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& x,
+					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& y) {
 						return x->getTransactionNr() < y->getTransactionNr();
 					});
 			}
 
 			int entryIterator = 0;
 			int pageIterator = 1;
-			Poco::Timestamp balanceStartTimestamp(now);
-			mpfr_ptr balance = nullptr;
+			Timepoint balanceStartTimestamp(now);
+			GradidoUnit balance;
 
 			int countTransactions = 0;
 			int foundRegisterAddressTransaction = 0;
@@ -63,13 +65,15 @@ namespace model {
 				}
 				
 
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>((*it)->getSerializedTransaction());
+				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>((*it)->getSerializedTransaction());
 				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
 				if (transactionBody->isRegisterAddress()) {
 					auto registerAddress = transactionBody->getRegisterAddress();
-					if (transactionBody->isLocal()) {
-						if ((registerAddress->isSubaccount() && registerAddress->getAccountPubkeyString() == *mPubkey.get()) ||
-							(!registerAddress->isSubaccount() && registerAddress->getUserPubkeyString() == *mPubkey.get())) {
+					if (transactionBody->getOtherGroup().empty()) {
+						if ((registerAddress->getAddressType() == gradido::data::AddressType::SUBACCOUNT && 
+							registerAddress->getAccountPublicKey() == mPubkey) ||
+							(registerAddress->getAddressType() != gradido::data::AddressType::SUBACCOUNT &&
+							registerAddress->getUserPublicKey() == mPubkey)) {
 							foundRegisterAddressTransaction = 1;
 						}
 					}
@@ -85,20 +89,19 @@ namespace model {
 
 					if (!orderDESC && pageIterator == currentPage - 1) {
 						// if order asc get last timestamp from previous page
-						balanceStartTimestamp = gradidoBlock->getReceivedAsTimestamp();
+						balanceStartTimestamp = gradidoBlock->getConfirmedAt();
 					}
 
 					if (pageIterator == currentPage) {
-						transactionsVector.push_back(std::move(model::Apollo::Transaction(gradidoBlock.get(), *mPubkey.get())));
+						transactionsVector.push_back(std::move(model::Apollo::Transaction(*gradidoBlock, mPubkey)));
 						if ((it + foundRegisterAddressTransaction == allTransactions.begin() && !orderDESC) ||
 							(orderDESC && (it + 1 + foundRegisterAddressTransaction) == allTransactions.end()))
 						{
 							transactionsVector.back().setFirstTransaction(true);
-							balance = mm->getMathMemory();
-							mpfr_set(balance, transactionsVector.back().getAmount(), gDefaultRound);
+							balance = transactionsVector.back().getAmount();
 						}
 						if (!orderDESC) {
-							Poco::Timestamp prevTransactionDate(now);
+							Timepoint prevTransactionDate(now);
 							if (transactionsVector.size() > 1) {
 								prevTransactionDate = transactionsVector[transactionsVector.size() - 2].getDate();
 							}
@@ -106,27 +109,26 @@ namespace model {
 								prevTransactionDate = balanceStartTimestamp;
 							}
 							if (prevTransactionDate != now) {
-								calculateDecay(&balance, prevTransactionDate, &transactionsVector.back());
+								calculateDecay(balance, prevTransactionDate, &transactionsVector.back());
 							}
 						}
 
 					}
 					if (orderDESC && pageIterator == currentPage + 1 && !entryIterator) {
-						balanceStartTimestamp = gradidoBlock->getReceivedAsTimestamp();
+						balanceStartTimestamp = gradidoBlock->getConfirmedAt();
 					}
 					entryIterator++;
 				}
 			}
 			if (foundRegisterAddressTransaction && orderDESC && !balance && transactionsVector.size()) {
 				transactionsVector.back().setFirstTransaction(true);
-				balance = mm->getMathMemory();
-				mpfr_set(balance, transactionsVector.back().getAmount(), gDefaultRound);
+				balance = transactionsVector.back().getAmount();
 			}
 
 			transactionList.AddMember("count", countTransactions, mJsonAllocator);
 			if (orderDESC && transactionsVector.size()) {
 				for (auto it = transactionsVector.rbegin(); it != transactionsVector.rend(); it++) {
-					Poco::Timestamp prevTransactionDate(now);
+					Timepoint prevTransactionDate(now);
 
 					if (it != transactionsVector.rbegin()) {
 						prevTransactionDate = (it - 1)->getDate();
@@ -135,7 +137,7 @@ namespace model {
 						prevTransactionDate = balanceStartTimestamp;
 					}
 					if (prevTransactionDate != now) {
-						calculateDecay(&balance, prevTransactionDate, &*it);
+						calculateDecay(balance, prevTransactionDate, &*it);
 					}
 				}
 			}
@@ -152,31 +154,34 @@ namespace model {
 			if (!orderDESC && transactionsVector.size()) {
 				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate()), mJsonAllocator);
 			}
-			mm->releaseMathMemory(balance);
 
 			transactionList.AddMember("transactions", transactions, mJsonAllocator);
 			return std::move(transactionList);
 		}
 
 		void TransactionList::calculateDecay(
-			mpfr_ptr* balance,
-			Poco::Timestamp prevTransactionDate,
+			GradidoUnit balance,
+			Timepoint prevTransactionDate,
 			model::Apollo::Transaction* currentTransaction
 		)
 		{
-			if (!*balance) {
-				*balance = mGroup->calculateAddressBalance(*mPubkey, "", prevTransactionDate, mGroup->getLastTransaction()->getID() + 1);
+			if (balance == GradidoUnit::zero()) {
+				calculateAccountBalance::Context c(*mBlockchain);
+				balance = c.run(
+					mPubkey,
+					prevTransactionDate,
+					mBlockchain->findOne(gradido::blockchain::Filter::LAST_TRANSACTION)->getTransactionNr() + 1
+				);
 			}
-			currentTransaction->calculateDecay(prevTransactionDate, currentTransaction->getDate(), *balance);
-			mpfr_add(*balance, *balance, currentTransaction->getDecay()->getDecayAmount(), gDefaultRound);
-			mpfr_add(*balance, *balance, currentTransaction->getAmount(), gDefaultRound);			
-			currentTransaction->setBalance(*balance);
+			currentTransaction->calculateDecay(prevTransactionDate, currentTransaction->getDate(), balance);
+			balance += currentTransaction->getDecay()->getDecayAmount() + currentTransaction->getAmount();			
+			currentTransaction->setBalance(balance);
 		}
 
-		Value TransactionList::lastDecay(mpfr_ptr balance, Poco::Timestamp lastTransactionDate)
+		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate)
 		{
-			model::Apollo::Transaction lastDecay(lastTransactionDate, Poco::Timestamp(), balance);
-			mpfr_add(balance, balance, lastDecay.getDecay()->getDecayAmount(), gDefaultRound);
+			model::Apollo::Transaction lastDecay(lastTransactionDate, Timepoint(), balance);
+			balance += lastDecay.getDecay()->getDecayAmount();
 			
 			return std::move(lastDecay.toJson(mJsonAllocator));
 		}

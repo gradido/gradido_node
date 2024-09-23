@@ -5,7 +5,7 @@
 #include "../../SingletonManager/LoggerManager.h"
 #include "../../SingletonManager/CacheManager.h"
 #include "../../controller/AddressIndex.h"
-#include "gradido_blockchain/model/protobufWrapper/ConfirmedTransaction.h"
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
 #include "../../ServerGlobals.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -60,14 +60,14 @@ namespace model {
 					mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
 				}
 			}
-			mLastUsed = Poco::Timestamp();
+			mLastUsed = Timepoint();
 			return mBlockFile;
 		}
 		/*
 		void Block::checkTimeout(Poco::Timer& timer)
 		{
 			if (!mFastMutex.tryLock()) return;
-			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
+			if (Timepoint() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
@@ -76,7 +76,7 @@ namespace model {
 		TimerReturn Block::callFromTimer()
 		{
 			if (!mFastMutex.tryLock()) return TimerReturn::GO_ON;
-			if (Poco::Timestamp() - mLastUsed > std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_CacheTimeout).count()) {
+			if (Timepoint() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
@@ -98,8 +98,7 @@ namespace model {
 			}
 			Profiler timeUsed;
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
-			auto fl = FileLockManager::getInstance();
-			auto mm = MemoryManager::getInstance();
+			auto fl = FileLockManager::getInstance();			
 			std::string filePath = mBlockPath.toString();
 			if (!fl->tryLockTimeout(filePath, 100)) {
 				throw LockException("cannot lock file for reading", filePath.data());
@@ -162,8 +161,7 @@ namespace model {
 		std::vector<Poco::UInt32> Block::appendLines(const std::vector<const std::string*>& lines)
 		{
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
-			auto fl = FileLockManager::getInstance();
-			auto mm = MemoryManager::getInstance();
+			auto fl = FileLockManager::getInstance();			
 			std::vector<Poco::UInt32> resultingCursorPositions;// (lines.size());
 			resultingCursorPositions.reserve(lines.size());
 
@@ -175,11 +173,11 @@ namespace model {
 			auto fileStream = getOpenFile();
 
 			// read current hash
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			memset(*hash, 0, crypto_generichash_KEYBYTES);
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			memset(hash, 0, crypto_generichash_KEYBYTES);
 			if (mCurrentFileSize > 0) {
 				fileStream->seekg(mCurrentFileSize);
-				fileStream->read(*hash, crypto_generichash_KEYBYTES);
+				fileStream->read((char*)hash, crypto_generichash_KEYBYTES);
 			}
 			fileStream->seekp(mCurrentFileSize);
 
@@ -201,24 +199,22 @@ namespace model {
 				mCurrentFileSize += sizeof(Poco::UInt16) + size;
 
 				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-				crypto_generichash_update(&state, *hash, hash->size());
+				crypto_generichash_update(&state, hash, sizeof hash);
 				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
-				crypto_generichash_final(&state, *hash, hash->size());
+				crypto_generichash_final(&state, hash, sizeof hash);
 				//printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
 			}
 
 			// write at end of file
-			fileStream->write(*hash, hash->size());
+			fileStream->write((const char*)hash, sizeof hash);
 			fileStream->flush();
-			fl->unlock(filePath);
-			mm->releaseMemory(hash);
+			fl->unlock(filePath);			
 			return std::move(resultingCursorPositions);
 		}
 
-		MemoryBin* Block::calculateHash()
+		std::shared_ptr<memory::Block> Block::calculateHash()
 		{
 			Profiler timeUsed;
-			auto mm = MemoryManager::getInstance();
 			auto fl = FileLockManager::getInstance();
 			auto lm = LoggerManager::getInstance();
 
@@ -231,7 +227,8 @@ namespace model {
 				lm->mErrorLogging.error("[%s] error locking file: %s", std::string(__FUNCTION__), filePath);
 				return nullptr;
 			}
-
+			// TODO: not good reading whole file into memory which can be up to 128 MByte
+			// use buffer approach instead and expect underlying os caching file reading efficiently
 			auto vfile = mm->getMemory(mCurrentFileSize);
 			if (!vfile) {
 				fl->unlock(filePath);
@@ -270,7 +267,6 @@ namespace model {
 
 		bool Block::validateHash()
 		{
-			auto mm = MemoryManager::getInstance();
 			auto fl = FileLockManager::getInstance();
 			auto lm = LoggerManager::getInstance();
 
@@ -282,39 +278,35 @@ namespace model {
 			auto fileStream = getOpenFile();
 			fileStream->seekg(mCurrentFileSize);
 
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			fileStream->read(*hash, crypto_generichash_KEYBYTES);
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			fileStream->read((char*)hash, crypto_generichash_KEYBYTES);
 
 			fl->unlock(filePath);
 	
 			auto hash2 = calculateHash();
 			bool result = false;
-			if (0 == sodium_memcmp(*hash, *hash2, crypto_generichash_KEYBYTES)) {
+			if (0 == sodium_memcmp(hash, *hash2, crypto_generichash_KEYBYTES)) {
 				result = true;
 			}
 
-			mm->releaseMemory(hash);
-			mm->releaseMemory(hash2);
 			return result;
 		}
 
 		Poco::AutoPtr<RebuildBlockIndexTask> Block::rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex)
-		{
-			auto mm = MemoryManager::getInstance();
+		{			
 			auto fl = FileLockManager::getInstance();
 			Poco::AutoPtr<RebuildBlockIndexTask> rebuildTask = new RebuildBlockIndexTask(addressIndex);;
 
 			std::string filePath = mBlockPath.toString();
 			
-			
 			Poco::Int32 fileCursor = 0;
 			std::string readBuffer;
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			memset(*hash, 0, crypto_generichash_KEYBYTES);
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			memset(hash, 0, sizeof hash);
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-			crypto_generichash_update(&state, *hash, hash->size());
+			crypto_generichash_update(&state, hash, sizeof hash);
 
 			// read in every line
 			while (fileCursor + sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
@@ -328,29 +320,30 @@ namespace model {
 
 			}
 			
-			crypto_generichash_final(&state, *hash, hash->size());
+			crypto_generichash_final(&state, hash, sizeof hash);
 
-			auto hash2 = mm->getMemory(crypto_generichash_KEYBYTES);
+			unsigned char hash2[crypto_generichash_KEYBYTES];
 			if (!fl->tryLockTimeout(filePath, 100)) {
 				throw LockException("couldn't lock file in time", filePath.data());
 			}
 			auto fileStream = getOpenFile();			
-			fileStream->read(*hash2, crypto_generichash_KEYBYTES);
+			fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
 			fl->unlock(filePath);
 
 			bool result = false;
-			if (0 == sodium_memcmp(*hash, *hash2, crypto_generichash_KEYBYTES)) {
+			if (0 == sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
 				result = true;
 			}
 
-			HashMismatchException exception("block hash mismatch", hash, hash2);
-			mm->releaseMemory(hash);
-			mm->releaseMemory(hash2);
 			if (result) {
 				return rebuildTask;
 			}
 			else {
-				throw exception;			
+				throw HashMismatchException(
+					"block hash mismatch",
+					memory::Block(sizeof hash, hash),
+					memory::Block(sizeof hash2, hash2)
+				);
 			}
 		}
 			
@@ -389,7 +382,7 @@ namespace model {
 				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
 					throw std::runtime_error("don't get next file cursor line");
 				}
-				auto gradidoBlock = std::make_unique<model::gradido::ConfirmedTransaction>(&fileCursorLine.second);
+				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(&fileCursorLine.second);
 				lock();
 				Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(
 					gradidoBlock.get(), 

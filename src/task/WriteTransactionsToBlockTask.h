@@ -34,7 +34,7 @@ public:
 	//! \brief return creation date of object
 	//! 
 	//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
-	inline Poco::Timestamp getCreationDate() { return mCreationDate; }
+	inline Timepoint getCreationDate() { return mCreationDate; }
 
 	void addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction);
 
@@ -48,7 +48,7 @@ public:
 protected:
 	Poco::AutoPtr<model::files::Block> mBlockFile;
 	Poco::SharedPtr<controller::BlockIndex> mBlockIndex;
-	Poco::Timestamp mCreationDate;
+	Timepoint mCreationDate;
 	Poco::FastMutex mFastMutex;
 	std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>> mTransactions;
 };

@@ -21,5 +21,23 @@ protected:
 	int mTimeoutMs;
 };
 
+class ClassNotInitalizedException : public GradidoBlockchainException
+{
+public:
+	explicit ClassNotInitalizedException(const char* what, const char* classname) noexcept;
+	std::string getFullString() const;
+protected:
+	std::string mClassName;
+};
+
+class FileNotFoundException : public GradidoBlockchainException
+{
+public:
+	explicit FileNotFoundException(const char* what, const char* fileName) noexcept;
+	std::string getFullString() const;
+protected:
+	std::string mFileName;
+};
+
 
 #endif //__GRADIDO_NODE_SYSTEM_EXCEPTIONS_H

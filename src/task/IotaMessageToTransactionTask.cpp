@@ -65,12 +65,12 @@ int IotaMessageToTransactionTask::run()
     auto gm = GroupManager::getInstance();
     auto group = gm->findGroup(getGradidoGroupAlias(*dataIndex.second.get()));
     
-    std::unique_ptr<model::gradido::GradidoTransaction> transaction;
+    std::unique_ptr<gradido::data::GradidoTransaction> transaction;
     try {
         auto hex = DataTypeConverter::binToHex((const unsigned char*)dataIndex.first.get()->data(), dataIndex.first.get()->size());
         // printf("[IotaMessageToTransactionTask::run] iota message id hex: %s\n", iotaMessageIdHex.data());
         // printf("[IotaMessageToTransactionTask::run] gradido transaction (%d): %s\n", dataIndex.first.get()->size(), hex.data());
-        transaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
+        transaction = std::make_unique<gradido::data::GradidoTransaction>(dataIndex.first.get());
     }
     catch (ProtobufParseException& ex) {
         errorLog.information("invalid gradido transaction, iota message ID: %s", iotaMessageIdHex);
@@ -87,12 +87,12 @@ int IotaMessageToTransactionTask::run()
 
     // if simple validation already failed, we can stop here
     try {
-        transaction->validate(model::gradido::TRANSACTION_VALIDATION_SINGLE);
+        transaction->validate(gradido::data::TRANSACTION_VALIDATION_SINGLE);
         auto body = transaction->getTransactionBody();
         if (body->isCreation()) {
             body->getCreationTransaction()->validateTargetDate(body->getCreatedSeconds());
         }
-    } catch(model::gradido::TransactionValidationException& e) {
+    } catch(gradido::data::TransactionValidationException& e) {
         errorLog.error(e.getFullString());
         notificateFailedTransaction(group, transaction.get(), e.what());
         return 0;
@@ -104,12 +104,12 @@ int IotaMessageToTransactionTask::run()
     // try to find the pairing transaction with the messageId
     if (transaction->getTransactionBody()->isInbound()) {
         auto parentMessageIdHex = transaction->getParentMessageId()->convertToHex();
-        std::unique_ptr<model::gradido::GradidoTransaction> pairingTransaction;
+        std::unique_ptr<gradido::data::GradidoTransaction> pairingTransaction;
         auto otherGroup = gm->findGroup(transaction->getTransactionBody()->getOtherGroup());
         if (!otherGroup.isNull()) {
             auto transactionEntry = otherGroup->findByMessageId(transaction->getParentMessageId(), true);
             if (!transactionEntry.isNull()) {
-                pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(transactionEntry->getSerializedTransaction());
+                pairingTransaction = std::make_unique<gradido::data::GradidoTransaction>(transactionEntry->getSerializedTransaction());
             }
         }
         // load from iota
@@ -118,7 +118,7 @@ int IotaMessageToTransactionTask::run()
             
 			try {
 				dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(*parentMessageIdHex.get());
-                pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
+                pairingTransaction = std::make_unique<gradido::data::GradidoTransaction>(dataIndex.first.get());
 			}
 			catch (...) {
 				IotaRequest::defaultExceptionHandler(errorLog, false);
@@ -126,7 +126,7 @@ int IotaMessageToTransactionTask::run()
 				Poco::Thread::sleep(100);
 				try {
 					dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(*parentMessageIdHex.get());
-					pairingTransaction = std::make_unique<model::gradido::GradidoTransaction>(dataIndex.first.get());
+					pairingTransaction = std::make_unique<gradido::data::GradidoTransaction>(dataIndex.first.get());
 				}
 				catch (...) {
 					IotaRequest::defaultExceptionHandler(errorLog, false);                 
@@ -190,7 +190,7 @@ std::string IotaMessageToTransactionTask::getGradidoGroupAlias(const std::string
 
 void IotaMessageToTransactionTask::notificateFailedTransaction(
     Poco::SharedPtr<controller::Group> group,
-	const model::gradido::GradidoTransaction* transaction,
+	const gradido::data::GradidoTransaction* transaction,
 	const std::string& errorMessage
 )
 {

@@ -1,8 +1,8 @@
 #ifndef __GRADIDO_NODE_IOTA_TOPIC_H
 #define __GRADIDO_NODE_IOTA_TOPIC_H
 
-#include "gradido_blockchain/model/iota/TopicIndex.h"
-#include "MessageId.h"
+#include "gradido_blockchain/data/iota/MessageId.h"
+#include "gradido_blockchain/data/iota/TopicIndex.h"
 
 namespace iota {
     enum class TopicType: uint8_t {

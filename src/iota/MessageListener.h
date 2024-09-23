@@ -7,9 +7,9 @@
 #include "Poco/Logger.h"
 
 #include "gradido_blockchain/lib/MultithreadContainer.h"
-#include "gradido_blockchain/model/iota/TopicIndex.h"
+#include "gradido_blockchain/data/iota/MessageId.h"
+#include "gradido_blockchain/data/iota/TopicIndex.h"
 #include "../lib/FuzzyTimer.h"
-#include "MessageId.h"
 #include "IMessageObserver.h"
 
 #include <vector>
@@ -73,7 +73,7 @@ namespace iota
 
     protected:
 
-        void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
+        void updateStoredMessages(std::vector<MemoryBin>& currentMessageIds);
         //! \return false if message already exist
         bool addStoredMessage(const MessageId& newMessageId);
 

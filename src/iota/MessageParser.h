@@ -1,9 +1,8 @@
 #ifndef __GRADIDO_NODE_IOTA_MESSAGE_PARSER_H
 #define __GRADIDO_NODE_IOTA_MESSAGE_PARSER_H
 
-#include "gradido_blockchain/MemoryManager.h"
-#include "gradido_blockchain/model/TransactionEntry.h"
-#include "MessageId.h"
+#include "gradido_blockchain/blockchain/TransactionEntry.h"
+#include "gradido_blockchain/data/iota/MessageId.h"
 
 #include <memory>
 #include <vector>
@@ -44,14 +43,14 @@ namespace iota {
 
     void print();
 
-    inline std::unique_ptr<model::gradido::GradidoTransaction> getTransaction() {return std::move(mTransaction);}
+    inline gradido::data::ConstGradidoTransactionPtr getTransaction() {return mTransaction;}
     inline MessageId getMessageId() const { return mMessageId;}
     inline MessageType getMessageType() const { return mType; }
     inline int32_t getMilestoneId() const { return mMilestoneId; }
 
   protected:
     // core_message_t mMessage;
-    std::unique_ptr<model::gradido::GradidoTransaction> mTransaction;
+    gradido::data::ConstGradidoTransactionPtr mTransaction;
     MessageId mMessageId;
     MessageType mType;
     int32_t mMilestoneId;

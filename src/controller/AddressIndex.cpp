@@ -66,7 +66,7 @@ namespace controller {
 		return index;
 	}
 
-	std::vector<uint32_t> AddressIndex::getOrAddIndicesForAddresses(std::vector<MemoryBin*>& publicKeys, bool clearMemoryBin/* = false*/)
+	std::vector<uint32_t> AddressIndex::getOrAddIndicesForAddresses(std::vector<memory::ConstBlockPtr>& publicKeys, bool clearMemoryBin/* = false*/)
 	{
 		auto mm = MemoryManager::getInstance();
 		std::vector<uint32_t> results;

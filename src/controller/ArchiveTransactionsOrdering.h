@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_CONTROLLER_ARCHIVE_TRANSACTIONS_ORDERING_H
 
 #include "../task/Thread.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
+#include "gradido_blockchain/data/GradidoTransaction.h"
 
 #include <map>
 #include <shared_mutex>
@@ -26,14 +26,14 @@ namespace controller
 		ArchiveTransactionsOrdering(Group* parentGroup);
 		~ArchiveTransactionsOrdering();
 
-		void addPendingTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, uint64_t transactionNr);
+		void addPendingTransaction(std::unique_ptr<gradido::data::GradidoTransaction> transaction, uint64_t transactionNr);
 	protected:
 		int ThreadFunction();
 		//! check the last transaction of group and return the transaction id the next transaction would get
 		uint64_t getNextTransactionId();
-		void insertTransactionToGroup(std::unique_ptr<model::gradido::GradidoTransaction> transaction);
+		void insertTransactionToGroup(std::unique_ptr<gradido::data::GradidoTransaction> transaction);
 
-		typedef std::map<uint64_t, std::unique_ptr<model::gradido::GradidoTransaction>> PendingTransactionsMap;
+		typedef std::map<uint64_t, std::unique_ptr<gradido::data::GradidoTransaction>> PendingTransactionsMap;
 		PendingTransactionsMap mPendingTransactions;
 		std::shared_mutex mPendingTransactionsMutex;
 		Group* mParentGroup;

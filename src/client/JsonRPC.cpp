@@ -1,4 +1,4 @@
-#include "Json.h"
+#include "JsonRPC.h"
 #include "gradido_blockchain/http/JsonRequest.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "rapidjson/prettywriter.h"
@@ -6,15 +6,15 @@
 using namespace rapidjson;
 
 namespace client {
-	Json::Json(const Poco::URI& uri, bool base64 /*= true*/)
-		: Base(uri, base64 ? Base::NOTIFICATION_FORMAT_PROTOBUF_BASE64 : Base::NOTIFICATION_FORMAT_JSON)
+	JsonRPC::JsonRPC(const Poco::URI& uri, bool base64 /*= true*/)
+		: Base(uri, base64 ? Base::NotificationFormat::PROTOBUF_BASE64 : Base::NotificationFormat::JSON)
 	{
 
 	}
 
-	bool Json::postRequest(const Poco::Net::NameValueCollection& parameterValuePairs)
+	bool JsonRPC::postRequest(const Poco::Net::NameValueCollection& parameterValuePairs)
 	{
-		JsonRequest request(mUri);
+		JsonRequest request(mUri.getPathAndQuery());
 
 		Value params(kObjectType);
 		auto alloc = request.getJsonAllocator();
@@ -33,10 +33,10 @@ namespace client {
 			*/
 		}
 		catch (RapidjsonParseErrorException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[client::Json::postRequest] Result Json Exception: %s\n", ex.getFullString().data());
+			LoggerManager::getInstance()->mErrorLogging.error("[client::JsonRPC::postRequest] Result Json Exception: %s\n", ex.getFullString().data());
 		}
 		catch (Poco::Exception& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[client::Json::postRequest] Poco Exception: %s\n", ex.displayText().data());
+			LoggerManager::getInstance()->mErrorLogging.error("[client::JsonRPC::postRequest] Poco Exception: %s\n", ex.displayText().data());
 		}
 		return true;
 	}

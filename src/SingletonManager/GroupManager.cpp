@@ -5,10 +5,7 @@
 //#include "Poco/Path.h"
 #include "Poco/File.h"
 #include "../ServerGlobals.h"
-#include "../client/Json.h"
-#include "../client/GraphQL.h"
-
-
+#include "../client/JsonRPC.h"
 
 GroupManager::GroupManager()
 	: mInitalized(false), mGroupIndex(nullptr)

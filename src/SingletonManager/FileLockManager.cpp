@@ -28,7 +28,7 @@ FileLockManager* FileLockManager::getInstance()
 
 bool FileLockManager::isLock(const std::string& file)
 {
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	if (it != mFiles.end()) {
 		return *it->second;
@@ -39,7 +39,7 @@ bool FileLockManager::isLock(const std::string& file)
 
 bool FileLockManager::tryLock(const std::string& file)
 {
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	if (it != mFiles.end()) {
 		if (!*it->second) {
@@ -72,7 +72,7 @@ bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 
 void FileLockManager::unlock(const std::string& file)
 {
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	assert(it != mFiles.end());
 	

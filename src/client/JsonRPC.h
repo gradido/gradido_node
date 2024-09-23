@@ -5,10 +5,10 @@
 
 namespace client
 {
-	class Json : public Base
+	class JsonRPC : public Base
 	{
 	public: 
-		Json(const Poco::URI& uri, bool base64 = true);
+		JsonRPC(const Poco::URI& uri, bool base64 = true);
 		bool postRequest(const Poco::Net::NameValueCollection& parameterValuePairs);
 	};
 }

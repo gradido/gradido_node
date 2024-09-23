@@ -1,18 +1,20 @@
 #ifndef __GRADIDO_NODE_SINGLETON_MANAGER_ORDERING_MANAGER
 #define __GRADIDO_NODE_SINGLETON_MANAGER_ORDERING_MANAGER
 
+#include <chrono>
+
 //! MAGIC NUMBER: how long we know about a milestone from iota at least before we process it and his transaction
 //! to prevent loosing transaction which came after through a delay or to less delay in the race between threads
 //! important if iota or the node server is running to slow because to many requests
 //! TODO: Make value higher if a delay was detected
-#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS 900
+#define MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER std::chrono::milliseconds(900)
 
 //! MAGIC NUMBER: if current milestone is this diff or more away from last milestone from network,
-//! we take extra care and wait MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS before we proceed
+//! we take extra care and wait MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER time before we proceed
 //! maybe we are starting up this node and then we need more time
 #define MAGIC_NUMBER_MILESTONE_ID_EXTRA_BUFFER_WAIT 10
 
-#include "gradido_blockchain/model/protobufWrapper/GradidoTransaction.h"
+#include "gradido_blockchain/data/GradidoTransaction.h"
 #include "../iota/MessageValidator.h"
 #include "../iota/MessageListener.h"
 #include "../task/Thread.h"
@@ -41,7 +43,7 @@ public:
     void pushMilestoneTaskObserver(int32_t milestoneId);
     void popMilestoneTaskObserver(int32_t milestoneId);
 
-    int pushTransaction(std::unique_ptr<model::gradido::GradidoTransaction> transaction, int32_t milestoneId, uint64_t timestamp, const std::string& groupAlias, MemoryBin* messageId);
+    int pushTransaction(std::unique_ptr<gradido::data::GradidoTransaction> transaction, int32_t milestoneId, uint64_t timestamp, const std::string& groupAlias, MemoryBin* messageId);
 
     inline iota::MessageValidator* getIotaMessageValidator() { return &mMessageValidator; }
 
@@ -53,26 +55,24 @@ protected:
 
     struct GradidoTransactionWithGroup
     {
-        GradidoTransactionWithGroup(std::unique_ptr<model::gradido::GradidoTransaction> _transaction, const std::string& _groupAlias, MemoryBin* _messageId)
-            : transaction(std::move(_transaction)), groupAlias(_groupAlias), messageId(_messageId) {}
+        GradidoTransactionWithGroup(
+            std::unique_ptr<gradido::data::GradidoTransaction> _transaction,
+            const std::string& _groupAlias,
+            const memory::Block& _messageId
+        ) : transaction(std::move(_transaction)), groupAlias(_groupAlias), messageId(_messageId) {}
 
-        GradidoTransactionWithGroup(GradidoTransactionWithGroup&& move)
-            : transaction(std::move(move.transaction)), groupAlias(move.groupAlias), messageId(move.messageId)
+        GradidoTransactionWithGroup(GradidoTransactionWithGroup&& move) noexcept
+            : transaction(std::move(move.transaction)),
+            groupAlias(std::move(move.groupAlias)),
+            messageId(std::move(move.messageId))
         {
-            move.messageId = nullptr;
         }
 
-        ~GradidoTransactionWithGroup()
-        {
-            if (!messageId) {
-                MemoryManager::getInstance()->releaseMemory(messageId);
-                messageId = nullptr;
-            }
-        }        
+        ~GradidoTransactionWithGroup() {}        
 
-        std::unique_ptr<model::gradido::GradidoTransaction> transaction;
+        std::unique_ptr<gradido::data::GradidoTransaction> transaction;
         std::string groupAlias;
-        MemoryBin* messageId;
+        memory::Block messageId;
     };
 
     struct MilestoneTransactions
@@ -82,7 +82,7 @@ protected:
 
         int32_t milestoneId;
         int64_t milestoneTimestamp;
-        Poco::Timestamp entryCreationTime;
+        Timepoint entryCreationTime;
         std::list<GradidoTransactionWithGroup> transactions;
         Poco::FastMutex mutex;
     };

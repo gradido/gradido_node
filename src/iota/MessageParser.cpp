@@ -1,9 +1,13 @@
 #include "MessageParser.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "sodium.h"
 
 // basis message structure
+using namespace gradido;
+using namespace data;
+using namespace interaction;
 
 namespace iota {
     MessageParser::MessageParser(const void *data, size_t size)
@@ -44,7 +48,6 @@ namespace iota {
         uint32_t payload_type = 0;
         memcpy(&payload_type, &dataChar[offset], sizeof(payload_type));
         offset += sizeof(payload_type);
-        auto mm = MemoryManager::getInstance();
 
         if (payload_type == 2)
         {
@@ -64,7 +67,10 @@ namespace iota {
             memcpy(&dataSize, &dataChar[offset], sizeof(uint32_t));
             offset += sizeof(uint32_t);
 
-            mTransaction = std::make_unique<model::gradido::GradidoTransaction>(&dataChar[offset], dataSize);
+            auto serializedTransaction = std::make_shared<memory::Block>(dataSize, (const unsigned char*)&dataChar[offset]);
+            deserialize::Context deserializer(serializedTransaction, deserialize::Type::GRADIDO_TRANSACTION);
+            assert(deserializer.isGradidoTransaction());
+            mTransaction = deserializer.getGradidoTransaction();
 
             //auto hexData = DataTypeConverter::binToHex((const unsigned char*)data + offset, dataSize);
             //printf("hex indexation data: %s\n", hexData.data());
@@ -101,11 +107,9 @@ namespace iota {
     void MessageParser::calculateMessageId(const void *data, size_t size)
     {
         // calculate iota message id from serialized message
-	    // it is simply a BLAKE2b-256 hash (https://tools.ietf.org/html/rfc7693)
-        auto mm = MemoryManager::getInstance();
-        auto hash = mm->getMemory(crypto_generichash_BYTES);
-        crypto_generichash(hash->data(), crypto_generichash_BYTES, (const unsigned char*)data, size, nullptr, 0);
-        mMessageId.fromMemoryBin(hash);
-        mm->releaseMemory(hash);
+	    // it is simply a BLAKE2b-256 hash (https://tools.ietf.org/html/rfc7693)        
+        memory::Block hash(crypto_generichash_BYTES);
+        crypto_generichash(hash, crypto_generichash_BYTES, (const unsigned char*)data, size, nullptr, 0);
+        mMessageId = MessageId(hash);
     }
 }

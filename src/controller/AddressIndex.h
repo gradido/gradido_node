@@ -50,7 +50,7 @@ namespace controller {
 		//! \return Index for address.
 		virtual uint32_t getOrAddIndexForAddress(const std::string& address);
 
-		virtual std::vector<uint32_t> getOrAddIndicesForAddresses(std::vector<MemoryBin*>& publicKeys, bool clearMemoryBin = false);
+		virtual std::vector<uint32_t> getOrAddIndicesForAddresses(std::vector<memory::ConstBlockPtr>& publicKeys, bool clearMemoryBin = false);
 
 		//! \brief Add index, maybe I/O read, I/O write if index is new.
 		//! \param address User public key.

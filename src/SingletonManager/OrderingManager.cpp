@@ -87,15 +87,14 @@ int OrderingManager::ThreadFunction()
         }
         auto milestoneId = workSetIt->first;   
 
-		// make sure MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS time was passed since milestone was created 
-        // for more information see MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS
+		// make sure MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER time was passed since milestone was created 
+        // for more information see MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER
 		MilestoneTransactions* mt = workSetIt->second;
-		Poco::Timestamp now;
-        // Poco Timediff has a resolution of microseconds
-		int64_t sleepMilliSeconds = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS - (now - mt->entryCreationTime) / 1000;
+		Timepoint now;
+		Duration sleepDuration = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER - (now - mt->entryCreationTime);
 
-		if (sleepMilliSeconds > 0 && sleepMilliSeconds < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS) {
-			Poco::Thread::sleep(sleepMilliSeconds);
+        if (sleepDuration > std::chrono::milliseconds(0) && sleepDuration < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER) {
+            std::this_thread::sleep_for(sleepDuration);
             // check if our workSet is still the first
             if (workSetIt != mMilestonesWithTransactions.begin()) {
                 continue;
@@ -115,7 +114,7 @@ int OrderingManager::ThreadFunction()
         {
             // sort transaction after creation date if more than one was processed with this milestone
             mt->transactions.sort([](const GradidoTransactionWithGroup& a, const GradidoTransactionWithGroup& b) {
-                return a.transaction->getTransactionBody()->getCreatedSeconds() < b.transaction->getTransactionBody()->getCreatedSeconds();
+                return a.transaction->getTransactionBody()->getCreatedAt() < b.transaction->getTransactionBody()->getCreatedAt();
                 });
 
             printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
@@ -123,11 +122,10 @@ int OrderingManager::ThreadFunction()
             for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
                 auto transaction = itTransaction->transaction.get();
                 auto type = transaction->getTransactionBody()->getTransactionType();
-                auto seconds = transaction->getTransactionBody()->getCreatedSeconds();
-//                printf("transaction type: %d, created: %d\n", type, seconds);
-              
+                auto seconds = transaction->getTransactionBody()->getCreatedAt();
+
                 // TODO: check if it is really necessary
-                auto transactionCopy = std::make_unique<model::gradido::GradidoTransaction>(transaction->getSerialized().get());
+                auto transactionCopy = std::make_unique<gradido::data::GradidoTransaction>(transaction->getSerialized().get());
                 // put transaction to blockchain
                 auto group = gm->findGroup(itTransaction->groupAlias);
                 if (group.isNull()) {
@@ -140,7 +138,7 @@ int OrderingManager::ThreadFunction()
                     Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
                     auto communityServer = group->getListeningCommunityServer();
                     if (communityServer) {
-                        communityServer->notificateFailedTransaction(transactionCopy.get(), ex.what(), *itTransaction->messageId->convertToHex().get());
+                        communityServer->notificateFailedTransaction(transactionCopy.get(), ex.what(), itTransaction->messageId.convertToHex());
                     }
                     errorLog.information("[OrderingManager] transaction not added: %s", ex.getFullString());
                     try {
@@ -164,7 +162,7 @@ int OrderingManager::ThreadFunction()
 
 
 int OrderingManager::pushTransaction(
-    std::unique_ptr<model::gradido::GradidoTransaction> transaction, 
+    std::unique_ptr<gradido::data::GradidoTransaction> transaction, 
     int32_t milestoneId, uint64_t timestamp, 
     const std::string& groupAlias, MemoryBin* messageId)
 {

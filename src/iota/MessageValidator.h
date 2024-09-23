@@ -4,9 +4,10 @@
 #include "Poco/Thread.h"
 #include "Poco/Condition.h"
 #include "Poco/Logger.h"
+#include "gradido_blockchain/data/iota/MessageId.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "../task/CPUTask.h"
-#include "MessageId.h"
+
 #include "IMessageObserver.h"
 
 

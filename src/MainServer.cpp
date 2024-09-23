@@ -20,9 +20,10 @@
 #include "Poco/ConsoleChannel.h"
 #include "Poco/SplitterChannel.h"
 
-
 #include <sodium.h>
-#include <google/protobuf/stubs/common.h>
+#include <iostream>
+
+#include "loguru.hpp"
 
 #include "SingletonManager/GroupManager.h"
 #include "SingletonManager/OrderingManager.h"
@@ -233,7 +234,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		// Stop the json server
 		jsonrpc_srv.stop();
 
-		printf("[Gradido_Node::main] Running Tasks Count on shutdown: %d\n", ServerGlobals::g_NumberExistingTasks.value());
+		std::clog << "[Gradido_Node::main] Running Tasks Count on shutdown: " << std::to_string(ServerGlobals::g_NumberExistingTasks.value()) << std::endl;
 
 		// stop worker scheduler
 		// TODO: make sure that pending transaction are still write out to storage
@@ -241,9 +242,6 @@ int MainServer::main(const std::vector<std::string>& args)
 		ServerGlobals::g_CPUScheduler->stop();
 		ServerGlobals::g_WriteFileCPUScheduler->stop();
 		ServerGlobals::g_IotaRequestCPUScheduler->stop();
-
-		// Optional:  Delete all global objects allocated by libprotobuf.
-		google::protobuf::ShutdownProtobufLibrary();
 	}
 	return Application::EXIT_OK;
 }

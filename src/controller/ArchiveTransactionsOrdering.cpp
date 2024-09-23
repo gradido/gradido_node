@@ -1,9 +1,14 @@
 #include "ArchiveTransactionsOrdering.h"
 #include "../SingletonManager/LoggerManager.h"
-#include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/interaction/serialize/Context.h"
 #include "Group.h"
 #include "Poco/Util/ServerApplication.h"
+
+#include "magic_enum/magic_enum.hpp"
+
+using namespace gradido::data;
+using namespace gradido::interaction;
 
 namespace controller {
 	ArchiveTransactionsOrdering::ArchiveTransactionsOrdering(Group* parentGroup)
@@ -18,7 +23,7 @@ namespace controller {
 	}
 
 	void ArchiveTransactionsOrdering::addPendingTransaction(
-		std::unique_ptr<model::gradido::GradidoTransaction> transaction,
+		std::unique_ptr<gradido::data::GradidoTransaction> transaction,
 		uint64_t transactionNr
 	)
 	{
@@ -32,7 +37,9 @@ namespace controller {
 		}
 		else {
 			auto lastTransaction = mParentGroup->getLastTransaction();
-			if (!lastTransaction.isNull() && lastTransaction->getReceived() > transaction->getTransactionBody()->getCreatedSeconds()) {
+			if (!lastTransaction.isNull() && 
+				lastTransaction->getConfirmedAt().getAsTimepoint() 
+				> transaction->getTransactionBody()->getCreatedAt().getAsTimepoint()) {
 				throw BlockchainOrderException("previous transaction is younger");
 			}
 			int timeout = 10000;
@@ -61,7 +68,7 @@ namespace controller {
 		while(true)
 		{		
 			uint64_t transactionNr = 0;
-			std::unique_ptr<model::gradido::GradidoTransaction> gradidoTransaction;
+			std::unique_ptr<gradido::data::GradidoTransaction> gradidoTransaction;
 			{
 				std::scoped_lock<std::shared_mutex> _lock(mPendingTransactionsMutex);
 				
@@ -108,40 +115,34 @@ namespace controller {
 	{
 		auto lastTransaction = mParentGroup->getLastTransaction();
 		if (!lastTransaction.isNull()) {
-			return lastTransaction->getID() + 1;
+			return lastTransaction->getId() + 1;
 		}
 		else {
 			return 1;
 		}
 	}
 
-	void ArchiveTransactionsOrdering::insertTransactionToGroup(std::unique_ptr<model::gradido::GradidoTransaction> transaction)
+	void ArchiveTransactionsOrdering::insertTransactionToGroup(std::unique_ptr<gradido::data::GradidoTransaction> transaction)
 	{
-		auto createdTimestamp = transaction->getTransactionBody()->getCreatedSeconds();
-		// calculate hash with blake2b
-		auto mm = MemoryManager::getInstance();
-		auto hash = mm->getMemory(crypto_generichash_BYTES);
-		auto rawMessage = transaction->getSerialized();
+		serialize::Context serializer(*transaction);
+		auto rawMessage = serializer.run();
 
-		crypto_generichash(
-			*hash, hash->size(),
-			(const unsigned char*)rawMessage->data(),
-			rawMessage->size(),
-			NULL, 0
-		);
 		try {
 			Profiler timeAddingTransaction;
 			auto type = transaction->getTransactionBody()->getTransactionType();
-			mParentGroup->addTransaction(std::move(transaction), hash, createdTimestamp);
+			mParentGroup->addGradidoTransaction(
+				std::move(transaction), 
+				std::make_shared<memory::Block>(rawMessage->calculateHash()),
+				transaction->getTransactionBody()->getCreatedAt()
+			);
 			LoggerManager::getInstance()->mSpeedLogging.information(
 				"time adding archived transaction: %s of type: %s", 
-				timeAddingTransaction.string(), std::string(model::gradido::TransactionBody::transactionTypeToString(type)));
+				timeAddingTransaction.string(), std::string(magic_enum::enum_name(type)));
 		}
 		catch (Poco::NullPointerException& ex) {
 			printf("poco null pointer exception by calling Group::addTransaction\n");
 			throw;
 		}
-		mm->releaseMemory(hash);
 	}
 
 	// *************** Exceptions ****************************

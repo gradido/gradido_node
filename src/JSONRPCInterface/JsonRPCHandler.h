@@ -2,7 +2,6 @@
 #define __JSON_RPC_INTERFACE_JSON_JSON_RPC_HANDLER_
 
 #include "JsonRPCRequestHandler.h"
-#include "gradido_blockchain/MemoryManager.h"
 #include "Poco/DateTime.h"
 
 #include "../controller/Group.h"
@@ -76,7 +75,7 @@ protected:
 	void putTransaction(
 		rapidjson::Value& resultJson,
 		uint64_t transactionNr,
-		std::unique_ptr<model::gradido::GradidoTransaction> transaction,
+		std::unique_ptr<gradido::data::GradidoTransaction> transaction,
 		Poco::SharedPtr<controller::Group> group
 	);
 

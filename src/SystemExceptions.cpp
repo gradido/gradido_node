@@ -35,3 +35,31 @@ std::string CannotLockMutexAfterTimeout::getFullString() const
 
 	return resultString;
 }
+
+ClassNotInitalizedException::ClassNotInitalizedException(const char* what, const char* classname)
+	: GradidoBlockchainException(what), mClassName(classname)
+{
+
+}
+
+std::string ClassNotInitalizedException::getFullString() const 
+{
+	std::string result;
+	result = what();
+	result += ", class: " + mClassName;
+	return result;
+}
+
+FileNotFoundException::FileNotFoundException(const char* what, const char* fileName) noexcept
+	: GradidoBlockchainException(what), mFileName(fileName)
+{
+
+}
+
+std::string FileNotFoundException::getFullString() const
+{
+	std::string result;
+	result = what();
+	result += ", file: " + mFileName;
+	return result;
+}

@@ -2,14 +2,21 @@
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
+#include "gradido_blockchain/interaction/serialize/Context.h"
+#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "../SingletonManager/LoggerManager.h"
 
+#include "magic_enum/magic_enum.hpp"
+
+using namespace gradido::data;
+using namespace gradido::interaction;
+using namespace magic_enum::bitwise_operators;
 using namespace rapidjson;
 
 namespace client {
 
 	Base::Base(const Poco::URI& uri)
-		: mUri(uri), mFormat(NOTIFICATION_FORMAT_PROTOBUF_BASE64)
+		: mUri(uri), mFormat(NotificationFormat::PROTOBUF_BASE64)
 	{
 
 	}
@@ -25,42 +32,36 @@ namespace client {
 
 	}
 
-	bool Base::notificateNewTransaction(Poco::SharedPtr<model::gradido::ConfirmedTransaction> gradidoBlock)
+	bool Base::notificateNewTransaction(const ConfirmedTransaction& confirmedTransaction)
 	{
 		Poco::Net::NameValueCollection params;
 		
-		if (mFormat == NOTIFICATION_FORMAT_PROTOBUF_BASE64) {
-			auto transactionBase64 = DataTypeConverter::binToBase64(gradidoBlock->getSerialized());
-			params.add("transactionBase64", *transactionBase64.get());
+		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
+			serialize::Context serializer(confirmedTransaction);
+			params.add("transactionBase64", serializer.run()->convertToBase64());
 		}
-		else if (mFormat == NOTIFICATION_FORMAT_JSON) {
-			auto transactionJson = gradidoBlock->toJson();
-			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
+		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
+			auto transactionJson = toJson::Context(confirmedTransaction).run();
+			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\'');
 			params.add("transactionJson", transactionJson);
 		}
-		else {
-			throw GradidoUnknownEnumException("unknown format", "NotificationFormat", mFormat);
-		}
-		return notificate(std::move(params));
-		
+		return notificate(std::move(params));		
 	}
 
-	bool Base::notificateFailedTransaction(const model::gradido::GradidoTransaction* gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
+	bool Base::notificateFailedTransaction(const gradido::data::GradidoTransaction& gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
 	{
 		Poco::Net::NameValueCollection params;
 
-		if (mFormat == NOTIFICATION_FORMAT_PROTOBUF_BASE64) {
-			auto transactionBase64 = DataTypeConverter::binToBase64(gradidoTransaction->getSerializedConst());
-			params.add("transactionBase64", *transactionBase64.get());
+		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
+			serialize::Context serializer(gradidoTransaction);
+			params.add("transactionBase64", serializer.run()->convertToBase64());
 		}
-		else if (mFormat == NOTIFICATION_FORMAT_JSON) {
-			auto transactionJson = gradidoTransaction->toJson();
+		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
+			auto transactionJson = toJson::Context(gradidoTransaction).run();
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
 			params.add("transactionJson", transactionJson);
 		}
-		else {
-			throw GradidoUnknownEnumException("unknown format", "NotificationFormat", mFormat);
-		}
+		
 		params.add("error", errorMessage);
 		params.add("messageId", messageId);
 		return notificate(std::move(params));

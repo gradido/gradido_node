@@ -2,6 +2,7 @@
 #include "Poco/Timestamp.h"
 #include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/types.h"
 #include "../SystemExceptions.h"
 #include "../iota/IotaExceptions.h"
 
@@ -29,8 +30,8 @@ bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::
 	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 	if (exit) return false;
 
-	Poco::Timestamp now;
-	std::chrono::milliseconds nowMilliseconds(now.epochMicroseconds() / 1000);
+	Timepoint now;
+	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeInterval, TimerEntry(callbackObject, timeInterval, loopCount, name)));
 
 	return true;
@@ -72,8 +73,8 @@ bool FuzzyTimer::move()
 	auto it = mRegisteredAtTimer.begin();
 	if (it == mRegisteredAtTimer.end()) return true;
 
-	Poco::Timestamp now;
-	std::chrono::milliseconds nowMilliseconds(now.epochMicroseconds() / 1000);
+	Timepoint now;
+	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 
 	if (it->first <= nowMilliseconds) {
 		if (!it->second.callback) {

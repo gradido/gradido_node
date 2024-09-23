@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_LIST_H
 
 #include "rapidjson/document.h"
-#include "../../controller/Group.h"
+#include "../../blockchain/FileBased.h"
 #include "../../model/NodeTransactionEntry.h"
 
 #include "Transaction.h"
@@ -13,11 +13,15 @@ namespace model {
 		class TransactionList
 		{
 		public:
-			TransactionList(Poco::SharedPtr<controller::Group> group, std::unique_ptr<std::string> pubkey, rapidjson::Document::AllocatorType&);
+			TransactionList(
+				std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
+				memory::ConstBlockPtr pubkey,
+				rapidjson::Document::AllocatorType& alloc
+			);
 
 			rapidjson::Value generateList(
-				std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> allTransactions,
-				Poco::Timestamp now,
+				std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactions,
+				Timepoint now,
 				int currentPage = 1,
 				int pageSize = 25,
 				bool orderDESC = true,
@@ -25,15 +29,15 @@ namespace model {
 			);
 		protected:
 			void calculateDecay(
-				mpfr_ptr* balance, 
-				Poco::Timestamp prevTransactionDate,
+				GradidoUnit balance, 
+				Timepoint prevTransactionDate,
 				model::Apollo::Transaction* currentTransaction
 			);
 
-			rapidjson::Value lastDecay(mpfr_ptr balance, Poco::Timestamp lastTransactionDate);
+			rapidjson::Value lastDecay(GradidoUnit balance, Timepoint lastTransactionDate);
 
-			Poco::SharedPtr<controller::Group> mGroup;
-			std::unique_ptr<std::string> mPubkey;
+			std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
+			memory::ConstBlockPtr mPubkey;
 			rapidjson::Document::AllocatorType& mJsonAllocator;
 
 		};
