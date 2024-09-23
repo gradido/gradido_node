@@ -238,8 +238,11 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	else {
 		error(responseJson, JSON_RPC_ERROR_METHODE_NOT_FOUND, "method not known");
 	}
-	
-	responseJson.AddMember("result", resultJson, alloc);	
+	if(resultJson.HasMember("error")) {
+		responseJson.AddMember("error", resultJson["error"].Move(), alloc); 
+	} else {
+		responseJson.AddMember("result", resultJson, alloc);	
+	}
 }
 
 void JsonRPCHandler::getTransactions(

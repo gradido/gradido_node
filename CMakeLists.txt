@@ -24,19 +24,19 @@ include_directories(
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
 	"dependencies/paho.mqtt.c/src"
-	"dependencies/iota-pow-in-c/src/"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
 
 IF(UNIX)
 	include_directories(
-		"dependencies/poco/Crypto/include" 
-		"dependencies/poco/Util/include" 
-		"dependencies/poco/Foundation/include"
-		"dependencies/poco/Net/include"
-		"dependencies/poco/NetSSL_OpenSSL/include"
-		"dependencies/poco/JWT/include"
+		"dependencies/gradido_blockchain/dependencies/poco/Crypto/include" 
+		"dependencies/gradido_blockchain/dependencies/poco/JSON/include" 
+		"dependencies/gradido_blockchain/dependencies/poco/Util/include" 
+		"dependencies/gradido_blockchain/dependencies/poco/Foundation/include"
+		"dependencies/gradido_blockchain/dependencies/poco/Net/include"
+		"dependencies/gradido_blockchain/dependencies/poco/NetSSL_OpenSSL/include"
+		"dependencies/gradido_blockchain/dependencies/poco/JWT/include"
 	)
 ENDIF()
 
@@ -98,13 +98,13 @@ add_subdirectory("dependencies/leveldb")
 ############################## config and add poco ###################################
 #SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
 IF(UNIX)
-	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_PAGECOMPILER OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_JSON OFF CACHE BOOL "" FORCE)
-	add_subdirectory("dependencies/gradido_blockchain/dependencies/poco")
+#	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
+#	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
+#	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
+#	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
+#	SET(ENABLE_PAGECOMPILER OFF CACHE BOOL "" FORCE)
+#	SET(ENABLE_JSON OFF CACHE BOOL "" FORCE)
+# add_subdirectory("dependencies/gradido_blockchain/dependencies/poco")
 
 	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL Poco::JWT)
 ENDIF()
@@ -153,7 +153,7 @@ if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
 else()
-	target_link_libraries(GradidoNode ${POCO_LIBS} sodium -pthread)
+	target_link_libraries(GradidoNode ${POCO_LIBS} sodium -pthread mpfr)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 
