@@ -84,6 +84,11 @@ namespace controller {
 		}
 		throw GroupNotFoundException("couldn't found config details for community", communityAlias);
 	}
+	bool GroupIndex::isCommunityInConfig(const std::string& communityAlias) const
+	{
+		std::scoped_lock _lock(mWorkMutex);
+		return mCommunities.find(communityAlias) != mCommunities.end();
+	}
 
 	std::vector<std::string> GroupIndex::listGroupAliases()
 	{

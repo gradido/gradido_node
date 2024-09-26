@@ -2,13 +2,14 @@
 
 #include "../SingletonManager/OrderingManager.h"
 #include "../SingletonManager/CacheManager.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
 #include "../ServerGlobals.h"
 #include "MqttClientWrapper.h"
 #include "MessageParser.h"
+
+#include "loguru/loguru.hpp"
 
 using namespace rapidjson;
 
@@ -24,12 +25,12 @@ namespace iota
 
 	MessageListener::~MessageListener()
 	{
-		LOG_INFO("[iota::MessageListener] Stop Listen to: %s", mIndex.getHexString());
+		LOG_F(INFO, "Stop Listen to: %s", mIndex.getHexString());
 		lock();
 #ifdef IOTA_WITHOUT_MQTT
 		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
 		if (removedTimer != 1 && removedTimer != -1) {
-			LOG_ERROR("[iota::MessageListener] error removing timer, actually removed timer count: %d", removedTimer);
+			LOG_F(ERROR, "error removing timer, actually removed timer count: %d", removedTimer);
 		}
 #else
 		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
@@ -45,7 +46,7 @@ namespace iota
 #else
 		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
 #endif 
-		LOG_INFO("[iota::MessageListener] Listen to: %s", mIndex.getHexString());
+		LOG_F(INFO, " Listen to : %s", mIndex.getHexString().data());
 	}
 
     /*void MessageListener::listener(Poco::Timer& timer)
@@ -103,7 +104,7 @@ namespace iota
 			if (addStoredMessage(messageId)) {
 				MqttClientWrapper::getInstance()->subscribe(messageId, this);
 			}
-			// LOG_DEBUG("message arrived: %s", messageId.toHex());
+			// LOG_F(1, "message arrived: %s", messageId.toHex().data());
 		}
 		else if (TopicType::MESSAGES_METADATA == type) {
 			std::string messageString((const char*)message->payload, message->payloadlen);
@@ -114,14 +115,14 @@ namespace iota
 			
 			if (!document.HasMember("referencedByMilestoneIndex")) {
 				std::string messageIdString(document["messageId"].GetString());
-				// LOG_DEBUG("metadata message received without milestone for message id: %s", messageIdString);
+				// LOG_F(1, "metadata message received without milestone for message id: %s", messageIdString.data());
 				return;
 			}
 			assert(document["referencedByMilestoneIndex"].IsInt());
 
 			MessageId messageId(memory::Block::fromHex(document["messageId"].GetString()));			
 			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
-			LOG_DEBUG("[MessageListener::messageArrived] message arrived: %s confirmed in %d", messageId.toMemoryBin().convertToHex(), milestoneId);
+			LOG_F(1, "message arrived: %s confirmed in %d", messageId.toHex().data(), milestoneId);
 			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
 		}		
 	}
@@ -139,14 +140,14 @@ namespace iota
 		{
 			// update status if already exist
 			storedIt->second = MESSAGE_EXIST;
-			LOG_ERROR("mqtt deliver a transaction the second time!", newMessageId.toMemoryBin().convertToHex());
+			LOG_F(ERROR, "mqtt deliver a transaction the second time!, messageId: %s", newMessageId.toHex().data());
 			unlock();
 			return false;
 		}
 		else
 		{
 			// add if not exist
-			LOG_INFO("[MessageListener::updateStoredMessages] %s add message: %s", mIndex.getHexString(), newMessageId.toMemoryBin().convertToHex());
+			LOG_F(INFO, "%s add message: %s", mIndex.getHexString(), newMessageId.toHex().data());
 			mStoredMessageIds.insert({newMessageId, MESSAGE_NEW});
 			// and send to message validator
 			// validator->pushMessageId(newMessageId);
@@ -191,10 +192,11 @@ namespace iota
 			}
 			else {
 				// add if not exist
-				LOG_INFO(
-					"[MessageListener::updateStoredMessages] %s add message: %s",
-					mIndex.getHexString(),
-					messageId.toMemoryBin().convertToHex()
+				LOG_F(
+					INFO,
+					"%s add message: %s",
+					mIndex.getHexString().data(),
+					messageId.toHex().data()
 				);
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator

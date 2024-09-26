@@ -11,7 +11,7 @@
 #include "Poco/Util/ServerApplication.h"
 
 namespace controller {
-	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias)
+	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver& taskObserver, const std::string& groupAlias)
 		: //mTimer(0, ServerGlobals::g_TimeoutCheck),
 		  mBlockNr(blockNr),
 		  mSerializedTransactions(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()),
@@ -126,8 +126,8 @@ namespace controller {
 				writeTransactionTaskExist = true;
 				if (!transaction.isNull()) return transaction;
 			}
-			if (mTaskObserver->isTransactionPending(transactionNr)) {
-				transaction = mTaskObserver->getTransaction(transactionNr);
+			if (mTaskObserver.isTransactionPending(transactionNr)) {
+				transaction = mTaskObserver.getTransaction(transactionNr);
 				writeTransactionTaskIsObserved = true;
 				if (!transaction.isNull()) return transaction;
 			}
@@ -188,8 +188,8 @@ namespace controller {
 				Poco::DateTime() - mTransactionWriteTask->getCreationDate()
 				> std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
 			) {
-				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
-				mTaskObserver->addBlockWriteTask(mTransactionWriteTask);
+				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(&mTaskObserver));
+				mTaskObserver.addBlockWriteTask(mTransactionWriteTask);
 				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
 				mTransactionWriteTask = nullptr;
 			}
@@ -212,10 +212,10 @@ namespace controller {
 				> std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
 			) {
 				auto copyTask = mTransactionWriteTask;
-				mTaskObserver->addBlockWriteTask(copyTask);
+				mTaskObserver.addBlockWriteTask(copyTask);
 				mTransactionWriteTask = nullptr;
 
-				copyTask->setFinishCommand(new TaskObserverFinishCommand(mTaskObserver));
+				copyTask->setFinishCommand(new TaskObserverFinishCommand(&mTaskObserver));
 				copyTask->scheduleTask(copyTask);
 			}
 		}

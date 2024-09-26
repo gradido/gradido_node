@@ -5,6 +5,7 @@
 #include "gradido_blockchain/lib/StringViewCompare.h"
 #include "FileBased.h"
 #include "../controller/GroupIndex.h"
+#include "../controller/AddressIndex.h"
 
 namespace gradido {
 	namespace blockchain {
@@ -19,8 +20,13 @@ namespace gradido {
 			static FileBasedProvider* getInstance();
 
 			std::shared_ptr<Abstract> findBlockchain(std::string_view communityId);
-			void init(const std::string& communityConfigFile);
+			//! \return true if successfully else return false
+			bool init(const std::string& communityConfigFile);
 			void exit();
+
+			//! expensive,  reload config file from disk and add new blockchains, recreate community listener from all
+			//! \return count of added blockchain
+			int reloadConfig();
 		protected:
 			void clear();
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
@@ -35,10 +41,12 @@ namespace gradido {
 			FileBasedProvider& operator= (const FileBasedProvider&) = delete;
 
 			//! load or create blockchain for community, not locking woking mutex!
-			void addCommunity(const std::string& alias, const std::string& folder);
+			std::shared_ptr<FileBased> addCommunity(const std::string& alias);
+			void updateListenerCommunity(const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
 			controller::GroupIndex* mGroupIndex;
 			bool mInitalized;
+
 		};
 	}
 }

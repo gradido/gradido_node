@@ -1,14 +1,19 @@
 #ifndef __GRADIDO_NODE_CONTROLLER_ADDRESS_INDEX_H
 #define __GRADIDO_NODE_CONTROLLER_ADDRESS_INDEX_H
 
+#include "gradido_blockchain/lib/AccessExpireCache.h"
+
 #include "ControllerBase.h"
+
+#include "../model/files/AddressIndex.h"
 
 #include <unordered_map>
 
-#include "Poco/Path.h"
-#include "Poco/AccessExpireCache.h"
-
-#include "../model/files/AddressIndex.h"
+namespace gradido {
+	namespace blockchain {
+		class FileBased;
+	}
+}
 
 namespace controller {
 
@@ -32,12 +37,12 @@ namespace controller {
 	* TODO: extend address index with first transaction nr where the address is involved
 	*/
 
-	class Group;
+	
 
 	class AddressIndex : public ControllerBase, public TimerCallback
 	{
 	public:
-		AddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent);
+		AddressIndex(std::string_view path, uint32_t lastIndex, gradido::blockchain::FileBased* parent);
 		~AddressIndex();
 
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
@@ -50,7 +55,7 @@ namespace controller {
 		//! \return Index for address.
 		virtual uint32_t getOrAddIndexForAddress(const std::string& address);
 
-		virtual std::vector<uint32_t> getOrAddIndicesForAddresses(std::vector<memory::ConstBlockPtr>& publicKeys, bool clearMemoryBin = false);
+		virtual std::vector<uint32_t> getOrAddIndicesForAddresses(const std::vector<memory::ConstBlockPtr>& publicKeys);
 
 		//! \brief Add index, maybe I/O read, I/O write if index is new.
 		//! \param address User public key.
@@ -58,13 +63,13 @@ namespace controller {
 		//! \return False if index address already exist, else true.
 		virtual bool addAddressIndex(const std::string& address, uint32_t index);
 
-		inline uint32_t getLastIndex() { Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex); return mLastIndex; }
+		inline uint32_t getLastIndex() { std::lock_guard _lock(mWorkingMutex); return mLastIndex; }
 
 		//! \brief take first hex sets from address as folder and file name
 		//!
 		//!  Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n
 		//!  ./94/93.index
-		static Poco::Path getAddressIndexFilePathForAddress(const std::string& address);
+		static std::string getAddressIndexFilePathForAddress(const std::string& address);
 
 		TimerReturn callFromTimer();
 
@@ -72,15 +77,16 @@ namespace controller {
 		//! \brief reading model::files::AddressIndex from cache or if not exist in cache, creating model::files::AddressIndex which load from file if exist
 		//!
 		//! Can need some time if file must at first load from disk, maybe I/O read.
-		Poco::SharedPtr<model::files::AddressIndex> getAddressIndex(const std::string& address);
+		std::shared_ptr<model::files::AddressIndex> getAddressIndex(const std::string& address);
 
-		Poco::Path mGroupPath;
+		std::string mGroupPath;
 		uint32_t   mLastIndex;
-		Poco::AccessExpireCache<uint8_t, model::files::AddressIndex> mAddressIndicesCache;
-		Poco::SharedPtr<model::files::AddressIndex> mAddressIndexFile;
+		std::mutex mWorkMutex;
+		AccessExpireCache<uint8_t, model::files::AddressIndex> mAddressIndicesCache;
+		std::shared_ptr<model::files::AddressIndex> mAddressIndexFile;
 
-		Group* mParent;
-		Poco::DateTime mWaitingForNextFileWrite;
+		gradido::blockchain::FileBased *mParent;
+		Timepoint mWaitingForNextFileWrite;
 	};
 }
 

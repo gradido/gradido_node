@@ -5,9 +5,6 @@
 
 #include <unordered_map>
 
-#include "Poco/Path.h"
-#include "Poco/AccessExpireCache.h"
-
 #include "AddressIndex.h"
 
 namespace controller {
@@ -18,12 +15,10 @@ namespace controller {
 	*	
 	*/
 
-	class Group;
-
 	class MemoryAddressIndex : public AddressIndex
 	{
 	public:
-		MemoryAddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent);
+		MemoryAddressIndex(std::string_view path, uint32_t lastIndex, gradido::blockchain::FileBased* parent);
 
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
 		//! \return Index or 0 if address didn't exist.
@@ -35,7 +30,7 @@ namespace controller {
 		//! \return Index for address.
 		uint32_t getOrAddIndexForAddress(const std::string& address);
 
-		std::vector<uint32_t> getOrAddIndicesForAddresses(std::vector<MemoryBin*>& publicKeys, bool clearMemoryBin = false);
+		std::vector<uint32_t> getOrAddIndicesForAddresses(const std::vector<memory::BlockPtr>& publicKeys);
 
 		//! \brief Add index, maybe I/O read, I/O write if index is new.
 		//! \param address User public key.
@@ -43,7 +38,7 @@ namespace controller {
 		//! \return False if index address already exist, else true.
 		bool addAddressIndex(const std::string& address, uint32_t index);
 
-		inline uint32_t getLastIndex() { Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex); return mLastIndex; }
+		inline uint32_t getLastIndex() { std::lock_guard _lock(mWorkingMutex); return mLastIndex; }
 
 	protected:
 		std::unordered_map<std::string, uint32_t> mAddressIndices;

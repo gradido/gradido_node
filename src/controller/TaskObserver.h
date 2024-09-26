@@ -21,6 +21,7 @@
 
 #include <vector>
 #include <map>
+#include <mutex>
 
 enum TaskObserverType {
 	TASK_OBSERVER_WRITE_BLOCK,
@@ -68,11 +69,13 @@ public:
 	//! \return the transaction in question
 	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
 
+	inline size_t getPendingTasksCount() const { std::lock_guard _lock(mFastMutex); return mBlockWriteTasks.size(); }
+
 	static const char* TaskObserverTypeToString(TaskObserverType type);
 	static TaskObserverType StringToTaskObserverType(const std::string& typeString);
 
 protected:
-	Poco::FastMutex mFastMutex;
+	mutable std::mutex mFastMutex;
 	typedef std::pair<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
 	std::map<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
 	typedef std::pair<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;

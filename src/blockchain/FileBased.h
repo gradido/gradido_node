@@ -2,6 +2,11 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 
 #include "gradido_blockchain/blockchain/Abstract.h"
+#include "../client/Base.h"
+#include "../controller/TaskObserver.h"
+#include "../iota/MessageListener.h"
+
+#include <mutex>
 
 namespace gradido {
 	namespace blockchain {
@@ -16,8 +21,14 @@ namespace gradido {
 		class FileBased : public Abstract
 		{
 		public:
-			FileBased(std::string_view communityId);
+			FileBased(std::string_view communityId, std::string_view folder);
 			virtual ~FileBased();
+
+			//! \return true on success, else false
+			bool init();
+
+			// clean up group, stopp all running processes
+			void exit();
 
 			//! validate and generate confirmed transaction
 			//! throw if gradido transaction isn't valid
@@ -49,8 +60,25 @@ namespace gradido {
 			virtual std::shared_ptr<TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 			virtual AbstractProvider* getProvider() const;
 
+			void setListeningCommunityServer(std::shared_ptr<client::Base> client);
+			inline std::shared_ptr<client::Base> getListeningCommunityServer() const { std::lock_guard<std::recursive_mutex> _lock(mWorkMutex); return mCommunityServer; }
+
+			// expensive, remove all address and block indices, they must be build from scratch
+			void resetAllIndices();
 		protected:
 			virtual void pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry);
+
+			mutable std::recursive_mutex mWorkMutex;
+			bool mExitCalled;
+			std::string mFolderPath;
+
+			// observe write to file tasks from block, mayber later more
+			TaskObserver mTaskObserver;
+			iota::MessageListener* mIotaMessageListener;
+
+			//! Community Server listening on new blocks for his group
+			//! TODO: replace with more abstract but simple event system
+			std::shared_ptr<client::Base> mCommunityServer;
 		};
 	}
 }

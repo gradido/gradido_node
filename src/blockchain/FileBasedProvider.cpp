@@ -3,6 +3,8 @@
 #include "../client/JsonRPC.h"
 #include "../client/GraphQL.h"
 
+#include "loguru/loguru.hpp"
+
 namespace gradido {
 	namespace blockchain {
 		FileBasedProvider::FileBasedProvider()
@@ -42,9 +44,9 @@ namespace gradido {
 			if (it != mBlockchainsPerGroup.end()) {
 				return it->second;
 			}
-			// load new blockchain if it exist in config
+			return nullptr;
 		}
-		void FileBasedProvider::init(const std::string& communityConfigFile)
+		bool FileBasedProvider::init(const std::string& communityConfigFile)
 		{
 			std::lock_guard _lock(mWorkMutex);
 			mInitalized = true;
@@ -52,43 +54,13 @@ namespace gradido {
 			mGroupIndex->update();
 			auto communitiesAlias = mGroupIndex->listGroupAliases();
 			for (auto& communityAlias : communitiesAlias) {
-				// load all groups to start iota message listener from all groups
-				try {
-					
-					auto folder = mGroupIndex->getFolder(communityAlias);
-					const auto& communityConfig = mGroupIndex->getCommunityDetails(communityAlias);
-					// with that call community will be initialized and start listening
-					addCommunity(communityAlias, folder);
-
-					// for notification of community server by new transaction
-					// deprecated, will be replaced with mqtt in future
-					if (!communityConfig.newBlockUri.empty()) {
-						client::Base* clientBase = nullptr;
-						auto uri = Poco::URI(communityConfig.newBlockUri);
-						if (communityConfig.blockUriType == "json") {
-							clientBase = new client::JsonRPC(uri);
-						} else if (communityConfig.blockUriType == "graphql") {
-							clientBase = new client::GraphQL(uri);
-						}
-						else {
-							errorLog.error("unknown new block uri type: %s", communityNewBlockUriType);
-						}
-						if (clientBase) {
-							clientBase->setGroupAlias(*it);
-							group->setListeningCommunityServer(clientBase);
-							errorLog.information("[GroupManager::init] notification of community: %s", *it);
-						}
-					}
-				}
-				catch (GradidoBlockchainTransactionNotFoundException& ex) {
-					errorLog.error("[GroupManager::init] transaction not found exception: %s in group: %s", ex.getFullString(), *it);
-					return -1;
-				}
-				catch (GradidoBlockchainException& ex) {
-					errorLog.error("[GroupManager::init] gradido blockchain exception: %s in group: %s", ex.getFullString(), *it);
-					return -2;
+				// exit if at least one blockchain from config couldn't be loaded
+				// should only occure with invalid config
+				if (!addCommunity(communityAlias)) {
+					return false;
 				}
 			}
+			return true;
 		}
 		void FileBasedProvider::exit()
 		{
@@ -97,9 +69,76 @@ namespace gradido {
 			clear();
 		}
 
-		void FileBasedProvider::addCommunity(const std::string& alias, const std::string& folder)
+		int FileBasedProvider::reloadConfig()
 		{
+			std::lock_guard _lock(mWorkMutex);
+			if (!mInitalized) {
+				throw ClassNotInitalizedException("please call init before", "blockchain::FileBasedProvider");
+			}
+			mGroupIndex->update();
+			auto communitiesAlias = mGroupIndex->listGroupAliases();
+			int addedBlockchainsCount = 0;
+			for (auto& communityAlias : communitiesAlias) {
+				auto it = mBlockchainsPerGroup.find(communityAlias);
+				if (it == mBlockchainsPerGroup.end()) {
+					if(addCommunity(communityAlias)) {
+						addedBlockchainsCount++;
+					}
+				}
+				else {
+					updateListenerCommunity(communityAlias, it->second);
+				}
+			}
+			return addedBlockchainsCount;
+		}
 
+		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(const std::string& communityAlias)
+		{
+			try {
+				auto folder = mGroupIndex->getFolder(communityAlias);
+
+				// with that call community will be initialized and start listening
+				auto blockchain = std::make_shared<FileBased>(communityAlias, folder);
+				updateListenerCommunity(communityAlias, blockchain);
+				if (!blockchain->init()) {
+					LOG_F(ERROR, "error initalizing blockchain: %s", communityAlias.data());
+					return nullptr;
+				}
+				mBlockchainsPerGroup.insert({ communityAlias, blockchain });
+				return blockchain;
+			}
+			catch (GradidoBlockchainException& ex) {
+				LOG_F(ERROR, "gradido blockchain exception: %s in community : %s",
+					ex.getFullString().data(),
+					communityAlias.data()
+				);
+				return nullptr;
+			}
+		}
+		void FileBasedProvider::updateListenerCommunity(const std::string& alias, std::shared_ptr<FileBased> blockchain)
+		{
+			const auto& communityConfig = mGroupIndex->getCommunityDetails(alias);
+			// for notification of community server by new transaction
+			// deprecated, will be replaced with mqtt in future
+			if (!communityConfig.newBlockUri.empty()) {
+				std::shared_ptr<client::Base> clientBase;
+				auto uri = Poco::URI(communityConfig.newBlockUri);
+				if (communityConfig.blockUriType == "json") {
+					clientBase = std::make_shared<client::JsonRPC>(uri);
+				}
+				else if (communityConfig.blockUriType == "graphql") {
+					clientBase = std::make_shared<client::GraphQL>(uri);
+				}
+				else {
+					LOG_F(ERROR, "unknown new block uri type: %s", communityConfig.blockUriType.data());
+					return;
+				}
+				if (clientBase) {
+					clientBase->setGroupAlias(alias);
+					blockchain->setListeningCommunityServer(clientBase);
+					LOG_F(INFO, "notification of community: %s", alias.data());
+				}
+			}
 		}
 	}
 }

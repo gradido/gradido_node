@@ -1,24 +1,25 @@
 #include "AddressIndex.h"
 #include "sodium.h"
 #include "../ServerGlobals.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/CacheManager.h"
-#include "Group.h"
+#include "../blockchain/FileBased.h"
 #include "../model/files/FileExceptions.h"
 
+#include "loguru/loguru.hpp"
+
 namespace controller {
-	AddressIndex::AddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent)
+	AddressIndex::AddressIndex(std::string_view path, uint32_t lastIndex, gradido::blockchain::FileBased* parent)
 		: mGroupPath(path), mLastIndex(lastIndex), 
-		  mAddressIndicesCache(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()), 
+		  mAddressIndicesCache(ServerGlobals::g_CacheTimeout), 
 		  mParent(parent)
 	{
 		Poco::Path addressIndexPath(mGroupPath);
 		addressIndexPath.append(getAddressIndexFilePathForAddress("HalloWelt"));
 		try {
-			mAddressIndexFile = new model::files::AddressIndex(addressIndexPath);
+			mAddressIndexFile = std::make_shared<model::files::AddressIndex>(addressIndexPath);
 		}
 		catch (model::files::HashMismatchException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.critical(ex.getFullString());
+			LOG_F(FATAL, ex.getFullString().data());
 			mParent->resetAllIndices();
 			Poco::SharedPtr<model::files::AddressIndex> newAddressIndex(new model::files::AddressIndex(addressIndexPath));
 		}
@@ -31,14 +32,14 @@ namespace controller {
 		addressIndexPath.append(getAddressIndexFilePathForAddress("HalloWelt"));
 		auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(addressIndexPath.toString());
 		if (result != 1 && result != -1) {
-			LOG_ERROR("[controller::~AddressIndex] error removing timer");
+			LOG_F(ERROR, "error removing timer");
 		}
 	}
 
 	bool AddressIndex::addAddressIndex(const std::string& address, uint32_t index)
 	{
 		auto addressIndex = getAddressIndex(address);
-		if (addressIndex.isNull()) {
+		if (!addressIndex) {
 			return false;
 		}
 		mWorkingMutex.lock();
@@ -57,7 +58,7 @@ namespace controller {
 	uint32_t AddressIndex::getOrAddIndexForAddress(const std::string& address)
 	{
 		auto addressIndex = getAddressIndex(address);
-		assert(!addressIndex.isNull());
+		assert(addressIndex);
 		auto index = addressIndex->getIndexForAddress(address);
 		if (!index) {
 			index = ++mLastIndex;
@@ -66,24 +67,17 @@ namespace controller {
 		return index;
 	}
 
-	std::vector<uint32_t> AddressIndex::getOrAddIndicesForAddresses(std::vector<memory::ConstBlockPtr>& publicKeys, bool clearMemoryBin/* = false*/)
+	std::vector<uint32_t> AddressIndex::getOrAddIndicesForAddresses(const std::vector<memory::ConstBlockPtr>& publicKeys)
 	{
-		auto mm = MemoryManager::getInstance();
 		std::vector<uint32_t> results;
 		results.reserve(publicKeys.size());
 		for (auto it = publicKeys.begin(); it != publicKeys.end(); it++) {
-			results.push_back(getOrAddIndexForAddress(*(*it)->copyAsString().get()));
-			if (clearMemoryBin) {
-				mm->releaseMemory(*it);
-			}
-		}
-		if (clearMemoryBin) {
-			publicKeys.clear();
+			results.push_back(getOrAddIndexForAddress((*it)->copyAsString()));
 		}
 		return results;
 	}
 
-	Poco::SharedPtr<model::files::AddressIndex> AddressIndex::getAddressIndex(const std::string& address)
+	std::shared_ptr<model::files::AddressIndex> AddressIndex::getAddressIndex(const std::string& address)
 	{
 		return mAddressIndexFile;
 		/*uint8_t firstBytes = 0;
@@ -111,31 +105,29 @@ namespace controller {
 		return entry;*/
 	}
 
-	Poco::Path AddressIndex::getAddressIndexFilePathForAddress(const std::string& address)
+	std::string AddressIndex::getAddressIndexFilePathForAddress(const std::string& address)
 	{
-		Poco::Path addressIndexPath;
+		return "pubkeys.index";
+
+		// use this code if one file is not longer enough
+		/* 
+		std::stringstream addressIndexPath;
+		
 		char firstBytesHex[3]; memset(firstBytesHex, 0, 3);
 		sodium_bin2hex(firstBytesHex, 3, (const unsigned char*)address.data(), 1);
-		//printf("bytes %x\n", firstBytes);
-		std::string firstBytesString = firstBytesHex;
-		addressIndexPath.pushDirectory("pubkeys");
-		//addressIndexPath.pushDirectory("_" + firstBytesString.substr(0, 2));
-		std::string file = "_" + firstBytesString.substr(0, 2);
-		file += ".index";
-		//addressIndexPath.append(file);
-		addressIndexPath.append("pubkeys.index");
+		addressIndexPath << "pubkeys/_" << firstBytesHex << ".index";
 
-		return addressIndexPath;
+		return addressIndexPath.str();
+		*/
 	}
 
 	TimerReturn AddressIndex::callFromTimer()
 	{
 		Poco::ScopedLock _lock(mWorkingMutex);
 
-		if (Poco::DateTime() - mWaitingForNextFileWrite 
-			> std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
+		if (Timepoint() - mWaitingForNextFileWrite > ServerGlobals::g_WriteToDiskTimeout
 		) {
-			mWaitingForNextFileWrite = Poco::DateTime();
+			mWaitingForNextFileWrite = Timepoint();
 			if (!mAddressIndexFile->isFileWritten()) {
 				task::TaskPtr serializeAndWriteToFileTask = new task::SerializeToVFileTask(mAddressIndexFile);
 				serializeAndWriteToFileTask->setFinishCommand(new model::files::SuccessfullWrittenToFileCommand(mAddressIndexFile));

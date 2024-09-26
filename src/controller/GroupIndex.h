@@ -51,6 +51,7 @@ namespace controller {
 		std::string getFolder(const std::string& communityAlias);
 		//! throw GroupNotFoundException Exception of community don't exist in config
 		const CommunityIndexEntry& getCommunityDetails(const std::string& communityAlias) const;
+		bool isCommunityInConfig(const std::string& communityAlias) const;
 
 		//! \brief collect all froup aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server

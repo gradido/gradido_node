@@ -1,12 +1,12 @@
+#include "../blockchain/FileBased.h"
+
 #include "MemoryAddressIndex.h"
 #include "sodium.h"
 #include "../ServerGlobals.h"
-#include "../SingletonManager/LoggerManager.h"
-#include "Group.h"
 #include "../model/files/FileExceptions.h"
 
 namespace controller {
-	MemoryAddressIndex::MemoryAddressIndex(Poco::Path path, uint32_t lastIndex, Group* parent)
+	MemoryAddressIndex::MemoryAddressIndex(std::string_view path, uint32_t lastIndex, gradido::blockchain::FileBased* parent)
 		: AddressIndex(path, lastIndex, parent)
 	{
 
@@ -44,19 +44,12 @@ namespace controller {
 		return index;
 	}
 
-	std::vector<uint32_t> MemoryAddressIndex::getOrAddIndicesForAddresses(std::vector<MemoryBin*>& publicKeys, bool clearMemoryBin/* = false*/)
+	std::vector<uint32_t> MemoryAddressIndex::getOrAddIndicesForAddresses(const std::vector<memory::BlockPtr>& publicKeys)
 	{
-		auto mm = MemoryManager::getInstance();
 		std::vector<uint32_t> results;
 		results.reserve(publicKeys.size());
 		for (auto it = publicKeys.begin(); it != publicKeys.end(); it++) {
-			results.push_back(getOrAddIndexForAddress(*(*it)->copyAsString().get()));
-			if (clearMemoryBin) {
-				mm->releaseMemory(*it);
-			}
-		}
-		if (clearMemoryBin) {
-			publicKeys.clear();
+			results.push_back(getOrAddIndexForAddress((*it)->copyAsString()));
 		}
 		return results;
 	}

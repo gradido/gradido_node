@@ -23,6 +23,7 @@ include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"
 	"dependencies/rapidjson/include"
+	"dependencies/gradido_blockchain"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
 	"dependencies/gradido_blockchain/dependencies"

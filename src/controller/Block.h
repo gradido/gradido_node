@@ -32,7 +32,7 @@ namespace controller {
 	{
 		friend model::files::Block;
 	public:
-		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver* taskObserver, const std::string& groupAlias);
+		Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver& taskObserver, const std::string& groupAlias);
 		~Block();
 
 		//! \return false if block file has errors
@@ -65,7 +65,9 @@ namespace controller {
 		
 		uint32_t mBlockNr;		
 
-		TaskObserver *mTaskObserver;
+		// need to stay in group or blockchain, because Block can be removed from cache, while write task is still pending
+		// and reloaded again before write task was finished
+		TaskObserver& mTaskObserver;
 		Poco::AccessExpireCache<uint64_t, model::TransactionEntry> mSerializedTransactions;
 
 		Poco::SharedPtr<BlockIndex> mBlockIndex;
