@@ -2,16 +2,22 @@
 #include "FileBasedProvider.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
+#include "loguru/loguru.hpp"
+
+using namespace controller;
+
 namespace gradido {
 	namespace blockchain {
 		FileBased::FileBased(std::string_view communityId, std::string_view folder)
 			: Abstract(communityId),
 			mExitCalled(false),
 			mFolderPath(folder),
-			mIotaMessageListener(new iota::MessageListener(communityId))
+			mIotaMessageListener(new iota::MessageListener(communityId)),
+			mAddressIndex(folder, this),
+			mBlockchainState(std::string(folder).append(".state"))
 		{
-
 		}
+
 		FileBased::~FileBased()
 		{
 			if (mIotaMessageListener) {
@@ -22,6 +28,18 @@ namespace gradido {
 		bool FileBased::init()
 		{
 			std::lock_guard _lock(mWorkMutex);
+			if (!mAddressIndex.init()) {
+				// remove index files for regenration
+				LOG_F(WARNING, "something went wrong with the index files");
+				// mCachedBlocks.clear();
+				mAddressIndex.reset();
+			}
+			if (!mBlockchainState.init()) {
+				LOG_F(WARNING, "something went wrong with the state level db");
+				mBlockchainState.reset();
+				loadStateFromBlockCache();
+			}
+
 			mIotaMessageListener->run();
 			return true;
 		}
@@ -43,6 +61,8 @@ namespace gradido {
 					break;
 				}
 			}
+			mBlockchainState.exit();
+			mAddressIndex.exit();
 		}
 		bool FileBased::addGradidoTransaction(data::ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt)
 		{
@@ -87,12 +107,13 @@ namespace gradido {
 			mCommunityServer = client;
 		}
 
-		void resetAllIndices()
+
+		void FileBased::pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry)
 		{
 
 		}
 
-		void FileBased::pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry)
+		void FileBased::loadStateFromBlockCache()
 		{
 
 		}

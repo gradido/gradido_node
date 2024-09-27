@@ -1,19 +1,15 @@
 #ifndef __GRADIDO_NODE_MODEL_FILES_ADDRESS_INDEX_H
 #define __GRADIDO_NODE_MODEL_FILES_ADDRESS_INDEX_H
 
-#include "FileBase.h"
 #include "../../lib/VirtualFile.h"
 #include "../../lib/FuzzyTimer.h"
 #include "../../task/SerializeToVFileTask.h"
 #include "gradido_blockchain/data/AddressType.h"
 
-#include "Poco/DateTime.h"
-#include "Poco/SharedPtr.h"
-
 #include <unordered_map>
 #include <map>
-
-
+#include <mutex>
+#include <memory>
 
 namespace model {
 	namespace files {
@@ -29,7 +25,7 @@ namespace model {
 		*/
 		class SuccessfullWrittenToFileCommand;
 
-		class AddressIndex : public FileBase, public task::ISerializeToVFile
+		class AddressIndex : public task::ISerializeToVFile
 		{
 			friend SuccessfullWrittenToFileCommand;
 		public:
@@ -43,9 +39,17 @@ namespace model {
 				uint32_t index;
 				gradido::data::AddressType type;
 			};
-			//! Load from file if exist, fileLock via FileLockManager, I/O read if exist.
-			AddressIndex(Poco::Path filePath);
+			AddressIndex(std::string_view fileName);
 			~AddressIndex();
+
+			//! load from file, check hash, IO-read if exist, fileLock via FileLockManager
+			//! \return true if loading from file worked or there isn't any file for reading
+			//! \return false if error on reading file occured, that means index file must be created new
+			bool init();
+			//! write to file if current data set wasn't already written to file
+			void exit();
+			// remove file from hdd, clear map so basically start over fresh
+			void reset();
 
 			//! \brief Adding new index, account address public key pair into memory, use Poco::FastMutex::ScopedLock.
 			//! \param address binary string
@@ -55,22 +59,16 @@ namespace model {
 			//! \return Index or zero if address not found.
 			uint32_t getIndexForAddress(const std::string &address);
 
-			//! \brief Write new index file if checkFile return true, use Poco::FastMutex::ScopedLock, fileLock via FileLockManager, I/O write.
-			//! 
-			//! Check if each index is unique
-			//! Could need some time, calculate also sha256 hash for putting at end of file.
-			//! Throw Poco::Exception if two addresses have the same index.
-			void writeToFile();
-
 			//! serialize address indices for writing with hdd write buffer task
 			std::unique_ptr<VirtualFile> serialize();
 
-			std::string getFileNameString();
-
-			inline bool isFileWritten() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mFileWritten; }
+			inline bool isFileWritten() { std::lock_guard _lock(mFastMutex); return mFileWritten; }
+			std::string getFileNameString() { std::lock_guard _lock(mFastMutex); return mFileName; }
+			size_t getIndexCount() const { std::lock_guard _lock(mFastMutex); return mAddressesIndices.size(); }
 
 		protected:
 			//! \brief Check if index file contains current indices (compare sizes), fileLock via FileLockManager, I/O read.
+			//! TODO: check last hash
 			//! \return True if calculated size from map entry count == file size, else return false.
 			bool checkFile();
 
@@ -82,26 +80,27 @@ namespace model {
 
 			//! \brief Calculate file hash from map entrys sorted by indices.
 			//! \return MemoryBin with hash, must be release after using by MemoryManager.
-			static MemoryBin calculateHash(const std::map<int, std::string>& sortedMap);
+			static MemoryBin calculateHash(const std::map<uint32_t, std::string>& sortedMap);
 
 			//! \brief Load index, public key pairs from file and check file integrity with sha256 hash at end of file, fileLock via FileLockManager, I/O read.
 			//! \return False if file isn't valid or file couldn't be locked, else true if ok.
 			bool loadFromFile();
 
-			Poco::Path mFilePath;
+			std::string mFileName;
 			std::unordered_map<std::string, uint32_t> mAddressesIndices;
 			//! Indicate if current index set is written to file (true) or not (false).
 			bool mFileWritten;
+			std::mutex mFastMutex;
 		};
 
 		class SuccessfullWrittenToFileCommand : public task::Command
 		{
 		public:
-			SuccessfullWrittenToFileCommand(Poco::SharedPtr<AddressIndex> parent) : mParent(parent) {};
+			SuccessfullWrittenToFileCommand(std::shared_ptr<AddressIndex> parent) : mParent(parent) {};
 			int taskFinished(task::Task* task) { mParent->setFileWritten(); return 0; };
 
 		protected:
-			Poco::SharedPtr<AddressIndex> mParent;
+			std::shared_ptr<AddressIndex> mParent;
 		};
 	}
 }

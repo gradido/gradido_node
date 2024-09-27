@@ -36,13 +36,27 @@ std::string CannotLockMutexAfterTimeout::getFullString() const
 	return resultString;
 }
 
-ClassNotInitalizedException::ClassNotInitalizedException(const char* what, const char* classname)
+ClassNotInitalizedException::ClassNotInitalizedException(const char* what, const char* classname) noexcept
 	: GradidoBlockchainException(what), mClassName(classname)
 {
 
 }
 
 std::string ClassNotInitalizedException::getFullString() const 
+{
+	std::string result;
+	result = what();
+	result += ", class: " + mClassName;
+	return result;
+}
+
+ClassAlreadyInitalizedException::ClassAlreadyInitalizedException(const char* what, const char* classname) noexcept
+	: GradidoBlockchainException(what), mClassName(classname)
+{
+
+}
+
+std::string ClassAlreadyInitalizedException::getFullString() const
 {
 	std::string result;
 	result = what();

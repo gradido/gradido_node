@@ -48,6 +48,7 @@ IF(UNIX)
 ENDIF()
 
 FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
+FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
@@ -66,6 +67,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 SET(LOCAL_SRCS 
 	${BLOCKCHAIN}
+	${CACHE_SRC}
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
@@ -79,6 +81,7 @@ SET(LOCAL_SRCS
 if(MSVC)
 # src
 source_group("blockchain" FILES ${BLOCKCHAIN})
+source_group("cache" FILES ${CACHE_SRC})
 source_group("container" FILES ${CONTAINER})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})

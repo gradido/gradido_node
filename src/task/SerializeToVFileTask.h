@@ -25,14 +25,14 @@ namespace task {
 	class SerializeToVFileTask : public CPUTask
 	{
 	public: 
-		SerializeToVFileTask(Poco::SharedPtr<ISerializeToVFile> dataProvider);
+		SerializeToVFileTask(std::shared_ptr<ISerializeToVFile> dataProvider);
 		~SerializeToVFileTask();
 
 		const char* getResourceType() const { return "SerializeToVFileTask"; };
 		int run();
 
 	protected:
-		Poco::SharedPtr<ISerializeToVFile> mDataProvider;
+		std::shared_ptr<ISerializeToVFile> mDataProvider;
 	};
 
 }

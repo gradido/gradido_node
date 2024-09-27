@@ -1,6 +1,9 @@
 #ifndef __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 #define __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 
+#include "../cache/AddressIndex.h"
+#include "../cache/State.h"
+
 #include "gradido_blockchain/blockchain/Abstract.h"
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
@@ -24,6 +27,9 @@ namespace gradido {
 			FileBased(std::string_view communityId, std::string_view folder);
 			virtual ~FileBased();
 
+			//! load blockchain from files and check if index and states seems ok
+			//! if address index or block index is corrupt, remove address index and block index files, they will rebuild automatic on get block calls
+			//! if state leveldb file is corrupt, reconstruct values from block cache
 			//! \return true on success, else false
 			bool init();
 
@@ -63,18 +69,24 @@ namespace gradido {
 			void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const { std::lock_guard<std::recursive_mutex> _lock(mWorkMutex); return mCommunityServer; }
 
-			// expensive, remove all address and block indices, they must be build from scratch
-			void resetAllIndices();
 		protected:
 			virtual void pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry);
+			//! if state leveldb was invalid, recover values from block cache
+			void loadStateFromBlockCache();
 
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
 			std::string mFolderPath;
 
-			// observe write to file tasks from block, mayber later more
+
+			//! observe write to file tasks from block, mayber later more
 			TaskObserver mTaskObserver;
+			//! connect via mqtt to iota server and get new messages
 			iota::MessageListener* mIotaMessageListener;
+
+			cache::AddressIndex mAddressIndex;
+			// level db to store state values like last transaction
+			cache::State mBlockchainState;
 
 			//! Community Server listening on new blocks for his group
 			//! TODO: replace with more abstract but simple event system

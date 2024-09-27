@@ -5,7 +5,7 @@
 
 namespace task {
 
-	SerializeToVFileTask::SerializeToVFileTask(Poco::SharedPtr<ISerializeToVFile> dataProvider)
+	SerializeToVFileTask::SerializeToVFileTask(std::shared_ptr<ISerializeToVFile> dataProvider)
 		: CPUTask(ServerGlobals::g_CPUScheduler), mDataProvider(dataProvider)
 	{
 #ifdef _UNI_LIB_DEBUG

@@ -30,6 +30,15 @@ protected:
 	std::string mClassName;
 };
 
+class ClassAlreadyInitalizedException : public GradidoBlockchainException
+{
+public:
+	explicit ClassAlreadyInitalizedException(const char* what, const char* classname) noexcept;
+	std::string getFullString() const;
+protected:
+	std::string mClassName;
+};
+
 class FileNotFoundException : public GradidoBlockchainException
 {
 public:
