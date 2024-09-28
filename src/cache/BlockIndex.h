@@ -1,19 +1,13 @@
 #ifndef __GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H
 #define __GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H
 
-#include "ControllerBase.h"
-#include <vector>
-#include <map>
-
-#include "Poco/Path.h"
-#include "Poco/SharedPtr.h"
-
 #include "../model/files/BlockIndex.h"
 #include "../task/CPUTask.h"
 
+#include <vector>
+#include <map>
 
-
-namespace controller {
+namespace cache {
 
 	/*!
 	 * @author Dario Rekowski
@@ -26,12 +20,16 @@ namespace controller {
 	 TODO: Auto-Recover if missing, and maybe check with saved block on startup
 	 */
 
-	class BlockIndex : public ControllerBase, public model::files::IBlockIndexReceiver
+	class BlockIndex : public model::files::IBlockIndexReceiver
 	{
 		//friend model::files::BlockIndex;
 	public:
 		BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
 		~BlockIndex();
+
+		bool init();
+		void exit();
+		void reset();
 
 		//! \brief loading block index from file (or at least try to load)
 		bool loadFromFile();
@@ -41,9 +39,24 @@ namespace controller {
 		std::unique_ptr<model::files::BlockIndex> serialize();
 
 		bool addIndicesForTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry);
-		bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices);
+		bool addIndicesForTransaction(
+			const std::string& coinGroupId,
+			date::year year,
+			date::month month,
+			uint64_t transactionNr,
+			int32_t fileCursor, 
+			const std::vector<uint32_t>& addressIndices
+		);
 		//! implement from model::files::IBlockIndexReceiver, called by loading block index from file
-		bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount);
+		bool addIndicesForTransaction(
+			const std::string& coinGroupId,
+			date::year year,
+			date::month month,
+			uint64_t transactionNr, 
+			int32_t fileCursor, 
+			const uint32_t* addressIndices,
+			uint8_t addressIndiceCount
+		);
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
 		//! \return false if transactionNr exist, else return true
@@ -51,7 +64,7 @@ namespace controller {
 
 		//! \brief find transaction nrs for address index in specific month and year
 		//! \return empty vector in case nothing found
-		std::vector<uint64_t> findTransactionsForAddressMonthYear(uint32_t addressIndex, uint16_t year, uint8_t month);
+		std::vector<uint64_t> findTransactionsForAddressMonthYear(uint32_t addressIndex, date::year year, date::month month);
 
 		//! \brief find transaction nrs for address index
 		//! \param coinColor ignore if value is zero
@@ -65,25 +78,25 @@ namespace controller {
 
 		//! \brief find transaction nrs from specific month and year
 		//! \return empty shared ptr if nothing found
-		Poco::SharedPtr<std::vector<uint64_t>> findTransactionsForMonthYear(uint16_t year, uint8_t month);
+		std::shared_ptr<std::vector<uint64_t>> findTransactionsForMonthYear(date::year year, date::month month);
 
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
 		bool getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor);
-		bool hasTransactionNr(uint64_t transactionNr) { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return transactionNr >= mMinTransactionNr && transactionNr <= mMaxTransactionNr; }
+		bool hasTransactionNr(uint64_t transactionNr) const;
 
-		inline uint64_t getMaxTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);  return mMaxTransactionNr; }
-		inline uint64_t getMinTransactionNr() { Poco::Mutex::ScopedLock lock(mSlowWorkingMutex); return mMinTransactionNr; }
+		inline uint64_t getMaxTransactionNr() { std::lock_guard _lock(mRecursiveMutex);  return mMaxTransactionNr; }
+		inline uint64_t getMinTransactionNr() { std::lock_guard _lock(mRecursiveMutex); return mMinTransactionNr; }
 
-		std::pair<uint16_t, uint8_t> getOldestYearMonth();
-		std::pair<uint16_t, uint8_t> getNewestYearMonth();
+		std::pair<date::year, date::month> getOldestYearMonth();
+		std::pair<date::year, date::month> getNewestYearMonth();
 
 		// clear maps
 		void reset();
 
 	protected:
 		//! \brief called from model::files::BlockIndex while reading file
-		Poco::SharedPtr<model::files::BlockIndex> mBlockIndexFile;
+		std::shared_ptr<model::files::BlockIndex> mBlockIndexFile;
 		uint64_t				 mMaxTransactionNr;
 		uint64_t				 mMinTransactionNr;
 
@@ -92,16 +105,23 @@ namespace controller {
 
 		struct AddressIndexEntry
 		{
-			Poco::SharedPtr<std::vector<uint64_t>> transactionNrs;
+			std::shared_ptr<std::vector<uint64_t>> transactionNrs;
 			std::map<uint32_t, std::vector<uint32_t>> addressIndicesTransactionNrIndices;
 			std::map<std::string, std::vector<uint32_t>> coinGroupIdTransactionNrIndices;
 		};
 
-		std::map<uint16_t, std::map<uint8_t, AddressIndexEntry>> mYearMonthAddressIndexEntrys;
+		std::map<date::year, std::map<date::month, AddressIndexEntry>> mYearMonthAddressIndexEntrys;
 
-		Poco::Mutex mSlowWorkingMutex;
+		mutable std::recursive_mutex mRecursiveMutex;
 		bool mDirty;
 	};
+
+	bool BlockIndex::hasTransactionNr(uint64_t transactionNr) const
+	{ 
+		std::lock_guard _lock(mRecursiveMutex);
+		return transactionNr >= mMinTransactionNr 
+			&& transactionNr <= mMaxTransactionNr; 
+	}
 }
 
 #endif //__GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H

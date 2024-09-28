@@ -5,8 +5,14 @@
 
 #include <unordered_map>
 
+namespace gradido {
+	namespace blockchain {
+		class FileBased;
+	}
+}
+
 namespace cache {
-	class FileBased;
+	
 
 	/*!
 	* @author Dario Rekowski
@@ -38,11 +44,12 @@ namespace cache {
 		void reset();
 
 		//! \brief Get index from cache or if not in cache, loading file, maybe I/O read.
+		//! \param address public key as binary string
 		//! \return Index or 0 if address didn't exist.
 		virtual uint32_t getIndexForAddress(const std::string& address);
 
 		//! \brief Get or add index if not exist in cache or file, maybe I/O read.
-		//! \param address User public key.
+		//! \param address User public key as binary string
 		//! \param lastIndex Last knowing index for group.
 		//! \return Index for address.
 		virtual uint32_t getOrAddIndexForAddress(const std::string& address);
@@ -50,13 +57,14 @@ namespace cache {
 		virtual std::vector<uint32_t> getOrAddIndicesForAddresses(const std::vector<memory::ConstBlockPtr>& publicKeys);
 
 		//! \brief Add index, maybe I/O read, I/O write if index is new.
-		//! \param address User public key.
-		//! \param index Index for address.
+		//! \param address User public key as binary string
+		//! \param index Index for address
 		//! \return False if index address already exist, else true.
 		virtual bool addAddressIndex(const std::string& address, uint32_t index);
 
 		inline uint32_t getLastIndex() { std::lock_guard _lock(mFastMutex); return mLastIndex; }
 
+		//! deprecated
 		//! \brief take first hex sets from address as folder and file name
 		//!
 		//!  Example: Path for public key: 94937427d885fe93e22a76a6c839ebc4fdf4e5056012ee088cdebb89a24f778c\n

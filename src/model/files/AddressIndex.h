@@ -90,7 +90,7 @@ namespace model {
 			std::unordered_map<std::string, uint32_t> mAddressesIndices;
 			//! Indicate if current index set is written to file (true) or not (false).
 			bool mFileWritten;
-			std::mutex mFastMutex;
+			mutable std::mutex mFastMutex;
 		};
 
 		class SuccessfullWrittenToFileCommand : public task::Command

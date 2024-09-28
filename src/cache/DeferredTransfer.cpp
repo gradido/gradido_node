@@ -1,10 +1,12 @@
 #include "DeferredTransfer.h"
 #include "../lib/LevelDBExceptions.h"
 
+#include <set>
+
 namespace cache
 {
 	DeferredTransfer::DeferredTransfer(std::string_view groupFolder)
-		: mState(std::string(groupFolder).append("/deferredTransferCache"))
+		: mState(groupFolder)
 	{
 
 	}
@@ -92,8 +94,13 @@ namespace cache
 	std::unique_ptr<std::string> DeferredTransfer::transactionNrsToString(std::vector<uint64_t> transactionNrs)
 	{
 		std::unique_ptr<std::string> transactionNrsString = std::make_unique<std::string>();
+		std::set<uint64_t> uniqueTransactionNrs;
 		for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-			if (it != transactionNrs.begin()) {
+			// if transaction nr already exist, skip
+			if (!uniqueTransactionNrs.insert(*it).second) {
+				continue;
+			}
+			if (!transactionNrsString->empty()) {
 				transactionNrsString->append(",");
 			}
 			transactionNrsString->append(std::to_string(*it));

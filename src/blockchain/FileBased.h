@@ -2,7 +2,9 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 
 #include "../cache/AddressIndex.h"
+#include "../cache/DeferredTransfer.h"
 #include "../cache/State.h"
+
 
 #include "gradido_blockchain/blockchain/Abstract.h"
 #include "../client/Base.h"
@@ -66,13 +68,15 @@ namespace gradido {
 			virtual std::shared_ptr<TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 			virtual AbstractProvider* getProvider() const;
 
-			void setListeningCommunityServer(std::shared_ptr<client::Base> client);
-			inline std::shared_ptr<client::Base> getListeningCommunityServer() const { std::lock_guard<std::recursive_mutex> _lock(mWorkMutex); return mCommunityServer; }
+			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
+			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
 
 		protected:
 			virtual void pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry);
 			//! if state leveldb was invalid, recover values from block cache
 			void loadStateFromBlockCache();
+			//! scan blockchain for deferred transfer transaction which are not redeemed completly
+			void rescanForDeferredTransfers();
 
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
@@ -88,10 +92,24 @@ namespace gradido {
 			// level db to store state values like last transaction
 			cache::State mBlockchainState;
 
+			cache::DeferredTransfer mDeferredTransfersCache;
+
 			//! Community Server listening on new blocks for his group
 			//! TODO: replace with more abstract but simple event system
 			std::shared_ptr<client::Base> mCommunityServer;
 		};
+
+		void FileBased::setListeningCommunityServer(std::shared_ptr<client::Base> client)
+		{
+			std::lock_guard _lock(mWorkMutex);
+			mCommunityServer = client;
+		}
+
+		std::shared_ptr<client::Base> FileBased::getListeningCommunityServer() const 
+		{
+			std::lock_guard<std::recursive_mutex> _lock(mWorkMutex); 
+			return mCommunityServer;
+		}
 	}
 }
 

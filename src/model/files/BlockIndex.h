@@ -2,30 +2,38 @@
 #define __GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H
 
 
-#include "FileBase.h"
-
 #include "../../lib/VirtualFile.h"
 
-#include "Poco/SharedPtr.h"
-
 #include "sodium.h"
+#include "date/date.h"
 #include <queue>
 #include <string>
 
-namespace controller {
+namespace cache {
 	class BlockIndex;
 }
 
+namespace gradido {
+	namespace blockchain {
+		class NodeTransactionEntry;
+	}
+}
 namespace model {
-
-	class NodeTransactionEntry;
 
 	namespace files {
 
 		class IBlockIndexReceiver 
 		{
 		public:
-			virtual bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
+			virtual bool addIndicesForTransaction(
+				const std::string& coinGroupId, 
+				date::year year,
+				date::month month,
+				uint64_t transactionNr, 
+				int32_t fileCursor, 
+				const uint32_t* addressIndices, 
+				uint8_t addressIndiceCount
+			) = 0;
 		};
 
 		/*!
@@ -39,20 +47,20 @@ namespace model {
 		 * and last block: file hash
 		*/		
 
-		class BlockIndex : public FileBase
+		class BlockIndex
 		{
 		public:
 			//! create filename from path and blocknr
-			BlockIndex(const Poco::Path& groupFolderPath, Poco::UInt32 blockNr);
+			BlockIndex(std::string_view groupFolderPath, uint32_t blockNr);
 			//! use full filename which includes also the block nr
-			BlockIndex(const Poco::Path& filename);
+			BlockIndex(std::string_view filename);
 			~BlockIndex();
 
-			inline void addMonthBlock(uint8_t month) {
+			inline void addMonthBlock(date::month month) {
 				mDataBlocks.push(new MonthBlock(month)); 
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
-			inline void addYearBlock(uint16_t year) { 
+			inline void addYearBlock(date::year year) { 
 				mDataBlocks.push(new YearBlock(year)); 
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
@@ -75,7 +83,7 @@ namespace model {
 			//! \brief clear data blocks
 			void reset();
 
-			inline const Poco::Path& getFileName() { return mFileName; }
+			inline const std::string& getFileName() { return mFileName; }
 
 		protected:
 			//! \brief replace Index File with new one, clear blocks after writing into file
@@ -188,7 +196,7 @@ namespace model {
 				Poco::SharedPtr<NodeTransactionEntry> createTransactionEntry(uint8_t month, uint16_t year);
 			};
 
-			Poco::Path  mFileName;
+			std::string mFileName;
 			std::queue<Block*> mDataBlocks;
 			size_t mDataBlockSumSize;
 		};

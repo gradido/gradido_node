@@ -1,16 +1,16 @@
 #include "BlockIndex.h"
-#include "ControllerExceptions.h"
+#include "../controller/ControllerExceptions.h"
 
 #include "Poco/Logger.h"
 #include "../SingletonManager/LoggerManager.h"
 
-#include "../model/NodeTransactionEntry.h"
+#include "../blockchain/NodeTransactionEntry.h"
 
 #include "../task/HddWriteBufferTask.h"
 
 #include "../ServerGlobals.h"
 
-namespace controller {
+namespace cache {
 
 
 	BlockIndex::BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
@@ -24,19 +24,34 @@ namespace controller {
 	{
 		writeIntoFile();
 	}
+	bool BlockIndex::init()
+	{
+
+	}
+
+	void BlockIndex::exit()
+	{
+
+	}
+
+	void BlockIndex::reset()
+	{
+
+	}
+
 
 	bool BlockIndex::loadFromFile()
 	{
-		mSlowWorkingMutex.lock();
+		mRecursiveMutex.lock();
 		assert(!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size());
-		mSlowWorkingMutex.unlock();
+		mRecursiveMutex.unlock();
 
 		return mBlockIndexFile->readFromFile(this);
 	}
 
 	bool BlockIndex::writeIntoFile()
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		std::lock_guard _lock(mRecursiveMutex);
 		if (!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size() && !mMaxTransactionNr && !mMinTransactionNr) {
 			// we haven't anything to save
 			return true;
@@ -88,7 +103,7 @@ namespace controller {
 				// put into file object
 				int index = 0;
 				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
-					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+					Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 					mBlockIndexFile->addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinGroupIdsForTransactionNrs[index], transactionTransactionIndices[index]);
 					index++;
 				}
@@ -100,7 +115,7 @@ namespace controller {
 	}
 	std::unique_ptr<model::files::BlockIndex> BlockIndex::serialize()
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		std::lock_guard _lock(mRecursiveMutex);
 		if (!mYearMonthAddressIndexEntrys.size() && !mTransactionNrsFileCursors.size() && !mMaxTransactionNr && !mMinTransactionNr) {
 			// we haven't anything to save
 			return nullptr;
@@ -151,7 +166,7 @@ namespace controller {
 				// put into file object
 				int index = 0;
 				for (auto itTrID = addressIndexEntry.transactionNrs->begin(); itTrID != addressIndexEntry.transactionNrs->end(); itTrID++) {
-					Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+					Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 					mBlockIndexFile->addDataBlock(*itTrID, mTransactionNrsFileCursors[*itTrID], coinGroupIdsForTransactionNrs[index], transactionTransactionIndices[index]);
 					index++;
 				}
@@ -161,14 +176,37 @@ namespace controller {
 		return std::move(blockIndexFile);
 	}
 	
-	bool BlockIndex::addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const std::vector<uint32_t>& addressIndices)
+	bool BlockIndex::addIndicesForTransaction(
+		const std::string& coinGroupId,
+		date::year year,
+		date::month month,
+		uint64_t transactionNr, 
+		int32_t fileCursor, 
+		const std::vector<uint32_t>& addressIndices
+	)
 	{
-		return addIndicesForTransaction(coinGroupId, year, month, transactionNr, fileCursor, addressIndices.data(), addressIndices.size());
+		return addIndicesForTransaction(
+			coinGroupId, 
+			year, 
+			month,
+			transactionNr, 
+			fileCursor, 
+			addressIndices.data(),
+			addressIndices.size()
+		);
 	}
 
-	bool BlockIndex::addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount)
+	bool BlockIndex::addIndicesForTransaction(
+		const std::string& coinGroupId,
+		date::year year, 
+		date::month month,
+		uint64_t transactionNr, 
+		int32_t fileCursor, 
+		const uint32_t* addressIndices, 
+		uint8_t addressIndiceCount
+	)
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		std::lock_guard _lock(mRecursiveMutex);
 		mDirty = true;
 		if (transactionNr > mMaxTransactionNr) {
 			mMaxTransactionNr = transactionNr;
@@ -262,7 +300,7 @@ namespace controller {
 		if (!fileCursor && transactionNr > mMinTransactionNr) {
 			throw BlockIndexInvalidFileCursorException("file curser is invalid", fileCursor, transactionNr, mMinTransactionNr);
 		}
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		mDirty = true;
 
 		// check first if map entry already exist
@@ -286,10 +324,10 @@ namespace controller {
 		return false;
 	}
 
-	std::vector<uint64_t> BlockIndex::findTransactionsForAddressMonthYear(uint32_t addressIndex, uint16_t year, uint8_t month)
+	std::vector<uint64_t> BlockIndex::findTransactionsForAddressMonthYear(uint32_t addressIndex, date::year year, date::month month)
 	{
 		std::vector<uint64_t> result;
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		auto yearIt = mYearMonthAddressIndexEntrys.find(year);
 		if (yearIt == mYearMonthAddressIndexEntrys.end()) {
 			return result;
@@ -315,7 +353,7 @@ namespace controller {
 	std::vector<uint64_t> BlockIndex::findTransactionsForAddress(uint32_t addressIndex, const std::string& coinGroupId /*= ""*/)
 	{
 		std::vector<uint64_t> result;
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		for (auto yearIt = mYearMonthAddressIndexEntrys.begin(); yearIt != mYearMonthAddressIndexEntrys.end(); yearIt++) {
 			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); monthIt++) {
 				AddressIndexEntry* addressIndexEntry = &monthIt->second;
@@ -349,7 +387,7 @@ namespace controller {
 
 	uint64_t BlockIndex::findLastTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId/* = ""*/)
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		std::vector<uint64_t> result;
 		for (auto yearIt = mYearMonthAddressIndexEntrys.rbegin(); yearIt != mYearMonthAddressIndexEntrys.rend(); ++yearIt) {
 			for (auto monthIt = yearIt->second.rbegin(); monthIt != yearIt->second.rend(); ++monthIt) {
@@ -388,7 +426,7 @@ namespace controller {
 
 	uint64_t BlockIndex::findFirstTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId/* = ""*/)
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		std::vector<uint64_t> result;
 		for (auto yearIt = mYearMonthAddressIndexEntrys.begin(); yearIt != mYearMonthAddressIndexEntrys.end(); ++yearIt) {
 			for (auto monthIt = yearIt->second.begin(); monthIt != yearIt->second.end(); ++monthIt) {
@@ -425,9 +463,9 @@ namespace controller {
 		return 0;
 	}
 
-	Poco::SharedPtr<std::vector<uint64_t>> BlockIndex::findTransactionsForMonthYear(uint16_t year, uint8_t month)
+	Poco::SharedPtr<std::vector<uint64_t>> BlockIndex::findTransactionsForMonthYear(date::year year, date::month month)
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		auto yearIt = mYearMonthAddressIndexEntrys.find(year);
 		if (yearIt == mYearMonthAddressIndexEntrys.end()) {
 			return Poco::SharedPtr<std::vector<uint64_t>>();
@@ -441,7 +479,7 @@ namespace controller {
 
 	bool BlockIndex::getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor)
 	{
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 
 		auto it = mTransactionNrsFileCursors.find(transactionNr);
 		if (it != mTransactionNrsFileCursors.end()) {
@@ -461,9 +499,9 @@ namespace controller {
 						return false;
 					}
 					if(it->second) break;
-					mSlowWorkingMutex.unlock();
+					mRecursiveMutex.unlock();
 					Poco::Thread::sleep(20);
-					mSlowWorkingMutex.lock();
+					mRecursiveMutex.lock();
 					timeout--;					
 				} while(!it->second && timeout > 0);
 				std::clog << "timeout: " << timeout 
@@ -477,7 +515,7 @@ namespace controller {
 		return false;
 	}
 
-	std::pair<uint16_t, uint8_t> BlockIndex::getOldestYearMonth()
+	std::pair<date::year, date::month> BlockIndex::getOldestYearMonth()
 	{
 		if (!mYearMonthAddressIndexEntrys.size()) {
 			return { 0,0 };
@@ -486,7 +524,7 @@ namespace controller {
 		assert(firstEntry->second.size());
 		return { firstEntry->first, firstEntry->second.begin()->first };
 	}
-	std::pair<uint16_t, uint8_t> BlockIndex::getNewestYearMonth()
+	std::pair<date::year, date::month> BlockIndex::getNewestYearMonth()
 	{
 		if (!mYearMonthAddressIndexEntrys.size()) {
 			return { 0,0 };
@@ -500,7 +538,7 @@ namespace controller {
 	void BlockIndex::reset()
 	{
 		std::clog << "BlockIndex::reset called" << std::endl;
-		Poco::Mutex::ScopedLock lock(mSlowWorkingMutex);
+		Poco::Mutex::ScopedLock lock(mRecursiveMutex);
 		mTransactionNrsFileCursors.clear();
 		mYearMonthAddressIndexEntrys.clear();
 		mBlockIndexFile.reset();

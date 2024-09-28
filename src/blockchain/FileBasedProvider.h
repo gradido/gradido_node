@@ -4,8 +4,7 @@
 #include "gradido_blockchain/blockchain/AbstractProvider.h"
 #include "gradido_blockchain/lib/StringViewCompare.h"
 #include "FileBased.h"
-#include "../controller/GroupIndex.h"
-#include "../controller/AddressIndex.h"
+#include "../cache/GroupIndex.h"
 
 namespace gradido {
 	namespace blockchain {
@@ -44,7 +43,7 @@ namespace gradido {
 			std::shared_ptr<FileBased> addCommunity(const std::string& alias);
 			void updateListenerCommunity(const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
-			controller::GroupIndex* mGroupIndex;
+			cache::GroupIndex* mGroupIndex;
 			bool mInitalized;
 
 		};

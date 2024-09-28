@@ -50,7 +50,7 @@ namespace gradido {
 		{
 			std::lock_guard _lock(mWorkMutex);
 			mInitalized = true;
-			mGroupIndex = new controller::GroupIndex(communityConfigFile);
+			mGroupIndex = new cache::GroupIndex(communityConfigFile);
 			mGroupIndex->update();
 			auto communitiesAlias = mGroupIndex->listGroupAliases();
 			for (auto& communityAlias : communitiesAlias) {

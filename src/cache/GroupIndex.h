@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <mutex>
 
-namespace controller {
+namespace cache {
 
 	struct CommunityIndexEntry
 	{

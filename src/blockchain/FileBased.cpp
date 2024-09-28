@@ -1,8 +1,12 @@
 #include "FileBased.h"
 #include "FileBasedProvider.h"
+#include "NodeTransactionEntry.h"
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/const.h"
 
 #include "loguru/loguru.hpp"
+
+#include <set>
 
 using namespace controller;
 
@@ -14,7 +18,8 @@ namespace gradido {
 			mFolderPath(folder),
 			mIotaMessageListener(new iota::MessageListener(communityId)),
 			mAddressIndex(folder, this),
-			mBlockchainState(std::string(folder).append(".state"))
+			mBlockchainState(std::string(folder).append(".state")),
+			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache"))
 		{
 		}
 
@@ -27,12 +32,23 @@ namespace gradido {
 		}
 		bool FileBased::init()
 		{
+			assert(!mExitCalled);
 			std::lock_guard _lock(mWorkMutex);
+			bool resetDeferredTransfersCache = false;
 			if (!mAddressIndex.init()) {
 				// remove index files for regenration
-				LOG_F(WARNING, "something went wrong with the index files");
+				LOG_F(WARNING, "something went wrong with the address index file");
 				// mCachedBlocks.clear();
 				mAddressIndex.reset();
+				resetDeferredTransfersCache = true;
+			}
+			if (!resetDeferredTransfersCache && !mDeferredTransfersCache.init()) {
+				resetDeferredTransfersCache = true;
+			}
+			if (resetDeferredTransfersCache) {
+				LOG_F(WARNING, "something went wrong with deferred transfer cache level db");
+				mDeferredTransfersCache.reset();
+				rescanForDeferredTransfers();
 			}
 			if (!mBlockchainState.init()) {
 				LOG_F(WARNING, "something went wrong with the state level db");
@@ -61,6 +77,7 @@ namespace gradido {
 					break;
 				}
 			}
+			mDeferredTransfersCache.exit();
 			mBlockchainState.exit();
 			mAddressIndex.exit();
 		}
@@ -101,11 +118,7 @@ namespace gradido {
 			return FileBasedProvider::getInstance();
 		}
 
-		void FileBased::setListeningCommunityServer(std::shared_ptr<client::Base> client)
-		{
-			std::lock_guard _lock(mWorkMutex);
-			mCommunityServer = client;
-		}
+		
 
 
 		void FileBased::pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry)
@@ -115,7 +128,51 @@ namespace gradido {
 
 		void FileBased::loadStateFromBlockCache()
 		{
-
+			Profiler timeUsed;
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mAddressIndex.getLastIndex());
+			auto lastTransaction = findOne(Filter::LAST_TRANSACTION);
+			int32_t lastTransactionNr = 0;
+			if (lastTransaction) {
+				lastTransactionNr = lastTransaction->getTransactionNr();
+			}
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_TRANSACTION_ID, lastTransactionNr);			
+			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
+		}
+		void FileBased::rescanForDeferredTransfers()
+		{
+			Filter f;
+			Timepoint now;
+			Profiler timeUsed;
+			std::set<uint32_t> deferredTransfersAddressIndices;
+			f.timepointInterval = TimepointInterval(now - GRADIDO_DEFERRED_TRANSFER_MAX_TIMEOUT_INTERVAL, now);
+			f.searchDirection = SearchDirection::ASC;
+			f.filterFunction = [&](const TransactionEntry& entry) -> FilterResult {
+				if (entry.isDeferredTransfer()) {
+					auto bodyBytes = entry.getTransactionBody();
+					if (!bodyBytes) {
+						throw GradidoNullPointerException("missing transaction body an TransactionEntry", "TransactionBody", __FUNCTION__);
+					}
+					auto recipient = bodyBytes->getDeferredTransfer()->getRecipientPublicKey();
+					if (!recipient) {
+						throw GradidoNullPointerException("missing public key on deferredTransfer", "memory::Block", __FUNCTION__);
+					}
+					auto recipientAddressIndex = mAddressIndex.getOrAddIndexForAddress(recipient->copyAsString());
+					deferredTransfersAddressIndices.insert(recipientAddressIndex);
+					mDeferredTransfersCache.addTransactionNrForAddressIndex(recipientAddressIndex, entry.getTransactionNr());
+				}
+				// maybe it is a deferred transfer redeeming another deferred transfer so always look 
+				// mDeferredTransfersCache will check for dublettes
+				const NodeTransactionEntry* nodeEntry = dynamic_cast<const NodeTransactionEntry*>(&entry);
+				const auto& addressIndices = nodeEntry->getAddressIndices();
+				for (const auto& addressIndex : addressIndices) {
+					if (deferredTransfersAddressIndices.find(addressIndex) != deferredTransfersAddressIndices.end()) {
+						mDeferredTransfersCache.addTransactionNrForAddressIndex(addressIndex, entry.getTransactionNr());
+					}
+				}
+				return FilterResult::DISMISS;
+			};
+			findAll(f);
+			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
 		}
 	}
 }

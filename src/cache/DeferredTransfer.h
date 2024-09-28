@@ -17,6 +17,7 @@ namespace cache
 
 		- free entry if transaction was drained on get call
 		- store in level db address index as key and transaction nrs as comma separated string as value
+		- first transaction nr is deferred transfer themself
 	*/
 
 	class DeferredTransfer

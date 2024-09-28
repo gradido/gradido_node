@@ -1,12 +1,12 @@
 #include "GroupIndex.h"
-#include "ControllerExceptions.h"
+#include "../controller/ControllerExceptions.h"
 
 #include "../ServerGlobals.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
 
 #include "Poco/File.h"
 
-namespace controller {
+namespace cache {
 	GroupIndex::GroupIndex(const std::string& jsonConfigFileName)
 		: mConfig(jsonConfigFileName)
 	{
@@ -82,7 +82,7 @@ namespace controller {
 		if (it != mCommunities.end()) {
 			return it->second;
 		}
-		throw GroupNotFoundException("couldn't found config details for community", communityAlias);
+		throw controller::GroupNotFoundException("couldn't found config details for community", communityAlias);
 	}
 	bool GroupIndex::isCommunityInConfig(const std::string& communityAlias) const
 	{
