@@ -267,7 +267,7 @@ namespace controller {
 			throw BlockNotLoadedException("don't get a valid current block", mGroupAlias, mLastBlockNr);
 		}
 		//TransactionEntry(uint64_t _transactionNr, std::string _serializedTransaction, Poco::DateTime received, uint16_t addressIndexCount = 2);
-		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(newGradidoBlock, mAddressIndex);
+		std::shared_ptr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(newGradidoBlock, mAddressIndex);
 		bool result = false;
 		try {
 			result = block->pushTransaction(transactionEntry);
@@ -330,7 +330,7 @@ namespace controller {
 		return nullptr;
 	}
 
-	//std::vector<Poco::AutoPtr<gradido::dataBlock>> Group::findTransactions(uint64_t fromTransactionId)
+	//std::vector<std::shared_ptr<gradido::dataBlock>> Group::findTransactions(uint64_t fromTransactionId)
 	std::vector<std::shared_ptr<gradido::blockchain::TransactionEntry>> Group::findTransactionsFromXToLast(uint64_t fromTransactionId)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
@@ -339,7 +339,7 @@ namespace controller {
 		// we cannot handle zero transaction id, starts with one,
 		// but if someone ask for zero he gets all
 		if (!transactionIdCursor) transactionIdCursor = 1;
-		Poco::SharedPtr<Block> block;
+		std::shared_ptr<Block> block;
 
 		printf("[Group::findTransactionsSerialized] asked transactionId: %d, last: %d\n", fromTransactionId, mLastTransactionId);
 		while (transactionIdCursor <= mLastTransactionId) {
@@ -533,7 +533,7 @@ namespace controller {
 		return {};
 	}
 
-	Poco::SharedPtr<gradido::data::ConfirmedTransaction> Group::getLastTransaction(std::function<bool(const gradido::data::ConfirmedTransaction*)> filter/* = nullptr*/)
+	std::shared_ptr<gradido::data::ConfirmedTransaction> Group::getLastTransaction(std::function<bool(const gradido::data::ConfirmedTransaction*)> filter/* = nullptr*/)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (filter) {
@@ -546,7 +546,7 @@ namespace controller {
 				for (int i = blockIndex->getMinTransactionNr(); i <= blockIndex->getMaxTransactionNr(); i++) {
 					if (!i) break;
 					auto transaction = block->getTransaction(i);
-					Poco::SharedPtr<gradido::data::ConfirmedTransaction> gradidoBlock(new gradido::data::ConfirmedTransaction(transaction->getSerializedTransaction()));
+					std::shared_ptr<gradido::data::ConfirmedTransaction> gradidoBlock(new gradido::data::ConfirmedTransaction(transaction->getSerializedTransaction()));
 					if (filter(gradidoBlock.get())) {
 						return gradidoBlock;
 					}
@@ -581,7 +581,7 @@ namespace controller {
 	std::shared_ptr<TransactionEntry> Group::getTransactionForId(uint64_t transactionId) const
 	{
 		auto blockNr = mLastBlockNr;
-		Poco::SharedPtr<controller::Block> block;
+		std::shared_ptr<controller::Block> block;
 		do {
 			block = getBlock(blockNr);
 			blockNr--;
@@ -685,7 +685,7 @@ namespace controller {
 	}
 
 
-	Poco::SharedPtr<Block> Group::getBlock(Poco::UInt32 blockNr)
+	std::shared_ptr<Block> Group::getBlock(Poco::UInt32 blockNr)
 	{
 		auto block = mCachedBlocks.get(blockNr);
 		if (!block.isNull()) {
@@ -705,14 +705,14 @@ namespace controller {
 		return block;
 	}
 
-	Poco::SharedPtr<Block> Group::getBlockContainingTransaction(uint64_t transactionId)
+	std::shared_ptr<Block> Group::getBlockContainingTransaction(uint64_t transactionId)
 	{
 		// find block by transactions id
 		// approximately 300.000 transactions can be fitted in one block
 		// for now search simply from last block
 		// TODO: think of a better approach later, if more than 10 blocks a written
 		int lastBlockNr = mLastBlockNr;
-		Poco::SharedPtr<Block> block;
+		std::shared_ptr<Block> block;
 		do {
 			if (lastBlockNr < 1) return nullptr;
 			block = getBlock(lastBlockNr);
@@ -725,7 +725,7 @@ namespace controller {
 		return block;
 	}
 
-	Poco::SharedPtr<Block> Group::getCurrentBlock()
+	std::shared_ptr<Block> Group::getCurrentBlock()
 	{
 		auto block = getBlock(mLastBlockNr);
 		if (!block.isNull() && block->hasSpaceLeft()) {
@@ -761,7 +761,7 @@ namespace controller {
 		return false;
 	}
 
-	void Group::addSignatureToCache(Poco::SharedPtr<gradido::data::ConfirmedTransaction> gradidoBlock)
+	void Group::addSignatureToCache(std::shared_ptr<gradido::data::ConfirmedTransaction> gradidoBlock)
 	{
 		Poco::ScopedLock<Poco::FastMutex> _lock(mSignatureCacheMutex);
 		mCachedSignatureTransactionNrs.add(HalfSignature(gradidoBlock->getGradidoTransaction()), gradidoBlock->getID());

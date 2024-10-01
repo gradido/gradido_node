@@ -33,7 +33,7 @@ public:
 protected:
     std::string getGradidoGroupAlias(const std::string& iotaIndex) const;
     void notificateFailedTransaction(
-        Poco::SharedPtr<controller::Group> group,
+        std::shared_ptr<controller::Group> group,
         const gradido::data::GradidoTransaction* transaction, 
         const std::string& errorMessage
     );

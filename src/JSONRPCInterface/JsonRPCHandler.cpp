@@ -35,7 +35,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 	}
 #endif // DEBUG
 
-	Poco::SharedPtr<controller::Group> group;
+	std::shared_ptr<controller::Group> group;
 	std::string groupAlias;
 
 	// load group for all requests
@@ -246,7 +246,7 @@ void JsonRPCHandler::getTransactions(
 	Value& resultJson, 
 	uint64_t fromTransactionId, 
 	uint32_t maxResultCount,
-	Poco::SharedPtr<controller::Group> group, 
+	std::shared_ptr<controller::Group> group, 
 	const std::string& format
 )
 {
@@ -264,7 +264,7 @@ void JsonRPCHandler::getTransactions(
 		resultJson.AddMember("type", "base64", alloc);
 	}
 	Value jsonTransactionArray(kArrayType);
-	Poco::AutoPtr<gradido::data::ConfirmedTransaction> prevTransaction;
+	std::shared_ptr<gradido::data::ConfirmedTransaction> prevTransaction;
 	int count = 0;
 	for (auto it = transactions.begin(); it != transactions.end(); it++) {
 		auto transactionSerialized = (*it)->getSerializedTransaction();
@@ -288,7 +288,7 @@ void JsonRPCHandler::getTransactions(
 
 void JsonRPCHandler::getTransaction(
 	rapidjson::Value& resultJson,
-	Poco::SharedPtr<controller::Group> group,
+	std::shared_ptr<controller::Group> group,
 	const std::string& format,
 	uint64_t transactionId/* = 0*/,
 	MemoryBin* iotaMessageId /* = nullptr*/ 
@@ -339,7 +339,7 @@ void JsonRPCHandler::getAddressBalance(
 	Value& resultJson,
 	const std::string& pubkey,
 	Poco::DateTime date,
-	Poco::SharedPtr<controller::Group> group,
+	std::shared_ptr<controller::Group> group,
 	const std::string& coinGroupId /* = "" */
 )
 {
@@ -354,7 +354,7 @@ void JsonRPCHandler::getAddressBalance(
 	resultJson.AddMember("balance", Value(balanceString.data(), alloc), alloc);
 }
 
-void JsonRPCHandler::getAddressType(Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group)
+void JsonRPCHandler::getAddressType(Value& resultJson, const std::string& pubkey, std::shared_ptr<controller::Group> group)
 {
 	assert(!group.isNull());
 	auto alloc = mRootJson.GetAllocator();
@@ -363,7 +363,7 @@ void JsonRPCHandler::getAddressType(Value& resultJson, const std::string& pubkey
 	resultJson.AddMember("addressType", Value(gradido::data::RegisterAddress::getAddressStringFromType(type).data(), alloc), alloc);
 }
 
-void JsonRPCHandler::getAddressTxids(Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group)
+void JsonRPCHandler::getAddressTxids(Value& resultJson, const std::string& pubkey, std::shared_ptr<controller::Group> group)
 {
 	assert(!group.isNull());
 	assert(pubkey.size());
@@ -384,7 +384,7 @@ void JsonRPCHandler::getCreationSumForMonth(
 	int month, 
 	int year, 
 	Poco::DateTime searchStartDate, 
-	Poco::SharedPtr<controller::Group> group
+	std::shared_ptr<controller::Group> group
 )
 {
 	assert(!group.isNull());
@@ -398,7 +398,7 @@ void JsonRPCHandler::getCreationSumForMonth(
 
 void JsonRPCHandler::listTransactions(
 	Value& resultJson,
-	Poco::SharedPtr<controller::Group> group,
+	std::shared_ptr<controller::Group> group,
 	const std::string& pubkey,
 	int currentPage /*= 1*/,
 	int pageSize /*= 25*/,
@@ -441,7 +441,7 @@ void JsonRPCHandler::listTransactionsForAddress(
 	const std::string& userPublicKey,
 	uint64_t firstTransactionNr,
 	uint32_t maxResultCount,
-	Poco::SharedPtr<controller::Group> group
+	std::shared_ptr<controller::Group> group
 )
 {
 	Profiler timeUsed;
@@ -460,7 +460,7 @@ void JsonRPCHandler::putTransaction(
 	Value& resultJson,
 	uint64_t transactionNr,
 	std::unique_ptr<gradido::data::GradidoTransaction> transaction,
-	Poco::SharedPtr<controller::Group> group
+	std::shared_ptr<controller::Group> group
 )
 {
 	assert(!group.isNull());

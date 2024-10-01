@@ -43,7 +43,7 @@
 namespace task {
 
 	class  Task;
-	typedef Poco::AutoPtr<Task> TaskPtr;
+	typedef std::shared_ptr<Task> TaskPtr;
 	class CPUSheduler;
 
     class  CPUShedulerThread : public Thread

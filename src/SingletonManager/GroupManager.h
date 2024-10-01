@@ -34,9 +34,9 @@ public:
 	//! \brief getting group object from Poco::AccessExpireCache or create if not in cache and put in cache
 	//!
 	//! Poco::AccessExpireCache use his own mutex
-	Poco::SharedPtr<controller::Group> findGroup(const std::string& groupAlias);
+	std::shared_ptr<controller::Group> findGroup(const std::string& groupAlias);
 
-	std::vector<Poco::SharedPtr<controller::Group>> findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey);
+	std::vector<std::shared_ptr<controller::Group>> findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey);
 
 	void exit();
 
@@ -47,7 +47,7 @@ protected:
 	bool mInitalized;
 	controller::GroupIndex* mGroupIndex;
 	
-	std::unordered_map<std::string, Poco::SharedPtr<controller::Group>> mGroupMap;
+	std::unordered_map<std::string, std::shared_ptr<controller::Group>> mGroupMap;
 
 	Poco::FastMutex mWorkMutex;
 	

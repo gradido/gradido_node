@@ -13,7 +13,7 @@ TaskObserver::~TaskObserver()
 
 }
 
-bool TaskObserver::addBlockWriteTask(Poco::AutoPtr<WriteTransactionsToBlockTask> blockWriteTask)
+bool TaskObserver::addBlockWriteTask(std::shared_ptr<WriteTransactionsToBlockTask> blockWriteTask)
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
 	auto result = mBlockWriteTasks.insert(BlockWriteMapPair(blockWriteTask.get(), blockWriteTask));
@@ -62,7 +62,7 @@ bool TaskObserver::isTransactionPending(uint64_t transactionNr)
 	return false;
 }
 
-Poco::SharedPtr<model::NodeTransactionEntry> TaskObserver::getTransaction(uint64_t transactionNr)
+std::shared_ptr<model::NodeTransactionEntry> TaskObserver::getTransaction(uint64_t transactionNr)
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
 	for(auto it = mBlockWriteTasks.begin(); it != mBlockWriteTasks.end(); it++) {

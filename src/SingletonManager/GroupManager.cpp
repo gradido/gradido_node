@@ -100,7 +100,7 @@ GroupManager* GroupManager::getInstance()
 	return &theOne;
 }
 
-Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& groupAlias)
+std::shared_ptr<controller::Group> GroupManager::findGroup(const std::string& groupAlias)
 {
 	if (!mInitalized) return nullptr;
 
@@ -124,8 +124,8 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 	}
 	//auto registerGroup = dynamic_cast<controller::GroupRegisterGroup*>(mGroupMap[GROUP_REGISTER_GROUP_ALIAS].get());
 
-	//Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder, registerGroup->findGroup(groupAlias).coinColor);
-	Poco::SharedPtr<controller::Group> group = new controller::Group(groupAlias, folder);
+	//std::shared_ptr<controller::Group> group = new controller::Group(groupAlias, folder, registerGroup->findGroup(groupAlias).coinColor);
+	std::shared_ptr<controller::Group> group = new controller::Group(groupAlias, folder);
 	mGroupMap.insert({ groupAlias, group });
 	mWorkMutex.unlock();
 	group->init();
@@ -133,10 +133,10 @@ Poco::SharedPtr<controller::Group> GroupManager::findGroup(const std::string& gr
 	return group;
 }
 
-std::vector<Poco::SharedPtr<controller::Group>> GroupManager::findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey)
+std::vector<std::shared_ptr<controller::Group>> GroupManager::findAllGroupsWhichHaveTransactionsForPubkey(const std::string& pubkey)
 {
 	Poco::ScopedLock<Poco::FastMutex> _lock(mWorkMutex);
-	std::vector<Poco::SharedPtr<controller::Group>> results;
+	std::vector<std::shared_ptr<controller::Group>> results;
 	results.reserve(mGroupMap.size());
 	for (auto it = mGroupMap.begin(); it != mGroupMap.end(); it++) {
 		if (it->second->getAddressIndex()->getIndexForAddress(pubkey)) {

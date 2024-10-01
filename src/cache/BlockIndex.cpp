@@ -7,6 +7,9 @@
 
 #include "loguru/loguru.hpp"
 
+using namespace gradido::blockchain;
+using namespace gradido::data;
+
 namespace cache {
 
 
@@ -21,6 +24,7 @@ namespace cache {
 	{
 		exit();
 	}
+
 	bool BlockIndex::init()
 	{
 		std::lock_guard _lock(mRecursiveMutex);
@@ -48,14 +52,13 @@ namespace cache {
 	{
 		LOG_F(INFO, "called");
 		std::lock_guard _lock(mRecursiveMutex);
-		mTransactionNrsFileCursors.clear();
 		clearIndexEntries();
+		mTransactionNrsFileCursors.clear();		
 		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr);
 		blockIndexFile.reset();
 		mMaxTransactionNr = 0;
 		mMinTransactionNr = 0;
 	}
-
 
 	bool BlockIndex::loadFromFile()
 	{
@@ -222,7 +225,7 @@ namespace cache {
 		return false;
 	}
 
-	std::vector<uint64_t> BlockIndex::findTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary)
+	std::vector<uint64_t> BlockIndex::findTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		// prefilter
@@ -234,12 +237,80 @@ namespace cache {
 		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
 			publicKeyIndex = publicKeysDictionary.getIndexForString(filter.involvedPublicKey->copyAsString());
 		}
-		if (!filter.timepointInterval.isEmpty()) {
-
+		uint32_t coinCommunityKeyIndex = 0;
+		if (!filter.coinCommunityId.empty()) {
+			coinCommunityKeyIndex = FileBasedProvider::getInstance()->getCommunityIdIndex(filter.coinCommunityId);
 		}
+		TimepointInterval interval(getOldestYearMonth(), getNewestYearMonth());
+		if (!filter.timepointInterval.isEmpty()) {
+			if (interval.getStartDate() < filter.timepointInterval.getStartDate()) {
+				interval.setStartDate(filter.timepointInterval.getStartDate());
+			}
+			if (interval.getEndDate() > filter.timepointInterval.getEndDate()) {
+				interval.setEndDate(filter.timepointInterval.getEndDate());
+			}
+		} 
+		bool revert = filter.searchDirection == SearchDirection::DESC;
+		auto intervalIt = revert ? interval.end() : interval.begin();
+		auto intervalEnd = revert ? interval.begin() : interval.end();
+		std::vector<uint64_t> result;
+		if (filter.pagination.size) {
+			result.reserve(filter.pagination.size);
+		}
+		unsigned int entryCursor = 0;
+		while (intervalIt != intervalEnd) {
+			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
+			assert(yearIt != mYearMonthAddressIndexEntrys.end());
+			auto monthIt = yearIt->second.find(intervalIt->month());
+			assert(monthIt != yearIt->second.end());
+
+			for (const auto& blockIndexEntry : monthIt->second) {
+				if (filter.transactionType != TransactionType::NONE
+					&& filter.transactionType != blockIndexEntry.transactionType) {
+					continue;
+				}
+				if (coinCommunityKeyIndex
+					&& coinCommunityKeyIndex != blockIndexEntry.coinCommunityIdIndex) {
+					continue;
+				}
+				if (filter.minTransactionNr 
+					&& filter.minTransactionNr > blockIndexEntry.transactionNr) {
+					continue;
+				}
+				if (filter.maxTransactionNr
+					&& filter.maxTransactionNr < blockIndexEntry.transactionNr) {
+					continue;
+				}
+				if (publicKeyIndex) {
+					bool found = false;
+					for (int iPublicKeyIndices = 0; iPublicKeyIndices < blockIndexEntry.addressIndiceCount; iPublicKeyIndices++) {
+						if (publicKeyIndex == blockIndexEntry.addressIndices[iPublicKeyIndices]) {
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						continue;
+					}
+				}
+				if (entryCursor < filter.pagination.skipEntriesCount()) {
+					continue;
+				}
+				result.push_back(blockIndexEntry.transactionNr);
+				entryCursor++;
+			}
+			if (revert) {
+				intervalIt--;
+			}
+			else {
+				intervalIt++;
+			}
+		}
+		std::sort(result.begin(), result.end());
+		return result;
 	}
 
-	std::pair<uint64_t, uint64_t> BlockIndex::findTransactionsForMonthYear(date::year year, date::month month)
+	std::pair<uint64_t, uint64_t> BlockIndex::findTransactionsForMonthYear(date::year year, date::month month) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		auto yearIt = mYearMonthAddressIndexEntrys.find(year);
@@ -253,7 +324,7 @@ namespace cache {
 		return { monthIt->second.front().transactionNr, monthIt->second.back().transactionNr };
 	}
 
-	bool BlockIndex::getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor)
+	bool BlockIndex::getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 
@@ -290,7 +361,7 @@ namespace cache {
 		return false;
 	}
 
-	std::pair<date::year, date::month> BlockIndex::getOldestYearMonth()
+	date::year_month BlockIndex::getOldestYearMonth() const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		if (!mYearMonthAddressIndexEntrys.size()) {
@@ -300,7 +371,7 @@ namespace cache {
 		assert(firstEntry->second.size());
 		return { firstEntry->first, firstEntry->second.begin()->first };
 	}
-	std::pair<date::year, date::month> BlockIndex::getNewestYearMonth()
+	date::year_month BlockIndex::getNewestYearMonth() const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		if (!mYearMonthAddressIndexEntrys.size()) {

@@ -1,6 +1,7 @@
 #ifndef __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 #define __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 
+#include "../cache/Block.h"
 #include "../cache/Dictionary.h"
 #include "../cache/DeferredTransfer.h"
 #include "../cache/State.h"
@@ -89,6 +90,7 @@ namespace gradido {
 			//! connect via mqtt to iota server and get new messages
 			iota::MessageListener* mIotaMessageListener;
 
+			//! contain indices for every public key address, used overall for optimisation
 			cache::Dictionary mPublicKeysIndex;
 			// level db to store state values like last transaction
 			cache::State mBlockchainState;

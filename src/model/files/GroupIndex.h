@@ -30,10 +30,10 @@ namespace model {
 			GroupIndex(const std::string& path);
 
 			//! \return Poco AutoPtr to Poco Layered Configuration (simple key = value pair list access via find)
-			inline Poco::AutoPtr<Poco::Util::LayeredConfiguration> getConfig() { return mConfig; }
+			inline std::shared_ptr<Poco::Util::LayeredConfiguration> getConfig() { return mConfig; }
 
 		protected:
-			Poco::AutoPtr<Poco::Util::LayeredConfiguration> mConfig;
+			std::shared_ptr<Poco::Util::LayeredConfiguration> mConfig;
 
 		};
 	}

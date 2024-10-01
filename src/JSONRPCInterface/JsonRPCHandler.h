@@ -22,7 +22,7 @@ protected:
 		rapidjson::Value& resultJson, 
 		uint64_t fromTransactionId,
 		uint32_t maxResultCount,
-		Poco::SharedPtr<controller::Group> group, 
+		std::shared_ptr<controller::Group> group, 
 		const std::string& format
 	);
 	/*!
@@ -32,7 +32,7 @@ protected:
 	*/
 	void getTransaction(
 		rapidjson::Value& resultJson,
-		Poco::SharedPtr<controller::Group> group,
+		std::shared_ptr<controller::Group> group,
 		const std::string& format,
 		uint64_t transactionId = 0,
 		MemoryBin* iotaMessageId = nullptr
@@ -44,11 +44,11 @@ protected:
 		int month, 
 		int year, 
 		Poco::DateTime searchStartDate, 
-		Poco::SharedPtr<controller::Group> group
+		std::shared_ptr<controller::Group> group
 	);
 	void listTransactions(
 		rapidjson::Value& resultJson,
-		Poco::SharedPtr<controller::Group> group,
+		std::shared_ptr<controller::Group> group,
 		const std::string& publicKeyHex, 
 		int currentPage = 1, 
 		int pageSize = 25, 
@@ -60,23 +60,23 @@ protected:
 		const std::string& userPublicKey,
 		uint64_t firstTransactionNr,
 		uint32_t maxResultCount,
-		Poco::SharedPtr<controller::Group> group
+		std::shared_ptr<controller::Group> group
 	);
 	
 	void getAddressBalance(
 		rapidjson::Value& resultJson,
 		const std::string& pubkey,
 		Poco::DateTime date, 
-		Poco::SharedPtr<controller::Group> group,
+		std::shared_ptr<controller::Group> group,
 		const std::string& coinGroupId = ""
 	);
-	void getAddressType(rapidjson::Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
-	void getAddressTxids(rapidjson::Value& resultJson, const std::string& pubkey, Poco::SharedPtr<controller::Group> group);
+	void getAddressType(rapidjson::Value& resultJson, const std::string& pubkey, std::shared_ptr<controller::Group> group);
+	void getAddressTxids(rapidjson::Value& resultJson, const std::string& pubkey, std::shared_ptr<controller::Group> group);
 	void putTransaction(
 		rapidjson::Value& resultJson,
 		uint64_t transactionNr,
 		std::unique_ptr<gradido::data::GradidoTransaction> transaction,
-		Poco::SharedPtr<controller::Group> group
+		std::shared_ptr<controller::Group> group
 	);
 
 	// helper

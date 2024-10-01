@@ -1,21 +1,20 @@
 #include "Block.h"
 #include "../ServerGlobals.h"
 
-#include "TaskObserver.h"
+#include "../blockchain/FileBasedProvider.h"
+#include "../controller/TaskObserver.h"
 #include "../model/files/FileExceptions.h"
 
-#include "../SingletonManager/GroupManager.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/CacheManager.h"
 
-#include "Poco/Util/ServerApplication.h"
+using namespace gradido::blockchain;
 
-namespace controller {
-	Block::Block(uint32_t blockNr, Poco::Path groupFolderPath, TaskObserver& taskObserver, const std::string& groupAlias)
+namespace cache {
+	Block::Block(uint32_t blockNr, std::string_view groupFolderPath, TaskObserver& taskObserver, const std::string& groupAlias)
 		: //mTimer(0, ServerGlobals::g_TimeoutCheck),
 		  mBlockNr(blockNr),
-		  mSerializedTransactions(std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_CacheTimeout).count()),
-		  mBlockIndex(new controller::BlockIndex(groupFolderPath, blockNr)),
+		  mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+		  mBlockIndex(groupFolderPath, blockNr),
 		  mBlockFile(new model::files::Block(groupFolderPath, blockNr)), mTaskObserver(taskObserver), mGroupAlias(groupAlias),
    		  mExitCalled(false)
 	{
@@ -28,7 +27,7 @@ namespace controller {
 	{
 		exit();
 		//printf("[controller::~Block]\n");
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 		auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer("controller::" + mBlockFile->getBlockPath());
 		if (result != 1 && result != -1) {
 			LOG_ERROR("[controller::~Block] error removing timer");
@@ -41,9 +40,9 @@ namespace controller {
 		mSerializedTransactions.clear();
 	}
 
-	bool Block::init(Poco::SharedPtr<controller::AddressIndex> addressIndex)
+	bool Block::init(const cache::Dictionary publicKeyIndex)
 	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 		if (!mBlockIndex->loadFromFile()) {
 			// check if Block exist
 			if (mBlockFile->getCurrentFileSize()) {
@@ -75,7 +74,7 @@ namespace controller {
 
 	void Block::exit()
 	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 		mExitCalled = true;
 		if (!mTransactionWriteTask.isNull()) {
 			mTransactionWriteTask->run();
@@ -83,10 +82,15 @@ namespace controller {
 		}
 	}
 
+	void Block::reset()
+	{
+
+	}
+
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
 	bool Block::pushTransaction(std::shared_ptr<NodeTransactionEntry> transaction)
 	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 		if (mExitCalled) return false;
 
 		if (mTransactionWriteTask.isNull()) {
@@ -104,7 +108,7 @@ namespace controller {
 		auto group = gm->findGroup(mGroupAlias);
 		auto transaction = std::make_unique<gradido::data::ConfirmedTransaction>(serializedTransaction.get());
 		auto transactionEntry = std::make_shared<NodeTransactionEntry>(transaction.get(), group->getAddressIndex(), fileCursor);
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 		if (mExitCalled) return;
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}
@@ -112,7 +116,7 @@ namespace controller {
 	std::shared_ptr<gradido::blockchain::TransactionEntry> Block::getTransaction(uint64_t transactionNr)
 	{
 		assert(transactionNr);
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
 		if (transactionEntry.isNull()) {
@@ -120,7 +124,7 @@ namespace controller {
 			// happen also if cache timeout is shorter than file write timeout
 			bool writeTransactionTaskExist = false;
 			bool writeTransactionTaskIsObserved = false;
-			Poco::SharedPtr<model::NodeTransactionEntry> transaction;
+			std::shared_ptr<model::NodeTransactionEntry> transaction;
 			if (!mTransactionWriteTask.isNull()) {
 				transaction = mTransactionWriteTask->getTransaction(transactionNr);
 				writeTransactionTaskExist = true;
@@ -174,43 +178,20 @@ namespace controller {
 		return transactionEntry;
 	}
 
-	void Block::checkTimeout(Poco::Timer& timer)
-	{
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
-
-		if (mExitCalled) {
-			timer.restart(0);
-			return;
-		}
-
-		if (!mTransactionWriteTask.isNull()) {
-			if (
-				Poco::DateTime() - mTransactionWriteTask->getCreationDate()
-				> std::chrono::duration_cast<std::chrono::milliseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
-			) {
-				mTransactionWriteTask->setFinishCommand(new TaskObserverFinishCommand(&mTaskObserver));
-				mTaskObserver.addBlockWriteTask(mTransactionWriteTask);
-				mTransactionWriteTask->scheduleTask(mTransactionWriteTask);
-				mTransactionWriteTask = nullptr;
-			}
-		}
-	}
-
 	TimerReturn Block::callFromTimer()
 	{
 		// if called from timer, while deconstruct was called, prevent dead lock
-		if (!mWorkingMutex.tryLock()) return TimerReturn::GO_ON;
+		if (!mFastMutex.try_lock()) return TimerReturn::GO_ON;
 		if (mExitCalled) {
-			mWorkingMutex.unlock();
+			mFastMutex.unlock();
 			return TimerReturn::REMOVE_ME;
 		}
-		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
+		std::lock_guard lock(mFastMutex);
 
 		if (!mTransactionWriteTask.isNull()) {
-			if (
-				Poco::DateTime() - mTransactionWriteTask->getCreationDate()
-				> std::chrono::duration_cast<std::chrono::microseconds>(ServerGlobals::g_WriteToDiskTimeout).count()
-			) {
+			Timepoint now;
+			if (now - mTransactionWriteTask->getCreationDate() > ServerGlobals::g_WriteToDiskTimeout) 
+			{
 				auto copyTask = mTransactionWriteTask;
 				mTaskObserver.addBlockWriteTask(copyTask);
 				mTransactionWriteTask = nullptr;
@@ -219,7 +200,6 @@ namespace controller {
 				copyTask->scheduleTask(copyTask);
 			}
 		}
-		mWorkingMutex.unlock();
 		return TimerReturn::GO_ON;
 	}
 

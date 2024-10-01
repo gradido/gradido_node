@@ -7,7 +7,7 @@ using Poco::Net::SSLManager;
 using Poco::Net::Context;
 using Poco::Net::InvalidCertificateHandler;
 using Poco::Net::RejectCertificateHandler;
-using Poco::SharedPtr;
+using std::shared_ptr;
 
 
 #include "ServerGlobals.h"

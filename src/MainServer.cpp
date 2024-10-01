@@ -79,14 +79,14 @@ void MainServer::displayHelp()
 
 void MainServer::createConsoleFileAsyncLogger(std::string name, std::string filePath)
 {
-	Poco::AutoPtr<Poco::ConsoleChannel> logConsoleChannel(new Poco::ConsoleChannel);
-	Poco::AutoPtr<Poco::SimpleFileChannel> logFileChannel(new Poco::SimpleFileChannel(filePath));
+	std::shared_ptr<Poco::ConsoleChannel> logConsoleChannel(new Poco::ConsoleChannel);
+	std::shared_ptr<Poco::SimpleFileChannel> logFileChannel(new Poco::SimpleFileChannel(filePath));
 	logFileChannel->setProperty("rotation", "500 K");
-	Poco::AutoPtr<Poco::SplitterChannel> logSplitter(new Poco::SplitterChannel);
+	std::shared_ptr<Poco::SplitterChannel> logSplitter(new Poco::SplitterChannel);
 	logSplitter->addChannel(logConsoleChannel);
 	logSplitter->addChannel(logFileChannel);
 
-	Poco::AutoPtr<Poco::AsyncChannel> logAsyncChannel(new Poco::AsyncChannel(logSplitter));
+	std::shared_ptr<Poco::AsyncChannel> logAsyncChannel(new Poco::AsyncChannel(logSplitter));
 
 	Poco::Logger& log = Poco::Logger::get(name);
 	log.setChannel(logAsyncChannel);
@@ -95,9 +95,9 @@ void MainServer::createConsoleFileAsyncLogger(std::string name, std::string file
 
 void MainServer::createFileAsyncLogger(std::string name, std::string filePath)
 {
-	Poco::AutoPtr<Poco::SimpleFileChannel> logFileChannel(new Poco::SimpleFileChannel(filePath));
+	std::shared_ptr<Poco::SimpleFileChannel> logFileChannel(new Poco::SimpleFileChannel(filePath));
 	logFileChannel->setProperty("rotation", "500 K");
-	Poco::AutoPtr<Poco::AsyncChannel> logAsyncChannel(new Poco::AsyncChannel(logFileChannel));
+	std::shared_ptr<Poco::AsyncChannel> logAsyncChannel(new Poco::AsyncChannel(logFileChannel));
 
 	Poco::Logger& log = Poco::Logger::get(name);
 	log.setChannel(logAsyncChannel);
@@ -121,7 +121,7 @@ int MainServer::main(const std::vector<std::string>& args)
 #endif
 
 		// init speed logger
-		Poco::AutoPtr<Poco::SimpleFileChannel> speedLogFileChannel(new Poco::SimpleFileChannel(log_Path + "speedLog.txt"));
+		std::shared_ptr<Poco::SimpleFileChannel> speedLogFileChannel(new Poco::SimpleFileChannel(log_Path + "speedLog.txt"));
 		/*
 		The optional log file rotation mode:
 		never:      no rotation (default)
@@ -130,7 +130,7 @@ int MainServer::main(const std::vector<std::string>& args)
 		<n> M:    rotate if file size exceeds <n> Megabytes
 		*/
 		speedLogFileChannel->setProperty("rotation", "500 K");
-		Poco::AutoPtr<Poco::AsyncChannel> speedLogAsyncChannel(new Poco::AsyncChannel(speedLogFileChannel));
+		std::shared_ptr<Poco::AsyncChannel> speedLogAsyncChannel(new Poco::AsyncChannel(speedLogFileChannel));
 
 		Poco::Logger& speedLogger = Poco::Logger::get("SpeedLog");
 		speedLogger.setChannel(speedLogAsyncChannel);

@@ -25,7 +25,7 @@
 class WriteTransactionsToBlockTask : public task::CPUTask
 {
 public:
-	WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex);
+	WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<controller::BlockIndex> blockIndex);
 	~WriteTransactionsToBlockTask();
 
 	const char* getResourceType() const { return "WriteTransactionsToBlockTask"; };
@@ -36,21 +36,21 @@ public:
 	//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
 	inline Timepoint getCreationDate() { return mCreationDate; }
 
-	void addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction);
+	void addSerializedTransaction(std::shared_ptr<model::NodeTransactionEntry> transaction);
 
 	//! return transaction by nr
-	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t nr);
+	std::shared_ptr<model::NodeTransactionEntry> getTransaction(uint64_t nr);
 
-	inline const std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>>* getTransactionEntriesList() const {
+	inline const std::map<uint64_t, std::shared_ptr<model::NodeTransactionEntry>>* getTransactionEntriesList() const {
 		return &mTransactions;
 	}
 
 protected:
-	Poco::AutoPtr<model::files::Block> mBlockFile;
-	Poco::SharedPtr<controller::BlockIndex> mBlockIndex;
+	std::shared_ptr<model::files::Block> mBlockFile;
+	std::shared_ptr<controller::BlockIndex> mBlockIndex;
 	Timepoint mCreationDate;
 	Poco::FastMutex mFastMutex;
-	std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>> mTransactions;
+	std::map<uint64_t, std::shared_ptr<model::NodeTransactionEntry>> mTransactions;
 };
 
 #endif 

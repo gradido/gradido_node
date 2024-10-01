@@ -60,22 +60,22 @@ namespace cache {
 
 		//! \brief search transaction nrs for search criteria in filter, ignore filter function
 		//! \return transaction nrs
-		std::vector<uint64_t> findTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary);
+		std::vector<uint64_t> findTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const;
 
 		//! \brief find transaction nrs from specific month and year
 		//! \return {0, 0} if nothing found
-		std::pair<uint64_t, uint64_t> findTransactionsForMonthYear(date::year year, date::month month);
+		std::pair<uint64_t, uint64_t> findTransactionsForMonthYear(date::year year, date::month month) const;
 
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
-		bool getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor);
+		bool getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor) const;
 		bool hasTransactionNr(uint64_t transactionNr) const;
 
-		inline uint64_t getMaxTransactionNr() { std::lock_guard _lock(mRecursiveMutex);  return mMaxTransactionNr; }
-		inline uint64_t getMinTransactionNr() { std::lock_guard _lock(mRecursiveMutex); return mMinTransactionNr; }
+		inline uint64_t getMaxTransactionNr() const { std::lock_guard _lock(mRecursiveMutex);  return mMaxTransactionNr; }
+		inline uint64_t getMinTransactionNr() const { std::lock_guard _lock(mRecursiveMutex); return mMinTransactionNr; }
 
-		std::pair<date::year, date::month> getOldestYearMonth();
-		std::pair<date::year, date::month> getNewestYearMonth();
+		date::year_month getOldestYearMonth() const;
+		date::year_month getNewestYearMonth() const;
 
 	protected:
 		void clearIndexEntries(); 

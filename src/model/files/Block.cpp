@@ -48,7 +48,7 @@ namespace model {
 			//mTimer.stop();
 		}
 
-		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()
+		std::shared_ptr<Poco::FileStream> Block::getOpenFile()
 		{
 			//printf("Block::getOpenFile: %s\n", mBlockPath.toString().data());
 			Poco::FastMutex::ScopedLock lock(mFastMutex);
@@ -292,10 +292,10 @@ namespace model {
 			return result;
 		}
 
-		Poco::AutoPtr<RebuildBlockIndexTask> Block::rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex)
+		std::shared_ptr<RebuildBlockIndexTask> Block::rebuildBlockIndex(std::shared_ptr<controller::AddressIndex> addressIndex)
 		{			
 			auto fl = FileLockManager::getInstance();
-			Poco::AutoPtr<RebuildBlockIndexTask> rebuildTask = new RebuildBlockIndexTask(addressIndex);;
+			std::shared_ptr<RebuildBlockIndexTask> rebuildTask = new RebuildBlockIndexTask(addressIndex);;
 
 			std::string filePath = mBlockPath.toString();
 			
@@ -351,7 +351,7 @@ namespace model {
 
 		// *********************** TASKS ***********************************
 
-		BlockAppendLineTask::BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<const std::string*> lines)
+		BlockAppendLineTask::BlockAppendLineTask(std::shared_ptr<Block> block, std::vector<const std::string*> lines)
 			: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mTargetBlock(block), mLines(lines)
 		{
 
@@ -369,7 +369,7 @@ namespace model {
 		}
 
 
-		RebuildBlockIndexTask::RebuildBlockIndexTask(Poco::SharedPtr<controller::AddressIndex> addressIndex)
+		RebuildBlockIndexTask::RebuildBlockIndexTask(std::shared_ptr<controller::AddressIndex> addressIndex)
 			: task::CPUTask(ServerGlobals::g_CPUScheduler), mAddressIndex(addressIndex)
 		{
 
@@ -384,7 +384,7 @@ namespace model {
 				}
 				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(&fileCursorLine.second);
 				lock();
-				Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(
+				std::shared_ptr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(
 					gradidoBlock.get(), 
 					mAddressIndex, 
 					fileCursorLine.first

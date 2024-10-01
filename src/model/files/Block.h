@@ -26,7 +26,7 @@ namespace model {
 	namespace files {
 		class RebuildBlockIndexTask;
 
-		class Block : public FileBase, public TimerCallback
+		class Block : public TimerCallback
 		{
 		public:
 			Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
@@ -58,13 +58,12 @@ namespace model {
 			bool validateHash();
 
 			// read whole file, validate hash
-			Poco::AutoPtr<RebuildBlockIndexTask> rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex);
-
+			std::shared_ptr<RebuildBlockIndexTask> rebuildBlockIndex(std::shared_ptr<controller::AddressIndex> addressIndex);
 
 		protected:
 			//! \brief open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed
 			//! \return block file stream
-			Poco::SharedPtr<Poco::FileStream> getOpenFile();
+			std::shared_ptr<Poco::FileStream> getOpenFile();
 			//! \brief very expensive, read in whole file and calculate hash
 			std::shared_ptr<memory::Block> calculateHash();
 
@@ -75,7 +74,7 @@ namespace model {
 			Poco::UInt64 mLastWrittenTransactionNr;
 
 			Timepoint mLastUsed;
-			Poco::SharedPtr<Poco::FileStream>	mBlockFile;
+			std::shared_ptr<Poco::FileStream>	mBlockFile;
 			Poco::FastMutex mFastMutex;
 			Poco::UInt32    mCurrentFileSize;
 
@@ -84,14 +83,14 @@ namespace model {
 		class BlockAppendLineTask : task::CPUTask
 		{
 		public:
-			BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<const std::string*> lines);
+			BlockAppendLineTask(std::shared_ptr<Block> block, std::vector<const std::string*> lines);
 
 			const char* getResourceType() const { return "BlockAppendLineTask"; };
 
 			int run();
 
 		protected:
-			Poco::SharedPtr<Block> mTargetBlock;
+			std::shared_ptr<Block> mTargetBlock;
 			std::vector<const std::string*> mLines;
 			std::vector<Poco::UInt32> mCursorPositions;
 		};
@@ -100,19 +99,19 @@ namespace model {
 		class RebuildBlockIndexTask : public task::CPUTask
 		{
 		public:
-			RebuildBlockIndexTask(Poco::SharedPtr<controller::AddressIndex> addressIndex);
+			RebuildBlockIndexTask(std::shared_ptr<controller::AddressIndex> addressIndex);
 			const char* getResourceType() const { return "RebuildBlockIndexTask"; };
 
 			int run();
 			//! \param line will be moved
 			void pushLine(Poco::Int32 fileCursor, std::string line);
-			const std::list<Poco::SharedPtr<model::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
+			const std::list<std::shared_ptr<model::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
 
 			inline bool isPendingQueueEmpty() { return mPendingFileCursorLine.empty(); }
 
 		protected:
-			Poco::SharedPtr<controller::AddressIndex> mAddressIndex;
-			std::list<Poco::SharedPtr<model::NodeTransactionEntry>> mTransactionEntries;
+			std::shared_ptr<controller::AddressIndex> mAddressIndex;
+			std::list<std::shared_ptr<model::NodeTransactionEntry>> mTransactionEntries;
 			MultithreadQueue<std::pair<Poco::Int32, std::string>> mPendingFileCursorLine;
 		};
 	}

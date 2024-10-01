@@ -3,7 +3,7 @@
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "../SingletonManager/LoggerManager.h"
 
-WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex)
+WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<controller::BlockIndex> blockIndex)
 	: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
 {
 	assert(!blockFile.isNull());
@@ -55,7 +55,7 @@ int WriteTransactionsToBlockTask::run()
 	return 0;
 }
 
-void WriteTransactionsToBlockTask::addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction) 
+void WriteTransactionsToBlockTask::addSerializedTransaction(std::shared_ptr<model::NodeTransactionEntry> transaction) 
 {
 	assert(!isTaskSheduled());
 	assert(!isTaskFinished());		
@@ -64,7 +64,7 @@ void WriteTransactionsToBlockTask::addSerializedTransaction(Poco::SharedPtr<mode
 	mBlockIndex->addIndicesForTransaction(transaction);
 }
 
-Poco::SharedPtr<model::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
+std::shared_ptr<model::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
 {
 	auto it = mTransactions.find(nr);
 	if(it == mTransactions.end()) {

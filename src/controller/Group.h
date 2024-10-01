@@ -72,7 +72,7 @@ namespace controller {
 		std::shared_ptr<gradido::blockchain::TransactionEntry> findLastTransactionForAddress(const std::string& address, const std::string& coinGroupId = "");
 
 		//! \brief return last transaction which was added to this blockchain
-		Poco::SharedPtr<gradido::data::ConfirmedTransaction> getLastTransaction(std::function<bool(const gradido::data::ConfirmedTransaction*)> filter = nullptr);
+		std::shared_ptr<gradido::data::ConfirmedTransaction> getLastTransaction(std::function<bool(const gradido::data::ConfirmedTransaction*)> filter = nullptr);
 
 		std::shared_ptr<TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 
@@ -123,7 +123,7 @@ namespace controller {
 		) const;
 
 
-		inline Poco::SharedPtr<AddressIndex> getAddressIndex() { return mAddressIndex; }
+		inline std::shared_ptr<AddressIndex> getAddressIndex() { return mAddressIndex; }
 
 		//! \brief group alias or group id, the single identifier for group blockchain and group coins
 		inline const std::string& getGroupAlias() const { return mGroupAlias; }
@@ -145,7 +145,7 @@ namespace controller {
 		void updateLastTransactionId(int lastTransactionId);
 
 		
-		void addSignatureToCache(Poco::SharedPtr<gradido::data::ConfirmedTransaction> gradidoBlock);
+		void addSignatureToCache(std::shared_ptr<gradido::data::ConfirmedTransaction> gradidoBlock);
 		//! read blocks starting by latest until block is older than MILESTONES_BOOTSTRAP_COUNT * 1.5 minutes | io read expensive
 		//! put all signatures from young enough blocks into signature cache
 		virtual void fillSignatureCacheOnStartup();
@@ -154,11 +154,11 @@ namespace controller {
 		iota::MessageListener* mIotaMessageListener;
 		std::string mGroupAlias;
 		Poco::Path mFolderPath;
-		Poco::SharedPtr<AddressIndex> mAddressIndex;
+		std::shared_ptr<AddressIndex> mAddressIndex;
 		model::files::State mGroupState;
 		DeferredTransfer    mDeferredTransfersCache;
 
-		Poco::SharedPtr<gradido::data::ConfirmedTransaction> mLastTransaction;
+		std::shared_ptr<gradido::data::ConfirmedTransaction> mLastTransaction;
 		int mLastAddressIndex;
 		int mLastBlockNr;
 		int mLastTransactionId;
@@ -166,9 +166,9 @@ namespace controller {
 		Poco::AccessExpireCache<Poco::UInt32, Block> mCachedBlocks;
 
 		//! \brief get current block to write more transactions in it
-		Poco::SharedPtr<Block> getCurrentBlock();
-		Poco::SharedPtr<Block> getBlock(Poco::UInt32 blockNr);
-		Poco::SharedPtr<Block> getBlockContainingTransaction(uint64_t transactionId);
+		std::shared_ptr<Block> getCurrentBlock();
+		std::shared_ptr<Block> getBlock(Poco::UInt32 blockNr);
+		std::shared_ptr<Block> getBlockContainingTransaction(uint64_t transactionId);
 
 		// for preventing double transactions
 		// keep first 32 Byte of first signature of each transaction from last MAGIC_NUMBER_SIGNATURE_CACHE_MINUTES minutes

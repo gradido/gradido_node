@@ -86,7 +86,7 @@ namespace iota {
                     notConfirmedCount = 0;
                     messageConfirmed(messageId, milestoneId);
 					// and start loading task for it
-					Poco::AutoPtr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
+					std::shared_ptr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
 					task->scheduleTask(task);
                 }
                 else {
@@ -108,7 +108,7 @@ namespace iota {
         auto it = mConfirmedMessages.find(id);
         if (it != mConfirmedMessages.end()) {
             for (auto itList = it->second.begin(); itList != it->second.end(); itList++) {
-				Poco::AutoPtr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(id, timestamp, *itList));
+				std::shared_ptr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(id, timestamp, *itList));
 				task->scheduleTask(task);
             }
             mConfirmedMessages.erase(it);
@@ -148,7 +148,7 @@ namespace iota {
 			Poco::ScopedLock<Poco::FastMutex> lock(mMilestonesMutex);
 			auto it = mMilestones.find(milestoneId);
 			if (it != mMilestones.end()) {
-				Poco::AutoPtr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(milestoneId, it->second, messageId));
+				std::shared_ptr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(milestoneId, it->second, messageId));
 				task->scheduleTask(task);
 				return;
 			}

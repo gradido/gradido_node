@@ -51,7 +51,7 @@ public:
 	
 	//! \brief adding WriteTransactionsToBlockTask to map and read transactions
 	//! \return false if tasks already exist
-	bool addBlockWriteTask(Poco::AutoPtr<WriteTransactionsToBlockTask> blockWriteTask);
+	bool addBlockWriteTask(std::shared_ptr<WriteTransactionsToBlockTask> blockWriteTask);
 
 	//! \brief remove WriteTransactionsToBlockTask from map and transactions
 	//! \return false if entry not found, else return true
@@ -67,7 +67,7 @@ public:
 
 	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
 	//! \return the transaction in question
-	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
+	std::shared_ptr<model::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
 
 	inline size_t getPendingTasksCount() const { std::lock_guard _lock(mFastMutex); return mBlockWriteTasks.size(); }
 
@@ -76,10 +76,10 @@ public:
 
 protected:
 	mutable std::mutex mFastMutex;
-	typedef std::pair<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
-	std::map<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
-	typedef std::pair<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
-	std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>> mTransactionsFromPendingTasks;
+	typedef std::pair<WriteTransactionsToBlockTask*, std::shared_ptr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
+	std::map<WriteTransactionsToBlockTask*, std::shared_ptr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
+	typedef std::pair<uint64_t, std::shared_ptr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
+	std::map<uint64_t, std::shared_ptr<model::NodeTransactionEntry>> mTransactionsFromPendingTasks;
 	
 };
 

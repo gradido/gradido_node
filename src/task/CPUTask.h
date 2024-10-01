@@ -40,7 +40,7 @@
 namespace task {
 
     class CPUTask;
-    typedef Poco::AutoPtr<CPUTask> CPUTaskPtr;
+    typedef std::shared_ptr<CPUTask> CPUTaskPtr;
 
 	class CPUSheduler;
 
