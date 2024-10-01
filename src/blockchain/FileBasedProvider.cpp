@@ -2,13 +2,14 @@
 #include "../SystemExceptions.h"
 #include "../client/JsonRPC.h"
 #include "../client/GraphQL.h"
+#include "../ServerGlobals.h"
 
 #include "loguru/loguru.hpp"
 
 namespace gradido {
 	namespace blockchain {
 		FileBasedProvider::FileBasedProvider()
-			:mGroupIndex(nullptr), mInitalized(false)
+			:mGroupIndex(nullptr), mCommunityIdIndex(ServerGlobals::g_FilesPath + "/communityId.index"), mInitalized(false)
 		{
 
 		}
@@ -26,6 +27,7 @@ namespace gradido {
 		void FileBasedProvider::clear()
 		{
 			mBlockchainsPerGroup.clear();
+			mCommunityIdIndex.exit();
 		}
 
 		FileBasedProvider* FileBasedProvider::getInstance()
@@ -50,13 +52,18 @@ namespace gradido {
 		{
 			std::lock_guard _lock(mWorkMutex);
 			mInitalized = true;
+			bool resetAllCommunityIndices = false;
+			if (!mCommunityIdIndex.init()) {
+				mCommunityIdIndex.reset();
+				resetAllCommunityIndices = true;
+			}
 			mGroupIndex = new cache::GroupIndex(communityConfigFile);
 			mGroupIndex->update();
 			auto communitiesAlias = mGroupIndex->listGroupAliases();
 			for (auto& communityAlias : communitiesAlias) {
 				// exit if at least one blockchain from config couldn't be loaded
 				// should only occure with invalid config
-				if (!addCommunity(communityAlias)) {
+				if (!addCommunity(communityAlias, resetAllCommunityIndices)) {
 					return false;
 				}
 			}
@@ -81,7 +88,7 @@ namespace gradido {
 			for (auto& communityAlias : communitiesAlias) {
 				auto it = mBlockchainsPerGroup.find(communityAlias);
 				if (it == mBlockchainsPerGroup.end()) {
-					if(addCommunity(communityAlias)) {
+					if(addCommunity(communityAlias, false)) {
 						addedBlockchainsCount++;
 					}
 				}
@@ -92,7 +99,9 @@ namespace gradido {
 			return addedBlockchainsCount;
 		}
 
-		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(const std::string& communityAlias)
+		
+
+		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(const std::string& communityAlias, bool resetIndices)
 		{
 			try {
 				auto folder = mGroupIndex->getFolder(communityAlias);

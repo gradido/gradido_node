@@ -4,13 +4,13 @@
 
 namespace model {
 	namespace files {
-		IndexAddressPairAlreadyExistException::IndexAddressPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept
+		IndexStringPairAlreadyExistException::IndexStringPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept
 			: GradidoBlockchainException(what), mCurrentPair(currentPair), mLastPair(lastPair)
 		{
 
 		}
 
-		std::string IndexAddressPairAlreadyExistException::getFullString() const
+		std::string IndexStringPairAlreadyExistException::getFullString() const
 		{
 			std::string result;
 			size_t resultSize = strlen(what()) + mCurrentPair.size() + mLastPair.size() + 16 + 14 + 2;

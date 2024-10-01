@@ -6,13 +6,14 @@ namespace gradido {
 
 		NodeTransactionEntry::NodeTransactionEntry(
 			gradido::data::ConstConfirmedTransactionPtr transaction,
-			cache::AddressIndex& addressIndex,
+			cache::Dictionary& publicKeyIndex,
 			int32_t fileCursor /*= -10*/
 		) : TransactionEntry(transaction), mFileCursor(fileCursor)
 		{
-			auto addresses = transaction->getGradidoTransaction()->getInvolvedAddresses();
-			if (addresses.size()) {
-				mAddressIndices = addressIndex.getOrAddIndicesForAddresses(addresses);
+			auto involvedPublicKeys = transaction->getGradidoTransaction()->getInvolvedAddresses();
+			mPublicKeyIndices.reserve(involvedPublicKeys.size());
+			for (auto& publicKey : involvedPublicKeys) {
+				mPublicKeyIndices.push_back(publicKeyIndex.getOrAddIndexForString(publicKey->copyAsString()));
 			}
 		}
 
@@ -26,9 +27,9 @@ namespace gradido {
 			const uint32_t* addressIndices, uint8_t addressIndiceCount
 		) : TransactionEntry(transactionNr, month, year, transactionType, coinGroupId)
 		{
-			mAddressIndices.reserve(addressIndiceCount);
+			mPublicKeyIndices.reserve(addressIndiceCount);
 			for (int i = 0; i < addressIndiceCount; i++) {
-				mAddressIndices.push_back(addressIndices[i]);
+				mPublicKeyIndices.push_back(addressIndices[i]);
 			}
 		}
 

@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_NODE_TRANSACTION_ENTRY_H
 
 #include "gradido_blockchain/blockchain/TransactionEntry.h"
-#include "../cache/AddressIndex.h"
+#include "../cache/Dictionary.h"
 
 #include <vector>
 
@@ -25,7 +25,7 @@ namespace gradido {
 
 			NodeTransactionEntry(
 				gradido::data::ConstConfirmedTransactionPtr transaction,
-				cache::AddressIndex& addressIndex,
+				cache::Dictionary& publicKeyIndex,
 				int32_t fileCursor = -10
 			);
 
@@ -42,19 +42,19 @@ namespace gradido {
 			inline void setFileCursor(int32_t newFileCursorValue) { std::scoped_lock lock(mFastMutex); mFileCursor = newFileCursorValue; }
 			inline int32_t getFileCursor() const { std::scoped_lock lock(mFastMutex); return mFileCursor; }
 
-			inline void addAddressIndex(uint32_t addressIndex) { std::scoped_lock lock(mFastMutex); mAddressIndices.push_back(addressIndex); }
-			inline const std::vector<uint32_t>& getAddressIndices() const { std::scoped_lock lock(mFastMutex); return mAddressIndices; }
+			inline void addAddressIndex(uint32_t addressIndex) { std::scoped_lock lock(mFastMutex); mPublicKeyIndices.push_back(addressIndex); }
+			inline const std::vector<uint32_t>& getAddressIndices() const { std::scoped_lock lock(mFastMutex); return mPublicKeyIndices; }
 			inline bool isAddressIndexInvolved(uint32_t addressIndex) const; 
 
 		protected:
 			int32_t mFileCursor;
-			std::vector<uint32_t> mAddressIndices;
+			std::vector<uint32_t> mPublicKeyIndices;
 		};
 
 		bool NodeTransactionEntry::isAddressIndexInvolved(uint32_t addressIndex) const
 		{
 			std::scoped_lock lock(mFastMutex);
-			return std::find(mAddressIndices.begin(), mAddressIndices.end(), addressIndex) != mAddressIndices.end();
+			return std::find(mPublicKeyIndices.begin(), mPublicKeyIndices.end(), addressIndex) != mPublicKeyIndices.end();
 		}
 	}
 };

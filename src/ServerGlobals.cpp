@@ -17,10 +17,10 @@ using Poco::SharedPtr;
 
 namespace ServerGlobals {
 
-	task::CPUSheduler* 	g_CPUScheduler = nullptr;
-	task::CPUSheduler* 	g_WriteFileCPUScheduler = nullptr;
-	task::CPUSheduler*    g_IotaRequestCPUScheduler = nullptr;
-	controller::GroupIndex* 			g_GroupIndex = nullptr;
+	task::CPUSheduler* 					g_CPUScheduler = nullptr;
+	task::CPUSheduler* 					g_WriteFileCPUScheduler = nullptr;
+	task::CPUSheduler*					g_IotaRequestCPUScheduler = nullptr;
+	cache::GroupIndex* 					g_GroupIndex = nullptr;
 	std::string							g_FilesPath;
 	std::chrono::seconds				g_CacheTimeout(600);
 	std::chrono::seconds				g_TimeoutCheck(60);

@@ -63,7 +63,7 @@ namespace controller {
 				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
 				mBlockIndex->reset();
 				std::for_each(transactionEntries.begin(), transactionEntries.end(),
-					[&](const Poco::SharedPtr<model::NodeTransactionEntry>& transactionEntry)
+					[&](const std::shared_ptr<NodeTransactionEntry>& transactionEntry)
 					{
 						mBlockIndex->addIndicesForTransaction(transactionEntry);
 					}
@@ -84,7 +84,7 @@ namespace controller {
 	}
 
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
-	bool Block::pushTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction)
+	bool Block::pushTransaction(std::shared_ptr<NodeTransactionEntry> transaction)
 	{
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mExitCalled) return false;
@@ -103,7 +103,7 @@ namespace controller {
 		auto gm = GroupManager::getInstance();
 		auto group = gm->findGroup(mGroupAlias);
 		auto transaction = std::make_unique<gradido::data::ConfirmedTransaction>(serializedTransaction.get());
-		Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry(new model::NodeTransactionEntry(transaction.get(), group->getAddressIndex(), fileCursor));
+		auto transactionEntry = std::make_shared<NodeTransactionEntry>(transaction.get(), group->getAddressIndex(), fileCursor);
 		Poco::ScopedLock<Poco::Mutex> lock(mWorkingMutex);
 		if (mExitCalled) return;
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);

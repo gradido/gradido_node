@@ -8,7 +8,7 @@
 
 #include <set>
 
-using namespace controller;
+using namespace cache;
 
 namespace gradido {
 	namespace blockchain {
@@ -17,7 +17,7 @@ namespace gradido {
 			mExitCalled(false),
 			mFolderPath(folder),
 			mIotaMessageListener(new iota::MessageListener(communityId)),
-			mAddressIndex(folder, this),
+			mPublicKeysIndex(std::string(folder).append("/pubkeys.index")),
 			mBlockchainState(std::string(folder).append(".state")),
 			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache"))
 		{
@@ -30,16 +30,16 @@ namespace gradido {
 				mIotaMessageListener = nullptr;
 			}
 		}
-		bool FileBased::init()
+		bool FileBased::init(bool resetBlockIndices)
 		{
 			assert(!mExitCalled);
 			std::lock_guard _lock(mWorkMutex);
 			bool resetDeferredTransfersCache = false;
-			if (!mAddressIndex.init()) {
+			if (!mPublicKeysIndex.init()) {
 				// remove index files for regenration
 				LOG_F(WARNING, "something went wrong with the address index file");
 				// mCachedBlocks.clear();
-				mAddressIndex.reset();
+				mPublicKeysIndex.reset();
 				resetDeferredTransfersCache = true;
 			}
 			if (!resetDeferredTransfersCache && !mDeferredTransfersCache.init()) {
@@ -49,6 +49,9 @@ namespace gradido {
 				LOG_F(WARNING, "something went wrong with deferred transfer cache level db");
 				mDeferredTransfersCache.reset();
 				rescanForDeferredTransfers();
+			}
+			if (resetBlockIndices) {
+				// reset block index
 			}
 			if (!mBlockchainState.init()) {
 				LOG_F(WARNING, "something went wrong with the state level db");
@@ -79,7 +82,7 @@ namespace gradido {
 			}
 			mDeferredTransfersCache.exit();
 			mBlockchainState.exit();
-			mAddressIndex.exit();
+			mPublicKeysIndex.exit();
 		}
 		bool FileBased::addGradidoTransaction(data::ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt)
 		{
@@ -129,7 +132,7 @@ namespace gradido {
 		void FileBased::loadStateFromBlockCache()
 		{
 			Profiler timeUsed;
-			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mAddressIndex.getLastIndex());
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex.getLastIndex());
 			auto lastTransaction = findOne(Filter::LAST_TRANSACTION);
 			int32_t lastTransactionNr = 0;
 			if (lastTransaction) {
@@ -156,7 +159,7 @@ namespace gradido {
 					if (!recipient) {
 						throw GradidoNullPointerException("missing public key on deferredTransfer", "memory::Block", __FUNCTION__);
 					}
-					auto recipientAddressIndex = mAddressIndex.getOrAddIndexForAddress(recipient->copyAsString());
+					auto recipientAddressIndex = mPublicKeysIndex.getOrAddIndexForAddress(recipient->copyAsString());
 					deferredTransfersAddressIndices.insert(recipientAddressIndex);
 					mDeferredTransfersCache.addTransactionNrForAddressIndex(recipientAddressIndex, entry.getTransactionNr());
 				}

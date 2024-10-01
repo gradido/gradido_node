@@ -1,6 +1,9 @@
 #ifndef __GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H
 #define __GRADIDO_NODE_CONTROLLER_BLOCK_INDEX_H
 
+#include "gradido_blockchain/blockchain/Filter.h"
+
+#include "../blockchain/NodeTransactionEntry.h"
 #include "../model/files/BlockIndex.h"
 #include "../task/CPUTask.h"
 
@@ -24,7 +27,7 @@ namespace cache {
 	{
 		//friend model::files::BlockIndex;
 	public:
-		BlockIndex(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
+		BlockIndex(std::string_view groupFolderPath, Poco::UInt32 blockNr);
 		~BlockIndex();
 
 		bool init();
@@ -35,21 +38,14 @@ namespace cache {
 		bool loadFromFile();
 
 		//! \brief write block index into files
-		bool writeIntoFile();
 		std::unique_ptr<model::files::BlockIndex> serialize();
 
-		bool addIndicesForTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry);
-		bool addIndicesForTransaction(
-			const std::string& coinGroupId,
-			date::year year,
-			date::month month,
-			uint64_t transactionNr,
-			int32_t fileCursor, 
-			const std::vector<uint32_t>& addressIndices
-		);
+		bool addIndicesForTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry);
+
 		//! implement from model::files::IBlockIndexReceiver, called by loading block index from file
 		bool addIndicesForTransaction(
-			const std::string& coinGroupId,
+			gradido::data::TransactionType transactionType,
+			uint32_t coinCommunityIdIndex,
 			date::year year,
 			date::month month,
 			uint64_t transactionNr, 
@@ -62,23 +58,13 @@ namespace cache {
 		//! \return false if transactionNr exist, else return true
 		bool addFileCursorForTransaction(uint64_t transactionNr, int32_t fileCursor);
 
-		//! \brief find transaction nrs for address index in specific month and year
-		//! \return empty vector in case nothing found
-		std::vector<uint64_t> findTransactionsForAddressMonthYear(uint32_t addressIndex, date::year year, date::month month);
-
-		//! \brief find transaction nrs for address index
-		//! \param coinColor ignore if value is zero
-		//! \return empty vector in case nothing found
-		//! TODO: profile and if to slow on big data amounts, update 
-		std::vector<uint64_t> findTransactionsForAddress(uint32_t addressIndex, const std::string& coinGroupId = "");
-
-		//! \brief search from highest year and month to lowest, return youngest transaction which is fitting the search criteria
-		uint64_t findLastTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId = "");
-		uint64_t findFirstTransactionForAddress(uint32_t addressIndex, const std::string& coinGroupId = "");
+		//! \brief search transaction nrs for search criteria in filter, ignore filter function
+		//! \return transaction nrs
+		std::vector<uint64_t> findTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary);
 
 		//! \brief find transaction nrs from specific month and year
-		//! \return empty shared ptr if nothing found
-		std::shared_ptr<std::vector<uint64_t>> findTransactionsForMonthYear(date::year year, date::month month);
+		//! \return {0, 0} if nothing found
+		std::pair<uint64_t, uint64_t> findTransactionsForMonthYear(date::year year, date::month month);
 
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
@@ -91,26 +77,28 @@ namespace cache {
 		std::pair<date::year, date::month> getOldestYearMonth();
 		std::pair<date::year, date::month> getNewestYearMonth();
 
-		// clear maps
-		void reset();
-
 	protected:
+		void clearIndexEntries(); 
+
 		//! \brief called from model::files::BlockIndex while reading file
-		std::shared_ptr<model::files::BlockIndex> mBlockIndexFile;
+		std::string				 mFolderPath;
+		uint32_t				 mBlockNr;
 		uint64_t				 mMaxTransactionNr;
 		uint64_t				 mMinTransactionNr;
 
 		std::map<uint64_t, int32_t> mTransactionNrsFileCursors;
 		typedef std::pair<uint64_t, int32_t> TransactionNrsFileCursorsPair;
 
-		struct AddressIndexEntry
+		struct BlockIndexEntry
 		{
-			std::shared_ptr<std::vector<uint64_t>> transactionNrs;
-			std::map<uint32_t, std::vector<uint32_t>> addressIndicesTransactionNrIndices;
-			std::map<std::string, std::vector<uint32_t>> coinGroupIdTransactionNrIndices;
+			uint64_t						transactionNr;
+			uint32_t*						addressIndices;
+			uint32_t						coinCommunityIdIndex;
+			gradido::data::TransactionType	transactionType;
+			uint8_t							addressIndiceCount;
 		};
 
-		std::map<date::year, std::map<date::month, AddressIndexEntry>> mYearMonthAddressIndexEntrys;
+		std::map<date::year, std::map<date::month, std::list<BlockIndexEntry>>> mYearMonthAddressIndexEntrys;
 
 		mutable std::recursive_mutex mRecursiveMutex;
 		bool mDirty;

@@ -5,10 +5,10 @@
 
 namespace model {
 	namespace files {
-		class IndexAddressPairAlreadyExistException : public GradidoBlockchainException
+		class IndexStringPairAlreadyExistException : public GradidoBlockchainException
 		{
 		public:
-			explicit IndexAddressPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept;
+			explicit IndexStringPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept;
 
 			std::string getFullString() const;
 

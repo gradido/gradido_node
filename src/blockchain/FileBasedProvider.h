@@ -26,6 +26,11 @@ namespace gradido {
 			//! expensive,  reload config file from disk and add new blockchains, recreate community listener from all
 			//! \return count of added blockchain
 			int reloadConfig();
+
+			// access community id index
+			uint32_t getCommunityIdIndex(const std::string& communityId);
+			uint32_t getCommunityIdIndex(std::string_view communityId);
+			const std::string& getCommunityIdString(uint32_t index);
 		protected:
 			void clear();
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
@@ -40,13 +45,26 @@ namespace gradido {
 			FileBasedProvider& operator= (const FileBasedProvider&) = delete;
 
 			//! load or create blockchain for community, not locking woking mutex!
-			std::shared_ptr<FileBased> addCommunity(const std::string& alias);
+			std::shared_ptr<FileBased> addCommunity(const std::string& alias, bool resetIndices);
 			void updateListenerCommunity(const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
 			cache::GroupIndex* mGroupIndex;
+			cache::Dictionary  mCommunityIdIndex;
 			bool mInitalized;
-
 		};
+
+		uint32_t FileBasedProvider::getCommunityIdIndex(const std::string& communityId)
+		{
+			return mCommunityIdIndex.getIndexForString(communityId);
+		}
+		uint32_t FileBasedProvider::getCommunityIdIndex(std::string_view communityId)
+		{
+			return getCommunityIdIndex(std::string(communityId));
+		}
+		const std::string& FileBasedProvider::getCommunityIdString(uint32_t index)
+		{
+			return mCommunityIdIndex.getStringForIndex(index);
+		}
 	}
 }
 

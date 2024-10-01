@@ -13,14 +13,14 @@
 #include "task/CPUSheduler.h"
 #include "gradido_blockchain/http/IotaRequest.h"
 
-#include "controller/GroupIndex.h"
+#include "cache/GroupIndex.h"
 
 namespace ServerGlobals {
 
-	extern task::CPUSheduler* g_CPUScheduler;
-	extern task::CPUSheduler* g_WriteFileCPUScheduler;
-	extern task::CPUSheduler* g_IotaRequestCPUScheduler;
-	extern controller::GroupIndex*			g_GroupIndex;
+	extern task::CPUSheduler*				g_CPUScheduler;
+	extern task::CPUSheduler*				g_WriteFileCPUScheduler;
+	extern task::CPUSheduler*				g_IotaRequestCPUScheduler;
+	extern cache::GroupIndex*				g_GroupIndex;
 	extern std::string						g_FilesPath;
 	//! cache timeout in seconds, default 10 minutes
 	extern std::chrono::seconds             g_CacheTimeout;

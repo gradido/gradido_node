@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 #define __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 
-#include "../cache/AddressIndex.h"
+#include "../cache/Dictionary.h"
 #include "../cache/DeferredTransfer.h"
 #include "../cache/State.h"
 
@@ -32,8 +32,9 @@ namespace gradido {
 			//! load blockchain from files and check if index and states seems ok
 			//! if address index or block index is corrupt, remove address index and block index files, they will rebuild automatic on get block calls
 			//! if state leveldb file is corrupt, reconstruct values from block cache
+			//! \param resetBlockIndices will be set to true if community id index was corrupted which invalidate block index
 			//! \return true on success, else false
-			bool init();
+			bool init(bool resetBlockIndices);
 
 			// clean up group, stopp all running processes
 			void exit();
@@ -88,7 +89,7 @@ namespace gradido {
 			//! connect via mqtt to iota server and get new messages
 			iota::MessageListener* mIotaMessageListener;
 
-			cache::AddressIndex mAddressIndex;
+			cache::Dictionary mPublicKeysIndex;
 			// level db to store state values like last transaction
 			cache::State mBlockchainState;
 

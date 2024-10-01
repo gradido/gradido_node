@@ -1,4 +1,4 @@
-#include "AddressIndex.h"
+#include "Dictionary.h"
 #include "FileExceptions.h"
 #include "sodium.h"
 
@@ -14,18 +14,18 @@
 namespace model {
 	namespace files {
 
-		AddressIndex::AddressIndex(std::string_view fileName)
+		Dictionary::Dictionary(std::string_view fileName)
 			: mFileName(fileName), mFileWritten(false)
 		{
 			
 		}
 
-		AddressIndex::~AddressIndex()
+		Dictionary::~Dictionary()
 		{
 			
 		}
 
-		bool AddressIndex::init()
+		bool Dictionary::init()
 		{
 			try {
 				if (loadFromFile()) {
@@ -39,7 +39,7 @@ namespace model {
 			return true;
 		}
 
-		void AddressIndex::exit()
+		void Dictionary::exit()
 		{
 			// will return nullptr if file is up to date
 			auto vFile = serialize();
@@ -49,7 +49,7 @@ namespace model {
 			}
 		}
 
-		void AddressIndex::reset()
+		void Dictionary::reset()
 		{
 			auto fl = FileLockManager::getInstance();
 			int timeoutRounds = 100;
@@ -57,37 +57,48 @@ namespace model {
 				throw LockException("cannot lock file for reset", mFileName);
 			}
 			std::filesystem::remove(mFileName);
-			mAddressesIndices.clear();
-			// both is empty so technically addess indices are written to file
+			mStringIndices.clear();
+			// both is empty so technically string indices are written to file
 			mFileWritten = true;
 			fl->unlock(mFileName);
 		}
 
-		bool AddressIndex::add(const std::string& address, uint32_t index)
+		bool Dictionary::add(const std::string& address, uint32_t index)
 		{
 			if (address == "") {
 				throw GradidoNodeInvalidDataException("empty address");
 			}
 			mFileWritten = false;
 			mFastMutex.lock();
-			bool result = mAddressesIndices.insert(std::pair<std::string, uint32_t>(address, index)).second;
+			bool result = mStringIndices.insert(std::pair<std::string, uint32_t>(address, index)).second;
 			mFastMutex.unlock();
 
 			return result;
 		}
 
-		uint32_t AddressIndex::getIndexForAddress(const std::string &address)
+		uint32_t Dictionary::getIndexForString(const std::string &string) const
 		{
 			std::lock_guard _lock(mFastMutex);
 
-			auto it = mAddressesIndices.find(address);
-			if (it != mAddressesIndices.end()) {
+			auto it = mStringIndices.find(string);
+			if (it != mStringIndices.end()) {
 				return it->second;
 			}
 			return 0;
 		}
 
-		bool AddressIndex::checkFile()
+		const std::string& Dictionary::getStringForIndex(uint32_t index) const
+		{
+			std::lock_guard _lock(mFastMutex);
+			for (const auto& pair : mStringIndices) {
+				if (pair.second == index) {
+					return pair.first;
+				}
+			}
+			return "";
+		}
+
+		bool Dictionary::checkFile()
 		{
 			auto fl = FileLockManager::getInstance();
 			int timeoutRounds = 100;
@@ -106,21 +117,21 @@ namespace model {
 			return false;
 		}
 
-		void AddressIndex::setFileWritten()
+		void Dictionary::setFileWritten()
 		{
 			std::lock_guard _lock(mFastMutex);
 			mFileWritten = true;
 		}
 
-		size_t AddressIndex::calculateFileSize()
+		size_t Dictionary::calculateFileSize()
 		{
 			std::lock_guard _lock(mFastMutex);
 
-			auto mapEntryCount = mAddressesIndices.size();
+			auto mapEntryCount = mStringIndices.size();
 			return mapEntryCount * (sizeof(uint32_t) + 32) + 32;
 		}
 
-		MemoryBin AddressIndex::calculateHash(const std::map<uint32_t, std::string>& sortedMap)
+		MemoryBin Dictionary::calculateHash(const std::map<uint32_t, std::string>& sortedMap)
 		{
 			MemoryBin hash(crypto_generichash_BYTES);
 
@@ -137,25 +148,24 @@ namespace model {
 			return hash;
 		}
 
-		std::unique_ptr<VirtualFile> AddressIndex::serialize()
+		std::unique_ptr<VirtualFile> Dictionary::serialize()
 		{
 			if (checkFile()) {
-				// current file seems containing all address indices 
+				// current file seems containing all string indices 
 				mFileWritten = true;
 				return nullptr;
 			}
 			std::lock_guard _lock(mFastMutex);
 			std::map<uint32_t, std::string> sortedMap;
 			
-			auto vFile = std::make_unique<VirtualFile>(mAddressesIndices.size() * ( 32 + sizeof(uint32_t) ) + crypto_generichash_BYTES);
-			//Poco::FileOutputStream file(filePath);
+			auto vFile = std::make_unique<VirtualFile>(mStringIndices.size() * ( 32 + sizeof(uint32_t) ) + crypto_generichash_BYTES);
 
-			for (auto it = mAddressesIndices.begin(); it != mAddressesIndices.end(); it++) {
+			for (auto it = mStringIndices.begin(); it != mStringIndices.end(); it++) {
 				auto inserted = sortedMap.insert({it->second, it->first});
 				if (!inserted.second) {
 					std::string currentPair = std::to_string(it->second) + ": " + it->first;
 					std::string lastPair = std::to_string(inserted.first->first) + ": " + inserted.first->second;
-					throw IndexAddressPairAlreadyExistException("AddressIndex::writeToFile", currentPair, lastPair);
+					throw IndexStringPairAlreadyExistException("Dictionary::writeToFile", currentPair, lastPair);
 				}
 				vFile->write(it->first.data(), 32);
 				vFile->write((const char*)&it->second, sizeof(uint32_t));
@@ -165,7 +175,7 @@ namespace model {
 			return std::move(vFile);
 		}
 
-		bool AddressIndex::loadFromFile()
+		bool Dictionary::loadFromFile()
 		{
 			auto fl = FileLockManager::getInstance();
 			int timeoutRounds = 100;
@@ -196,7 +206,7 @@ namespace model {
 					file.read((char*)&index, sizeof(uint32_t));
 					readedSize += sizeof(uint32_t);
 					std::string hashString((const char*)hash.data(), hash.size());
-					mAddressesIndices.insert({ hashString, index });
+					mStringIndices.insert({ hashString, index });
 					sortedMap.insert({ index, hashString });
 				}
 				else {
@@ -206,7 +216,7 @@ namespace model {
 			fl->unlock(mFileName);
 			auto compareHash = calculateHash(sortedMap);
 			if (!hash.isTheSame(compareHash)) {
-				throw HashMismatchException("address index file hash mismatch", hash, compareHash);
+				throw HashMismatchException("string index file hash mismatch", hash, compareHash);
 			}
 
 			return true;

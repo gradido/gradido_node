@@ -1,5 +1,5 @@
-#ifndef __GRADIDO_NODE_MODEL_FILES_ADDRESS_INDEX_H
-#define __GRADIDO_NODE_MODEL_FILES_ADDRESS_INDEX_H
+#ifndef __GRADIDO_NODE_MODEL_FILES_DICTIONARY_H
+#define __GRADIDO_NODE_MODEL_FILES_DICTIONARY_H
 
 #include "../../lib/VirtualFile.h"
 #include "../../lib/FuzzyTimer.h"
@@ -18,29 +18,18 @@ namespace model {
 		* @author Dario Rekowski
 		* @date 2020-01-29
 		*
-		* @brief File for storing account address indices
+		* @brief File for storing strings accessable by index
 		* 
-		* Store indices for every account public key.\n
 		*
 		*/
 		class SuccessfullWrittenToFileCommand;
 
-		class AddressIndex : public task::ISerializeToVFile
+		class Dictionary : public task::ISerializeToVFile
 		{
 			friend SuccessfullWrittenToFileCommand;
 		public:
-			/*! @brief Container for address details which where together saved in address index file
-			* TODO: Use this struct instead of only the index in map and in file, update all other code accordingly
-			*/
-			struct AddressDetails
-			{
-				AddressDetails(uint32_t _index, gradido::data::AddressType _type)
-					: index(_index), type(_type) {}
-				uint32_t index;
-				gradido::data::AddressType type;
-			};
-			AddressIndex(std::string_view fileName);
-			~AddressIndex();
+			Dictionary(std::string_view fileName);
+			~Dictionary();
 
 			//! load from file, check hash, IO-read if exist, fileLock via FileLockManager
 			//! \return true if loading from file worked or there isn't any file for reading
@@ -57,14 +46,16 @@ namespace model {
 			bool add(const std::string& address, uint32_t index);
 			//! \brief Get index for address from memory, use Poco::FastMutex::ScopedLock.
 			//! \return Index or zero if address not found.
-			uint32_t getIndexForAddress(const std::string &address);
+			uint32_t getIndexForString(const std::string &string) const;
+
+			const std::string& getStringForIndex(uint32_t index) const;
 
 			//! serialize address indices for writing with hdd write buffer task
 			std::unique_ptr<VirtualFile> serialize();
 
-			inline bool isFileWritten() { std::lock_guard _lock(mFastMutex); return mFileWritten; }
-			std::string getFileNameString() { std::lock_guard _lock(mFastMutex); return mFileName; }
-			size_t getIndexCount() const { std::lock_guard _lock(mFastMutex); return mAddressesIndices.size(); }
+			inline bool isFileWritten() const { std::lock_guard _lock(mFastMutex); return mFileWritten; }
+			std::string getFileNameString() const { std::lock_guard _lock(mFastMutex); return mFileName; }
+			size_t getIndexCount() const { std::lock_guard _lock(mFastMutex); return mStringIndices.size(); }
 
 		protected:
 			//! \brief Check if index file contains current indices (compare sizes), fileLock via FileLockManager, I/O read.
@@ -87,7 +78,7 @@ namespace model {
 			bool loadFromFile();
 
 			std::string mFileName;
-			std::unordered_map<std::string, uint32_t> mAddressesIndices;
+			std::unordered_map<std::string, uint32_t> mStringIndices;
 			//! Indicate if current index set is written to file (true) or not (false).
 			bool mFileWritten;
 			mutable std::mutex mFastMutex;
@@ -96,13 +87,13 @@ namespace model {
 		class SuccessfullWrittenToFileCommand : public task::Command
 		{
 		public:
-			SuccessfullWrittenToFileCommand(std::shared_ptr<AddressIndex> parent) : mParent(parent) {};
+			SuccessfullWrittenToFileCommand(std::shared_ptr<Dictionary> parent) : mParent(parent) {};
 			int taskFinished(task::Task* task) { mParent->setFileWritten(); return 0; };
 
 		protected:
-			std::shared_ptr<AddressIndex> mParent;
+			std::shared_ptr<Dictionary> mParent;
 		};
 	}
 }
 
-#endif 
+#endif //__GRADIDO_NODE_MODEL_FILES_DICTIONARY_H
