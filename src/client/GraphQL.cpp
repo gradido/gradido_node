@@ -3,11 +3,10 @@
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "Exceptions.h"
 
-#include "../SingletonManager/LoggerManager.h"
-
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/pointer.h"
 #include "magic_enum/magic_enum.hpp"
+#include "loguru/loguru.hpp"
 
 using namespace rapidjson;
 using namespace magic_enum;
@@ -120,7 +119,7 @@ namespace client
 			StringBuffer buffer;
 			PrettyWriter<StringBuffer> writer(buffer);
 			result.Accept(writer);
-			LoggerManager::getInstance()->mErrorLogging.information("response from notify community (graphql) of new block: %s", std::string(buffer.GetString()));
+			LOG_F(INFO, "response from notify community (graphql) of new block: %s", buffer.GetString());
 			return false;
 		}
 		catch (RapidjsonParseErrorException& ex) {

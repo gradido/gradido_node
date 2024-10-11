@@ -13,7 +13,7 @@ using namespace gradido::data;
 namespace cache {
 
 
-	BlockIndex::BlockIndex(std::string_view groupFolderPath, Poco::UInt32 blockNr)
+	BlockIndex::BlockIndex(std::string_view groupFolderPath, uint32_t blockNr)
 		: mFolderPath(groupFolderPath), mBlockNr(blockNr), mMaxTransactionNr(0), mMinTransactionNr(0),
 		mDirty(false)
 	{
@@ -38,10 +38,7 @@ namespace cache {
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		// Todo: store at runtime like Dictionary
-		auto blockIndexFile = serialize();
-		if (blockIndexFile) {
-			blockIndexFile->writeToFile();
-		}
+		writeIntoFile();
 		clearIndexEntries();
 		mTransactionNrsFileCursors.clear();
 		mMaxTransactionNr = 0;
@@ -109,6 +106,16 @@ namespace cache {
 		}
 		// finally write down to file
 		return std::move(blockIndexFile);
+	}
+
+	bool BlockIndex::writeIntoFile()
+	{
+		auto blockIndexFile = serialize();
+		if (blockIndexFile) {
+			blockIndexFile->writeToFile();
+			return true;
+		}
+		return false;
 	}
 
 	bool BlockIndex::addIndicesForTransaction(
@@ -258,7 +265,8 @@ namespace cache {
 			result.reserve(filter.pagination.size);
 		}
 		unsigned int entryCursor = 0;
-		while (intervalIt != intervalEnd) {
+		while (intervalIt != intervalEnd) 
+		{
 			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
 			assert(yearIt != mYearMonthAddressIndexEntrys.end());
 			auto monthIt = yearIt->second.find(intervalIt->month());
@@ -306,7 +314,13 @@ namespace cache {
 				intervalIt++;
 			}
 		}
-		std::sort(result.begin(), result.end());
+		if (revert) {
+			// sort in descending order
+			std::sort(result.begin(), result.end(), std::greater<>());
+		} else {
+			// sort in ascending order
+			std::sort(result.begin(), result.end());
+		}
 		return result;
 	}
 

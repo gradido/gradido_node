@@ -32,6 +32,7 @@ namespace cache {
 		const std::string& readState(const char* key, const std::string& defaultValue);
 		inline int32_t readInt32State(DefaultStateKeys key, int32_t defaultValue);
 		int32_t readInt32State(const char* key, int32_t defaultValue);
+
 		//! go through all states in call callback for each with key, value
 		//! don't put key value pairs into map
 		void readAllStates(std::function<void(const std::string&, const std::string&)> callback);

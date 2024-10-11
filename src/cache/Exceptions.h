@@ -4,6 +4,13 @@
 #include "gradido_blockchain/GradidoBlockchainException.h"
 
 namespace cache {
+	class BlockException : public GradidoBlockchainException
+	{
+	public:
+		explicit BlockException(const char* what) noexcept : GradidoBlockchainException(what) {};
+		std::string getFullString() const { return what(); }
+	};
+
 	class BlockIndexException : public GradidoBlockchainException
 	{
 	public:

@@ -86,7 +86,7 @@ namespace model {
 			//! put blocks into binary file format
 			std::unique_ptr<VirtualFile> serialize();
 
-			bool writeToFile();
+			void writeToFile();
 
 			//! \brief clear data blocks
 			void exit();
@@ -94,6 +94,8 @@ namespace model {
 			void reset();
 
 			inline const std::string& getFileName() { return mFileName; }
+
+			static void removeAllBlockIndexFiles(std::string_view groupFolderPath);
 
 		protected:
 			//! \brief replace Index File with new one, clear blocks after writing into file

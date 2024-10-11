@@ -99,8 +99,6 @@ namespace gradido {
 			return addedBlockchainsCount;
 		}
 
-		
-
 		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(const std::string& communityAlias, bool resetIndices)
 		{
 			try {
@@ -109,7 +107,7 @@ namespace gradido {
 				// with that call community will be initialized and start listening
 				auto blockchain = std::make_shared<FileBased>(communityAlias, folder);
 				updateListenerCommunity(communityAlias, blockchain);
-				if (!blockchain->init()) {
+				if (!blockchain->init(false)) {
 					LOG_F(ERROR, "error initalizing blockchain: %s", communityAlias.data());
 					return nullptr;
 				}

@@ -7,6 +7,8 @@
 #include "../model/files/BlockIndex.h"
 #include "../task/CPUTask.h"
 
+#include "Dictionary.h"
+
 #include <vector>
 #include <map>
 
@@ -27,7 +29,7 @@ namespace cache {
 	{
 		//friend model::files::BlockIndex;
 	public:
-		BlockIndex(std::string_view groupFolderPath, Poco::UInt32 blockNr);
+		BlockIndex(std::string_view groupFolderPath, uint32_t blockNr);
 		~BlockIndex();
 
 		bool init();
@@ -39,6 +41,9 @@ namespace cache {
 
 		//! \brief write block index into files
 		std::unique_ptr<model::files::BlockIndex> serialize();
+		//! \brief
+		//! \return true if there was something to write into file, after writing it to file
+		bool writeIntoFile();
 
 		bool addIndicesForTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry);
 

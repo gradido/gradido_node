@@ -1,6 +1,8 @@
 #include "TransactionList.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
+#include "../../blockchain/FileBased.h"
+
 using namespace rapidjson;
 using namespace gradido::interaction;
 
@@ -11,7 +13,7 @@ namespace model {
 			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 			memory::ConstBlockPtr pubkey,
 			rapidjson::Document::AllocatorType& alloc
-		) : mBlockchain(blockchain), mPubkey(std::move(pubkey)), mJsonAllocator(alloc)
+		) : mBlockchain(blockchain), mPubkey(pubkey), mJsonAllocator(alloc)
 		{
 
 		}
@@ -19,12 +21,12 @@ namespace model {
 		Value TransactionList::generateList(
 			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactions,
 			Timepoint now,
-			int currentPage /*= 1*/,
-			int pageSize /*= 25*/,
-			bool orderDESC /*= true*/,
-			bool onlyCreations /*= false*/			
+			const gradido::blockchain::Filter& filter
 		)
 		{
+			auto fileBasedBlockchain = std::dynamic_pointer_cast<gradido::blockchain::FileBased>(mBlockchain);
+			assert(fileBasedBlockchain);
+
 			Value transactionList(kObjectType);
 			transactionList.AddMember("balanceGDT", "0", mJsonAllocator);			
 			// TODO: add number of active deferred transfers
@@ -32,92 +34,50 @@ namespace model {
 
 			Value transactions(kArrayType);
 			std::vector<model::Apollo::Transaction> transactionsVector;
-			transactionsVector.reserve(pageSize);
+			transactionsVector.reserve(filter.pagination.size);
 
-			if (orderDESC) {
-				// sort in descending order
-				std::sort(allTransactions.begin(), allTransactions.end(), [](
-					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& x,
-					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& y) {
-						return x->getTransactionNr() > y->getTransactionNr();
-					});
-			}
-			else {
-				// sort in ascending order
-				std::sort(allTransactions.begin(), allTransactions.end(), [](
-					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& x,
-					const std::shared_ptr<const gradido::blockchain::TransactionEntry>& y) {
-						return x->getTransactionNr() < y->getTransactionNr();
-					});
-			}
-
-			int entryIterator = 0;
-			int pageIterator = 1;
 			Timepoint balanceStartTimestamp(now);
 			GradidoUnit balance;
 
-			int countTransactions = 0;
+			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
 			int foundRegisterAddressTransaction = 0;
-			for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) {
-				if (entryIterator == pageSize) {
-					pageIterator++;
-					entryIterator = 0;
-				}
-				
-
-				auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>((*it)->getSerializedTransaction());
-				auto transactionBody = gradidoBlock->getGradidoTransaction()->getTransactionBody();
+			for (auto it = allTransactions.begin(); it != allTransactions.end(); it++) 
+			{
+				auto confirmedTransaction = std::make_unique<gradido::data::ConfirmedTransaction>((*it)->getSerializedTransaction());
+				auto transactionBody = confirmedTransaction->getGradidoTransaction()->getTransactionBody();
 				if (transactionBody->isRegisterAddress()) {
-					auto registerAddress = transactionBody->getRegisterAddress();
-					if (transactionBody->getOtherGroup().empty()) {
-						if ((registerAddress->getAddressType() == gradido::data::AddressType::SUBACCOUNT && 
-							registerAddress->getAccountPublicKey() == mPubkey) ||
-							(registerAddress->getAddressType() != gradido::data::AddressType::SUBACCOUNT &&
-							registerAddress->getUserPublicKey() == mPubkey)) {
-							foundRegisterAddressTransaction = 1;
-						}
-					}
-					else {
-						// for moving transactions
-						assert(false || "is not implemented yet");
-					}
+					continue;
 				}
 				
-				if (!onlyCreations && (transactionBody->isTransfer() || transactionBody->isDeferredTransfer())
-					|| transactionBody->isCreation()) {
-					countTransactions++;
+				if (!orderDESC && pageIterator == currentPage - 1) {
+					// if order asc get last timestamp from previous page
+					balanceStartTimestamp = confirmedTransaction->getConfirmedAt();
+				}
 
-					if (!orderDESC && pageIterator == currentPage - 1) {
-						// if order asc get last timestamp from previous page
-						balanceStartTimestamp = gradidoBlock->getConfirmedAt();
+				if (pageIterator == currentPage) {
+					transactionsVector.push_back(std::move(model::Apollo::Transaction(*confirmedTransaction, mPubkey)));
+					if ((it + foundRegisterAddressTransaction == allTransactions.begin() && !orderDESC) ||
+						(orderDESC && (it + 1 + foundRegisterAddressTransaction) == allTransactions.end()))
+					{
+						transactionsVector.back().setFirstTransaction(true);
+						balance = transactionsVector.back().getAmount();
 					}
-
-					if (pageIterator == currentPage) {
-						transactionsVector.push_back(std::move(model::Apollo::Transaction(*gradidoBlock, mPubkey)));
-						if ((it + foundRegisterAddressTransaction == allTransactions.begin() && !orderDESC) ||
-							(orderDESC && (it + 1 + foundRegisterAddressTransaction) == allTransactions.end()))
-						{
-							transactionsVector.back().setFirstTransaction(true);
-							balance = transactionsVector.back().getAmount();
+					if (!orderDESC) {
+						Timepoint prevTransactionDate(now);
+						if (transactionsVector.size() > 1) {
+							prevTransactionDate = transactionsVector[transactionsVector.size() - 2].getDate();
 						}
-						if (!orderDESC) {
-							Timepoint prevTransactionDate(now);
-							if (transactionsVector.size() > 1) {
-								prevTransactionDate = transactionsVector[transactionsVector.size() - 2].getDate();
-							}
-							else if (!transactionsVector.front().isFirstTransaction()) {
-								prevTransactionDate = balanceStartTimestamp;
-							}
-							if (prevTransactionDate != now) {
-								calculateDecay(balance, prevTransactionDate, &transactionsVector.back());
-							}
+						else if (!transactionsVector.front().isFirstTransaction()) {
+							prevTransactionDate = balanceStartTimestamp;
 						}
+						if (prevTransactionDate != now) {
+							calculateDecay(balance, prevTransactionDate, &transactionsVector.back());
+						}
+					}
 
-					}
-					if (orderDESC && pageIterator == currentPage + 1 && !entryIterator) {
-						balanceStartTimestamp = gradidoBlock->getConfirmedAt();
-					}
-					entryIterator++;
+				}
+				if (orderDESC && pageIterator == currentPage + 1 && !entryIterator) {
+					balanceStartTimestamp = confirmedTransaction->getConfirmedAt();
 				}
 			}
 			if (foundRegisterAddressTransaction && orderDESC && !balance && transactionsVector.size()) {

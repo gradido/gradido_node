@@ -48,7 +48,7 @@ namespace model {
 			//! \return Index or zero if address not found.
 			uint32_t getIndexForString(const std::string &string) const;
 
-			const std::string& getStringForIndex(uint32_t index) const;
+			std::string getStringForIndex(uint32_t index) const;
 
 			//! serialize address indices for writing with hdd write buffer task
 			std::unique_ptr<VirtualFile> serialize();

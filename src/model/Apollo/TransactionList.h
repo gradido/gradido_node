@@ -2,10 +2,15 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_LIST_H
 
 #include "rapidjson/document.h"
-#include "../../blockchain/FileBased.h"
-#include "../../model/NodeTransactionEntry.h"
-
 #include "Transaction.h"
+
+namespace gradido {
+	namespace blockchain {
+		class FileBased;
+		class TransactionEntry;
+		class Filter;
+	}
+}
 
 namespace model {
 	namespace Apollo {
@@ -22,10 +27,7 @@ namespace model {
 			rapidjson::Value generateList(
 				std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactions,
 				Timepoint now,
-				int currentPage = 1,
-				int pageSize = 25,
-				bool orderDESC = true,
-				bool onlyCreations = false
+				const gradido::blockchain::Filter& filter
 			);
 		protected:
 			void calculateDecay(

@@ -11,6 +11,7 @@
 
 #include <fstream>
 #include <filesystem>
+#include <regex>
 
 using namespace gradido;
 using namespace blockchain;
@@ -138,9 +139,24 @@ namespace model {
 			fl->unlock(mFileName);
 		}
 
-		bool BlockIndex::writeToFile()
+		void BlockIndex::removeAllBlockIndexFiles(std::string_view groupFolderPath)
 		{
-			memory::Block hash(crypto_generichash_BYTES);
+			// clear block indices
+			std::filesystem::path groupFolder(groupFolderPath);
+
+			// *.index
+			std::regex isIndexFile(".*\\.index$");
+			for (const auto& entry : std::filesystem::directory_iterator(groupFolder)) {
+				auto fileName = entry.path().filename().string();
+				if (entry.is_regular_file() && std::regex_match(fileName, isIndexFile)) {
+					std::filesystem::remove(groupFolder / fileName);
+				}
+			}
+		}
+
+		void BlockIndex::writeToFile()
+		{
+			unsigned char hash[crypto_generichash_BYTES];
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
@@ -158,13 +174,13 @@ namespace model {
 				delete block;
 			}
 
-			crypto_generichash_final(&state, hash, hash.size());
+			crypto_generichash_final(&state, hash, sizeof(hash));
 			uint8_t hash_type = HASH_BLOCK;
 			vFile.write(&hash_type, sizeof(uint8_t));
-			vFile.write((const char*)*hash, hash.size());
+			vFile.write((const char*)hash, sizeof(hash));
 			//printf("block index write hash to file: %s\n", DataTypeConverter::binToHex(hash).data());
 
-			return vFile.writeToFile(mFileName.data());
+			vFile.writeToFile(mFileName.data());
 
 		}
 

@@ -57,8 +57,9 @@ FILE(GLOB HTTPInterface "src/HTTPInterface/*.h" "src/HTTPInterface/*.cpp")
 FILE(GLOB JSONRPCInterface "src/JSONRPCInterface/*.h" "src/JSONRPCInterface/*.cpp")
 FILE(GLOB LIB_SRC "src/lib/*.h" "src/lib/*.cpp" "src/lib/*.c")
 FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
-FILE(GLOB MODEL_FILES "src/model/files/*.h" "src/model/files/*.cpp")
 FILE(GLOB MODEL_APOLLO "src/model/Apollo/*.h" "src/model/Apollo/*.cpp")
+FILE(GLOB MODEL_FILES "src/model/files/*.h" "src/model/files/*.cpp")
+FILE(GLOB MODEL_JSON "src/model/json/*.h" "src/model/json/*.cpp")
 FILE(GLOB SINGLETON_MANAGER "src/SingletonManager/*.h" "src/SingletonManager/*.cpp")
 FILE(GLOB TASK "src/task/*.cpp" "src/task/*.h")
 FILE(GLOB VIEW "src/view/*.h" "src/view/*.cpp")
@@ -71,7 +72,7 @@ SET(LOCAL_SRCS
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
 	${HTTPInterface} ${JSONRPCInterface}
 	${LIB_SRC}
-	${MODEL} ${MODEL_FILES} ${MODEL_APOLLO}
+	${MODEL}  ${MODEL_APOLLO} ${MODEL_FILES} ${MODEL_JSON}
 	${SINGLETON_MANAGER}
 	${TASK} ${VIEW}
 	${MAIN}
@@ -89,8 +90,9 @@ source_group("iota" FILES ${IOTA})
 source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
-source_group("model\\files" FILES ${MODEL_FILES})
 source_group("model\\Apollo" FILES ${MODEL_APOLLO})
+source_group("model\\files" FILES ${MODEL_FILES})
+source_group("model\\json" FILES ${MODEL_JSON})
 source_group("model" FILES ${MODEL})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})

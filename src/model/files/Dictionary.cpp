@@ -44,7 +44,7 @@ namespace model {
 			// will return nullptr if file is up to date
 			auto vFile = serialize();
 			if (vFile) {
-				vFile->writeToFile(mFileName);
+				vFile->writeToFile(mFileName.data());
 				mFileWritten = true;
 			}
 		}
@@ -87,7 +87,7 @@ namespace model {
 			return 0;
 		}
 
-		const std::string& Dictionary::getStringForIndex(uint32_t index) const
+		std::string Dictionary::getStringForIndex(uint32_t index) const
 		{
 			std::lock_guard _lock(mFastMutex);
 			for (const auto& pair : mStringIndices) {

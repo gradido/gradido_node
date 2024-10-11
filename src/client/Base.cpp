@@ -4,9 +4,9 @@
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/toJson/Context.h"
-#include "../SingletonManager/LoggerManager.h"
 
 #include "magic_enum/magic_enum.hpp"
+#include "loguru/loguru.hpp"
 
 using namespace gradido::data;
 using namespace gradido::interaction;
@@ -73,7 +73,7 @@ namespace client {
 			return postRequest(params);
 		}
 		catch (RapidjsonParseErrorException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Result Json Exception: %s\n", ex.getFullString());
+			LOG_F(ERROR, "Result Json Exception: %s", ex.getFullString().data());
 		}
 		catch (RequestResponseInvalidJsonException& ex) {
 			if (ex.containRawHtmlClosingTag()) {
@@ -82,13 +82,10 @@ namespace client {
 			else {
 				ex.printToFile("notificate");
 			}
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Invalid Json excpetion, written to file: %s\n", ex.getFullString());
+			LOG_F(ERROR, "Invalid Json excpetion, written to file : %s", ex.getFullString().data());
 		}
 		catch (GradidoBlockchainException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Gradido Blockchain Exception: %s\n", ex.getFullString());
-		}
-		catch (Poco::Exception& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Poco Exception: %s\n", ex.displayText());
+			LOG_F(ERROR, "Gradido Blockchain Exception: %s", ex.getFullString().data());
 		}
 		return false;
 	}

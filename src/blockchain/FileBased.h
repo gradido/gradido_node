@@ -5,12 +5,12 @@
 #include "../cache/Dictionary.h"
 #include "../cache/DeferredTransfer.h"
 #include "../cache/State.h"
-
-
-#include "gradido_blockchain/blockchain/Abstract.h"
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
 #include "../iota/MessageListener.h"
+
+#include "gradido_blockchain/blockchain/Abstract.h"
+#include "gradido_blockchain/lib/AccessExpireCache.h"
 
 #include <mutex>
 
@@ -24,10 +24,17 @@ namespace gradido {
 		* Additional there will be a index file listen the file start positions
 		* per transaction id and further data for filterning bevor need to load whole transaction
 		*/
-		class FileBased : public Abstract
+		class FileBased : public Abstract, public std::enable_shared_from_this<FileBased>
 		{
+			struct Private { explicit Private() = default; };
 		public:
-			FileBased(std::string_view communityId, std::string_view folder);
+			// Constructor is only usable by this class
+			FileBased(Private, std::string_view communityId, std::string_view folder);
+			// make sure that all shared_ptr from FileBased Blockchain know each other
+			static std::shared_ptr<FileBased> create(std::string_view communityId, std::string_view folder);
+			std::shared_ptr<FileBased> getptr();
+			std::shared_ptr<const FileBased> getptr() const;
+
 			virtual ~FileBased();
 
 			//! load blockchain from files and check if index and states seems ok
@@ -45,8 +52,15 @@ namespace gradido {
 			//! \return false if transaction already exist
 			virtual bool addGradidoTransaction(data::ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt);
 
-			// main search function, do all the work, reference from other functions
-			virtual TransactionEntries findAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const;
+			//! main search function, do all the work, reference from other functions
+			virtual TransactionEntries findAll(const Filter& filter) const;
+
+			//! use only index for searching, ignore filter function
+			//! \return vector with transaction nrs
+			std::vector<uint64_t> findAllFast(const Filter& filter) const;
+
+			//! count results for a specific filter, using only the index, ignore filter function 
+			size_t findAllResultCount(const Filter& filter) const;
 
 			//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
 			//! therefore boocked back to sender
@@ -73,12 +87,21 @@ namespace gradido {
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
 
+			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) {
+				return mPublicKeysIndex->getOrAddIndexForString(publicKey->copyAsString());
+			}
+			const std::string& getFolderPath() const { return mFolderPath; }
+			TaskObserver& getTaskObserver() { return *mTaskObserver; }
+
 		protected:
+
 			virtual void pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry);
 			//! if state leveldb was invalid, recover values from block cache
 			void loadStateFromBlockCache();
 			//! scan blockchain for deferred transfer transaction which are not redeemed completly
 			void rescanForDeferredTransfers();
+
+			std::shared_ptr<cache::Block> getBlock(uint32_t blockNr) const;
 
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
@@ -86,21 +109,38 @@ namespace gradido {
 
 
 			//! observe write to file tasks from block, mayber later more
-			TaskObserver mTaskObserver;
+			std::shared_ptr<TaskObserver> mTaskObserver;
 			//! connect via mqtt to iota server and get new messages
 			iota::MessageListener* mIotaMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
-			cache::Dictionary mPublicKeysIndex;
+			mutable std::shared_ptr<cache::Dictionary> mPublicKeysIndex;
 			// level db to store state values like last transaction
-			cache::State mBlockchainState;
+			mutable cache::State mBlockchainState;
 
-			cache::DeferredTransfer mDeferredTransfersCache;
+			mutable cache::DeferredTransfer mDeferredTransfersCache;
+
+			mutable AccessExpireCache<uint32_t, std::shared_ptr<cache::Block>> mCachedBlocks;
 
 			//! Community Server listening on new blocks for his group
-			//! TODO: replace with more abstract but simple event system
+			//! TODO: replace with more abstract but simple event system and/or mqtt
 			std::shared_ptr<client::Base> mCommunityServer;
 		};
+
+		std::shared_ptr<FileBased> FileBased::create(std::string_view communityId, std::string_view folder) 
+		{
+			return std::make_shared<FileBased>(Private(), communityId, folder);
+		}
+
+		std::shared_ptr<FileBased> FileBased::getptr()
+		{
+			return shared_from_this();
+		}
+
+		std::shared_ptr<const FileBased> FileBased::getptr() const
+		{
+			return shared_from_this();
+		}
 
 		void FileBased::setListeningCommunityServer(std::shared_ptr<client::Base> client)
 		{

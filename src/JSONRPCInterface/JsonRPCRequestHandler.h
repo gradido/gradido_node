@@ -36,7 +36,7 @@ public:
 		rapidjson::Value& responseJson,
 		const rapidjson::Value& params,
 		const char* fieldName,
-		memory::Block& binaryParameter,
+		std::shared_ptr<memory::Block> binaryParameter,
 		bool optional = false
 	);
 	bool getStringIntParameter(rapidjson::Value& responseJson, const rapidjson::Value& params, const char* fieldName, std::string& strParameter, int& iParameter, bool optional = false);

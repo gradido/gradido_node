@@ -1,13 +1,19 @@
 #include "WriteTransactionsToBlockTask.h"
+#include "../blockchain/NodeTransactionEntry.h"
+#include "../cache/BlockIndex.h"
+#include "../model/files/Block.h"
 #include "../ServerGlobals.h"
-#include "gradido_blockchain/GradidoBlockchainException.h"
-#include "../SingletonManager/LoggerManager.h"
 
-WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<controller::BlockIndex> blockIndex)
+#include "gradido_blockchain/GradidoBlockchainException.h"
+
+#include "loguru/loguru.hpp"
+#include <cassert>
+
+WriteTransactionsToBlockTask::WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<cache::BlockIndex> blockIndex)
 	: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mBlockFile(blockFile), mBlockIndex(blockIndex)
 {
-	assert(!blockFile.isNull());
-	assert(!blockIndex.isNull());
+	assert(blockFile);
+	assert(blockIndex);
 }
 
 WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()
@@ -17,15 +23,13 @@ WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()
 int WriteTransactionsToBlockTask::run()
 {
 	Poco::FastMutex::ScopedLock lock(mFastMutex);
-	std::vector<const std::string*> lines;
+	std::vector<memory::ConstBlockPtr> lines;
 	lines.reserve(mTransactions.size());
 
 	int lastTransactionNr = 0;
 
 	for (auto it = mTransactions.begin(); it != mTransactions.end(); ++it) {
 		auto transactionEntry = it->second;
-		auto base64 = DataTypeConverter::binToBase64(*transactionEntry->getSerializedTransaction());
-		//printf("serialized transaction: %s\n", base64.data());
 		lines.push_back(transactionEntry->getSerializedTransaction());
 		if (lastTransactionNr > 0 && lastTransactionNr + 1 != transactionEntry->getTransactionNr()) {
 			throw BlockchainOrderException("out of order transaction");
@@ -48,14 +52,14 @@ int WriteTransactionsToBlockTask::run()
 	// save also block index
 	mBlockIndex->writeIntoFile();
 
-	LoggerManager::getInstance()->mErrorLogging.information("[%u;%u] transaction written to block file: %s",
-		(unsigned)mTransactions.begin()->first, (unsigned)(mTransactions.begin()->first + cursor), 
+	LOG_F(INFO, "[%u;%u] transaction written to block file: %s",
+		(unsigned)mTransactions.begin()->first, (unsigned)(mTransactions.begin()->first + cursor),
 		mBlockFile->getBlockPath()
 	);
 	return 0;
 }
 
-void WriteTransactionsToBlockTask::addSerializedTransaction(std::shared_ptr<model::NodeTransactionEntry> transaction) 
+void WriteTransactionsToBlockTask::addSerializedTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction)
 {
 	assert(!isTaskSheduled());
 	assert(!isTaskFinished());		
@@ -64,7 +68,7 @@ void WriteTransactionsToBlockTask::addSerializedTransaction(std::shared_ptr<mode
 	mBlockIndex->addIndicesForTransaction(transaction);
 }
 
-std::shared_ptr<model::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
+std::shared_ptr<gradido::blockchain::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)
 {
 	auto it = mTransactions.find(nr);
 	if(it == mTransactions.end()) {

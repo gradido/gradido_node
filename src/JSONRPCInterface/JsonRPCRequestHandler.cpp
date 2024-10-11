@@ -278,7 +278,7 @@ bool JsonRPCRequestHandler::getBinaryFromHexStringParameter(
 	rapidjson::Value& responseJson,
 	const rapidjson::Value& params,
 	const char* fieldName,
-	memory::Block& binaryParameter,
+	std::shared_ptr<memory::Block> binaryParameter,
 	bool optional /*= false*/
 ) {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
@@ -293,7 +293,7 @@ bool JsonRPCRequestHandler::getBinaryFromHexStringParameter(
 		if (!optional) error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, message.data());
 		return false;
 	}
-	binaryParameter = memory::Block::fromHex(itr->value.GetString(), itr->value.GetStringLength());
+	binaryParameter = std::make_shared< memory::Block>(memory::Block::fromHex(itr->value.GetString(), itr->value.GetStringLength()));
 	return true;
 }
 

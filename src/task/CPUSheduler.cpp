@@ -98,7 +98,7 @@ namespace task {
 			}
 		} // scoped lock end
 		TaskPtr task = getNextUndoneTask(NULL);
-		if (!task.isNull()) {
+		if (task) {
 			sheduleTask(task);
 		}
 	}

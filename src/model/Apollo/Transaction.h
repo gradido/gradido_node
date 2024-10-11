@@ -31,9 +31,6 @@ namespace model {
 
 			static const char* transactionTypeToString(TransactionType type);
 
-			void setFirstTransaction(bool firstTransaction);
-			inline bool isFirstTransaction() const { return mFirstTransaction; }
-
 			inline Timepoint getDate() const { return mDate; }
 			inline const GradidoUnit getAmount() const { return mAmount; }
 			inline const Decay* getDecay() const { return mDecay; }
@@ -50,7 +47,6 @@ namespace model {
 			int64_t			mId;
 			Timepoint       mDate;
 			Decay*			mDecay;
-			bool			mFirstTransaction;
 		private:
 			// Disable copy constructor
 			Transaction(const Transaction&) {};

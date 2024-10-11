@@ -1,6 +1,7 @@
 #include "Dictionary.h"
 #include "../ServerGlobals.h"
 #include "../SingletonManager/CacheManager.h"
+#include "../SystemExceptions.h"
 #include "../model/files/FileExceptions.h"
 
 #include "loguru/loguru.hpp"
@@ -42,7 +43,7 @@ namespace cache {
 	void Dictionary::reset()
 	{
 		std::lock_guard _lock(mFastMutex);
-		mDictionaryFile.reset();
+		mDictionaryFile->reset();
 		mLastIndex = 0;
 	}
 
@@ -85,7 +86,7 @@ namespace cache {
 			) {
 			mWaitingForNextFileWrite = Timepoint();
 			if (!mDictionaryFile->isFileWritten()) {
-				task::TaskPtr serializeAndWriteToFileTask = new task::SerializeToVFileTask(mDictionaryFile);
+				task::TaskPtr serializeAndWriteToFileTask = std::make_shared<task::SerializeToVFileTask>(mDictionaryFile);
 				serializeAndWriteToFileTask->setFinishCommand(new model::files::SuccessfullWrittenToFileCommand(mDictionaryFile));
 				serializeAndWriteToFileTask->scheduleTask(serializeAndWriteToFileTask);
 			}

@@ -1,10 +1,11 @@
 #include "FuzzyTimer.h"
 #include "Poco/Timestamp.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/types.h"
 #include "../SystemExceptions.h"
 #include "../iota/IotaExceptions.h"
+
+#include "loguru/loguru.hpp"
 
 FuzzyTimer::FuzzyTimer()
 	: exit(false)
@@ -26,7 +27,7 @@ FuzzyTimer::~FuzzyTimer()
 
 bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::chrono::milliseconds timeInterval, int loopCount/* = -1*/)
 {
-	LOG_DEBUG("[FuzzyTimer::addTimer] %s", name);
+	LOG_F(1, "%s", name.data());
 	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
 	if (exit) return false;
 
@@ -61,7 +62,7 @@ int FuzzyTimer::removeTimer(std::string name)
 			it++;
 		}
 	}
-	LOG_DEBUG("[FuzzyTimer::removeTimer] removed %d timer with name: %s", eraseCount, name);
+	LOG_F(1, "removed %llu timer with name : %s", eraseCount, name.data());
 	return eraseCount;
 }
 
@@ -78,43 +79,45 @@ bool FuzzyTimer::move()
 
 	if (it->first <= nowMilliseconds) {
 		if (!it->second.callback) {
-			LOG_WARN("[FuzzyTimer::move] empty callback, name: %s", it->second.name);
+			LOG_F(WARNING, "empty callback, name: %s", it->second.name.data());
 		}
 		else {
-			Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 			TimerReturn ret = TimerReturn::NOT_SET;
 			try {
 				ret = it->second.callback->callFromTimer();
 			}
-			catch (GradidoBlockchainException& ex) {
-				errorLog.error("[FuzzyTimer::move] Gradido Blockchain Exception: %s", ex.getFullString());
-				ret = TimerReturn::EXCEPTION;
-			}
-			catch (Poco::Exception& ex) {
-				errorLog.error("[FuzzyTimer::move] Poco Exception: %s", ex.displayText());
-				ret = TimerReturn::EXCEPTION;
-			} 
-			catch (std::runtime_error& ex) {
-				errorLog.error("[FuzzyTimer::move] std::runtime_error: %s", ex.what());
-				ret = TimerReturn::EXCEPTION;
-			}
 			catch (MessageIdFormatException& ex) {
-				errorLog.error("[FuzzyTimer::move] ... exception");
+				LOG_F(ERROR, "message id exception: %s", ex.getFullString().data());
 				ret = TimerReturn::EXCEPTION;
 			}
+			catch (GradidoBlockchainException& ex) {
+				LOG_F(ERROR, "Gradido Blockchain Exception: %s", ex.getFullString().data());
+				ret = TimerReturn::EXCEPTION;
+			}
+			catch (std::runtime_error& ex) {
+				LOG_F(ERROR, "std::runtime_error: %s", ex.what());
+				ret = TimerReturn::EXCEPTION;
+			}
+			
 			if (it->second.nextLoop() && ret == TimerReturn::GO_ON) {
 				mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeInterval, it->second));
 			}
 
 			if (ret == TimerReturn::REPORT_ERROR) {
-				errorLog.error(
-					"[FuzzyTimer::move] timer run report error: timer type: %s, timer name: %s",
-					std::string(it->second.callback->getResourceType()), it->second.name);				
+				LOG_F(
+					ERROR, 
+					"timer run report error: timer type: %s, timer name: %s",
+					it->second.callback->getResourceType(),
+					it->second.name.data()
+				);
 			}
 			else if (ret == TimerReturn::EXCEPTION) {
-				errorLog.error(
-					"[FuzzyTimer::move] timer run throw a exception: timer type: %s, timer name: %s",
-					std::string(it->second.callback->getResourceType()), it->second.name);
+				LOG_F(
+					ERROR,
+					"timer run throw a exception: timer type: %s, timer name: %s",
+					it->second.callback->getResourceType(),
+					it->second.name.data()
+				);
 			}
 		}
 		mRegisteredAtTimer.erase(it);					

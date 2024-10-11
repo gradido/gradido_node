@@ -9,7 +9,6 @@ namespace model {
 
 
 		Transaction::Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey)
-			: mFirstTransaction(false)
 		{			
 			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
@@ -57,7 +56,7 @@ namespace model {
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
-			: mType(TRANSACTION_TYPE_DECAY), mId(-1), mDate(decayEnd), mFirstTransaction(false)
+			: mType(TRANSACTION_TYPE_DECAY), mId(-1), mDate(decayEnd)
 		{
 		
 			calculateDecay(decayStart, decayEnd, startBalance);
@@ -86,8 +85,7 @@ namespace model {
 			  mMemo(std::move(parent.mMemo)),
 			  mId(parent.mId),
 			  mDate(parent.mDate),
-			  mDecay(parent.mDecay),
-			  mFirstTransaction(parent.mFirstTransaction)
+			  mDecay(parent.mDecay)
 		{
 			parent.mDecay = nullptr;
 		}
@@ -134,7 +132,6 @@ namespace model {
 			if (mDecay) {
 				transaction.AddMember("decay", mDecay->toJson(alloc), alloc);
 			}
-			transaction.AddMember("firstTransaction", mFirstTransaction, alloc);
 			transaction.AddMember("__typename", "Transaction", alloc);
 			return std::move(transaction);
 		}
@@ -149,12 +146,5 @@ namespace model {
 			}
 			return "<unknown>";
 		}
-
-		void Transaction::setFirstTransaction(bool firstTransaction) 
-		{ 
-			mFirstTransaction = firstTransaction; 
-			setBalance(mAmount);
-		}
-
 	}
 }

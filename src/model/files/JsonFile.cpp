@@ -27,11 +27,7 @@ namespace model {
 				throw RapidjsonParseErrorException("error parsing json file", mJson.GetParseError(), mJson.GetErrorOffset())
 					.setRawText(std::string((std::istreambuf_iterator<char>(fileStream)), std::istreambuf_iterator<char>()));
 			}
+			return mJson;
 		}
-
-		/*void JsonFile::save()
-		{
-			throw std::runtime_error("not implemented yet");
-		}*/
 	}
 }

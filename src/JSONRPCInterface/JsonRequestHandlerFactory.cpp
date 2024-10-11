@@ -21,7 +21,7 @@ Poco::Net::HTTPRequestHandler* JsonRequestHandlerFactory::createRequestHandler(c
 
 	//mRemoveGETParameters.extract(uri, url_first_part);
 
-	//std::string dateTimeString = Poco::DateTimeFormatter::format(Poco::DateTime(), "%d.%m.%y %H:%M:%S");
+	//std::string dateTimeString = TimepointFormatter::format(Timepoint(), "%d.%m.%y %H:%M:%S");
 	//logStream << dateTimeString << " call " << uri;
 
 	//mLogging.information(logStream.str());

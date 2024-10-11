@@ -2,12 +2,13 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_NODE_TRANSACTION_ENTRY_H
 
 #include "gradido_blockchain/blockchain/TransactionEntry.h"
-#include "../cache/Dictionary.h"
 
 #include <vector>
 
 namespace gradido {
 	namespace blockchain {
+
+		class FileBased;
 
 		/*!
 		* @author einhornimmond
@@ -25,7 +26,13 @@ namespace gradido {
 
 			NodeTransactionEntry(
 				gradido::data::ConstConfirmedTransactionPtr transaction,
-				cache::Dictionary& publicKeyIndex,
+				std::shared_ptr<gradido::blockchain::FileBased> blockchain,
+				int32_t fileCursor = -10
+			);
+
+			NodeTransactionEntry(
+				memory::ConstBlockPtr serializedTransaction,
+				std::shared_ptr<gradido::blockchain::FileBased> blockchain,
 				int32_t fileCursor = -10
 			);
 
@@ -36,7 +43,8 @@ namespace gradido {
 				date::year year,
 				gradido::data::TransactionType transactionType,
 				const std::string& coinGroupId,
-				const uint32_t* addressIndices, uint8_t addressIndiceCount
+				const uint32_t* addressIndices, uint8_t addressIndiceCount,
+				int32_t fileCursor = -10
 			);
 
 			inline void setFileCursor(int32_t newFileCursorValue) { std::scoped_lock lock(mFastMutex); mFileCursor = newFileCursorValue; }
