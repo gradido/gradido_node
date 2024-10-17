@@ -35,10 +35,9 @@
  //#include "UniversumLib.h"
 #define _UNI_LIB_DEBUG
 
-#include "Poco/AutoPtr.h"
-#include "Poco/Mutex.h"
 #include <assert.h>
-
+#include <memory>
+#include <mutex>
 
 namespace task {
     class Task;
@@ -98,15 +97,10 @@ namespace task {
 
 		virtual void scheduleTask(TaskPtr own) = 0;
 
-		// for poco auto ptr
-		void duplicate();
-		void release();
-		int getReferenceCount();
-
 		void setTaskFinished();
 	protected:
 		// scheduling only once
-		inline bool isTaskSheduled() { return mTaskScheduled; }
+		inline bool isTaskSheduled() const { return mTaskScheduled; }
 		inline void taskScheduled() { mTaskScheduled = true; }
 
 		TaskPtr getParent(int index);
@@ -116,12 +110,9 @@ namespace task {
 	private:
 		TaskPtr* mParentTaskPtrArray;
 		size_t   mParentTaskPtrArraySize;
-		Poco::Mutex mWorkingMutex;
-		Poco::FastMutex mReferenceMutex;
+		std::recursive_mutex mWorkingMutex;
 		bool     mDeleted;
 		bool     mFinished;
-		// for poco auto ptr
-		int mReferenceCount;
 #ifdef _UNI_LIB_DEBUG
 		std::string mName;
 #endif

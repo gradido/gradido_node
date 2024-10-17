@@ -4,7 +4,6 @@
 #include "CPUTask.h"
 #include "gradido_blockchain/data/GradidoTransaction.h"
 #include "gradido_blockchain/data//iota/MessageId.h"
-#include "../controller/Group.h"
 /*!
  * @author: einhornimmond
  * 
@@ -18,6 +17,11 @@
  * hand over to OrderingManager
  */
 
+namespace gradido {
+    namespace blockchain {
+        class Abstract;
+    }
+}
 
 class IotaMessageToTransactionTask : public task::CPUTask
 {
@@ -33,8 +37,8 @@ public:
 protected:
     std::string getGradidoGroupAlias(const std::string& iotaIndex) const;
     void notificateFailedTransaction(
-        std::shared_ptr<controller::Group> group,
-        const gradido::data::GradidoTransaction* transaction, 
+        std::shared_ptr<gradido::blockchain::Abstract> blockchain,
+        const gradido::data::GradidoTransaction transaction, 
         const std::string& errorMessage
     );
 

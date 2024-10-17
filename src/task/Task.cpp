@@ -4,13 +4,13 @@ namespace task {
 	
 	Task::Task() 
 	: mTaskScheduled(false), mFinishCommand(nullptr), mParentTaskPtrArray(nullptr),
-		mParentTaskPtrArraySize(0), mDeleted(false), mFinished(false), mReferenceCount(1)
+		mParentTaskPtrArraySize(0), mDeleted(false), mFinished(false)
 	{
 	}
 
     Task::Task(size_t taskPointerArraySize)
         : mTaskScheduled(false), mFinishCommand(nullptr), mParentTaskPtrArray(new TaskPtr[taskPointerArraySize]), mParentTaskPtrArraySize(taskPointerArraySize),
-            mDeleted(false), mFinished(false), mReferenceCount(1)
+            mDeleted(false), mFinished(false)
     {
     }
 		
@@ -40,7 +40,7 @@ namespace task {
 		lock();
         for(size_t i = 0; i < mParentTaskPtrArraySize; i++) {
             TaskPtr task = mParentTaskPtrArray[i];
-			if (!task.isNull() && !task->isTaskFinished()) {
+			if (task && !task->isTaskFinished()) {
                 allFinished = false;
                 if(!task->isTaskSheduled()) 
                     mParentTaskPtrArray[i]->scheduleTask(mParentTaskPtrArray[i]);
@@ -58,37 +58,9 @@ namespace task {
 		return mParentTaskPtrArray[index];
 	}
 
-	void Task::duplicate()
-	{
-		Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
-		//mReferenceMutex.lock();
-		mReferenceCount++;
-		//printf("[Task::duplicate] new value: %d\n", mReferenceCount);
-		//mReferenceMutex.unlock();
-	}
-
-	void Task::release()
-	{
-		//mReferenceMutex.lock();
-		Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
-		mReferenceCount--;
-		//printf("[Task::release] new value: %d\n", mReferenceCount);
-		if (0 == mReferenceCount) {
-			//mReferenceMutex.unlock();
-			delete this;
-			return;
-		}
-		//mReferenceMutex.unlock();
-	}
-	int Task::getReferenceCount()
-	{
-		Poco::FastMutex::ScopedLock _lock(mReferenceMutex);
-		return mReferenceCount;
-	}
-
 	void Task::lock()
 	{
-		mWorkingMutex.lock(500);
+		mWorkingMutex.lock();
 	}
 
 	void Task::setTaskFinished() {

@@ -25,7 +25,7 @@ protected:
 	*/
 	void findAllTransactions(
 		rapidjson::Value& resultJson,
-		const Filter& filter,
+		const gradido::blockchain::Filter& filter,
 		std::shared_ptr<gradido::blockchain::Abstract> blockchain,
 		const std::string& format
 	);
@@ -73,19 +73,11 @@ protected:
 	);
 	void listTransactionsForAddress(
 		rapidjson::Value& resultJson,
-		const std::string& userPublicKey,
+		memory::ConstBlockPtr pubkey,
 		uint64_t firstTransactionNr,
 		uint32_t maxResultCount,
 		std::shared_ptr<gradido::blockchain::Abstract> blockchain
 	);	
-	
-	
-	void putTransaction(
-		rapidjson::Value& resultJson,
-		uint64_t transactionNr,
-		std::unique_ptr<gradido::data::GradidoTransaction> transaction,
-		std::shared_ptr<gradido::blockchain::Abstract> blockchain
-	);
 	// helper	
 
 };

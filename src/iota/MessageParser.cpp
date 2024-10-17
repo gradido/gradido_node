@@ -1,8 +1,9 @@
 #include "MessageParser.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+
 #include "sodium.h"
+#include "loguru/loguru.hpp"
 
 // basis message structure
 using namespace gradido;
@@ -80,17 +81,17 @@ namespace iota {
         else if (payload_type == 7)
         {
             // milestone
-            LoggerManager::getInstance()->mErrorLogging.error("milestone must be implemented: %ud", payload_type);
+            LOG_F(ERROR, "milestone must be implemented: %ud", payload_type);
             return;
         }
         else if (payload_type == 13)
         {
-            LoggerManager::getInstance()->mErrorLogging.error("payload type 13");
+            LOG_F(ERROR, "payload type 13");
             return;
         }
         else
         {
-            LoggerManager::getInstance()->mErrorLogging.error("not supported iota message payload type: %ud", payload_type);
+            LOG_F(ERROR, "not supported iota message payload type: %ud", payload_type);
             return;
         }
 

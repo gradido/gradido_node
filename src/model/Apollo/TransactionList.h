@@ -6,7 +6,7 @@
 
 namespace gradido {
 	namespace blockchain {
-		class FileBased;
+		class Abstract;
 		class TransactionEntry;
 		class Filter;
 	}
@@ -19,16 +19,12 @@ namespace model {
 		{
 		public:
 			TransactionList(
-				std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
+				std::shared_ptr<const gradido::blockchain::Abstract> blockchain,
 				memory::ConstBlockPtr pubkey,
 				rapidjson::Document::AllocatorType& alloc
 			);
 
-			rapidjson::Value generateList(
-				std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactions,
-				Timepoint now,
-				const gradido::blockchain::Filter& filter
-			);
+			rapidjson::Value generateList(Timepoint now, const gradido::blockchain::Filter& filter);
 		protected:
 			void calculateDecay(
 				GradidoUnit balance, 
@@ -38,7 +34,7 @@ namespace model {
 
 			rapidjson::Value lastDecay(GradidoUnit balance, Timepoint lastTransactionDate);
 
-			std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
+			std::shared_ptr<const gradido::blockchain::Abstract> mBlockchain;
 			memory::ConstBlockPtr mPubkey;
 			rapidjson::Document::AllocatorType& mJsonAllocator;
 

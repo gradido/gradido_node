@@ -305,6 +305,9 @@ namespace cache {
 					continue;
 				}
 				result.push_back(blockIndexEntry.transactionNr);
+				if (result.size() >= filter.pagination.size) {
+					break;
+				}
 				entryCursor++;
 			}
 			if (revert) {
@@ -320,6 +323,85 @@ namespace cache {
 		} else {
 			// sort in ascending order
 			std::sort(result.begin(), result.end());
+		}
+		return result;
+	}
+	// TODO: reduce double code
+	size_t BlockIndex::countTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const
+	{
+		std::lock_guard _lock(mRecursiveMutex);
+		// prefilter
+		if ((filter.minTransactionNr && filter.minTransactionNr > mMaxTransactionNr) ||
+			(filter.maxTransactionNr && filter.maxTransactionNr < mMinTransactionNr)) {
+			return 0;
+		}
+		uint32_t publicKeyIndex = 0;
+		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
+			publicKeyIndex = publicKeysDictionary.getIndexForString(filter.involvedPublicKey->copyAsString());
+		}
+		uint32_t coinCommunityKeyIndex = 0;
+		if (!filter.coinCommunityId.empty()) {
+			coinCommunityKeyIndex = FileBasedProvider::getInstance()->getCommunityIdIndex(filter.coinCommunityId);
+		}
+		TimepointInterval interval(getOldestYearMonth(), getNewestYearMonth());
+		if (!filter.timepointInterval.isEmpty()) {
+			if (interval.getStartDate() < filter.timepointInterval.getStartDate()) {
+				interval.setStartDate(filter.timepointInterval.getStartDate());
+			}
+			if (interval.getEndDate() > filter.timepointInterval.getEndDate()) {
+				interval.setEndDate(filter.timepointInterval.getEndDate());
+			}
+		}
+		bool revert = filter.searchDirection == SearchDirection::DESC;
+		auto intervalIt = revert ? interval.end() : interval.begin();
+		auto intervalEnd = revert ? interval.begin() : interval.end();
+		size_t result = 0;
+		unsigned int entryCursor = 0;
+		while (intervalIt != intervalEnd)
+		{
+			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
+			assert(yearIt != mYearMonthAddressIndexEntrys.end());
+			auto monthIt = yearIt->second.find(intervalIt->month());
+			assert(monthIt != yearIt->second.end());
+
+			for (const auto& blockIndexEntry : monthIt->second) {
+				if (filter.transactionType != TransactionType::NONE
+					&& filter.transactionType != blockIndexEntry.transactionType) {
+					continue;
+				}
+				if (coinCommunityKeyIndex
+					&& coinCommunityKeyIndex != blockIndexEntry.coinCommunityIdIndex) {
+					continue;
+				}
+				if (filter.minTransactionNr
+					&& filter.minTransactionNr > blockIndexEntry.transactionNr) {
+					continue;
+				}
+				if (filter.maxTransactionNr
+					&& filter.maxTransactionNr < blockIndexEntry.transactionNr) {
+					continue;
+				}
+				if (publicKeyIndex) {
+					bool found = false;
+					for (int iPublicKeyIndices = 0; iPublicKeyIndices < blockIndexEntry.addressIndiceCount; iPublicKeyIndices++) {
+						if (publicKeyIndex == blockIndexEntry.addressIndices[iPublicKeyIndices]) {
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						continue;
+					}
+				}
+				result++;
+				entryCursor++;
+			}
+			if (revert) {
+				intervalIt--;
+			}
+			else {
+				intervalIt++;
+			}
 		}
 		return result;
 	}

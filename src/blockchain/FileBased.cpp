@@ -105,17 +105,45 @@ namespace gradido {
 		}
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
 		{
-
+			TransactionEntries result;
+			bool stopped = false;
+			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
+				auto transactionNrs = block.getBlockIndex()->findTransactions(filter, *mPublicKeysIndex);
+				for (auto transactionNr : transactionNrs) {
+					auto transaction = block.getTransaction(transactionNr);
+					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION, mCommunityId);
+					if ((filterResult & FilterResult::USE) == FilterResult::USE) {
+						result.push_back(transaction);
+					}
+					if ((filterResult & FilterResult::STOP) == FilterResult::STOP) {
+						stopped = true;
+						break;
+					}
+				}
+				return !stopped;
+			});
+			return result;
 		}
 
 		std::vector<uint64_t> FileBased::findAllFast(const Filter& filter) const
 		{
-
+			std::vector<uint64_t> result;
+			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
+				auto transactionNrs = block.getBlockIndex()->findTransactions(filter, *mPublicKeysIndex);
+				result.insert(result.end(), transactionNrs.begin(), transactionNrs.end());
+				return true;
+			});
+			return result;
 		}
 
-		size_t FileBased::countResults(const Filter& filter) const
+		size_t FileBased::findAllResultCount(const Filter& filter) const
 		{
-
+			size_t count = 0;
+			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
+				count += block.getBlockIndex()->countTransactions(filter, *mPublicKeysIndex);
+				return true;
+			});
+			return count;
 		}
 
 		TransactionEntries FileBased::findTimeoutedDeferredTransfersInRange(
@@ -207,16 +235,35 @@ namespace gradido {
 			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
 		}
 
+		void FileBased::iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const
+		{
+			bool orderDesc = filter.searchDirection == SearchDirection::DESC;
+			int blockNr = 1;
+			if (orderDesc) {
+				blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
+			}
+			auto block = getBlock(blockNr);
+			while (blockNr >= 1 && block->getBlockIndex()->getTransactionsCount()) 
+			{
+				if (!func(*block)) {
+					break;
+				}
+				if (orderDesc) {
+					blockNr--;
+				}
+				else {
+					blockNr++;
+				}
+				block = getBlock(blockNr);
+			}
+		}
+
 		std::shared_ptr<cache::Block> FileBased::getBlock(uint32_t blockNr) const 
 		{
 			auto block = mCachedBlocks.get(blockNr);
 			if (!block) {
 				auto block = std::make_shared<cache::Block>(blockNr, getptr());
-				if (!block->init()) {
-					// TODO: implement remote sync in this case
-					LOG_F(FATAL, "%d invalid block file", blockNr);
-					ServerApplication::terminate();
-				}
+				block->init();
 				mCachedBlocks.add(blockNr, block);
 				return block;
 			}

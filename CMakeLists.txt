@@ -156,7 +156,7 @@ endif()
 add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a libsodium::libsodium)
 if(NOT BUILD_SHARED_LIBS)
 	target_link_libraries(GradidoNode libprotobuf)
 endif()
@@ -165,7 +165,7 @@ if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
 else()
-	target_link_libraries(GradidoNode ${POCO_LIBS} sodium -pthread)
+	target_link_libraries(GradidoNode ${POCO_LIBS} -pthread)
 endif()
 #PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 

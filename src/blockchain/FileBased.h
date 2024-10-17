@@ -101,6 +101,9 @@ namespace gradido {
 			//! scan blockchain for deferred transfer transaction which are not redeemed completly
 			void rescanForDeferredTransfers();
 
+			//! \param func if function return false, stop iteration
+			void iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const;
+
 			std::shared_ptr<cache::Block> getBlock(uint32_t blockNr) const;
 
 			mutable std::recursive_mutex mWorkMutex;

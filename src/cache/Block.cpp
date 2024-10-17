@@ -13,6 +13,7 @@
 
 #include "gradido_blockchain/ServerApplication.h"
 #include "gradido_blockchain/interaction/toJson/Context.h"
+#include "gradido_blockchain/interaction/deserialize/Context.h"
 
 #include "loguru/loguru.hpp"
 
@@ -54,7 +55,7 @@ namespace cache {
 			if (mBlockFile->getCurrentFileSize()) {
 				auto rebuildBlockIndexTask = mBlockFile->rebuildBlockIndex(mBlockchain);
 				if (!rebuildBlockIndexTask) {
-					return false;
+					throw GradidoNullPointerException("missing rebuild block index task", "RebuildBlockIndexTask", __FUNCTION__);
 				}
 				int sumWaited = 0;
 				while (!rebuildBlockIndexTask->isPendingQueueEmpty() && sumWaited < 1000) {
@@ -73,6 +74,9 @@ namespace cache {
 						mBlockIndex->addIndicesForTransaction(transactionEntry);
 					}
 				);
+			}
+			else {
+				return false;
 			}
 		}
 		return true;
@@ -104,7 +108,7 @@ namespace cache {
 
 	}
 
-	void Block::addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor)
+	void Block::addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor) const
 	{
 		auto transactionEntry = std::make_shared<NodeTransactionEntry>(serializedTransaction, mBlockchain, fileCursor);
 		std::lock_guard lock(mFastMutex);
@@ -112,7 +116,7 @@ namespace cache {
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}
 
-	std::shared_ptr<gradido::blockchain::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr)
+	std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr) const
 	{
 		assert(transactionNr);
 		std::lock_guard lock(mFastMutex);
