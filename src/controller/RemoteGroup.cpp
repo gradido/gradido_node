@@ -51,13 +51,13 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	std::shared_ptr<TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId) const
+	std::shared_ptr<const TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId) const
 	{
 		throw std::runtime_error("not implemented yet");
 	}
 
 	//! \param filter use to speed up search if infos exist to narrow down search transactions range
-	std::shared_ptr<TransactionEntry> RemoteGroup::findByMessageId(
+	std::shared_ptr<const TransactionEntry> RemoteGroup::findByMessageId(
 		memory::ConstBlockPtr messageId,
 		const Filter& filter/* = Filter::ALL_TRANSACTIONS */
 	) const
@@ -70,7 +70,7 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	void RemoteGroup::pushTransactionEntry(std::shared_ptr<gradido::blockchain::TransactionEntry> transactionEntry)
+	void RemoteGroup::pushTransactionEntry(std::shared_ptr<const gradido::blockchain::TransactionEntry> transactionEntry)
 	{
 		throw std::runtime_error("not implemented yet");
 	}

@@ -48,10 +48,10 @@ namespace controller {
 			uint64_t maxTransactionNr
 		) const;
 
-		virtual std::shared_ptr<gradido::blockchain::TransactionEntry> getTransactionForId(uint64_t transactionId) const;
+		virtual std::shared_ptr<const gradido::blockchain::TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 
 		//! \param filter use to speed up search if infos exist to narrow down search transactions range
-		virtual std::shared_ptr<gradido::blockchain::TransactionEntry> findByMessageId(
+		virtual std::shared_ptr<const gradido::blockchain::TransactionEntry> findByMessageId(
 			memory::ConstBlockPtr messageId,
 			const gradido::blockchain::Filter& filter = gradido::blockchain::Filter::ALL_TRANSACTIONS
 		) const;
@@ -59,7 +59,7 @@ namespace controller {
 		virtual gradido::blockchain::AbstractProvider* getProvider() const;
 
 	protected:
-		virtual void pushTransactionEntry(std::shared_ptr<gradido::blockchain::TransactionEntry> transactionEntry);
+		virtual void pushTransactionEntry(std::shared_ptr<const gradido::blockchain::TransactionEntry> transactionEntry);
 	};
 }
 

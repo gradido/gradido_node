@@ -2,13 +2,13 @@
 #include "MessageParser.h"
 #include "MqttClientWrapper.h"
 #include "../task/IotaMessageToTransactionTask.h"
-#include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
 
 #include "sodium.h"
+#include "loguru/loguru.hpp"
+
 #include <assert.h>
 #include <stdexcept>
 
@@ -16,14 +16,12 @@ using namespace rapidjson;
 
 namespace iota {
     MessageValidator::MessageValidator()
-    : mExitCalled(false),
+    : mThread(nullptr),
+      mExitCalled(false),
       mCountErrorsFetchingMilestone(0),
       mMessageListenerFirstRunCount(0),
         mWaitOnEmptyQueue(0)
-    {
-		mThread.setName("messVal");
-		mThread.start(*this);
-        MqttClientWrapper::getInstance()->subscribe(TopicType::MILESTONES_CONFIRMED, this);
+    {		
     }
 
     MessageValidator::~MessageValidator()
@@ -32,26 +30,35 @@ namespace iota {
 		mExitMutex.lock();
 		mExitCalled = true;
 		mExitMutex.unlock();
-		if (mWorkMutex.tryLock()) {
+		if (mWorkMutex.try_lock()) {
 			mWorkMutex.unlock();
-			mCondition.signal();
+			mCondition.notify_one();
 		}
 		try {
-			mThread.join(100);
+            mThread->join();
 		}
-		catch (Poco::Exception& e) {
-			std::clog << "error by shutdown MessageValidator thread: " << e.displayText() << std::endl;
+		catch (GradidoBlockchainException& ex) {
+            LOG_F(ERROR, "gradido blockchain exception by shutdown MessageValidator thread: %s", ex.getFullString().data());
 		}
-		std::clog << "Message Validator shutdown: " << std::endl;
+        catch (std::exception& e) {
+            LOG_F(ERROR, "exception by shutdown MessageValidator thread: %s", e.what());
+        }
+        LOG_F(1, "Message Validator shutdown");
         
 		mConfirmedMessagesMutex.lock();
 		mConfirmedMessages.clear();
 		mConfirmedMessagesMutex.unlock();
 
         mMilestonesMutex.lock();
-        std::clog << "Milestones count: " << std::to_string(mMilestones.size()) << std::endl;
+        LOG_F(1, "Milestones count: %llu", mMilestones.size());
         mMilestones.clear();
         mMilestonesMutex.unlock();
+    }
+
+    void MessageValidator::init()
+    {
+        mThread = new std::thread(&MessageValidator::run, this);
+        MqttClientWrapper::getInstance()->subscribe(TopicType::MILESTONES_CONFIRMED, this);
     }
 
     void MessageValidator::run()
@@ -60,18 +67,17 @@ namespace iota {
         while(true) {
             // if at least one unconfirmed message exist, check every MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 
             // if it has get a milestone (was confirmed) else wait on the next unconfirmed message which will notify the condition
-            mWorkMutex.lock();
+            std::unique_lock _lock(mWorkMutex);
             if (!mPendingMessages.empty()) {
-                mCondition.tryWait(mWorkMutex, MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS);
+                mCondition.wait_for(_lock, MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT);
             }
             else {
-                mCondition.wait(mWorkMutex);
+                mCondition.wait(_lock);
             }
             mExitMutex.lock();
 
             if(mExitCalled) {
                 mExitMutex.unlock();
-                mWorkMutex.unlock();
                 return;
             }
             mExitMutex.unlock();            
@@ -97,13 +103,12 @@ namespace iota {
                 if (notConfirmedCount > mPendingMessages.size() || notConfirmedCount > MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE) break;
             }
             mWaitOnEmptyQueue = 0;
-            mWorkMutex.unlock();
         }
     }
 
-    void MessageValidator::pushMilestone(int32_t id, int64_t timestamp)
+    void MessageValidator::pushMilestone(int32_t id, Timepoint timestamp)
     {
-        Poco::ScopedLock<Poco::FastMutex> lock(mConfirmedMessagesMutex);
+        std::lock_guard lock(mConfirmedMessagesMutex);
         
         auto it = mConfirmedMessages.find(id);
         if (it != mConfirmedMessages.end()) {
@@ -133,7 +138,7 @@ namespace iota {
 		
 		// check if other messages for this milestone exist and the milestone loading was started
 		{ // scoped lock mConfirmedMessages
-			Poco::ScopedLock<Poco::FastMutex> lock(mConfirmedMessagesMutex);
+            std::lock_guard lock(mConfirmedMessagesMutex);
 			auto it = mConfirmedMessages.find(milestoneId);
 			if (it != mConfirmedMessages.end()) {
 				// found others messages which are confirmed from the same milestone
@@ -145,7 +150,7 @@ namespace iota {
 
 		// check if milestone for this was already loaded
 		{ // scoped lock milestones 
-			Poco::ScopedLock<Poco::FastMutex> lock(mMilestonesMutex);
+            std::lock_guard lock(mMilestonesMutex);
 			auto it = mMilestones.find(milestoneId);
 			if (it != mMilestones.end()) {
 				std::shared_ptr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(milestoneId, it->second, messageId));
@@ -168,7 +173,9 @@ namespace iota {
 		document.Parse((const char*)message->payload);
         rapidjson_helper::checkMember(document, "index", rapidjson_helper::MemberType::INTEGER, "iota milestone/confirmed");
         rapidjson_helper::checkMember(document, "timestamp", rapidjson_helper::MemberType::INTEGER, "iota milestone/confirmed");
-        pushMilestone(document["index"].GetInt(), document["timestamp"].GetInt());
+        auto milestoneTimestampSeconds = document["timestamp"].GetUint64();
+        auto milestoneTimepoint = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds(milestoneTimestampSeconds));
+        pushMilestone(document["index"].GetInt(), milestoneTimepoint);
     }
 
 
@@ -182,12 +189,12 @@ namespace iota {
     int MilestoneLoadingTask::run()
     {
         auto milestoneTimestamp = ServerGlobals::g_IotaRequestHandler->getMilestoneTimestamp(mMilestoneId);
-
         if (milestoneTimestamp) {
-            mMessageValidator->pushMilestone(mMilestoneId, milestoneTimestamp);
+            auto milestoneTimepoint = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds(milestoneTimestamp));
+            mMessageValidator->pushMilestone(mMilestoneId, milestoneTimepoint);
         }
         else {
-            LoggerManager::getInstance()->mErrorLogging.error("%s couldn't load milestone: %d from iota", __FUNCTION__, mMilestoneId);
+            LOG_F(ERROR, "couldn't load milestone: %d from iota", mMilestoneId);
         }
         return 0;
     }

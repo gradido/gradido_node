@@ -1,22 +1,19 @@
 #include "CPUShedulerThread.h"
 #include "CPUSheduler.h"
 #include "Task.h"
-//#include "debug/CPUSchedulerTasksLog.h"
 
 #include "../ServerGlobals.h"
 
 #ifdef _UNI_LIB_DEBUG
-//#include "lib/TimeCounter.h"
 #include "gradido_blockchain/lib/Profiler.h"
-#include "Poco/Message.h"
 #endif //_UNI_LIB_DEBUG
+#include "gradido_blockchain/ServerApplication.h"
+
+#include "loguru/loguru.hpp"
 
 namespace task {
 	CPUShedulerThread::CPUShedulerThread(CPUSheduler* parent, const char* name)
 		: Thread(name), mParent(parent)
-#ifdef _UNI_LIB_DEBUG
-		, mSpeedLog(Poco::Logger::get("SpeedLog"))
-#endif
 	{
 #ifdef _UNI_LIB_DEBUG
 		mName = name;
@@ -31,7 +28,7 @@ namespace task {
 
 	int CPUShedulerThread::ThreadFunction()
 	{
-		while(!mWaitingTask.isNull())
+		while(mWaitingTask)
 		{
 				
 #ifdef _UNI_LIB_DEBUG
@@ -46,38 +43,32 @@ namespace task {
 					mWaitingTask->setTaskFinished();
 				}
 #ifdef _UNI_LIB_DEBUG
-				if (0 == strcmp(mWaitingTask->getResourceType(), "iota::ConfirmedMessageLoader") && 
-					mWaitingTask->getReferenceCount() != 1) {
-					printf("iota::ConfirmedMessageLoader Task has another reference somewhere\n");
-					printf("name: %s\n", mWaitingTask->getName());
-				}
-				if (0 == strcmp(mWaitingTask->getResourceType(), "MessageToTransactionTask") &&
-					mWaitingTask->getReferenceCount() != 1) {
-					printf("MessageToTransactionTask has another reference somewhere\n");
-					printf("name: %s\n", mWaitingTask->getName());
+				if (mWaitingTask.use_count() != 1) {
+					if (0 == strcmp(mWaitingTask->getResourceType(), "iota::ConfirmedMessageLoader")) {
+						LOG_F(1, "iota::ConfirmedMessageLoader Task has another reference somewhere, name: %s", mWaitingTask->getName());
+					}
+					if (0 == strcmp(mWaitingTask->getResourceType(), "MessageToTransactionTask")) {
+						LOG_F(1, "MessageToTransactionTask Task has another reference somewhere, name: %s", mWaitingTask->getName());
+					}
 				}
 				//l->removeTaskLogEntry((HASH)mWaitingTask.getResourcePtrHolder());
-				mSpeedLog.information("%s used on thread: %s by Task: %s of: %s (returned: %d)",
-					counter.string(), mName, std::string(mWaitingTask->getResourceType()), name, returnValue);
-#endif
-			}
-			catch (Poco::NullPointerException& e) {
-				printf("[CPUShedulerThread] null pointer exception for task type: %s\n", mWaitingTask->getResourceType());
-#ifdef _UNI_LIB_DEBUG
-				printf("task name: %s\n", name.data());
+			//	mSpeedLog.information("%s used on thread: %s by Task: %s of: %s (returned: %d)",
+				//	counter.string(), mName, std::string(mWaitingTask->getResourceType()), name, returnValue);
 #endif
 			}
 			catch (GradidoBlockchainException& ex) {
-				printf("[CPUShedulerThread] gradido blockchain exception %s for task type: %s\n", ex.getFullString().data(), mWaitingTask->getResourceType());
+				LOG_F(FATAL, "gradido blockchain exception %s for task type: %s", ex.getFullString().data(), mWaitingTask->getResourceType());
 #ifdef _UNI_LIB_DEBUG
-				printf("task name: %s\n", name.data());
+				LOG_F(FATAL, "task name: %s", name.data());
 #endif
+				ServerApplication::terminate();
 			}
 			catch (std::exception& ex) {
-				printf("[CPUShedulerThread] exception %s for task type: %s\n", ex.what(), mWaitingTask->getResourceType());
+				LOG_F(FATAL, "exception %s for task type: %s", ex.what(), mWaitingTask->getResourceType());
 #ifdef _UNI_LIB_DEBUG
-				printf("task name: %s\n", name.data());
+				LOG_F(FATAL, "task name: %s", name.data());
 #endif
+				ServerApplication::terminate();
 			}
 			ServerGlobals::g_NumberExistingTasks;
 			mWaitingTask = mParent->getNextUndoneTask(this);
@@ -87,9 +78,10 @@ namespace task {
 
 	void CPUShedulerThread::setNewTask(TaskPtr cpuTask)
 	{
-		threadLock();
-		mWaitingTask = cpuTask;
-		threadUnlock();
+		{
+			std::lock_guard _lock(mWorkMutex);
+			mWaitingTask = cpuTask;
+		}
 		condSignal();
 	}
 }

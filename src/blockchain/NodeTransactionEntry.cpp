@@ -39,7 +39,7 @@ namespace gradido {
 		NodeTransactionEntry::NodeTransactionEntry(
 			memory::ConstBlockPtr serializedTransaction,
 			std::shared_ptr<gradido::blockchain::FileBased> blockchain,
-			int32_t fileCursor = -10
+			int32_t fileCursor/* = -10 */
 		) : TransactionEntry(serializedTransaction), mFileCursor(fileCursor)
 		{
 			auto involvedPublicKeys = getConfirmedTransaction()->getGradidoTransaction()->getInvolvedAddresses();

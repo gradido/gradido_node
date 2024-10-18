@@ -173,7 +173,8 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 			return;
 		}
 		auto ymd = date::year_month_day(date::year(year), date::month(month), date::day(1));
-		Timepoint targetDate(std::chrono::sys_days(ymd));
+		date::sys_days sysDays = date::sys_days(ymd);
+		Timepoint targetDate(sysDays);
 		std::string date_string;
 		if (!getStringParameter(responseJson, params, "startSearchDate", date_string)) {
 			return;
@@ -268,7 +269,7 @@ void JsonRPCHandler::getTransaction(
 	Profiler timeUsed;
 	auto& alloc = mRootJson.GetAllocator();
 	
-	std::shared_ptr<TransactionEntry> transactionEntry;
+	std::shared_ptr<const TransactionEntry> transactionEntry;
 	if (transactionId) {
 		transactionEntry = blockchain->getTransactionForId(transactionId);
 	}
@@ -325,7 +326,7 @@ void JsonRPCHandler::getAddressBalance(
 	memory::ConstBlockPtr pubkey,
 	Timepoint date,
 	std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-	const std::string& coinCommunityId = ""
+	const std::string& coinCommunityId /* = "" */
 )
 {
 	assert(blockchain);

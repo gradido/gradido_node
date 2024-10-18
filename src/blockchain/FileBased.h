@@ -5,6 +5,7 @@
 #include "../cache/Dictionary.h"
 #include "../cache/DeferredTransfer.h"
 #include "../cache/State.h"
+#include "../cache/TransactionHash.h"
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
 #include "../iota/MessageListener.h"
@@ -81,7 +82,7 @@ namespace gradido {
 				uint64_t maxTransactionNr
 			) const;
 
-			virtual std::shared_ptr<TransactionEntry> getTransactionForId(uint64_t transactionId) const;
+			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 			virtual AbstractProvider* getProvider() const;
 
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
@@ -93,9 +94,13 @@ namespace gradido {
 			const std::string& getFolderPath() const { return mFolderPath; }
 			TaskObserver& getTaskObserver() { return *mTaskObserver; }
 
+			bool isTransactionAlreadyExist(std::shared_ptr<const gradido::data::GradidoTransaction> transaction) const {
+				return mTransactionHashCache.has(transaction);
+			}
+
 		protected:
 
-			virtual void pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry);
+			virtual void pushTransactionEntry(std::shared_ptr<const TransactionEntry> transactionEntry);
 			//! if state leveldb was invalid, recover values from block cache
 			void loadStateFromBlockCache();
 			//! scan blockchain for deferred transfer transaction which are not redeemed completly
@@ -124,6 +129,8 @@ namespace gradido {
 			mutable cache::DeferredTransfer mDeferredTransfersCache;
 
 			mutable AccessExpireCache<uint32_t, std::shared_ptr<cache::Block>> mCachedBlocks;
+
+			cache::TransactionHash mTransactionHashCache;
 
 			//! Community Server listening on new blocks for his group
 			//! TODO: replace with more abstract but simple event system and/or mqtt

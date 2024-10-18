@@ -26,7 +26,8 @@ namespace gradido {
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeys.index"))),
 			mBlockchainState(std::string(folder).append(".state")),
 			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache")),
-			mCachedBlocks(ServerGlobals::g_CacheTimeout)
+			mCachedBlocks(ServerGlobals::g_CacheTimeout),
+			mTransactionHashCache(communityId)
 		{
 		}
 
@@ -165,7 +166,7 @@ namespace gradido {
 
 		}
 
-		std::shared_ptr<TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const
+		std::shared_ptr<const TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const
 		{
 			std::lock_guard _lock(mWorkMutex);
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
@@ -183,7 +184,7 @@ namespace gradido {
 		}
 
 
-		void FileBased::pushTransactionEntry(std::shared_ptr<TransactionEntry> transactionEntry)
+		void FileBased::pushTransactionEntry(std::shared_ptr<const TransactionEntry> transactionEntry)
 		{
 
 		}

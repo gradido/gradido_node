@@ -1,27 +1,37 @@
 #include "HddWriteBufferTask.h"
 #include "../ServerGlobals.h"
-#include "../SingletonManager/LoggerManager.h"
+#include "gradido_blockchain/ServerApplication.h"
 
-#include "Poco/File.h"
+#include "loguru/loguru.hpp"
+
+#include <filesystem>
 
 namespace task {
-	HddWriteBufferTask::HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, Poco::Path path)
-		: CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mVirtualFile(std::move(vFile)), mFilePath(std::move(path))
+	HddWriteBufferTask::HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, const std::string& path)
+		: CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mVirtualFile(std::move(vFile)), mFilePath(path)
 	{
 #ifdef _UNI_LIB_DEBUG
-		setName(mFilePath.toString().data());
+		setName(mFilePath.data());
 #endif
 	}
 
 	int HddWriteBufferTask::run()
 	{
-		Poco::Path pathDir = mFilePath;
-		pathDir.makeDirectory().popDirectory();
-		Poco::File fileFolder(pathDir);
-		fileFolder.createDirectories();
-
-		if (!mVirtualFile->writeToFile(mFilePath)) {
-			LoggerManager::getInstance()->mErrorLogging.error("error locking file for writing: %s", mFilePath.toString());
+		try {
+			std::filesystem::path pathDir(mFilePath);
+			pathDir.remove_filename();
+			if (!std::filesystem::exists(pathDir)) {
+				std::filesystem::create_directories(pathDir);
+			}
+			mVirtualFile->writeToFile(mFilePath.data());
+		}
+		catch (GradidoBlockchainException& ex) {
+			LOG_F(FATAL, "error writing into file: %s, gradido blockchain exception: %s", mFilePath.data(), ex.getFullString().data());
+			ServerApplication::terminate();
+		}
+		catch (std::exception& e) {
+			LOG_F(FATAL, "error writing into file: %s, exception: %s", mFilePath.data(), e.what());
+			ServerApplication::terminate();
 		}
 		return 0;
 	}

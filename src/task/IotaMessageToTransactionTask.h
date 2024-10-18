@@ -26,7 +26,7 @@ namespace gradido {
 class IotaMessageToTransactionTask : public task::CPUTask
 {
 public:
-    IotaMessageToTransactionTask(uint32_t milestoneIndex, uint64_t timestamp, iota::MessageId message);
+    IotaMessageToTransactionTask(uint32_t milestoneIndex, Timepoint timestamp, iota::MessageId message);
 
     const char* getResourceType() const {return "IotaMessageToTransactionTask";};
     int run();
@@ -43,8 +43,7 @@ protected:
     );
 
     uint32_t mMilestoneIndex;
-    //! seconds
-    uint64_t mTimestamp;
+    Timepoint mTimestamp;
     iota::MessageId mMessageId;
 };
 

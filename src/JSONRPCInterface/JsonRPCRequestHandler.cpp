@@ -13,8 +13,7 @@
 #include "rapidjson/error/en.h"
 #include "rapidjson/istreamwrapper.h"
 
-#include "../SingletonManager/LoggerManager.h"
-
+#include "loguru/loguru.hpp"
 
 //#include "Poco/URI.h"
 //#include "Poco/DeflatingStream.h"
@@ -42,16 +41,11 @@ Value JsonRPCRequestHandler::handleOneRpcCall(const rapidjson::Value& jsonRpcReq
 			handle(responseJson, method, jsonRpcRequest["params"]);
 		}
 		catch (GradidoBlockchainException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("gradido node exception in Json RPC handle: %s", ex.getFullString());
-			error(responseJson, JSON_RPC_ERROR_GRADIDO_NODE_ERROR, "gradido node intern exception");
-		}
-		catch (Poco::Exception& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("Poco exception in Json RPC handle: %s", ex.displayText());
+			LOG_F(ERROR, "gradido node exception in Json RPC handle: %s", ex.getFullString().data());
 			error(responseJson, JSON_RPC_ERROR_GRADIDO_NODE_ERROR, "gradido node intern exception");
 		}
 		catch (std::exception& ex) {
-			std::string what(ex.what());
-			LoggerManager::getInstance()->mErrorLogging.error("exception in Json RPC handle: %s", what);
+			LOG_F(ERROR, "exception in Json RPC handle : % s", ex.what());
 			error(responseJson, JSON_RPC_ERROR_GRADIDO_NODE_ERROR, "gradido node intern exception");
 		}
 	}

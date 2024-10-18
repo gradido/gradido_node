@@ -25,7 +25,6 @@
 
 #include "loguru.hpp"
 
-#include "SingletonManager/GroupManager.h"
 #include "SingletonManager/OrderingManager.h"
 #include "SingletonManager/CacheManager.h"
 #include "iota/MqttClientWrapper.h"

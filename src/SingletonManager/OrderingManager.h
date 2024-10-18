@@ -18,9 +18,11 @@
 #include "../iota/MessageValidator.h"
 #include "../iota/MessageListener.h"
 #include "../task/Thread.h"
+
 #include <map>
-#include "Poco/ExpireCache.h"
-#include "Poco/AccessExpireCache.h"
+#include <mutex>
+
+
 
 /*!
  * @author einhornimmond
@@ -43,7 +45,13 @@ public:
     void pushMilestoneTaskObserver(int32_t milestoneId);
     void popMilestoneTaskObserver(int32_t milestoneId);
 
-    int pushTransaction(std::unique_ptr<gradido::data::GradidoTransaction> transaction, int32_t milestoneId, uint64_t timestamp, const std::string& groupAlias, MemoryBin* messageId);
+    int pushTransaction(
+        std::shared_ptr<const gradido::data::GradidoTransaction> transaction,
+        int32_t milestoneId, 
+        Timepoint timestamp,
+        std::string_view communityId,
+        std::shared_ptr<const memory::Block> messageId
+    );
 
     inline iota::MessageValidator* getIotaMessageValidator() { return &mMessageValidator; }
 
@@ -56,45 +64,45 @@ protected:
     struct GradidoTransactionWithGroup
     {
         GradidoTransactionWithGroup(
-            std::unique_ptr<gradido::data::GradidoTransaction> _transaction,
-            const std::string& _groupAlias,
-            const memory::Block& _messageId
-        ) : transaction(std::move(_transaction)), groupAlias(_groupAlias), messageId(_messageId) {}
+            std::shared_ptr<const gradido::data::GradidoTransaction> _transaction,
+            std::string_view _communityId,
+            std::shared_ptr<const memory::Block> _messageId
+        ) : transaction(_transaction), communityId(_communityId), messageId(_messageId) {}
 
         GradidoTransactionWithGroup(GradidoTransactionWithGroup&& move) noexcept
             : transaction(std::move(move.transaction)),
-            groupAlias(std::move(move.groupAlias)),
+            communityId(std::move(move.communityId)),
             messageId(std::move(move.messageId))
         {
         }
 
         ~GradidoTransactionWithGroup() {}        
 
-        std::unique_ptr<gradido::data::GradidoTransaction> transaction;
-        std::string groupAlias;
-        memory::Block messageId;
+        std::shared_ptr<const gradido::data::GradidoTransaction> transaction;
+        std::string communityId;
+        std::shared_ptr<const memory::Block> messageId;
     };
 
     struct MilestoneTransactions
     {
-        MilestoneTransactions(int32_t _milestoneId, int64_t _milestoneTimestamp)
+        MilestoneTransactions(int32_t _milestoneId, Timepoint _milestoneTimestamp)
             : milestoneId(_milestoneId), milestoneTimestamp(_milestoneTimestamp) {}
 
         int32_t milestoneId;
-        int64_t milestoneTimestamp;
+        Timepoint milestoneTimestamp;
         Timepoint entryCreationTime;
         std::list<GradidoTransactionWithGroup> transactions;
-        Poco::FastMutex mutex;
+        std::mutex mutex;
     };
 
     iota::MessageValidator mMessageValidator;
 
     std::map<int32_t, int32_t> mMilestoneTaskObserver;
-    Poco::FastMutex mMilestoneTaskObserverMutex;
+    std::mutex mMilestoneTaskObserverMutex;
 
     std::map<int32_t, MilestoneTransactions*> mMilestonesWithTransactions;
-    Poco::FastMutex mMilestonesWithTransactionsMutex;
-    Poco::FastMutex mFinishMilestoneTaskMutex;
+    std::mutex mMilestonesWithTransactionsMutex;
+    std::mutex mFinishMilestoneTaskMutex;
 };
 
 #endif //__GRADIDO_NODE_SINGLETON_MANAGER_ORDERING_MANAGER

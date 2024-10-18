@@ -1,7 +1,10 @@
 #include "JsonRPC.h"
+
+#include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/JsonRequest.h"
-#include "../SingletonManager/LoggerManager.h"
+
 #include "rapidjson/prettywriter.h"
+#include "loguru/loguru.hpp"
 
 using namespace rapidjson;
 
@@ -33,10 +36,13 @@ namespace client {
 			*/
 		}
 		catch (RapidjsonParseErrorException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[client::JsonRPC::postRequest] Result Json Exception: %s\n", ex.getFullString().data());
+			LOG_F(ERROR, "Result Json Exception: %s", ex.getFullString().data());
 		}
-		catch (Poco::Exception& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[client::JsonRPC::postRequest] Poco Exception: %s\n", ex.displayText().data());
+		catch (GradidoBlockchainException& ex) {
+			LOG_F(ERROR, "uncatched GradidoBlockchainException: %s", ex.getFullString().data());
+		} 
+		catch (std::exception& ex) {
+			LOG_F(ERROR, "uncatched exception: %s", ex.what());
 		}
 		return true;
 	}

@@ -22,7 +22,7 @@ using namespace blockchain;
 using namespace interaction;
 
 IotaMessageToTransactionTask::IotaMessageToTransactionTask(
-    uint32_t milestoneIndex, uint64_t timestamp, 
+    uint32_t milestoneIndex, Timepoint timestamp,
     iota::MessageId messageId)
 : mMilestoneIndex(milestoneIndex), mTimestamp(timestamp), mMessageId(messageId)
 {
@@ -88,9 +88,9 @@ int IotaMessageToTransactionTask::run()
     toJson::Context toJson(*transaction);    
     LOG_F(
         2, 
-        "%d %d %s %s\n%s",
-        (int)mMilestoneIndex, 
-        (int)mTimestamp,
+        "%u %s %s %s\n%s",
+        mMilestoneIndex, 
+        DataTypeConverter::timePointToString(mTimestamp).data(),
         *dataIndex.second.get()->data(),
         mMessageId.toHex().data(),
         toJson.run(true).data()
@@ -155,7 +155,7 @@ int IotaMessageToTransactionTask::run()
                 std::string message = "transaction skipped because pairing transaction wasn't found";
                 notificateFailedTransaction(blockchain, *transaction, message);
 				LOG_F(INFO, "%s, messageId: %s, pairing message id: %s",
-                    message, mMessageId.toHex(), parentMessageIdHex.data()
+                    message.data(), mMessageId.toHex().data(), parentMessageIdHex.data()
                 );
                 return 0;
             }
@@ -166,26 +166,27 @@ int IotaMessageToTransactionTask::run()
     // check if transaction already exist
     // if this transaction doesn't belong to us, we can quit here 
     // also if we already have this transaction
-    if (!blockchain || blockchain->isTransactionAlreadyExist(transaction.get())) {
-        errorLog.information("transaction skipped because it cames from other group or was found in cache, messageId: %s",
-            mMessageId.toHex()
+    auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
+    if (!fileBasedBlockchain || fileBasedBlockchain->isTransactionAlreadyExist(transaction)) {
+        LOG_F(ERROR, "transaction skipped because it cames from other group or was found in cache, messageId: %s",
+            mMessageId.toHex().data()
         );
         return 0;
     }       
-    auto lastTransaction = group->getLastTransaction();
-    if (lastTransaction && lastTransaction->getReceived() > mTimestamp) {
+    auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
+    if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
         std::string message = "transaction skipped because it cames from the past";
-        notificateFailedTransaction(group, transaction.get(), message);
-        errorLog.information("%s, messageId: %s", message, mMessageId.toHex());
+        notificateFailedTransaction(blockchain, *transaction, message);
+        LOG_F(INFO, "%s, messageId: %s", message.data(), mMessageId.toHex().data());
         return 0;
     }
 
     // hand over to OrderingManager
     //std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
     OrderingManager::getInstance()->pushTransaction(
-        std::move(transaction), mMilestoneIndex,
-        mTimestamp, group->getGroupAlias(), mMessageId.toMemoryBin());
+        transaction, mMilestoneIndex,
+        mTimestamp, blockchain->getCommunityId(), std::make_shared<memory::Block>(mMessageId.toMemoryBlock()));
 
     return 0;
 }
