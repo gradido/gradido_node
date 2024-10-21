@@ -1,0 +1,32 @@
+# Client configuration, accessing extern services
+clients: 
+  # IOTA Configuration
+  iota: 
+    rest_api: 
+      host: api.lb-0.h.chrysalis-devnet.iota.cafe
+      port: 443 # automatic using HTTPS if 443
+    mqtt: 
+      host: api.lb-0.h.chrysalis-devnet.iota.cafe
+      port: 1883
+    
+# Server Configuration, which services are served on which ports
+server:
+  json_rpc: 8340 # Port for JSON RPC 2.0 Requests
+
+# Cache Settings
+cache:
+  timeout: 600  # Cache Timeout in seconds, how long to keep transactions and other data in memory cache
+  checks_interval: 10  # How often to check for cache timeout in seconds
+  write_to_disk_interval: 10  # How often block and index data will be flushed to disk in seconds
+
+# Logging Settings
+logging:
+  log_transactions: true  # If true, write complete transactions to log
+
+# I/O Settings
+io:
+  worker_count: 1  # How many workers are allowed to access disk at the same time
+
+# Security Settings
+unsecure:
+  allow_cors_all: false  # Set to true if js frontend should be allowed to send requests to it

@@ -1,19 +1,13 @@
 #ifndef GRADIDO_NODE_SERVER_GLOBALS 
 #define GRADIDO_NODE_SERVER_GLOBALS
 
-#include <chrono>
-
-#include "Poco/Util/LayeredConfiguration.h"
-#include "Poco/Types.h"
-#include "Poco/Logger.h"
-#include "Poco/Net/Context.h"
-#include "Poco/AtomicCounter.h"
-#include "Poco/URI.h"
-
-#include "task/CPUSheduler.h"
 #include "gradido_blockchain/http/IotaRequest.h"
-
+#include "gradido_blockchain/lib/MapEnvironmentToConfig.h"
 #include "cache/GroupIndex.h"
+#include "task/CPUSheduler.h"
+
+#include <chrono>
+#include <atomic>
 
 namespace ServerGlobals {
 
@@ -29,13 +23,13 @@ namespace ServerGlobals {
 	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
 	extern std::chrono::seconds				g_WriteToDiskTimeout;	
 	extern IotaRequest*						g_IotaRequestHandler;
-	extern Poco::URI						g_IotaMqttBrokerUri;
-	extern Poco::AtomicCounter              g_NumberExistingTasks;
+	extern std::string						g_IotaMqttBrokerUri;
+	extern std::atomic<size_t>              g_NumberExistingTasks;
 	extern bool								g_LogTransactions;
 
 	void clearMemory();
-	bool initIota(const Poco::Util::LayeredConfiguration& cfg);
-	void loadTimeouts(const Poco::Util::LayeredConfiguration& cfg);
+	bool initIota(const MapEnvironmentToConfig& cfg);
+	void loadTimeouts(const MapEnvironmentToConfig& cfg);
 };
 
 #endif //GRADIDO_NODE_SERVER_GLOBALS
