@@ -1,9 +1,9 @@
 #include "MainServer.h"
 #include "ServerGlobals.h"
+#include "JSONRPCInterface/Server.h"
 
 #include "blockchain/FileBasedProvider.h"
 #include "iota/MqttClientWrapper.h"
-#include "JSONRPCInterface/JsonRequestHandlerFactory.h"
 #include "SingletonManager/OrderingManager.h"
 #include "SingletonManager/CacheManager.h"
 
@@ -92,21 +92,17 @@ bool MainServer::init()
 	srv.start();
 	*/
 
+	LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().data(), jsonrpc_port);
 	// JSON Interface Server
-	Poco::Net::ServerSocket jsonrpc_svs(jsonrpc_port);
-	Poco::Net::HTTPServer jsonrpc_srv(new JsonRequestHandlerFactory, jsonrpc_svs, new Poco::Net::HTTPServerParams);
-
+	Server server;
 	// start the json server
-	jsonrpc_srv.start();
-
-	LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().data(), jsonrpc_port);	
+	// doesn't return
+	return server.run("0.0.0.0", jsonrpc_port);	
 }
 
 void MainServer::exit()
 {
-	jsonrpc_srv.stop();
-
-	std::clog << "[Gradido_Node::main] Running Tasks Count on shutdown: " << std::to_string(ServerGlobals::g_NumberExistingTasks.value()) << std::endl;
+	std::clog << "[Gradido_Node::main] Running Tasks Count on shutdown: " << std::to_string(ServerGlobals::g_NumberExistingTasks) << std::endl;
 
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage

@@ -20,11 +20,10 @@ namespace model {
 		public:
 			TransactionList(
 				std::shared_ptr<const gradido::blockchain::Abstract> blockchain,
-				memory::ConstBlockPtr pubkey,
-				rapidjson::Document::AllocatorType& alloc
+				memory::ConstBlockPtr pubkey
 			);
 
-			rapidjson::Value generateList(Timepoint now, const gradido::blockchain::Filter& filter);
+			rapidjson::Value generateList(Timepoint now, const gradido::blockchain::Filter& filter, rapidjson::Document& root);
 		protected:
 			void calculateDecay(
 				GradidoUnit balance, 
@@ -32,12 +31,10 @@ namespace model {
 				model::Apollo::Transaction* currentTransaction
 			);
 
-			rapidjson::Value lastDecay(GradidoUnit balance, Timepoint lastTransactionDate);
+			rapidjson::Value lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root);
 
 			std::shared_ptr<const gradido::blockchain::Abstract> mBlockchain;
 			memory::ConstBlockPtr mPubkey;
-			rapidjson::Document::AllocatorType& mJsonAllocator;
-
 		};
 	}
 }

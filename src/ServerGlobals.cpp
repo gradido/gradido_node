@@ -1,6 +1,3 @@
-using std::shared_ptr;
-
-
 #include "ServerGlobals.h"
 
 #include "gradido_blockchain/lib/Profiler.h"

@@ -2,7 +2,6 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_DECAY_H
 
 #include "gradido_blockchain/GradidoUnit.h"
-#include "Poco/Timestamp.h"
 #include "rapidjson/document.h"
 
 namespace model {
@@ -12,6 +11,7 @@ namespace model {
 		class Decay
 		{
 		public:
+			Decay(Decay* parent);
 			Decay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 			~Decay();
 

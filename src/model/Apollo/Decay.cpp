@@ -1,6 +1,4 @@
 #include "Decay.h"
-#include "Poco/Timespan.h"
-#include "Poco/DateTimeFormatter.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include <chrono>
@@ -13,6 +11,11 @@ namespace model {
 		const char* jsDateTimeFormat = "%Y-%m-%dT%H:%M:%S.%i%z";
 		static const Timepoint DECAY_START_TIME = DataTypeConverter::dateTimeStringToTimePoint("2021-05-13 17:46:31");
 
+		Decay::Decay(Decay* parent)
+			: mDecayStart(parent->mDecayStart), mDecayEnd(parent->mDecayEnd), mDecayAmount(parent->mDecayAmount)
+		{
+
+		}
 		Decay::Decay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
 			: mDecayStart(decayStart), mDecayEnd(decayEnd)
 		{

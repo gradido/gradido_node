@@ -8,8 +8,8 @@ namespace client
 	class JsonRPC : public Base
 	{
 	public: 
-		JsonRPC(const Poco::URI& uri, bool base64 = true);
-		bool postRequest(const Poco::Net::NameValueCollection& parameterValuePairs);
+		JsonRPC(const std::string& uri, bool base64 = true);
+		bool postRequest(const std::map<std::string, std::string>& parameterValuePairs);
 	};
 }
 

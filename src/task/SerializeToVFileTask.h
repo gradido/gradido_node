@@ -3,7 +3,6 @@
 
 #include "CPUTask.h"
 #include "../lib/VirtualFile.h"
-#include "Poco/SharedPtr.h"
 
 namespace task {
 
@@ -12,7 +11,7 @@ namespace task {
 	public:
 		//! serialize for writing with hdd write buffer task
 		virtual std::unique_ptr<VirtualFile> serialize() = 0;
-		virtual std::string getFileNameString() = 0;
+		virtual std::string getFileNameString() const = 0;
 	};
 
 	/*!

@@ -1,9 +1,5 @@
 #include "JsonRPCRequestHandler.h"
 
-#include "Poco/Net/HTTPServerRequest.h"
-#include "Poco/Net/HTTPServerResponse.h"
-#include "Poco/DeflatingStream.h"
-
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/ServerConfig.h"
@@ -14,6 +10,7 @@
 #include "rapidjson/istreamwrapper.h"
 
 #include "loguru/loguru.hpp"
+#include "cpp-httplib/httplib.h"
 
 //#include "Poco/URI.h"
 //#include "Poco/DeflatingStream.h"
@@ -60,25 +57,12 @@ Value JsonRPCRequestHandler::handleOneRpcCall(const rapidjson::Value& jsonRpcReq
 	return responseJson;
 }
 
-void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
-{
-	response.setChunkedTransferEncoding(false);
-	response.setContentType("application/json");
-
+void JsonRPCRequestHandler::handleRequest(const httplib::Request& request, httplib::Response& response, MethodType method)
+{	
 	if (ServerConfig::g_AllowUnsecureFlags & ServerConfig::UNSECURE_CORS_ALL) {
-		response.set("Access-Control-Allow-Origin", "*");
-		response.set("Access-Control-Allow-Headers", "Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
+		response.set_header("Access-Control-Allow-Origin", "*");
+		response.set_header("Access-Control-Allow-Headers", "Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 	}
-
-	bool _compressResponse(request.hasToken("Accept-Encoding", "gzip"));
-	if (_compressResponse) response.set("Content-Encoding", "gzip");
-
-	std::ostream& _responseStream = response.send();
-	Poco::DeflatingOutputStream _gzipStream(_responseStream, Poco::DeflatingStreamBuf::STREAM_GZIP, 1);
-	std::ostream& responseStream = _compressResponse ? _gzipStream : _responseStream;
-
-	auto method = request.getMethod();
-	std::istream& request_stream = request.stream();
 
 	auto alloc = mRootJson.GetAllocator();
 	Value responseJson(kObjectType);
@@ -87,10 +71,9 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 
 	// TODO: put group name in request url to keep function calls as similar as possible to bitcoin and co
 	Document rapidjson_params;
-	if (method == "POST" || method == "PUT") 
+	if (MethodType::POST == method || MethodType::PUT ==  method) 
 	{
-		IStreamWrapper request_stream_wrapped(request_stream);
-		rapidjson_params.ParseStream(request_stream_wrapped);
+		rapidjson_params.Parse(request.body.data());
 		if (rapidjson_params.HasParseError()) 
 		{
 			Value data(kObjectType);
@@ -114,17 +97,15 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 			}
 		}
 	}
-	else if (method == "GET") 
+	else if (MethodType::GET == method) 
 	{
-		Poco::URI uri(request.getURI());
-		parseQueryParametersToRapidjson(uri, rapidjson_params);
+		parseQueryParametersToRapidjson(request.params, rapidjson_params);
 
 		//rapid_json_result = handle(rapidjson_params);
 		printf("[%s] must be implemented\n", __FUNCTION__);
 	}
-	else if (method == "OPTIONS")
+	else if (MethodType::OPTIONS == method)
 	{
-		if (_compressResponse) _gzipStream.close();
 		return;
 	} 
 	else 
@@ -136,25 +117,22 @@ void JsonRPCRequestHandler::handleRequest(Poco::Net::HTTPServerRequest& request,
 	StringBuffer buffer;
 	Writer<StringBuffer> writer(buffer);
 	responseJson.Accept(writer);	
-	responseStream << buffer.GetString() << std::endl;	
-	
-	if (_compressResponse) _gzipStream.close();	
+	response.set_content(buffer.GetString(), "application/json");	
 }
 
 
-bool JsonRPCRequestHandler::parseQueryParametersToRapidjson(const Poco::URI& uri, Document& rapidParams)
+bool JsonRPCRequestHandler::parseQueryParametersToRapidjson(const std::multimap<std::string, std::string>& params, Document& rapidParams)
 {
-	auto queryParameters = uri.getQueryParameters();
 	rapidParams.SetObject();
-	for (auto it = queryParameters.begin(); it != queryParameters.end(); it++) {
+	for (const auto& param: params) {
 		int tempi = 0;
-		Value name_field(it->first.data(), rapidParams.GetAllocator());
-		if (DataTypeConverter::NUMBER_PARSE_OKAY == DataTypeConverter::strToInt(it->second, tempi)) {
+		Value name_field(param.first.data(), rapidParams.GetAllocator());
+		if (DataTypeConverter::NUMBER_PARSE_OKAY == DataTypeConverter::strToInt(param.second, tempi)) {
 			//rapidParams[it->first.data()] = rapidjson::Value(tempi, rapidParams.GetAllocator());
 			rapidParams.AddMember(name_field.Move(), tempi, rapidParams.GetAllocator());
 		}
 		else {
-			rapidParams.AddMember(name_field.Move(), Value(it->second.data(), rapidParams.GetAllocator()), rapidParams.GetAllocator());
+			rapidParams.AddMember(name_field.Move(), Value(param.second.data(), rapidParams.GetAllocator()), rapidParams.GetAllocator());
 		}
 	}
 
@@ -233,7 +211,7 @@ bool JsonRPCRequestHandler::getUIntParameter(Value& responseJson, const Value& p
 	return true;
 }
 
-bool JsonRPCRequestHandler::getUInt64Parameter(Value& responseJson, const Value& params, const char* fieldName, Poco::UInt64& iParameter, bool optional /*= false*/)
+bool JsonRPCRequestHandler::getUInt64Parameter(Value& responseJson, const Value& params, const char* fieldName, uint64_t& iParameter, bool optional /*= false*/)
 {
 	Value::ConstMemberIterator itr = params.FindMember(fieldName);
 	std::string message = fieldName;

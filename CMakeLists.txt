@@ -36,17 +36,6 @@ include_directories(
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
 
-IF(UNIX)
-	include_directories(
-		"dependencies/poco/Crypto/include" 
-		"dependencies/poco/Util/include" 
-		"dependencies/poco/Foundation/include"
-		"dependencies/poco/Net/include"
-		"dependencies/poco/NetSSL_OpenSSL/include"
-		"dependencies/poco/JWT/include"
-	)
-ENDIF()
-
 FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
 FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
@@ -110,30 +99,15 @@ add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
 
-############################## config and add poco ###################################
-#SET(SOME_EXPAT_OPTION OFF CACHE BOOL "Use some expat option")
-IF(UNIX)
-	SET(ENABLE_MONGODB OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_DATA_SQLITE OFF CACHE BOOL "" FORCE) 
-	SET(ENABLE_REDIS OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_PAGECOMPILER_FILE2PAGE OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_PAGECOMPILER OFF CACHE BOOL "" FORCE)
-	SET(ENABLE_JSON OFF CACHE BOOL "" FORCE)
-	add_subdirectory("dependencies/gradido_blockchain/dependencies/poco")
-
-	set(POCO_LIBS Poco::Foundation Poco::Util Poco::Net Poco::NetSSL Poco::JWT)
-ENDIF()
 
 ############################## mqtt client ############################################
 add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
-find_package(poco REQUIRED)
 find_package(libsodium REQUIRED)
 include_directories(
 		${libsodium_INCLUDE_DIR}
 		${OPENSSL_INCLUDE_DIR}
-		${Poco_INCLUDE_DIRS}
 	)
 endif()
 
@@ -161,26 +135,13 @@ if(NOT BUILD_SHARED_LIBS)
 	target_link_libraries(GradidoNode libprotobuf)
 endif()
 if(WIN32)
-	target_link_libraries(GradidoNode ${Poco_LIBRARIES})
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
-else()
-	target_link_libraries(GradidoNode ${POCO_LIBS} -pthread)
 endif()
-#PocoNet PocoUtil PocoJSON PocoFoundation PocoData PocoNetSSL
 
 IF(WIN32)
   add_custom_command(TARGET GradidoNode POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
-	#COMMAND ${CMAKE_COMMAND} -E copy_if_different
-	 # "${PROJECT_BINARY_DIR}/dependencies/gradido_blockchain/dependencies/ed25519_bip32_c_interface/x86_64-pc-windows-msvc/${CMAKE_BUILD_TYPE}/ed25519_bip32_c_interface.dll"
-	  #"$<TARGET_FILE_DIR:GradidoNode>"
-	#COMMAND ${CMAKE_COMMAND} -E copy_if_different
-	#  "${PROJECT_BINARY_DIR}/dependencies/gradido_blockchain/iota_rust_clib/x86_64-pc-windows-msvc/${CMAKE_BUILD_TYPE}/iota_rust_clib.dll"
-	 # "$<TARGET_FILE_DIR:GradidoNode>"
-	#COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
-	#IOTA_RUST_C_LIB
-	#ED25519_BIP32_RUST_C_LIB
     COMMAND_EXPAND_LISTS
   )
 ENDIF()

@@ -38,7 +38,7 @@ namespace task {
 	int CPUSheduler::sheduleTask(TaskPtr task)
 	{
 		{ // scoped lock
-			Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+			std::lock_guard _lock(mCheckStopMutex);
 			if (mStopped) {
 				return 0;
 			}
@@ -92,7 +92,7 @@ namespace task {
 	void CPUSheduler::checkPendingTasks()
 	{
 		{ // scoped lock
-			Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+			std::lock_guard _lock(mCheckStopMutex);
 			if (mStopped) {
 				return;
 			}

@@ -41,7 +41,7 @@ namespace cache {
 		//! \return Index or 0 if address didn't exist.
 		virtual uint32_t getIndexForString(const std::string& string) const;
 
-		virtual const std::string& getStringForIndex(uint32_t index) const;
+		virtual const std::string getStringForIndex(uint32_t index) const;
 
 		//! \brief Get or add index if not exist in cache or file, maybe I/O read.
 		//! \param address User public key as binary string

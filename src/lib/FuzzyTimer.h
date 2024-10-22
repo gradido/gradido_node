@@ -24,11 +24,11 @@
 #ifndef __UNIVERSUM_LIB_LIB_TIMER__
 #define __UNIVERSUM_LIB_LIB_TIMER__
 
-#include "Poco/Mutex.h"
-#include "Poco/Thread.h"
+#include <thread>
 #include <string>
 #include <chrono>
 #include <map>
+#include <mutex>
 
 // refactored from my game engine for gradido
 // @date: 04.12.21
@@ -37,7 +37,7 @@
 // MAGIC NUMBER: The timer has a list of all timer callback, sorted which should be called when
 // on every move call it will check if the current callback time is reached and if so, it will be called
 // the time between move calls depends on needed accuracy and timer calls per seconds
-#define MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS_MILLISECONDS 100
+#define MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS std::chrono::milliseconds(100)
 
 
 enum class TimerReturn {
@@ -58,7 +58,7 @@ public:
 	virtual const char* getResourceType() const { return "TimerCallback"; };
 };
 
-class FuzzyTimer : public Poco::Runnable
+class FuzzyTimer
 {
 public:
 	FuzzyTimer();
@@ -79,14 +79,16 @@ public:
 	*/
 	int removeTimer(std::string name);
 
+	void stop();
+
+	void run();
+
+protected:
 	/*
 		\brief update timer map, maybe call timer... (only one per frame)
 	*/
 	bool move();
 
-	void stop();
-
-	void run();
 private:
 	struct TimerEntry {
 		// functions
@@ -110,9 +112,9 @@ private:
 	// int key = time since program start to run
 	std::multimap<std::chrono::milliseconds, TimerEntry> mRegisteredAtTimer;
 	typedef std::pair<std::chrono::milliseconds, TimerEntry> TIMER_TIMER_ENTRY;
-	Poco::Mutex mMutex;
+	std::mutex mMutex;
 	bool		exit;
-	Poco::Thread mThread;
+	std::thread* mThread;
 };
 
 

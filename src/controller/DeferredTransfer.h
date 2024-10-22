@@ -6,6 +6,7 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
 namespace controller
 {
@@ -23,7 +24,7 @@ namespace controller
 	class DeferredTransfer : public ControllerBase
 	{
 	public:
-		DeferredTransfer(const Poco::Path& groupFolder);
+		DeferredTransfer(std::string_view groupFolder);
 		~DeferredTransfer();
 
 		void addTransactionNrForAddressIndex(uint32_t addressIndex, uint64_t transactionNr);

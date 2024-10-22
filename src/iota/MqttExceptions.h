@@ -2,7 +2,6 @@
 #define __GRADIDO_NODE_IOTA_MQTT_EXCEPTIONS 
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
-#include "Poco/URI.h"
 
 namespace iota {
 
@@ -30,11 +29,11 @@ namespace iota {
 	class MqttConnectionException : public MqttException
 	{
 	public:
-		explicit MqttConnectionException(const char* what, int errorCode, Poco::URI uri) noexcept : MqttException(what, errorCode), mUri(uri) {}
+		explicit MqttConnectionException(const char* what, int errorCode, std::string uri) noexcept : MqttException(what, errorCode), mUri(uri) {}
 		std::string getFullString() const;
 
 	protected:
-		Poco::URI mUri;
+		std::string mUri;
 	};
 
 	class MqttSubscribeException : public MqttException

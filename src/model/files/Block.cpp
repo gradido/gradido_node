@@ -269,10 +269,10 @@ namespace model {
 			return result;
 		}
 
-		std::shared_ptr<RebuildBlockIndexTask> Block::rebuildBlockIndex(std::shared_ptr<gradido::blockchain::FileBased> blockchain)
+		std::shared_ptr<RebuildBlockIndexTask> Block::rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
 		{			
 			auto fl = FileLockManager::getInstance();
-			std::shared_ptr<RebuildBlockIndexTask> rebuildTask = std::make_shared<RebuildBlockIndexTask>(blockchain);;
+			std::shared_ptr<RebuildBlockIndexTask> rebuildTask = std::make_shared<RebuildBlockIndexTask>(blockchain);
 			
 			int32_t fileCursor = 0;
 			std::shared_ptr<memory::Block> readBuffer;
@@ -360,7 +360,7 @@ namespace model {
 		}
 
 
-		RebuildBlockIndexTask::RebuildBlockIndexTask(std::shared_ptr<gradido::blockchain::FileBased> blockchain)
+		RebuildBlockIndexTask::RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
 			: task::CPUTask(ServerGlobals::g_CPUScheduler), mBlockchain(blockchain)
 		{
 

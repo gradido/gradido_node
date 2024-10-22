@@ -61,7 +61,7 @@ namespace cache {
 		return mDictionaryFile->getIndexForString(string);
 	}
 
-	const std::string& Dictionary::getStringForIndex(uint32_t index) const
+	const std::string Dictionary::getStringForIndex(uint32_t index) const
 	{
 		std::lock_guard _lock(mFastMutex);
 		return mDictionaryFile->getStringForIndex(index);
@@ -80,7 +80,7 @@ namespace cache {
 
 	TimerReturn Dictionary::callFromTimer()
 	{
-		Poco::ScopedLock _lock(mFastMutex);
+		std::lock_guard _lock(mFastMutex);
 
 		if (Timepoint() - mWaitingForNextFileWrite > ServerGlobals::g_WriteToDiskTimeout
 			) {

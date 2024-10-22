@@ -75,19 +75,35 @@ namespace model {
 			bool			mFirstTransaction;
 		*/
 
-		Transaction::Transaction(Transaction&& parent)
+		Transaction::Transaction(Transaction&& parent) noexcept
 			: mType(parent.mType),
-			  mAmount(parent.mAmount),
-		      mBalance(parent.mBalance),
-			  mPubkey(std::move(parent.mPubkey)),
-			  mFirstName(std::move(parent.mFirstName)),
-			  mLastName(std::move(parent.mLastName)),
-			  mMemo(std::move(parent.mMemo)),
-			  mId(parent.mId),
-			  mDate(parent.mDate),
-			  mDecay(parent.mDecay)
+			mAmount(parent.mAmount),
+		    mBalance(parent.mBalance),
+			mPubkey(std::move(parent.mPubkey)),
+			mFirstName(std::move(parent.mFirstName)),
+			mLastName(std::move(parent.mLastName)),
+			mMemo(std::move(parent.mMemo)),
+			mId(parent.mId),
+			mDate(parent.mDate),
+			mDecay(parent.mDecay)
 		{
 			parent.mDecay = nullptr;
+		}
+		Transaction::Transaction(const Transaction& parent)
+			: mType(parent.mType),
+			mAmount(parent.mAmount),
+			mBalance(parent.mBalance),
+			mPubkey(parent.mPubkey),
+			mFirstName(parent.mFirstName),
+			mLastName(parent.mLastName),
+			mMemo(parent.mMemo),
+			mId(parent.mId),
+			mDate(parent.mDate),
+			mDecay(nullptr)	
+		{
+			if (parent.mDecay) {
+				mDecay = new Decay(parent.mDecay);
+			}
 		}
 
 		Transaction::~Transaction()
@@ -96,6 +112,38 @@ namespace model {
 				delete mDecay;
 				mDecay = nullptr;
 			}
+		}
+
+		Transaction& Transaction::operator=(const Transaction& other)
+		{
+			// Self-assignment check
+			if (this == &other) {
+				return *this;
+			}
+
+			// Kopiere einfache Member
+			mType = other.mType;
+			mAmount = other.mAmount;
+			mBalance = other.mBalance;
+			mPubkey = other.mPubkey;
+			mFirstName = other.mFirstName;
+			mLastName = other.mLastName;
+			mMemo = other.mMemo;
+			mId = other.mId;
+			mDate = other.mDate;
+
+			// Speicher von mDecay richtig verwalten
+			if (mDecay) {
+				delete mDecay;  // Alten Speicher freigeben
+				mDecay = nullptr;
+			}
+
+			// Wenn other.mDecay nicht null ist, erstelle eine neue Kopie
+			if (other.mDecay) {
+				mDecay = new Decay(*other.mDecay);
+			}
+
+			return *this;
 		}
 
 		void Transaction::calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)

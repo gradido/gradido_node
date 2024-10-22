@@ -4,7 +4,7 @@
 #include "../ServerGlobals.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
 
-#include "Poco/File.h"
+#include "loguru/loguru.hpp"
 
 namespace cache {
 	GroupIndex::GroupIndex(const std::string& jsonConfigFileName)
@@ -28,27 +28,33 @@ namespace cache {
 		std::scoped_lock _lock(mWorkMutex);
 
 		clear();
-		auto& cfg = mConfig.load();
-		if (cfg.IsArray()) {
-			auto communitiesArray = cfg.GetArray();
-			for (rapidjson::SizeType i = 0; i < communitiesArray.Size(); i++) {
-				auto& communityEntry = communitiesArray[i];
-				CommunityIndexEntry entry;
-				rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
-				rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
-				entry.alias = communityEntry["alias"].GetString();
-				entry.folderName = communityEntry["folder"].GetString();
-				if (communityEntry.HasMember("newBlockUri")) {
-					entry.newBlockUri = communityEntry["newBlockUri"].GetString();
+		try {
+			auto& cfg = mConfig.load();
+			if (cfg.IsArray()) {
+				auto communitiesArray = cfg.GetArray();
+				for (rapidjson::SizeType i = 0; i < communitiesArray.Size(); i++) {
+					auto& communityEntry = communitiesArray[i];
+					CommunityIndexEntry entry;
+					rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
+					rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
+					entry.alias = communityEntry["alias"].GetString();
+					entry.folderName = communityEntry["folder"].GetString();
+					if (communityEntry.HasMember("newBlockUri")) {
+						entry.newBlockUri = communityEntry["newBlockUri"].GetString();
+					}
+					if (communityEntry.HasMember("blockUriType")) {
+						entry.blockUriType = communityEntry["blockUriType"].GetString();
+					}
+					mCommunities.insert({ entry.alias, entry });
 				}
-				if (communityEntry.HasMember("blockUriType")) {
-					entry.blockUriType = communityEntry["blockUriType"].GetString();
-				}
-				mCommunities.insert({ entry.alias, entry });
+			}
+			else {
+				throw RapidjsonInvalidMemberException("expected array as root node in commuities config", "", "array");
 			}
 		}
-		else {
-			throw RapidjsonInvalidMemberException("expected array as root node in commuities config", "", "array");
+		catch (GradidoBlockchainException& ex) {
+			LOG_F(ERROR, ex.getFullString().data());
+			LOG_F(WARNING, "start without communities");
 		}
 		
 		return mCommunities.size();
@@ -94,10 +100,9 @@ namespace cache {
 	{
 		std::scoped_lock _lock(mWorkMutex);
 		std::vector<std::string> result;
-		std::copy(mCommunities.begin(), mCommunities.end(), result);
-		/*for (auto it = mCommunities.begin(); it != mCommunities.end(); it++) {
+		for (auto it = mCommunities.begin(); it != mCommunities.end(); it++) {
 			result.push_back(it->first);
-		}*/
+		}
 		return result;
 	}
 }

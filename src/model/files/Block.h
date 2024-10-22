@@ -59,7 +59,7 @@ namespace model {
 			bool validateHash();
 
 			// read whole file, validate hash
-			std::shared_ptr<RebuildBlockIndexTask> rebuildBlockIndex(std::shared_ptr<gradido::blockchain::FileBased> blockchain);
+			std::shared_ptr<RebuildBlockIndexTask> rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
 
 			static uint32_t findLastBlockFileInFolder(std::string_view groupFolderPath);
 
@@ -102,7 +102,7 @@ namespace model {
 		class RebuildBlockIndexTask : public task::CPUTask
 		{
 		public:
-			RebuildBlockIndexTask(std::shared_ptr<gradido::blockchain::FileBased> blockchain);
+			RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
 			const char* getResourceType() const { return "RebuildBlockIndexTask"; };
 
 			int run();
@@ -113,7 +113,7 @@ namespace model {
 			inline bool isPendingQueueEmpty() { return mPendingFileCursorLine.empty(); }
 
 		protected:
-			std::shared_ptr<gradido::blockchain::FileBased> mBlockchain;
+			std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
 			std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactionEntries;
 			MultithreadQueue<std::pair<int32_t, std::shared_ptr<memory::Block>>> mPendingFileCursorLine;
 		};

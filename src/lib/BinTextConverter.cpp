@@ -2,29 +2,28 @@
 
 #include "gradido_blockchain/memory/Block.h"
 
-#include "Poco/RegularExpression.h"
-
 #include "sodium.h"
 #include "libbase58.h"
 
 // additional header for linux
 #include <cstring>
 #include <cmath>
+#include <regex>
 
-static Poco::RegularExpression regExpIsHexString("^[a-fA-F0-9]*$");
-static Poco::RegularExpression regExpIsBase58String("^[1-9A-HJ-NP-Za-km-z]*$");
-static Poco::RegularExpression regExpIsBase64String("^[0-9A-Za-z+/]*=*$");
+static std::regex regExpIsHexString("^[a-fA-F0-9]*$");
+static std::regex regExpIsBase58String("^[1-9A-HJ-NP-Za-km-z]*$");
+static std::regex regExpIsBase64String("^[0-9A-Za-z+/]*=*$");
 
 
 StringTransportType getStringTransportType(const std::string& input)
 {
-	if (regExpIsHexString.match(input)) {
+	if (std::regex_match(input, regExpIsHexString)) {
 		return STRING_TRANSPORT_TYPE_HEX;
 	}
-	else if (regExpIsBase58String.match(input)) {
+	else if (std::regex_match(input, regExpIsBase58String)) {
 		return STRING_TRANSPORT_TYPE_BASE58;
 	}
-	else if (regExpIsBase64String.match(input)) {
+	else if (std::regex_match(input, regExpIsBase64String)) {
 		return STRING_TRANSPORT_TYPE_BASE64;
 	}
 	

@@ -1,8 +1,6 @@
 #include "FileLockManager.h"
 #include <assert.h>
 
-#include "Poco/Thread.h"
-
 #include "../model/files/FileExceptions.h"
 
 FileLockManager::FileLockManager()
@@ -59,7 +57,7 @@ bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 	while (!fileLocked && timeoutRounds > 0) {
 		fileLocked = tryLock(file);
 		if (fileLocked) break;
-		Poco::Thread::sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		timeoutRounds--;
 	}
 

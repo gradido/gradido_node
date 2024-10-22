@@ -24,7 +24,7 @@ using namespace gradido::blockchain;
 using namespace gradido::interaction;
 
 namespace cache {
-	Block::Block(uint32_t blockNr, std::shared_ptr<gradido::blockchain::FileBased> blockchain)
+	Block::Block(uint32_t blockNr, std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
 		: mBlockNr(blockNr),
 		mSerializedTransactions(ServerGlobals::g_CacheTimeout),
 		mBlockIndex(std::make_shared<BlockIndex>(blockchain->getFolderPath(), blockNr)),

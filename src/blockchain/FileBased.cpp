@@ -102,7 +102,7 @@ namespace gradido {
 		}
 		bool FileBased::addGradidoTransaction(data::ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt)
 		{
-
+			return false;
 		}
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
 		{
@@ -152,7 +152,7 @@ namespace gradido {
 			TimepointInterval timepointInterval,
 			uint64_t maxTransactionNr
 		) const {
-
+			return {};
 		}
 
 		//! find all transfers which redeem a deferred transfer in date range
@@ -163,7 +163,7 @@ namespace gradido {
 			TimepointInterval timepointInterval,
 			uint64_t maxTransactionNr
 		) const {
-
+			return {};
 		}
 
 		std::shared_ptr<const TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const

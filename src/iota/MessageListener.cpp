@@ -18,7 +18,6 @@ namespace iota
     MessageListener::MessageListener(const TopicIndex& index, std::chrono::milliseconds interval/* = 1000*/)
     : mIndex(index),
 	  mInterval(interval),
-	  mErrorLog(Poco::Logger::get("errorLog")),
 	  mFirstRun(true)
     {
     }

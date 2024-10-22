@@ -13,7 +13,7 @@ using namespace magic_enum;
 
 namespace client
 {
-	GraphQL::GraphQL(const Poco::URI& uri)
+	GraphQL::GraphQL(const std::string& uri)
 		: Base(uri, Base::NotificationFormat::PROTOBUF_BASE64)
 	{
 
@@ -24,7 +24,7 @@ namespace client
 
 	}
 
-	bool GraphQL::postRequest(const Poco::Net::NameValueCollection& parameterValuePairs)
+	bool GraphQL::postRequest(const std::map<std::string, std::string>& parameterValuePairs)
 	{
 		/*
 		* {
@@ -62,7 +62,7 @@ namespace client
 			default: throw new GradidoUnhandledEnum("unhandled Notification format", "NotificationFormat", enum_name(mFormat).data());
 		}
 		
-		JsonRequest request(mUri.toString());
+		JsonRequest request(mUri);
 		auto it = parameterValuePairs.find(transactionMemberName);
 		if (it == parameterValuePairs.end()) {
 			throw MissingParameterException("missing parameter", transactionMemberName.data());
@@ -123,7 +123,7 @@ namespace client
 			return false;
 		}
 		catch (RapidjsonParseErrorException& ex) {
-			throw RequestResponseInvalidJsonException("NewGradidoBlock|FailedGradidoBlock", mUri.toString(), ex.getRawText());
+			throw RequestResponseInvalidJsonException("NewGradidoBlock|FailedGradidoBlock", mUri, ex.getRawText());
 		}		
 		return false;
 	}

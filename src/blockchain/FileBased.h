@@ -32,9 +32,9 @@ namespace gradido {
 			// Constructor is only usable by this class
 			FileBased(Private, std::string_view communityId, std::string_view folder);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
-			static std::shared_ptr<FileBased> create(std::string_view communityId, std::string_view folder);
-			std::shared_ptr<FileBased> getptr();
-			std::shared_ptr<const FileBased> getptr() const;
+			static inline std::shared_ptr<FileBased> create(std::string_view communityId, std::string_view folder);
+			inline std::shared_ptr<FileBased> getptr();
+			inline std::shared_ptr<const FileBased> getptr() const;
 
 			virtual ~FileBased();
 
@@ -88,13 +88,13 @@ namespace gradido {
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
 
-			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) {
+			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) const {
 				return mPublicKeysIndex->getOrAddIndexForString(publicKey->copyAsString());
 			}
-			const std::string& getFolderPath() const { return mFolderPath; }
-			TaskObserver& getTaskObserver() { return *mTaskObserver; }
+			inline const std::string& getFolderPath() const { return mFolderPath; }
+			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
 
-			bool isTransactionAlreadyExist(std::shared_ptr<const gradido::data::GradidoTransaction> transaction) const {
+			inline bool isTransactionAlreadyExist(std::shared_ptr<const gradido::data::GradidoTransaction> transaction) const {
 				return mTransactionHashCache.has(transaction);
 			}
 
@@ -117,7 +117,7 @@ namespace gradido {
 
 
 			//! observe write to file tasks from block, mayber later more
-			std::shared_ptr<TaskObserver> mTaskObserver;
+			mutable std::shared_ptr<TaskObserver> mTaskObserver;
 			//! connect via mqtt to iota server and get new messages
 			iota::MessageListener* mIotaMessageListener;
 

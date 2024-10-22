@@ -3,12 +3,14 @@
 #include "../SingletonManager/CacheManager.h"
 #include "../ServerGlobals.h"
 
+#include "loguru/loguru.hpp"
+
 namespace iota {
 	MqttClientWrapper::MqttClientWrapper()
-		: mMqttClient(nullptr), mbConnected(false), mMqttLog(Poco::Logger::get("mqttLog")), mReconnectTimeout(GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS)
+		: mMqttClient(nullptr), mbConnected(false), mReconnectTimeout(GRADIDO_NODE_MQTT_RECONNECT_START_TIMEOUT_MS)
 	{
 		int rc = 0;
-		rc = MQTTAsync_create(&mMqttClient, ServerGlobals::g_IotaMqttBrokerUri.toString().data(), GRADIDO_NODE_MQTT_CLIENT_ID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+		rc = MQTTAsync_create(&mMqttClient, ServerGlobals::g_IotaMqttBrokerUri.data(), GRADIDO_NODE_MQTT_CLIENT_ID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
 		if (rc != MQTTASYNC_SUCCESS) {
 			throw MqttCreationException("couldn't create mqtt client", rc);
 		}
@@ -113,7 +115,7 @@ namespace iota {
 		if (cause) {
 			causeString = std::string(cause);
 		}
-		mMqttLog.error("connection lost: %s", causeString);
+		LOG_F(ERROR, "connection lost: %s", causeString.data());
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = false;
 		for (auto &topicObserver : mTopicObserver) {
@@ -125,7 +127,7 @@ namespace iota {
 	void MqttClientWrapper::connected(char* cause)
 	{		
 		if(cause) {
-			mMqttLog.information("connected: %s", std::string(cause));
+			LOG_F(INFO, "connected: %s", cause);
 		}
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = true;
@@ -137,7 +139,7 @@ namespace iota {
 	}
 	void MqttClientWrapper::disconnected(MQTTProperties* properties, MQTTReasonCodes reasonCode)
 	{
-		mMqttLog.information("disconnected: %s", std::string(MQTTReasonCode_toString(reasonCode)));
+		LOG_F(INFO, "disconnected: %s", MQTTReasonCode_toString(reasonCode));
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = false;
 		for(auto& topicObserver: mTopicObserver) {
@@ -146,15 +148,15 @@ namespace iota {
 	}
 	void MqttClientWrapper::onSuccess(MQTTAsync_successData* response)
 	{
-		mMqttLog.information("on success, token: %d", response->token);
+		LOG_F(INFO, "on success, token: %d", response->token);
 	}
 	void MqttClientWrapper::onFailure(MQTTAsync_failureData* response)
 	{
 		if (response->message) {
-			mMqttLog.error("on failure, token: %d, code: %d, error: %s", response->token, response->code, std::string(response->message));
+			LOG_F(ERROR, "on failure, token: %d, code: %d, error: %s", response->token, response->code, response->message);
 		}
 		else {
-			mMqttLog.error("on failure, token: %d, code: %d, no error message", response->token, response->code);
+			LOG_F(ERROR, "on failure, token: %d, code: %d, no error message", response->token, response->code);
 		}
 	}
 	int  MqttClientWrapper::messageArrived(char* topicName, int topicLen, MQTTAsync_message* message)
@@ -169,8 +171,8 @@ namespace iota {
 			auto startPos = payload.find("HORNET");
 			auto binDataHex = DataTypeConverter::binToHex(payload.substr(0, startPos-1));
 
-			mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%s\n%d",
-				std::string(topicName), message->qos, message->retained, message->dup, message->msgid, binDataHex, payload.substr(startPos), message->payloadlen
+			LOG_F(INFO, "message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%s\n%d",
+				topicName, message->qos, message->retained, message->dup, message->msgid, binDataHex.data(), payload.substr(startPos).data(), message->payloadlen
 			);
 		} else {
 			/*mMqttLog.information("message arrived for topic: %s, qos: %d, retained: %d, dup: %d, msgid: %d\n%s\n%d",
@@ -183,7 +185,7 @@ namespace iota {
 	}
 	void MqttClientWrapper::deliveryComplete(MQTTAsync_token token)
 	{
-		mMqttLog.information("deliveryComplete, token: %d", token);
+		LOG_F(INFO, "deliveryComplete, token: %d", token);
 	}
 
 	// ------- Callback functions end -------
@@ -210,21 +212,18 @@ namespace iota {
 		conn_opts.onSuccess = [](void *context, MQTTAsync_successData *response)
 		{
 			auto mCW = MqttClientWrapper::getInstance();
-			auto &logger = mCW->getLogger();
 			auto& connect = response->alt.connect;
-			logger.information(
-				"connected to server: %s with mqtt version: %d, session present: %d", 
-				std::string(connect.serverURI), connect.MQTTVersion, connect.sessionPresent
+			LOG_F(INFO, "connected to server: %s with mqtt version: %d, session present: %d",
+				connect.serverURI, connect.MQTTVersion, connect.sessionPresent
 			);
 			// mCW->connected("connection call");
 		};
 		conn_opts.onFailure = [](void* context, MQTTAsync_failureData* response) {
-			auto& logger = MqttClientWrapper::getInstance()->getLogger();
 			std::string errorString("empty");
 			if(response->message) {
 				errorString = std::string(response->message);
 			}
-			logger.error("error connecting to server, error code: %d, details: %s", response->code, errorString);
+			LOG_F(ERROR, "error connecting to server, error code: %d, details: %s", response->code, errorString.data());
 		};
 		auto rc = MQTTAsync_connect(mMqttClient, &conn_opts);
 
@@ -240,17 +239,15 @@ namespace iota {
 		options.onSuccess = [](void *context, MQTTAsync_successData *response)
 		{
 			auto mCW = MqttClientWrapper::getInstance();
-			auto &logger = mCW->getLogger();
-			logger.information("disconnect from server");
+			LOG_F(INFO, "disconnect from iota server");
 			// mCW->disconnected(nullptr, MQTTREASONCODE_ADMINISTRATIVE_ACTION);
 		};
 		options.onFailure = [](void* context, MQTTAsync_failureData* response) {
-			auto& logger = MqttClientWrapper::getInstance()->getLogger();
 			std::string errorString("empty");
 			if(response->message) {
 				errorString = std::string(response->message);
 			}
-			logger.error("couldn't disconnect from server, error code: %d, details: %s", response->code, errorString);
+			LOG_F(ERROR, "couldn't disconnect from iota server, error code: %d, details: %s", response->code, errorString.data());
 		};
 		auto rc = MQTTAsync_disconnect(mMqttClient, &options);
 

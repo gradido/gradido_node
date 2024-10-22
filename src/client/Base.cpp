@@ -15,13 +15,13 @@ using namespace rapidjson;
 
 namespace client {
 
-	Base::Base(const Poco::URI& uri)
+	Base::Base(const std::string& uri)
 		: mUri(uri), mFormat(NotificationFormat::PROTOBUF_BASE64)
 	{
 
 	}
 
-	Base::Base(const Poco::URI& uri, NotificationFormat format)
+	Base::Base(const std::string& uri, NotificationFormat format)
 		: mUri(uri), mFormat(format)
 	{
 
@@ -34,40 +34,40 @@ namespace client {
 
 	bool Base::notificateNewTransaction(const ConfirmedTransaction& confirmedTransaction)
 	{
-		Poco::Net::NameValueCollection params;
+		std::map<std::string, std::string> params;
 		
 		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
 			serialize::Context serializer(confirmedTransaction);
-			params.add("transactionBase64", serializer.run()->convertToBase64());
+			params.insert({ "transactionBase64", serializer.run()->convertToBase64() });
 		}
 		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
 			auto transactionJson = toJson::Context(confirmedTransaction).run();
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\'');
-			params.add("transactionJson", transactionJson);
+			params.insert({ "transactionJson", transactionJson });
 		}
-		return notificate(std::move(params));		
+		return notificate(params);		
 	}
 
 	bool Base::notificateFailedTransaction(const gradido::data::GradidoTransaction& gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
 	{
-		Poco::Net::NameValueCollection params;
+		std::map<std::string, std::string> params;
 
 		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
 			serialize::Context serializer(gradidoTransaction);
-			params.add("transactionBase64", serializer.run()->convertToBase64());
+			params.insert({ "transactionBase64", serializer.run()->convertToBase64() });
 		}
 		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
 			auto transactionJson = toJson::Context(gradidoTransaction).run();
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
-			params.add("transactionJson", transactionJson);
+			params.insert({ "transactionJson", transactionJson });
 		}
 		
-		params.add("error", errorMessage);
-		params.add("messageId", messageId);
+		params.insert({ "error", errorMessage });
+		params.insert({ "messageId", messageId });
 		return notificate(std::move(params));
 	}
 
-	bool Base::notificate(Poco::Net::NameValueCollection params)
+	bool Base::notificate(const std::map<std::string, std::string>& params)
 	{
 		try {
 			return postRequest(params);

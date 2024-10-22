@@ -2,6 +2,8 @@
 #include "MqttClientWrapper.h"
 #include "MqttExceptions.h"
 
+#include "loguru/loguru.hpp"
+
 #include <algorithm>
 
 using namespace std;
@@ -38,35 +40,22 @@ namespace iota
         options.onSuccess = [](void *context, MQTTAsync_successData *response)
         {
             auto mCW = MqttClientWrapper::getInstance();
-            auto &logger = mCW->getLogger();
             auto topicObserver = mCW->findTopicObserver((const char *)context);
             if (!topicObserver) {
                 std::string topicString((const char *)context);
-                logger.error("subscribed topic no longer exist: %s", topicString);
+                LOG_F(ERROR, "subscribed topic no longer exist: %s", topicString.data());
                 return;
             }
-            logger.information("successfully subscribed to topic: %s", topicObserver->mTopicString);
+            LOG_F(INFO, "successfully subscribed to topic: %s", topicObserver->mTopicString.data());
             topicObserver->mState = State::SUBSCRIBED;
         };
         options.onFailure = [](void *context, MQTTAsync_failureData *response)
         {
             auto topicObserver = static_cast<TopicObserver *>(context);
-            auto &logger = MqttClientWrapper::getInstance()->getLogger();
             topicObserver->mState = State::UNSUBSCRIBED;
-            logger.error("error subscribing to topic: %s", topicObserver->mTopicString);
+            LOG_F(ERROR, "error subscribing to topic: %s", topicObserver->mTopicString.data());
             delete[] context;
-            if (response->message)
-            {
-                logger.error(
-                    "token: %d, code: %d, error: %s",
-                    response->token, response->code, std::string(response->message));
-            }
-            else
-            {
-                logger.error(
-                    "token: %d, code: %d, no error message",
-                    response->token, response->code);
-            }
+            TopicObserver::logResponseError(response);
         };
         auto rc = MQTTAsync_subscribe(mqttClient, mTopicString.data(), 1, &options);
 
@@ -88,29 +77,16 @@ namespace iota
         options.onSuccess = [](void *context, MQTTAsync_successData *response)
         {
             auto topicObserver = static_cast<TopicObserver *>(context);
-            auto &logger = MqttClientWrapper::getInstance()->getLogger();
-            logger.information("successfully unsubscribed from topic: %s", topicObserver->mTopicString);
+            LOG_F(INFO, "successfully unsubscribed from topic: %s", topicObserver->mTopicString.data());
             topicObserver->mState = State::UNSUBSCRIBED;
             MqttClientWrapper::getInstance()->removeTopicObserver(topicObserver->mTopicString);
         };
         options.onFailure = [](void *context, MQTTAsync_failureData *response)
         {
             auto topicObserver = static_cast<TopicObserver *>(context);
-            auto &logger = MqttClientWrapper::getInstance()->getLogger();
             topicObserver->mState = State::UNSUBSCRIBED;
-            logger.error("error subscribing to topic: %s", topicObserver->mTopicString);
-            if (response->message)
-            {
-                logger.error(
-                    "token: %d, code: %d, error: %s",
-                    response->token, response->code, std::string(response->message));
-            }
-            else
-            {
-                logger.error(
-                    "token: %d, code: %d, no error message",
-                    response->token, response->code);
-            }
+            LOG_F(ERROR, "error unsubscribing to topic: %s", topicObserver->mTopicString.data());
+            TopicObserver::logResponseError(response);
         };
         auto rc = MQTTAsync_unsubscribe(mqttClient, mTopicString.data(), &options);
 
@@ -147,5 +123,15 @@ namespace iota
     void TopicObserver::setUnsubscribed()
     {
         mState = State::UNSUBSCRIBED;
+    }
+
+    void TopicObserver::logResponseError(MQTTAsync_failureData* response)
+    {
+        if (response->message) {
+            LOG_F(ERROR, "token: %d, code: %d, error: %s", response->token, response->code, response->message);
+        }
+        else {
+            LOG_F(ERROR, "token: %d, code: %d, no error message", response->token, response->code);
+        }
     }
 }

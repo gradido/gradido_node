@@ -3,8 +3,8 @@
 
 namespace controller
 {
-	DeferredTransfer::DeferredTransfer(const Poco::Path& groupFolder)
-		: mState(Poco::Path(groupFolder, Poco::Path("deferredTransferCache")))
+	DeferredTransfer::DeferredTransfer(std::string_view groupFolder)
+		: mState(std::string(groupFolder) + "/deferredTransferCache")
 	{
 		loadFromState();
 	}
@@ -16,7 +16,7 @@ namespace controller
 
 	void DeferredTransfer::addTransactionNrForAddressIndex(uint32_t addressIndex, uint64_t transactionNr)
 	{
-		Poco::ScopedLock<Poco::Mutex> _lock(mWorkingMutex);
+		std::lock_guard _lock(mWorkingMutex);
 
 		auto it = mAddressIndexTransactionNrs.find(addressIndex);
 		if (it == mAddressIndexTransactionNrs.end()) {
@@ -29,7 +29,7 @@ namespace controller
 
 	std::vector<uint64_t> DeferredTransfer::getTransactionNrsForAddressIndex(uint32_t addressIndex)
 	{
-		Poco::ScopedLock<Poco::Mutex> _lock(mWorkingMutex);
+		std::lock_guard _lock(mWorkingMutex);
 		auto it = mAddressIndexTransactionNrs.find(addressIndex);
 		if (it != mAddressIndexTransactionNrs.end()) {
 			return it->second;
@@ -39,7 +39,7 @@ namespace controller
 
 	void DeferredTransfer::removeTransactionNrForAddressIndex(uint32_t addressIndex, uint64_t transactionNr)
 	{
-		Poco::ScopedLock<Poco::Mutex> _lock(mWorkingMutex);
+		std::lock_guard _lock(mWorkingMutex);
 
 		auto it = mAddressIndexTransactionNrs.find(addressIndex);
 		assert(it != mAddressIndexTransactionNrs.end());
@@ -55,13 +55,13 @@ namespace controller
 
 	void DeferredTransfer::updateState(uint32_t addressIndex, std::vector<uint64_t> transactionNrs)
 	{
-		Poco::ScopedLock<Poco::Mutex> _lock(mWorkingMutex);
-		mState.setKeyValue(std::to_string(addressIndex), *transactionNrsToString(transactionNrs).get());
+		std::lock_guard _lock(mWorkingMutex);
+		mState.setKeyValue(std::to_string(addressIndex).data(), *transactionNrsToString(transactionNrs).get());
 	}
 
 	void DeferredTransfer::loadFromState()
 	{
-		Poco::ScopedLock<Poco::Mutex> _lock(mWorkingMutex);
+		std::lock_guard _lock(mWorkingMutex);
 		auto it = mState.getIterator();
 		assert(it);
 		mAddressIndexTransactionNrs.clear();

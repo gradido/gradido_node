@@ -59,7 +59,7 @@ protected:
 	std::shared_ptr<model::files::Block> mBlockFile;
 	std::shared_ptr<cache::BlockIndex> mBlockIndex;
 	Timepoint mCreationDate;
-	Poco::FastMutex mFastMutex;
+	std::mutex mFastMutex;
 	std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactions;
 };
 

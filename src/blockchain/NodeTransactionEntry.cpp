@@ -7,7 +7,7 @@ namespace gradido {
 
 		NodeTransactionEntry::NodeTransactionEntry(
 			gradido::data::ConstConfirmedTransactionPtr transaction,
-			std::shared_ptr<gradido::blockchain::FileBased> blockchain,
+			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 			int32_t fileCursor /*= -10*/
 		) : TransactionEntry(transaction), mFileCursor(fileCursor)
 		{
@@ -38,7 +38,7 @@ namespace gradido {
 
 		NodeTransactionEntry::NodeTransactionEntry(
 			memory::ConstBlockPtr serializedTransaction,
-			std::shared_ptr<gradido::blockchain::FileBased> blockchain,
+			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 			int32_t fileCursor/* = -10 */
 		) : TransactionEntry(serializedTransaction), mFileCursor(fileCursor)
 		{

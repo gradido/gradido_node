@@ -12,22 +12,22 @@ namespace model {
 
 		TransactionList::TransactionList(
 			std::shared_ptr<const gradido::blockchain::Abstract> blockchain,
-			memory::ConstBlockPtr pubkey,
-			rapidjson::Document::AllocatorType& alloc
-		) : mBlockchain(blockchain), mPubkey(pubkey), mJsonAllocator(alloc)
+			memory::ConstBlockPtr pubkey
+		) : mBlockchain(blockchain), mPubkey(pubkey)
 		{
 
 		}
 
-		Value TransactionList::generateList(Timepoint now, const Filter& filter)
+		Value TransactionList::generateList(Timepoint now, const Filter& filter, rapidjson::Document& root)
 		{
-			auto fileBasedBlockchain = std::dynamic_pointer_cast<gradido::blockchain::FileBased>(mBlockchain);
+			auto fileBasedBlockchain = std::dynamic_pointer_cast<const gradido::blockchain::FileBased>(mBlockchain);
 			assert(fileBasedBlockchain);
+			auto& alloc = root.GetAllocator();
 
 			Value transactionList(kObjectType);
-			transactionList.AddMember("balanceGDT", "0", mJsonAllocator);			
+			transactionList.AddMember("balanceGDT", "0", alloc);
 			// TODO: add number of active deferred transfers
-			transactionList.AddMember("linkCount", 0, mJsonAllocator);
+			transactionList.AddMember("linkCount", 0, alloc);
 
 			Value transactions(kArrayType);
 			std::vector<model::Apollo::Transaction> transactionsVector;
@@ -37,13 +37,13 @@ namespace model {
 			GradidoUnit balance;
 
 			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
-			transactionList.AddMember("count", countTransactions, mJsonAllocator);
+			transactionList.AddMember("count", countTransactions, alloc);
 
 			Filter filterCopy = filter;
 			filterCopy.searchDirection = SearchDirection::ASC;
 			auto allTransactions = mBlockchain->findAll(filterCopy);
 			if (!allTransactions.size()) {
-				transactionList.AddMember("transactions", transactions, mJsonAllocator);
+				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
 			}
 			filterCopy.pagination = Pagination(1, 0);
@@ -76,21 +76,21 @@ namespace model {
 			}
 			// last decay if ordered DESC
 			if (transactionsVector.size() && filter.searchDirection == SearchDirection::DESC) {
-				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate()), mJsonAllocator);
+				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate(), root), alloc);
 				// reverse order of transactions in vector
 				std::reverse(transactionsVector.begin(), transactionsVector.end());
 			}
 			
 			// add transactions to array
 			for (auto it = transactionsVector.begin(); it != transactionsVector.end(); it++) {
-				transactions.PushBack(it->toJson(mJsonAllocator), mJsonAllocator);
+				transactions.PushBack(it->toJson(alloc), alloc);
 			}
 			// last decay if ordered ASC
 			if (transactionsVector.size() && filter.searchDirection == SearchDirection::ASC) {
-				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate()), mJsonAllocator);
+				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate(), root), alloc);
 			}
 
-			transactionList.AddMember("transactions", transactions, mJsonAllocator);
+			transactionList.AddMember("transactions", transactions, alloc);
 			return std::move(transactionList);
 		}
 
@@ -109,12 +109,12 @@ namespace model {
 			currentTransaction->setBalance(balance);
 		}
 
-		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate)
+		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root)
 		{
 			model::Apollo::Transaction lastDecay(lastTransactionDate, Timepoint(), balance);
 			balance += lastDecay.getDecay()->getDecayAmount();
 			
-			return std::move(lastDecay.toJson(mJsonAllocator));
+			return std::move(lastDecay.toJson(root.GetAllocator()));
 		}
 	}
 }

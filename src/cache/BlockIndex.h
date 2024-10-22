@@ -75,7 +75,7 @@ namespace cache {
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
 		bool getFileCursorForTransactionNr(uint64_t transactionNr, int32_t& fileCursor) const;
-		bool hasTransactionNr(uint64_t transactionNr) const;
+		inline bool hasTransactionNr(uint64_t transactionNr) const;
 
 		inline uint64_t getMaxTransactionNr() const { std::lock_guard _lock(mRecursiveMutex);  return mMaxTransactionNr; }
 		inline uint64_t getMinTransactionNr() const { std::lock_guard _lock(mRecursiveMutex); return mMinTransactionNr; }

@@ -8,7 +8,6 @@
 #include "../lib/FuzzyTimer.h"
 #include "TopicObserver.h"
 
-#include "Poco/Logger.h"
 #include <mutex>
 #include <set>
 #include <queue>
@@ -53,8 +52,6 @@ namespace iota
 	
 		TimerReturn callFromTimer();
 
-		inline Poco::Logger& getLogger() {return mMqttLog; }
-
 		TopicObserver* findTopicObserver(const char* topicString);
 
 	protected:
@@ -69,7 +66,6 @@ namespace iota
 		bool mbConnected;
 		//! topic string as key
 		std::unordered_map<std::string, std::unique_ptr<TopicObserver>> mTopicObserver;
-		Poco::Logger& mMqttLog;
 
 		// for automatic reconnect attempts
 		std::chrono::milliseconds mReconnectTimeout;

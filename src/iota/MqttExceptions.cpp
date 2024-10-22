@@ -12,7 +12,7 @@ namespace iota {
 	std::string MqttConnectionException::getFullString() const
 	{
 		std::string result = MqttException::getFullString();
-		result += ", uri: " + mUri.toString();
+		result += ", uri: " + mUri;
 		return std::move(result);
 	}
 

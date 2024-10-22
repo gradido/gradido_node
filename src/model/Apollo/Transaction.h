@@ -21,8 +21,12 @@ namespace model {
 			Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 
 			// Move Constrcutor
-			Transaction(Transaction&& parent);
+			Transaction(Transaction&& parent) noexcept;
+			// Copy constructor
+			Transaction(const Transaction& parent);
 			~Transaction();
+
+			Transaction& operator=(const Transaction& other);  // Kopierzuweisung
 
 			void calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 			void setBalance(GradidoUnit balance);
@@ -48,8 +52,7 @@ namespace model {
 			Timepoint       mDate;
 			Decay*			mDecay;
 		private:
-			// Disable copy constructor
-			Transaction(const Transaction&) {};
+			
 		};
 	}
 }

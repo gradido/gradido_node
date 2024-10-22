@@ -40,7 +40,7 @@ namespace cache {
 	class Block : public TimerCallback
 	{
 	public:
-		Block(uint32_t blockNr, std::shared_ptr<gradido::blockchain::FileBased> blockchain);
+		Block(uint32_t blockNr, std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
 		~Block();
 
 		//! \return false if block not exist
@@ -66,7 +66,7 @@ namespace cache {
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
 		void addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor) const;
 		
-		std::mutex mFastMutex;
+		mutable std::mutex mFastMutex;
 		uint32_t mBlockNr;		
 
 		mutable AccessExpireCache<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mSerializedTransactions;
@@ -74,7 +74,7 @@ namespace cache {
 		std::shared_ptr<BlockIndex> mBlockIndex;
 		std::shared_ptr<model::files::Block> mBlockFile;
 		std::shared_ptr<WriteTransactionsToBlockTask> mTransactionWriteTask;
-		std::shared_ptr<gradido::blockchain::FileBased> mBlockchain;
+		std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
 		bool mExitCalled;
 	};
 }

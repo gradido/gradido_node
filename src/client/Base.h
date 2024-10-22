@@ -3,9 +3,6 @@
 
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
 
-#include "Poco/URI.h"
-#include "Poco/Net/NameValueCollection.h"
-
 #include "rapidjson/document.h"
 
 namespace client
@@ -24,7 +21,7 @@ namespace client
 	class Base
 	{
 	public:
-		Base(const Poco::URI& uri);
+		Base(const std::string& uri);
 		virtual ~Base();
 
 		bool notificateNewTransaction(const gradido::data::ConfirmedTransaction& confirmedTransaction);
@@ -33,19 +30,19 @@ namespace client
 			const std::string& errorMessage,
 			const std::string& messageId
 		);
-		virtual bool postRequest(const Poco::Net::NameValueCollection& parameterValuePairs) = 0;
+		virtual bool postRequest(const std::map<std::string, std::string>& parameterValuePairs) = 0;
 
 		inline void setGroupAlias(const std::string& groupAlias) {mGroupAlias = groupAlias;}
 	protected:		
-		bool notificate(Poco::Net::NameValueCollection params);
+		bool notificate(const std::map<std::string, std::string>& params);
 		enum class NotificationFormat : int
 		{
 			PROTOBUF_BASE64 = 1,
 			JSON = 2
 		};
-		Base(const Poco::URI& uri, NotificationFormat format);
+		Base(const std::string& uri, NotificationFormat format);
 
-		Poco::URI mUri;
+		const std::string mUri;
 		NotificationFormat mFormat;
 		std::string mGroupAlias;
 	};

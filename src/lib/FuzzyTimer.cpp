@@ -1,5 +1,4 @@
 #include "FuzzyTimer.h"
-#include "Poco/Timestamp.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/types.h"
 #include "../SystemExceptions.h"
@@ -8,10 +7,8 @@
 #include "loguru/loguru.hpp"
 
 FuzzyTimer::FuzzyTimer()
-	: exit(false)
+	: exit(false), mThread(new std::thread(&FuzzyTimer::run, this))
 {
-	mThread.setName("FuzzyTimer");
-	mThread.start(*this);
 }
 
 FuzzyTimer::~FuzzyTimer()
@@ -19,7 +16,11 @@ FuzzyTimer::~FuzzyTimer()
 	mMutex.lock();
 	exit = true;
 	mMutex.unlock();
-	mThread.join();
+	if (mThread) {
+		mThread->join();
+		delete mThread;
+		mThread = nullptr;
+	}
 	mRegisteredAtTimer.clear();
 }
 
@@ -28,7 +29,7 @@ FuzzyTimer::~FuzzyTimer()
 bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::chrono::milliseconds timeInterval, int loopCount/* = -1*/)
 {
 	LOG_F(1, "%s", name.data());
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	if (exit) return false;
 
 	Timepoint now;
@@ -40,13 +41,13 @@ bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::
 
 int FuzzyTimer::removeTimer(std::string name)
 {
-	if (mMutex.tryLock(100)) {
+	if (mMutex.try_lock()) {
 		mMutex.unlock();
 	}
 	else {
 		throw CannotLockMutexAfterTimeout("FuzzyTimer::RemoveTimer", 100);
 	}
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	if (exit) return -1;
 
 	size_t eraseCount = 0;				
@@ -68,7 +69,7 @@ int FuzzyTimer::removeTimer(std::string name)
 
 bool FuzzyTimer::move()
 {
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	if (exit) return false;
 			
 	auto it = mRegisteredAtTimer.begin();
@@ -128,7 +129,7 @@ bool FuzzyTimer::move()
 
 void FuzzyTimer::stop()
 {
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	exit = true;
 }
 void FuzzyTimer::run()
@@ -137,6 +138,6 @@ void FuzzyTimer::run()
 		if (!move()) {
 			return;
 		}
-		Poco::Thread::sleep(MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS_MILLISECONDS);
+		std::this_thread::sleep_for(MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS);
 	}
 }

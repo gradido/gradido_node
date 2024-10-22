@@ -1,7 +1,10 @@
 #include "TaskObserver.h"
 #include "../task/WriteTransactionsToBlockTask.h"
 #include "../blockchain/FileBased.h"
+
 #include <cstring>
+
+#include "loguru/loguru.hpp"
 
 using namespace gradido::blockchain;
 
@@ -74,12 +77,12 @@ std::shared_ptr<NodeTransactionEntry> TaskObserver::getTransaction(uint64_t tran
 			return transactionEntry;
 		}
 	}
-	std::clog << "cannot find transaction " << transactionNr << " in write task" << std::endl;
+	LOG_F(1, "cannot find transaction: %llu in write task", transactionNr);
 	auto it = mTransactionsFromPendingTasks.find(transactionNr);
 	if (it != mTransactionsFromPendingTasks.end()) {
 		return it->second;
 	}
-	std::clog << "cannot find transaction " << transactionNr << " in map" << std::endl;
+	LOG_F(1, "cannot find transaction: %llu in map", transactionNr);
 	return nullptr;
 }
 

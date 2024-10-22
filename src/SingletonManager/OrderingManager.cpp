@@ -73,7 +73,7 @@ int OrderingManager::ThreadFunction()
         // the milestone must be processed in order to keep transactions in order and this is essential!
         // if node is starting up, wait until all existing messages are loaded from iota to prevent missing out one
         while (mMessageValidator.getFirstRunCount() > 0) {
-            Poco::Thread::sleep(100);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         // get first not processed milestone
         mMilestonesWithTransactionsMutex.lock();

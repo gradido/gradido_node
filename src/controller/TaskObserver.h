@@ -81,12 +81,12 @@ protected:
 class TaskObserverFinishCommand : public task::Command
 {
 public:
-	TaskObserverFinishCommand(std::shared_ptr<gradido::blockchain::FileBased> blockchain) : mBlockchain(blockchain) {}
+	TaskObserverFinishCommand(std::shared_ptr<const gradido::blockchain::FileBased> blockchain) : mBlockchain(blockchain) {}
 
 	int taskFinished(task::Task* task);
 
 protected:
-	std::shared_ptr<gradido::blockchain::FileBased> mBlockchain;
+	std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
 };
 
 #endif //DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H

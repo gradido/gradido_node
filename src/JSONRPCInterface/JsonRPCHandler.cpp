@@ -17,6 +17,7 @@
 
 #include "rapidjson/prettywriter.h"
 #include "magic_enum/magic_enum.hpp"
+#include "loguru/loguru.hpp"
 
 #include <set>
 
@@ -38,7 +39,7 @@ void JsonRPCHandler::handle(Value& responseJson, std::string method, const Value
 		PrettyWriter<StringBuffer> writer(buffer);
 		params.Accept(writer);
 		std::string requestJsonString(buffer.GetString());
-		Poco::Logger::get("requestLog").debug("incoming json-rpc request, params: %s", requestJsonString);
+		LOG_F(1, "incoming json-rpc request, params: %s", requestJsonString.data());
 	}
 #endif // DEBUG
 
@@ -243,8 +244,6 @@ void JsonRPCHandler::findAllTransactions(
 		auto transactionSerialized = (*it)->getSerializedTransaction();
 		if (transactionSerialized->size() > 0) {
 			if (format == "json") {
-				auto confirmedTransaction = std::make_unique<gradido::data::ConfirmedTransaction>(transactionSerialized);
-				//auto jsonTransaction = Value(gradidoBlock->toJson().data(), alloc);
 				toJson::Context toJson(*(*it)->getConfirmedTransaction());
 				jsonTransactionArray.PushBack(toJson.run(mRootJson), alloc);
 			} else {
@@ -284,7 +283,6 @@ void JsonRPCHandler::getTransaction(
 	auto transactionSerialized = transactionEntry->getSerializedTransaction();
 	if (transactionSerialized->size() > 0) {
 		if (format == "json") {
-			auto gradidoBlock = std::make_unique<gradido::data::ConfirmedTransaction>(transactionSerialized);
 			toJson::Context toJson(*transactionEntry->getConfirmedTransaction());
 			resultJson.AddMember("transaction", toJson.run(mRootJson), alloc);
 		}
@@ -368,12 +366,11 @@ void JsonRPCHandler::getAddressTxids(Value& resultJson, memory::ConstBlockPtr pu
 
 
 void JsonRPCHandler::listTransactions(
-	rapidjson::Value& resultJson,
+	Value& resultJson,
 	std::shared_ptr<Abstract> blockchain,
 	const Filter& filter
 )
 {
-
 	assert(blockchain);
 	/*
 	graphql format for request used from frontend:
@@ -391,20 +388,20 @@ void JsonRPCHandler::listTransactions(
 	Profiler timeUsed;
 	auto& alloc = mRootJson.GetAllocator();
 
-	model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey, alloc);
+	model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey);
 	Timepoint now;
-	auto transactionListValue = transactionList.generateList(now, filter);
+	//auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
 	calculateAccountBalance::Context calculateAddressBalance(*blockchain);
 	auto balance = calculateAddressBalance.run(filter.involvedPublicKey, now);
 	std::string balanceString = balance.toString();
-	transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
+	//transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 
-	resultJson.AddMember("transactionList", transactionListValue, alloc);
+	//resultJson.AddMember("transactionList", transactionListValue, alloc);
 	resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 }
 
 void JsonRPCHandler::listTransactionsForAddress(
-	rapidjson::Value& resultJson,
+	Value& resultJson,
 	memory::ConstBlockPtr pubkey,
 	uint64_t firstTransactionNr,
 	uint32_t maxResultCount,

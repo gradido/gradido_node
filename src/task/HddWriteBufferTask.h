@@ -4,8 +4,6 @@
 #include "CPUTask.h"
 #include "../lib/VirtualFile.h"
 
-#include "Poco/Path.h"
-
 namespace task {
 	class HddWriteBufferTask: public CPUTask
 	{

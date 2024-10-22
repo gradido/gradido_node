@@ -3,9 +3,6 @@
 
 #include "MQTTAsync.h"
 
-//#include "Poco/Timer.h"
-#include "Poco/Logger.h"
-
 #include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "gradido_blockchain/data/iota/MessageId.h"
 #include "gradido_blockchain/data/iota/TopicIndex.h"
@@ -79,7 +76,6 @@ namespace iota
 
         TopicIndex mIndex; 
         std::chrono::milliseconds mInterval;
-        Poco::Logger& mErrorLog;
 
         enum MessageState 
         {

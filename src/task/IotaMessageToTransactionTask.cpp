@@ -51,7 +51,7 @@ int IotaMessageToTransactionTask::run()
     catch (...) {
         IotaRequest::defaultExceptionHandler(false);
         LOG_F(WARNING, "retry once after waiting 100 ms");
-        Poco::Thread::sleep(100);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		try {
 			dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);
 		}

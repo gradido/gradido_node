@@ -32,7 +32,7 @@ namespace gradido {
 
 		FileBasedProvider* FileBasedProvider::getInstance()
 		{
-			FileBasedProvider one;
+			static FileBasedProvider one;
 			return &one;
 		}
 
@@ -105,7 +105,7 @@ namespace gradido {
 				auto folder = mGroupIndex->getFolder(communityAlias);
 
 				// with that call community will be initialized and start listening
-				auto blockchain = std::make_shared<FileBased>(communityAlias, folder);
+				auto blockchain = FileBased::create(communityAlias, folder);
 				updateListenerCommunity(communityAlias, blockchain);
 				if (!blockchain->init(false)) {
 					LOG_F(ERROR, "error initalizing blockchain: %s", communityAlias.data());
@@ -129,7 +129,7 @@ namespace gradido {
 			// deprecated, will be replaced with mqtt in future
 			if (!communityConfig.newBlockUri.empty()) {
 				std::shared_ptr<client::Base> clientBase;
-				auto uri = Poco::URI(communityConfig.newBlockUri);
+				auto uri = std::string(communityConfig.newBlockUri);
 				if (communityConfig.blockUriType == "json") {
 					clientBase = std::make_shared<client::JsonRPC>(uri);
 				}

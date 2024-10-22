@@ -35,8 +35,6 @@
 #include "Task.h"
 #include "CPUSheduler.h"
 
-#include "Poco/AutoPtr.h"
-
 namespace task {
 
     class CPUTask;

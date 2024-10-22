@@ -9,15 +9,15 @@
 using namespace rapidjson;
 
 namespace client {
-	JsonRPC::JsonRPC(const Poco::URI& uri, bool base64 /*= true*/)
+	JsonRPC::JsonRPC(const std::string& uri, bool base64 /*= true*/)
 		: Base(uri, base64 ? Base::NotificationFormat::PROTOBUF_BASE64 : Base::NotificationFormat::JSON)
 	{
 
 	}
 
-	bool JsonRPC::postRequest(const Poco::Net::NameValueCollection& parameterValuePairs)
+	bool JsonRPC::postRequest(const std::map<std::string, std::string>& parameterValuePairs)
 	{
-		JsonRequest request(mUri.getPathAndQuery());
+		JsonRequest request(mUri);
 
 		Value params(kObjectType);
 		auto alloc = request.getJsonAllocator();

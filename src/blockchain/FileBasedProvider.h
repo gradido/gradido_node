@@ -28,9 +28,9 @@ namespace gradido {
 			int reloadConfig();
 
 			// access community id index
-			uint32_t getCommunityIdIndex(const std::string& communityId);
-			uint32_t getCommunityIdIndex(std::string_view communityId);
-			const std::string& getCommunityIdString(uint32_t index);
+			inline uint32_t getCommunityIdIndex(const std::string& communityId);
+			inline uint32_t getCommunityIdIndex(std::string_view communityId);
+			inline const std::string getCommunityIdString(uint32_t index);
 		protected:
 			void clear();
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
@@ -61,7 +61,7 @@ namespace gradido {
 		{
 			return getCommunityIdIndex(std::string(communityId));
 		}
-		const std::string& FileBasedProvider::getCommunityIdString(uint32_t index)
+		const std::string FileBasedProvider::getCommunityIdString(uint32_t index)
 		{
 			return mCommunityIdIndex.getStringForIndex(index);
 		}

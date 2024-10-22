@@ -22,7 +22,7 @@ WriteTransactionsToBlockTask::~WriteTransactionsToBlockTask()
 
 int WriteTransactionsToBlockTask::run()
 {
-	Poco::FastMutex::ScopedLock lock(mFastMutex);
+	std::lock_guard lock(mFastMutex);
 	std::vector<memory::ConstBlockPtr> lines;
 	lines.reserve(mTransactions.size());
 
@@ -63,7 +63,7 @@ void WriteTransactionsToBlockTask::addSerializedTransaction(std::shared_ptr<grad
 {
 	assert(!isTaskSheduled());
 	assert(!isTaskFinished());		
-	Poco::FastMutex::ScopedLock lock(mFastMutex);	 
+	std::lock_guard lock(mFastMutex);
 	mTransactions.insert({transaction->getTransactionNr(), transaction});
 	mBlockIndex->addIndicesForTransaction(transaction);
 }

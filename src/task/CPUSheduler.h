@@ -38,9 +38,7 @@
 #include <string>
 #include <list>
 #include <queue>
-
-#include "Poco/AutoPtr.h"
-#include "Poco/Mutex.h"
+#include <mutex>
 
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 
@@ -86,7 +84,7 @@ namespace task {
 		std::list<TaskPtr> mPendingTasks;
 		MultithreadContainer mPendingTasksMutex;
 		bool mStopped;
-		Poco::FastMutex mCheckStopMutex;
+		std::mutex mCheckStopMutex;
 
     };
     
