@@ -13,7 +13,6 @@ Server::Server() : mServer(std::make_unique<httplib::Server>())
 
 Server::~Server()
 {
-
 }
 
 bool Server::run(const char* host/* = "0.0.0.0"*/, int port/* = 8340*/)

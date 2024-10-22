@@ -134,6 +134,7 @@ void FuzzyTimer::stop()
 }
 void FuzzyTimer::run()
 {
+	loguru::set_thread_name("FuzzyTimer");
 	while (true) {
 		if (!move()) {
 			return;

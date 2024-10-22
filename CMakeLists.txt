@@ -3,7 +3,7 @@ project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
-option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
 IF(WIN32)
 	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++20")
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
@@ -109,6 +109,8 @@ include_directories(
 		${libsodium_INCLUDE_DIR}
 		${OPENSSL_INCLUDE_DIR}
 	)
+else()
+#find_package(Sodium REQUIRED)
 endif()
 
 ############################## find protobuf  #########################################
@@ -130,13 +132,13 @@ endif()
 add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a libsodium::libsodium)
-if(NOT BUILD_SHARED_LIBS)
-	target_link_libraries(GradidoNode libprotobuf)
-endif()
+target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
+	target_link_libraries(GradidoNode libsodium::libsodium)
+else()
+  target_link_libraries(GradidoNode sodium)
 endif()
 
 IF(WIN32)

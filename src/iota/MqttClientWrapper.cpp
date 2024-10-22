@@ -111,6 +111,7 @@ namespace iota {
 	// ------- Callback functions -------
 	void MqttClientWrapper::connectionLost(char* cause)
 	{
+		loguru::set_thread_name("MQTTClient");
 		std::string causeString = "";
 		if (cause) {
 			causeString = std::string(cause);
@@ -126,6 +127,7 @@ namespace iota {
 	}
 	void MqttClientWrapper::connected(char* cause)
 	{		
+		loguru::set_thread_name("MQTTClient");
 		if(cause) {
 			LOG_F(INFO, "connected: %s", cause);
 		}
@@ -139,6 +141,7 @@ namespace iota {
 	}
 	void MqttClientWrapper::disconnected(MQTTProperties* properties, MQTTReasonCodes reasonCode)
 	{
+		loguru::set_thread_name("MQTTClient");
 		LOG_F(INFO, "disconnected: %s", MQTTReasonCode_toString(reasonCode));
 		std::lock_guard _lock(mWorkMutex);
 		mbConnected = false;
@@ -148,10 +151,12 @@ namespace iota {
 	}
 	void MqttClientWrapper::onSuccess(MQTTAsync_successData* response)
 	{
+		loguru::set_thread_name("MQTTClient");
 		LOG_F(INFO, "on success, token: %d", response->token);
 	}
 	void MqttClientWrapper::onFailure(MQTTAsync_failureData* response)
 	{
+		loguru::set_thread_name("MQTTClient");
 		if (response->message) {
 			LOG_F(ERROR, "on failure, token: %d, code: %d, error: %s", response->token, response->code, response->message);
 		}
@@ -161,6 +166,7 @@ namespace iota {
 	}
 	int  MqttClientWrapper::messageArrived(char* topicName, int topicLen, MQTTAsync_message* message)
 	{
+		loguru::set_thread_name("MQTTClient");
 		std::lock_guard _lock(mWorkMutex);
 		auto it = mTopicObserver.find(topicName);
 		if(it != mTopicObserver.end()) {
@@ -185,6 +191,7 @@ namespace iota {
 	}
 	void MqttClientWrapper::deliveryComplete(MQTTAsync_token token)
 	{
+		loguru::set_thread_name("MQTTClient");
 		LOG_F(INFO, "deliveryComplete, token: %d", token);
 	}
 

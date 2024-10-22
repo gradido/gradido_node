@@ -19,7 +19,6 @@ namespace task {
 		mName = name;
 #endif
 		mWaitingTask = mParent->getNextUndoneTask(this);
-
 	}
 
 	CPUShedulerThread::~CPUShedulerThread()

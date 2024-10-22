@@ -59,6 +59,7 @@ Value JsonRPCRequestHandler::handleOneRpcCall(const rapidjson::Value& jsonRpcReq
 
 void JsonRPCRequestHandler::handleRequest(const httplib::Request& request, httplib::Response& response, MethodType method)
 {	
+	loguru::set_thread_name("json-rpc-server");
 	if (ServerConfig::g_AllowUnsecureFlags & ServerConfig::UNSECURE_CORS_ALL) {
 		response.set_header("Access-Control-Allow-Origin", "*");
 		response.set_header("Access-Control-Allow-Headers", "Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");

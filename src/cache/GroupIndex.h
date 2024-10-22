@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <mutex>
+#include <vector>
 
 namespace cache {
 
@@ -55,7 +56,7 @@ namespace cache {
 
 		//! \brief collect all froup aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server
-		std::vector<std::string> listGroupAliases();
+		std::vector<std::string> listGroupAliases();		
 
 	protected:
 		mutable std::mutex mWorkMutex;

@@ -48,6 +48,7 @@ namespace task {
 
 	void Thread::run()
 	{
+	 	loguru::set_thread_name(mThreadName.data());
 		while (true) {
 			try {
 				if (mExitCalled) return;
