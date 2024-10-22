@@ -218,6 +218,7 @@ namespace iota {
 		conn_opts.context = this;
 		conn_opts.onSuccess = [](void *context, MQTTAsync_successData *response)
 		{
+			loguru::set_thread_name("MQTTClient");
 			auto mCW = MqttClientWrapper::getInstance();
 			auto& connect = response->alt.connect;
 			LOG_F(INFO, "connected to server: %s with mqtt version: %d, session present: %d",
@@ -226,6 +227,7 @@ namespace iota {
 			// mCW->connected("connection call");
 		};
 		conn_opts.onFailure = [](void* context, MQTTAsync_failureData* response) {
+			loguru::set_thread_name("MQTTClient");
 			std::string errorString("empty");
 			if(response->message) {
 				errorString = std::string(response->message);
@@ -245,11 +247,13 @@ namespace iota {
 		options.context = this;
 		options.onSuccess = [](void *context, MQTTAsync_successData *response)
 		{
+			loguru::set_thread_name("MQTTClient");
 			auto mCW = MqttClientWrapper::getInstance();
 			LOG_F(INFO, "disconnect from iota server");
 			// mCW->disconnected(nullptr, MQTTREASONCODE_ADMINISTRATIVE_ACTION);
 		};
 		options.onFailure = [](void* context, MQTTAsync_failureData* response) {
+			loguru::set_thread_name("MQTTClient");
 			std::string errorString("empty");
 			if(response->message) {
 				errorString = std::string(response->message);
