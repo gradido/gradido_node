@@ -11,7 +11,7 @@
 
 #include "../SingletonManager/CacheManager.h"
 
-#include "gradido_blockchain/ServerApplication.h"
+#include "gradido_blockchain/Application.h"
 #include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 
@@ -64,7 +64,7 @@ namespace cache {
 				}
 				if (!rebuildBlockIndexTask->isPendingQueueEmpty()) {
 					LOG_F(FATAL, "rebuildBlockIndex Task isn't finished after waiting a whole second");
-					ServerApplication::terminate();
+					Application::terminate();
 				}
 				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
 				mBlockIndex.reset();

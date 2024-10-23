@@ -42,8 +42,8 @@ FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
-FILE(GLOB HTTPInterface "src/HTTPInterface/*.h" "src/HTTPInterface/*.cpp")
-FILE(GLOB JSONRPCInterface "src/JSONRPCInterface/*.h" "src/JSONRPCInterface/*.cpp")
+FILE(GLOB SERVER "src/server/*.h" "src/server/*.cpp")
+FILE(GLOB SERVER_JSON_RPC "src/server/json-rpc/*.h" "src/server/json-rpc/*.cpp")
 FILE(GLOB LIB_SRC "src/lib/*.h" "src/lib/*.cpp" "src/lib/*.c")
 FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
 FILE(GLOB MODEL_APOLLO "src/model/Apollo/*.h" "src/model/Apollo/*.cpp")
@@ -59,7 +59,7 @@ SET(LOCAL_SRCS
 	${BLOCKCHAIN}
 	${CACHE_SRC}
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
-	${HTTPInterface} ${JSONRPCInterface}
+	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
 	${MODEL}  ${MODEL_APOLLO} ${MODEL_FILES} ${MODEL_JSON}
 	${SINGLETON_MANAGER}
@@ -76,13 +76,14 @@ source_group("container" FILES ${CONTAINER})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
 source_group("iota" FILES ${IOTA})
-source_group("HTTP-Interface" FILES ${HTTPInterface})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
 source_group("model\\Apollo" FILES ${MODEL_APOLLO})
 source_group("model\\files" FILES ${MODEL_FILES})
 source_group("model\\json" FILES ${MODEL_JSON})
 source_group("model" FILES ${MODEL})
+source_group("server\\json-rpc" FILES ${SERVER_JSON_RPC})
+source_group("server" FILES ${SERVER})
 source_group("SingletonManager" FILES ${SINGLETON_MANAGER})
 source_group("task" FILES ${TASK})
 

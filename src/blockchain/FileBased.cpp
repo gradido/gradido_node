@@ -7,7 +7,6 @@
 #include "../model/files/BlockIndex.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/const.h"
-#include "gradido_blockchain/ServerApplication.h"
 
 #include "loguru/loguru.hpp"
 

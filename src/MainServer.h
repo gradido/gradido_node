@@ -1,11 +1,12 @@
 #ifndef MAIN_SERVER_INCLUDED
 #define MAIN_SERVER_INCLUDED
 
-#include "gradido_blockchain/ServerApplication.h"
+#include "gradido_blockchain/Application.h"
+#include "gradido_blockchain/http/Server.h"
 
 #include <string>
 
-class MainServer : public ServerApplication
+class MainServer : public Application
 {
 
 	/// The main application class.
@@ -30,7 +31,7 @@ protected:
 	std::string getHomeDir();
 	bool configExists(const std::string& fileName);
 
-
+	Server* mHttpServer;
 private:
 };
 

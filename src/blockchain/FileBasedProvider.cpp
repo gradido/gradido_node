@@ -17,18 +17,13 @@ namespace gradido {
 		FileBasedProvider::~FileBasedProvider()
 		{
 			std::lock_guard _lock(mWorkMutex);
-			clear();
 			if (mGroupIndex) {
 				delete mGroupIndex;
 				mGroupIndex = nullptr;
 			}
 		}
 
-		void FileBasedProvider::clear()
-		{
-			mBlockchainsPerGroup.clear();
-			mCommunityIdIndex.exit();
-		}
+		
 
 		FileBasedProvider* FileBasedProvider::getInstance()
 		{
@@ -73,7 +68,8 @@ namespace gradido {
 		{
 			std::lock_guard _lock(mWorkMutex);
 			mInitalized = false;
-			clear();
+			mBlockchainsPerGroup.clear();
+			mCommunityIdIndex.exit();
 		}
 
 		int FileBasedProvider::reloadConfig()

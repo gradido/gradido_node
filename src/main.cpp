@@ -34,11 +34,11 @@ int main(int argc, char** argv)
 		app.run();
 	}
 	catch (GradidoBlockchainException& ex) {
-		LOG_F(FATAL, "Gradido Blockchain Exception while init: %s\n", ex.getFullString().data());
+		LOG_F(ERROR, "Gradido Blockchain Exception while init: %s\n", ex.getFullString().data());
 		return -1;
 	}
 	catch (std::exception& ex) {
-		LOG_F(FATAL, "std exception while init: %s\n", ex.what());
+		LOG_F(ERROR, "std exception while init: %s\n", ex.what());
 		return -2;
 	}
 	ServerGlobals::clearMemory();

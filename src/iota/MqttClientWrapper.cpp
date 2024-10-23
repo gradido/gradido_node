@@ -44,11 +44,7 @@ namespace iota {
 
 	MqttClientWrapper::~MqttClientWrapper()
 	{
-		if (mMqttClient) {
-			disconnect();
-			MQTTAsync_destroy(&mMqttClient);
-			mMqttClient = nullptr;
-		}
+		
 	}
 
 	MqttClientWrapper* MqttClientWrapper::getInstance()
@@ -66,6 +62,17 @@ namespace iota {
 			reconnectAttempt();
 		}
 		return true;
+	}
+
+	void MqttClientWrapper::exit()
+	{
+		if (mMqttClient) {
+			if (mbConnected) {
+				disconnect();
+			}
+			MQTTAsync_destroy(&mMqttClient);
+			mMqttClient = nullptr;
+		}
 	}
 
 	void MqttClientWrapper::subscribe(const Topic& topic, IMessageObserver* observer)

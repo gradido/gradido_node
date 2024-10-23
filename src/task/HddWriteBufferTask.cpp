@@ -1,6 +1,6 @@
 #include "HddWriteBufferTask.h"
 #include "../ServerGlobals.h"
-#include "gradido_blockchain/ServerApplication.h"
+#include "gradido_blockchain/Application.h"
 
 #include "loguru/loguru.hpp"
 
@@ -27,11 +27,11 @@ namespace task {
 		}
 		catch (GradidoBlockchainException& ex) {
 			LOG_F(FATAL, "error writing into file: %s, gradido blockchain exception: %s", mFilePath.data(), ex.getFullString().data());
-			ServerApplication::terminate();
+			Application::terminate();
 		}
 		catch (std::exception& e) {
 			LOG_F(FATAL, "error writing into file: %s, exception: %s", mFilePath.data(), e.what());
-			ServerApplication::terminate();
+			Application::terminate();
 		}
 		return 0;
 	}

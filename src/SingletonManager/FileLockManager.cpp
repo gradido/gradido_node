@@ -13,9 +13,8 @@ FileLockManager::FileLockManager()
 
 FileLockManager::~FileLockManager()
 {
-	printf("FileLockManager::~FileLockManager\n");
 	for (auto it = mFiles.begin(); it != mFiles.end(); it++) {
-		printf("%s \n", it->first.data());
+		// printf("%s \n", it->first.data());
 		delete it->second;
 	}
 	mFiles.clear();

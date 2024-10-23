@@ -1,6 +1,6 @@
 #include "Thread.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
-#include "gradido_blockchain/ServerApplication.h"
+#include "gradido_blockchain/Application.h"
 
 #include "loguru/loguru.hpp"
 
@@ -67,19 +67,19 @@ namespace task {
 				}
 				catch (GradidoBlockchainException& e) {
 					LOG_F(FATAL, "%s thread throw an uncatched GradidoBlockchainException exception: %s, exit thread", mThreadName.data(), e.getFullString().data());
-					ServerApplication::terminate();
+					Application::terminate();
 					return;
 				}
 				catch (std::exception& e) {
 					LOG_F(FATAL, "%s thread throw an uncatched exception: %s, exit thread", mThreadName.data(), e.what());
-					ServerApplication::terminate();
+					Application::terminate();
 					return;
 				}
 
 			}
 			catch (std::system_error& e) {
 				LOG_F(FATAL, "%s Thread locking throw exception: %s, exit thread", mThreadName.data(), e.what());
-				ServerApplication::terminate();
+				Application::terminate();
 				return;
 			}
 		}

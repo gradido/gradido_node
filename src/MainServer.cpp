@@ -1,9 +1,9 @@
 #include "MainServer.h"
 #include "ServerGlobals.h"
-#include "JSONRPCInterface/Server.h"
 
 #include "blockchain/FileBasedProvider.h"
 #include "iota/MqttClientWrapper.h"
+#include "server/json-rpc/ApiHandlerFactory.h"
 #include "SingletonManager/OrderingManager.h"
 #include "SingletonManager/CacheManager.h"
 
@@ -23,6 +23,7 @@ using namespace blockchain;
 namespace fs = std::filesystem;
 
 MainServer::MainServer()
+	: mHttpServer(nullptr)
 {
 }
 
@@ -81,31 +82,28 @@ bool MainServer::init()
 	}
 	OrderingManager::getInstance();
 
-	// HTTP Interface Server
-	// set-up a server socket
-	/* Poco::Net::ServerSocket svs(port);
-	// set-up a HTTPServer instance
-	Poco::ThreadPool& pool = Poco::ThreadPool::defaultPool();
-	Poco::Net::HTTPServer srv(new PageRequestHandlerFactory, svs, new Poco::Net::HTTPServerParams);
-
-	// start the HTTPServer
-	srv.start();
-	*/
-
-	LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().data(), jsonrpc_port);
 	// JSON Interface Server
-	Server server;
+	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
+	mHttpServer->init();
+	mHttpServer->registerResponseHandler("/api", new server::json_rpc::ApiHandlerFactory());
+	mHttpServer->run();
+	LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().data(), jsonrpc_port);
 	// start the json server
 	// doesn't return
-	return server.run("0.0.0.0", jsonrpc_port);	
+	return true;
 }
 
 void MainServer::exit()
 {
-	std::clog << "[Gradido_Node::main] Running Tasks Count on shutdown: " << std::to_string(ServerGlobals::g_NumberExistingTasks) << std::endl;
+	LOG_F(INFO, "Running Tasks Count on shutdown: %llu", ServerGlobals::g_NumberExistingTasks.load());
 
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage
+	mHttpServer->exit();
+	delete mHttpServer;
+	mHttpServer = nullptr;
+
+	iota::MqttClientWrapper::getInstance()->exit();
 	CacheManager::getInstance()->getFuzzyTimer()->stop();
 	ServerGlobals::g_CPUScheduler->stop();
 	ServerGlobals::g_WriteFileCPUScheduler->stop();

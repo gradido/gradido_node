@@ -7,7 +7,7 @@
 #ifdef _UNI_LIB_DEBUG
 #include "gradido_blockchain/lib/Profiler.h"
 #endif //_UNI_LIB_DEBUG
-#include "gradido_blockchain/ServerApplication.h"
+#include "gradido_blockchain/Application.h"
 
 #include "loguru/loguru.hpp"
 
@@ -60,14 +60,14 @@ namespace task {
 #ifdef _UNI_LIB_DEBUG
 				LOG_F(FATAL, "task name: %s", name.data());
 #endif
-				ServerApplication::terminate();
+				Application::terminate();
 			}
 			catch (std::exception& ex) {
 				LOG_F(FATAL, "exception %s for task type: %s", ex.what(), mWaitingTask->getResourceType());
 #ifdef _UNI_LIB_DEBUG
 				LOG_F(FATAL, "task name: %s", name.data());
 #endif
-				ServerApplication::terminate();
+				Application::terminate();
 			}
 			ServerGlobals::g_NumberExistingTasks;
 			mWaitingTask = mParent->getNextUndoneTask(this);

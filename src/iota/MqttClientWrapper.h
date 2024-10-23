@@ -31,6 +31,7 @@ namespace iota
 		static MqttClientWrapper* getInstance();
 
 		bool init();
+		void exit();
 
 		void subscribe(const Topic& topic, IMessageObserver* observer);
 		void unsubscribe(const Topic& topic, IMessageObserver* observer);
