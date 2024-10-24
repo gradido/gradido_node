@@ -49,6 +49,7 @@ namespace gradido {
 			// clean up group, stopp all running processes
 			void exit();
 
+			// TODO: make a interaction from it
 			//! validate and generate confirmed transaction
 			//! throw if gradido transaction isn't valid
 			//! \return false if transaction already exist
@@ -64,8 +65,6 @@ namespace gradido {
 			//! count results for a specific filter, using only the index, ignore filter function 
 			size_t findAllResultCount(const Filter& filter) const;
 
-			//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-			//! therefore boocked back to sender
 			//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
 			//! therefore boocked back to sender
 			virtual TransactionEntries findTimeoutedDeferredTransfersInRange(
@@ -103,6 +102,9 @@ namespace gradido {
 				return mTransactionHashCache.has(transaction);
 			}
 
+			// check transactions in deferred transfer cache for timeout and remove all timeouted deferred transfer transactions
+			void cleanupDeferredTransferCache();
+
 		protected:
 			//! if state leveldb was invalid, recover values from block cache
 			void loadStateFromBlockCache();
@@ -117,7 +119,6 @@ namespace gradido {
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
 			std::string mFolderPath;
-
 
 			//! observe write to file tasks from block, mayber later more
 			mutable std::shared_ptr<TaskObserver> mTaskObserver;

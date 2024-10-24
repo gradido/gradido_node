@@ -31,7 +31,7 @@ namespace gradido {
 			mIotaMessageListener(new iota::MessageListener(communityId)),
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeys.index"))),
 			mBlockchainState(std::string(folder).append("/.state")),
-			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache")),
+			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache"), communityId),
 			mMessageIdsCache(std::string(folder).append("/messageIdCache")),
 			mCachedBlocks(ServerGlobals::g_CacheTimeout),
 			mTransactionHashCache(communityId)
@@ -140,6 +140,39 @@ namespace gradido {
 			if (lastTransaction) {
 				id = lastTransaction->getTransactionNr() + 1;
 			}
+			auto transactionBody = gradidoTransaction->getTransactionBody();
+			// check for deferred transfer and if found, add to deferred transfer cache
+			memory::ConstBlockPtr transferSenderPublicKey = nullptr;
+			if (transactionBody->isDeferredTransfer()) {
+				auto deferredTransferRecipientPublicKeyIndex = mPublicKeysIndex->getOrAddIndexForString(
+					transactionBody
+					->getDeferredTransfer()
+					->getRecipientPublicKey()
+					->copyAsString()
+				);
+				mDeferredTransfersCache.addTransactionNrForAddressIndex(deferredTransferRecipientPublicKeyIndex, id);
+				transferSenderPublicKey = transactionBody
+					->getDeferredTransfer()
+					->getSenderPublicKey()
+					;
+			}
+			else if (transactionBody->isTransfer()) {
+				transferSenderPublicKey =
+					transactionBody
+					->getTransfer()
+					->getSender()
+					.getPubkey()
+				;
+			}
+			uint32_t transferSenderPublicKeyIndex = 0;
+			if (transferSenderPublicKey) {
+				transferSenderPublicKeyIndex = mPublicKeysIndex->getIndexForString(transferSenderPublicKey->copyAsString());
+				// if gradido source is a deferred transfer transaction
+				if (mDeferredTransfersCache.isDeferredTransfer(transferSenderPublicKeyIndex)) {
+					mDeferredTransfersCache.addTransactionNrForAddressIndex(transferSenderPublicKeyIndex, id);
+				}
+			}
+
 			calculateAccountBalance::Context accountBalanceCalculator(*this);
 			auto accountBalance = accountBalanceCalculator.run(gradidoTransaction, confirmedAt, id);
 			auto confirmedTransaction = std::make_shared<data::ConfirmedTransaction>(
@@ -155,13 +188,14 @@ namespace gradido {
 			if (lastTransaction) {
 				validationLevel = validationLevel | validate::Type::PREVIOUS;
 			}
-			auto transactionBody = gradidoTransaction->getTransactionBody();
+			
 			if (transactionBody->getType() != data::CrossGroupType::LOCAL) {
 				validationLevel = validationLevel | validate::Type::PAIRED;
 			}
 			if (transactionBody->isCreation()) {
 				validationLevel = validationLevel | validate::Type::MONTH_RANGE;
 			}
+
 			validate::Context validator(*confirmedTransaction);
 			validator.setSenderPreviousConfirmedTransaction(lastTransaction->getConfirmedTransaction());
 			validator.run(validationLevel, getCommunityId(), getProvider());
@@ -181,12 +215,21 @@ namespace gradido {
 			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
 			mTransactionHashCache.push(nodeTransactionEntry);
 			mMessageIdsCache.add(confirmedTransaction->getMessageId(), id);
+
+			// check if a deferred transfer was completly redeemed
+			if (transferSenderPublicKeyIndex && mDeferredTransfersCache.isDeferredTransfer(transferSenderPublicKeyIndex)) {										
+				auto balance = accountBalanceCalculator.run(transferSenderPublicKey, confirmedAt, id);
+				if (GradidoUnit::zero() == balance) {
+					mDeferredTransfersCache.removeAddressIndex(transferSenderPublicKeyIndex);
+				}
+			}
 			if (mCommunityServer) {
 				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
 				notifyClientTask->scheduleTask(notifyClientTask);
 			}
 			return false;
 		}
+
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
 		{
 			TransactionEntries result;
@@ -230,12 +273,63 @@ namespace gradido {
 			return count;
 		}
 
+		//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
+		//! therefore boocked back to sender
 		TransactionEntries FileBased::findTimeoutedDeferredTransfersInRange(
 			memory::ConstBlockPtr senderPublicKey,
 			TimepointInterval timepointInterval,
 			uint64_t maxTransactionNr
 		) const {
-			return {};
+			Filter f;
+			f.involvedPublicKey = senderPublicKey;
+			f.timepointInterval = TimepointInterval(timepointInterval.getStartDate() - GRADIDO_DEFERRED_TRANSFER_MAX_TIMEOUT_INTERVAL, timepointInterval.getEndDate());
+			f.searchDirection = SearchDirection::ASC;
+			f.transactionType = data::TransactionType::DEFERRED_TRANSFER;
+			// nested findAll call
+			f.filterFunction = [&](const TransactionEntry& deferredTransactionEntry) -> FilterResult {
+				auto deferredTransfer = deferredTransactionEntry.getTransactionBody()->getDeferredTransfer();
+				if (!deferredTransfer) {
+					throw GradidoNullPointerException(
+						"transaction hasn't expected Type", 
+						"data::DeferredTransferTransaction", 
+						"FileBased::findTimeoutedDeferredTransfersInRange"
+					);
+				}
+				if (
+					!deferredTransfer->getSenderPublicKey()->isTheSame(senderPublicKey) ||
+					!timepointInterval.isInsideInterval(deferredTransfer->getTimeout())
+				) {
+					return FilterResult::DISMISS;
+				}
+				Filter f2;
+				f2.involvedPublicKey = deferredTransfer->getRecipientPublicKey();
+				f2.searchDirection = SearchDirection::ASC;
+				f2.timepointInterval = TimepointInterval(
+					deferredTransactionEntry.getConfirmedTransaction()->getConfirmedAt(), 
+					deferredTransfer->getTimeout()
+				);
+				f2.filterFunction = [&](const TransactionEntry& transaction) -> FilterResult {
+					auto transactionBody = transaction.getTransactionBody();
+					memory::ConstBlockPtr senderPublicKey = nullptr;
+					if (transactionBody->isDeferredTransfer()) {
+						senderPublicKey = transactionBody->getDeferredTransfer()->getSenderPublicKey();
+					}
+					else if (transactionBody->isTransfer()) {
+						senderPublicKey = transactionBody->getTransfer()->getSender().getPubkey();
+					}
+					if (deferredTransfer->getRecipientPublicKey()->isTheSame(senderPublicKey)) {
+						return FilterResult::USE | FilterResult::STOP;
+					}
+					return FilterResult::DISMISS;
+				};
+				auto redeemingTransactions = findAll(f2);
+				if (redeemingTransactions.size()) {
+					return FilterResult::DISMISS;
+				}
+				return FilterResult::USE;
+			};
+			
+			return findAll(f);
 		}
 
 		//! find all transfers which redeem a deferred transfer in date range
@@ -246,7 +340,52 @@ namespace gradido {
 			TimepointInterval timepointInterval,
 			uint64_t maxTransactionNr
 		) const {
-			return {};
+			std::list<DeferredRedeemedTransferPair> result;
+			Filter f;
+			f.involvedPublicKey = senderPublicKey;
+			f.timepointInterval = timepointInterval;
+			f.maxTransactionNr = maxTransactionNr;
+			f.searchDirection = SearchDirection::ASC;
+			f.transactionType = data::TransactionType::DEFERRED_TRANSFER;
+			// nested findAll call
+			f.filterFunction = [&](const TransactionEntry& deferredTransactionEntry) -> FilterResult {
+				auto deferredTransfer = deferredTransactionEntry.getTransactionBody()->getDeferredTransfer();
+				if (!deferredTransfer) {
+					throw GradidoNullPointerException(
+						"transaction hasn't expected Type", 
+						"data::DeferredTransferTransaction", 
+						"FileBased::findRedeemedDeferredTransfersInRange"
+					);
+				}
+				Filter f2 = f;
+				f2.involvedPublicKey = deferredTransfer->getRecipientPublicKey();
+				f2.transactionType = data::TransactionType::NONE;
+				f2.filterFunction = [&](const TransactionEntry& transaction) -> FilterResult{
+					auto transactionBody = transaction.getTransactionBody();
+					memory::ConstBlockPtr senderPublicKey = nullptr;
+					if (transactionBody->isDeferredTransfer()) {
+						senderPublicKey = transactionBody->getDeferredTransfer()->getSenderPublicKey();
+					}
+					else if (transactionBody->isTransfer()) {
+						senderPublicKey = transactionBody->getTransfer()->getSender().getPubkey();
+					}
+					if (deferredTransfer->getRecipientPublicKey()->isTheSame(senderPublicKey)) {
+						if (result.back().first->getTransactionNr() == deferredTransactionEntry.getTransactionNr()) {
+							// TODO: update DeferredRedeemedTransferPair to include like in cache::DeferredTransfer multiple redeeming transactions
+							throw std::runtime_error("multiple redeeming deferred transfer transaction not implemented yet!");
+						}
+						result.push_back({ 
+							getTransactionForId(deferredTransactionEntry.getTransactionNr()), 
+							getTransactionForId(transaction.getTransactionNr())
+						});
+					}
+					return FilterResult::DISMISS;
+				};
+				findAll(f2);
+				return FilterResult::DISMISS;
+			};
+			findAll(f);
+			return result;
 		}
 
 		std::shared_ptr<const TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const
@@ -275,6 +414,22 @@ namespace gradido {
 		AbstractProvider* FileBased::getProvider() const
 		{
 			return FileBasedProvider::getInstance();
+		}
+
+		void FileBased::cleanupDeferredTransferCache()
+		{
+			mDeferredTransfersCache.removeAddressIndexes([&](uint32_t addressIndex, uint64_t transactionNr) -> bool {
+				auto transaction = getTransactionForId(transactionNr);
+				auto transactionBody = transaction->getTransactionBody();
+				if (!transactionBody->isDeferredTransfer()) {
+					throw GradidoNullPointerException("isn't a deferred transfer transaction in deferred transfer cache", "DeferredTransferTransaction", __FUNCTION__);
+				}
+				auto deferredTransfer = transactionBody->getDeferredTransfer();
+				if (deferredTransfer->getTimeout().getAsTimepoint() <= Timepoint()) {
+					return true;
+				}
+				return false;
+			});
 		}
 
 		void FileBased::loadStateFromBlockCache()

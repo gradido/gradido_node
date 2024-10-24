@@ -75,5 +75,9 @@ namespace model {
 			return true;
 		}
 
+		void State::removeKey(const char* key)
+		{
+			mLevelDB->Delete(leveldb::WriteOptions(), key);
+		}
 	}
 }

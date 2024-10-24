@@ -26,6 +26,7 @@ namespace cache {
 		inline void updateState(DefaultStateKeys key, int32_t value);
 		void updateState(const char* key, std::string_view value);
 		void updateState(const char* key, int32_t value);
+		void removeState(const char* key);
 
 		//! first check if value for key is already in memory else read from file via leveldb
 		inline const std::string& readState(DefaultStateKeys key, const std::string& defaultValue);

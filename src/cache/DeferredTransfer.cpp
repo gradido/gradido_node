@@ -1,12 +1,15 @@
 #include "DeferredTransfer.h"
 #include "../lib/LevelDBExceptions.h"
+#include "../SingletonManager/CacheManager.h"
+#include "../ServerGlobals.h"
+#include "../task/DeferredTransferCacheCleanupTask.h"
 
 #include <set>
 
 namespace cache
 {
-	DeferredTransfer::DeferredTransfer(std::string_view groupFolder)
-		: mState(groupFolder)
+	DeferredTransfer::DeferredTransfer(std::string_view groupFolder, std::string_view communityName)
+		: mState(groupFolder), mTimerName(std::string(communityName).append("::deferredTransferCache")), mCommunityName(communityName)
 	{
 
 	}
@@ -23,12 +26,14 @@ namespace cache
 			return false;
 		}
 		loadFromState();
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mTimerName, this, ServerGlobals::g_CacheTimeout);
 		return true;
 	}
 
 	void DeferredTransfer::exit()
 	{
 		std::lock_guard _lock(mFastMutex);
+		CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mTimerName);
 		mState.exit();
 	}
 
@@ -62,6 +67,16 @@ namespace cache
 		return {};
 	}
 
+	bool DeferredTransfer::isDeferredTransfer(uint32_t addressIndex)
+	{
+		std::lock_guard _lock(mFastMutex);
+		auto it = mAddressIndexTransactionNrs.find(addressIndex);
+		if (it != mAddressIndexTransactionNrs.end()) {
+			return true;
+		}
+		return false;
+	}
+
 	void DeferredTransfer::removeTransactionNrForAddressIndex(uint32_t addressIndex, uint64_t transactionNr)
 	{
 		std::lock_guard _lock(mFastMutex);
@@ -75,6 +90,34 @@ namespace cache
 			}
 		}
 		updateState(addressIndex, transactionNrs);
+	}
+
+	void DeferredTransfer::removeAddressIndex(uint32_t addressIndex)
+	{
+		std::lock_guard _lock(mFastMutex);
+		mAddressIndexTransactionNrs.erase(addressIndex);
+		mState.removeState(std::to_string(addressIndex).data());
+	}
+
+	void DeferredTransfer::removeAddressIndexes(std::function<bool(uint32_t addressIndex, uint64_t transactionNr)> canBeRemoved) {
+		std::lock_guard _lock(mFastMutex);
+		for (auto it = mAddressIndexTransactionNrs.begin(); it != mAddressIndexTransactionNrs.end(); it++) {
+			if (canBeRemoved(it->first, it->second.front())) {
+				it = mAddressIndexTransactionNrs.erase(it);
+				mState.removeState(std::to_string(it->first).data());
+				if (it == mAddressIndexTransactionNrs.end()) {
+					return;
+				}
+			}
+		}
+	}
+
+
+	TimerReturn DeferredTransfer::callFromTimer()
+	{
+		auto cleanupTask = std::make_shared<task::DeferredTransferCacheCleanupTask>(mCommunityName);
+		cleanupTask->scheduleTask(cleanupTask);
+		return TimerReturn::GO_ON;
 	}
 
 	void DeferredTransfer::updateState(uint32_t addressIndex, std::vector<uint64_t> transactionNrs)

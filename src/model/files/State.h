@@ -38,6 +38,8 @@ namespace model {
 			//! \return true, throw exception on error
 			bool setKeyValue(const char* key, const std::string& value);
 
+			void removeKey(const char* key);
+
 			//! \brief get iterator for looping over every entry
 			inline leveldb::Iterator* getIterator() { return mLevelDB->NewIterator(leveldb::ReadOptions()); }
 

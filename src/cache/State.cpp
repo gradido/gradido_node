@@ -73,6 +73,14 @@ namespace cache {
 			mStateFile.setKeyValue(key, std::to_string(value));
 		}			
 	}
+	void State::removeState(const char* key)
+	{
+		mIntStates.erase(key);
+		mStates.erase(key);
+		if (mInitalized) {
+			mStateFile.removeKey(key);
+		}
+	}
 
 	const std::string& State::readState(const char* key, const std::string& defaultValue)
 	{
