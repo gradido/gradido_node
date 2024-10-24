@@ -106,10 +106,7 @@ add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
 find_package(libsodium REQUIRED)
-include_directories(
-		${libsodium_INCLUDE_DIR}
-		${OPENSSL_INCLUDE_DIR}
-	)
+include_directories(${libsodium_INCLUDE_DIR})
 else()
 #find_package(Sodium REQUIRED)
 endif()
