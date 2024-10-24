@@ -301,6 +301,18 @@ namespace gradido {
 				) {
 					return FilterResult::DISMISS;
 				}
+				// first try cache
+				auto recipientPublicKeyIndex = mPublicKeysIndex->getOrAddIndexForString(
+					deferredTransfer->getRecipientPublicKey()->copyAsString()
+				);
+				auto transactionNrs = mDeferredTransfersCache.getTransactionNrsForAddressIndex(
+					recipientPublicKeyIndex
+				);
+				// if found in cache, there are not completly redeemed yet
+				if (transactionNrs.size()) {
+					return FilterResult::USE;
+				}
+
 				Filter f2;
 				f2.involvedPublicKey = deferredTransfer->getRecipientPublicKey();
 				f2.searchDirection = SearchDirection::ASC;
