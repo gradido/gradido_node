@@ -69,8 +69,7 @@ namespace cache {
 				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
 				mBlockIndex.reset();
 				std::for_each(transactionEntries.begin(), transactionEntries.end(),
-					[&](const std::shared_ptr<NodeTransactionEntry>& transactionEntry)
-					{
+					[&](const std::shared_ptr<NodeTransactionEntry>& transactionEntry) {
 						mBlockIndex->addIndicesForTransaction(transactionEntry);
 					}
 				);

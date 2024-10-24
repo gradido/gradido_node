@@ -13,7 +13,7 @@ namespace cache {
 	class State 
 	{
 	public:
-		State(std::string_view baseFolder);
+		State(std::string_view folder);
 		virtual ~State();
 
 		// try to open db 
@@ -34,7 +34,7 @@ namespace cache {
 		int32_t readInt32State(const char* key, int32_t defaultValue);
 
 		//! go through all states in call callback for each with key, value
-		//! don't put key value pairs into map
+		//! don't read/put key value pairs into map, read direct from leveldb
 		void readAllStates(std::function<void(const std::string&, const std::string&)> callback);
 
 	protected:

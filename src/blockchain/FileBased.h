@@ -4,6 +4,7 @@
 #include "../cache/Block.h"
 #include "../cache/Dictionary.h"
 #include "../cache/DeferredTransfer.h"
+#include "../cache/MessageId.h"
 #include "../cache/State.h"
 #include "../cache/TransactionHash.h"
 #include "../client/Base.h"
@@ -83,6 +84,10 @@ namespace gradido {
 			) const;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const;
+			virtual std::shared_ptr<const TransactionEntry> findByMessageId(
+				memory::ConstBlockPtr messageId,
+				const Filter& filter = Filter::ALL_TRANSACTIONS
+			) const;
 			virtual AbstractProvider* getProvider() const;
 
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
@@ -99,8 +104,6 @@ namespace gradido {
 			}
 
 		protected:
-
-			virtual void pushTransactionEntry(std::shared_ptr<const TransactionEntry> transactionEntry);
 			//! if state leveldb was invalid, recover values from block cache
 			void loadStateFromBlockCache();
 			//! scan blockchain for deferred transfer transaction which are not redeemed completly
@@ -127,6 +130,8 @@ namespace gradido {
 			mutable cache::State mBlockchainState;
 
 			mutable cache::DeferredTransfer mDeferredTransfersCache;
+
+			mutable cache::MessageId mMessageIdsCache;
 
 			mutable AccessExpireCache<uint32_t, std::shared_ptr<cache::Block>> mCachedBlocks;
 

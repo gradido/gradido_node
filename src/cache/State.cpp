@@ -5,9 +5,9 @@
 #include "loguru/loguru.hpp"
 
 namespace cache {
-	State::State(std::string_view baseFolder)
+	State::State(std::string_view folder)
 		: mInitalized(false),
-		mStateFile(std::string(baseFolder).append("/.state"))
+		mStateFile(folder)
 	{
 
 	}
@@ -20,7 +20,7 @@ namespace cache {
 	bool State::init()
 	{
 		if (mInitalized) {
-			throw ClassAlreadyInitalizedException("init was already called", "State");
+			throw ClassAlreadyInitalizedException("init was already called", "cache::State");
 		}
 		if (!mStateFile.init()) {
 			return false;
@@ -54,7 +54,7 @@ namespace cache {
 		else {
 			it->second = value;
 		}
-		if (!mInitalized) {
+		if (mInitalized) {
 			mStateFile.setKeyValue(key, std::string(value));
 		}			
 	}
