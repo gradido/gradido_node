@@ -357,6 +357,30 @@ namespace gradido {
 						"FileBased::findRedeemedDeferredTransfersInRange"
 					);
 				}
+				// first try cache
+				auto recipientPublicKeyIndex = mPublicKeysIndex->getOrAddIndexForString(
+					deferredTransfer->getRecipientPublicKey()->copyAsString()
+				);
+				auto transactionNrs = mDeferredTransfersCache.getTransactionNrsForAddressIndex(
+					recipientPublicKeyIndex
+				);
+				if (transactionNrs.size()) {
+					for (auto transactionNr : transactionNrs) {
+						if (transactionNr == deferredTransactionEntry.getTransactionNr()) {
+							continue;
+						}
+						auto transaction = getTransactionForId(transactionNr);
+						if (!timepointInterval.isInsideInterval(transaction->getTransactionBody()->getCreatedAt())) {
+							continue;
+						}
+						result.push_back({
+							getTransactionForId(deferredTransactionEntry.getTransactionNr()),
+							transaction
+						});
+					}
+					return FilterResult::DISMISS;
+				}
+				// if deferred transfer was already completly redeemed or timeouted and removed from cache, try find all
 				Filter f2 = f;
 				f2.involvedPublicKey = deferredTransfer->getRecipientPublicKey();
 				f2.transactionType = data::TransactionType::NONE;
