@@ -118,8 +118,8 @@ bool MainServer::configExists(const std::string& fileName) {
 std::string MainServer::findConfigFile()
 {
 	// possible paths
-	fs::path currentPath = "config.yaml"; // current location
-	fs::path homePath = fs::path(getHomeDir()) / ".gradido" / "config.yaml";
+	fs::path currentPath = "gradido.yaml"; // current location
+	fs::path homePath = fs::path(getHomeDir()) / ".gradido" / "gradido.yaml";
 	
 	// check paths
 	if (configExists(currentPath.string())) {
@@ -129,7 +129,7 @@ std::string MainServer::findConfigFile()
 		return homePath.string();
 	}
 	else {
-		LOG_F(WARNING, "./config.yaml or ~/.gradido/config.yaml not found, using default values!");
+		LOG_F(WARNING, "./gradido.yaml or ~/.gradido/gradido.yaml not found, using default values!");
 	}
 	return "";
 }
