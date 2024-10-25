@@ -24,7 +24,7 @@ namespace iota
 
 	MessageListener::~MessageListener()
 	{
-		LOG_F(INFO, "Stop Listen to: %s", mIndex.getHexString());
+		LOG_F(INFO, "Stop Listen to: %s", mIndex.getHexString().data());
 		lock();
 #ifdef IOTA_WITHOUT_MQTT
 		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());

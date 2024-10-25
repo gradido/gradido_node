@@ -121,6 +121,7 @@ namespace server {
 			StringBuffer buffer;
 			Writer<StringBuffer> writer(buffer);
 			responseJson.Accept(writer);
+			printf("response: %s\n", buffer.GetString());
 			response.set_content(buffer.GetString(), "application/json");
 		}
 
