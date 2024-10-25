@@ -21,7 +21,7 @@ cache:
 
 # Logging Settings
 logging:
-  log_transactions: true  # If true, write complete transactions to log
+  log_transactions: true # If true, write complete transactions to log
 
 # I/O Settings
 io:
@@ -29,4 +29,4 @@ io:
 
 # Security Settings
 unsecure:
-  allow_cors_all: false  # Set to true if js frontend should be allowed to send requests to it
+  allow_cors_all: 0  # Set to 1 if js frontend should be allowed to send requests to it

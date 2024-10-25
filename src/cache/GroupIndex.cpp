@@ -6,6 +6,8 @@
 
 #include "loguru/loguru.hpp"
 
+#include <filesystem>
+
 namespace cache {
 	GroupIndex::GroupIndex(const std::string& jsonConfigFileName)
 		: mConfig(jsonConfigFileName)
@@ -68,13 +70,8 @@ namespace cache {
 		if(it != mCommunities.end()) {
 			std::string folder = ServerGlobals::g_FilesPath + '/';
 			folder += it->second.folderName;
-			FILE* f = fopen(folder.data(), "r");
-			if (!f) {
-				// TODO: create directory
-				throw std::runtime_error("missing implementation for create directory in controller::GroupIndex::getFolder");
-			}
-			else {
-				fclose(f);
+			if(!std::filesystem::exists(folder)) {
+				std::filesystem::create_directories(folder);
 			}
 			return folder;
 		}

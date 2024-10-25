@@ -58,7 +58,7 @@ namespace ServerGlobals {
 		std::string iotaMqttHost = cfg.getString("clients.iota.mqtt.host", "api.lb-0.h.chrysalis-devnet.iota.cafe");
 		int mqttPort = cfg.getInt("clients.iota.mqtt.port", 1883);
 		g_IotaMqttBrokerUri = iotaHost + ":" + std::to_string(mqttPort);
-        return true;
+    return true;
 	}
 
 	void loadTimeouts(const MapEnvironmentToConfig& cfg)
