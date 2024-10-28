@@ -69,6 +69,9 @@ namespace gradido {
 		{
 			std::lock_guard _lock(mWorkMutex);
 			mInitalized = false;
+			for (auto blockchain : mBlockchainsPerGroup) {
+				blockchain.second->exit();
+			}
 			mBlockchainsPerGroup.clear();
 			mCommunityIdIndex.exit();
 		}

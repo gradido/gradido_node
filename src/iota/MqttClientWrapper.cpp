@@ -99,7 +99,7 @@ namespace iota {
 		auto it = mTopicObserver.find(topic.getTopicString());
 		if(it != mTopicObserver.end()) {
 			auto observerCount = it->second->removeObserver(observer);
-			if(!observerCount && mbConnected) {
+			if(!observerCount && mbConnected && mMqttClient) {
 				it->second->unsubscribe(mMqttClient);
 			}
 		}

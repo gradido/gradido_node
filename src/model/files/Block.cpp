@@ -50,8 +50,17 @@ namespace model {
 			//printf("Block::getOpenFile: %s\n", mBlockPath.toString().data());
 			std::scoped_lock _lock(mFastMutex);
 			if (!mBlockFile) {
+				// create file if not exist
+				if (!std::filesystem::exists(mBlockPath)) {
+					std::ofstream ofs(mBlockPath);
+					ofs.close();
+				}
 				// ate: at end	The output position starts at the end of the file.
-				mBlockFile = std::make_shared<std::fstream>(mBlockPath, std::fstream::binary | std::fstream::ate);
+				// out: for creating file if not exist
+				mBlockFile = std::make_shared<std::fstream>(mBlockPath, std::fstream::binary | std::fstream::ate | std::fstream::out | std::fstream::in);
+				if (!mBlockFile->is_open()) {
+					throw OpenFileException("cannot open block file", mBlockPath.data(), mBlockFile->rdstate());
+				}
 				auto telled = mBlockFile->tellg();
 				if (telled && telled > crypto_generichash_KEYBYTES) {
 					mCurrentFileSize = (uint32_t)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
@@ -71,7 +80,7 @@ namespace model {
 			return TimerReturn::GO_ON;
 		}
 
-		uint16_t Block::readLine(uint32_t startReading, memory::BlockPtr buffer)
+		uint16_t Block::readLine(uint32_t startReading, memory::BlockPtr* buffer)
 		{
 			auto fileStream = getOpenFile();
 			if (fileStream->fail()) {
@@ -117,8 +126,8 @@ namespace model {
 				fl->unlock(mBlockPath);
 				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.data(), startReading, transactionSize);
 			}
-			buffer = std::make_shared<memory::Block>(transactionSize);
-			fileStream->read((char*)buffer->data(), transactionSize);
+			*buffer = std::make_shared<memory::Block>(transactionSize);
+			fileStream->read((char*)(*buffer)->data(), transactionSize);
 			fl->unlock(mBlockPath);
 			return transactionSize;
 		}
@@ -128,7 +137,7 @@ namespace model {
 			// set also mCurrentFileSize
 			//printf("[Block::readLine] cursor: %d\n", startReading);
 			std::shared_ptr<memory::Block> result;
-			auto transactionSize = readLine(startReading, result);
+			auto transactionSize = readLine(startReading, &result);
 			return result;
 		}
 
@@ -192,7 +201,7 @@ namespace model {
 			fileStream->write((const char*)hash, sizeof hash);
 			fileStream->flush();
 			fl->unlock(mBlockPath);
-			return std::move(resultingCursorPositions);
+			return resultingCursorPositions;
 		}
 
 		std::shared_ptr<memory::Block> Block::calculateHash()
@@ -285,7 +294,7 @@ namespace model {
 
 			// read in every line
 			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
-				auto lineSize = readLine(fileCursor, readBuffer);
+				auto lineSize = readLine(fileCursor, &readBuffer);
 				fileCursor += lineSize + sizeof(uint16_t);
 				rebuildTask->pushLine(fileCursor, readBuffer);
 				rebuildTask->scheduleTask(rebuildTask);

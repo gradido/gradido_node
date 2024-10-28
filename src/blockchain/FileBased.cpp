@@ -175,6 +175,10 @@ namespace gradido {
 
 			calculateAccountBalance::Context accountBalanceCalculator(*this);
 			auto accountBalance = accountBalanceCalculator.run(gradidoTransaction, confirmedAt, id);
+			gradido::data::ConstConfirmedTransactionPtr lastConfirmedTransaction;
+			if (lastTransaction) {
+				lastConfirmedTransaction = lastTransaction->getConfirmedTransaction();
+			}
 			auto confirmedTransaction = std::make_shared<data::ConfirmedTransaction>(
 				id,
 				gradidoTransaction,
@@ -182,7 +186,7 @@ namespace gradido {
 				GRADIDO_CONFIRMED_TRANSACTION_V3_3_VERSION_STRING,
 				messageId,
 				accountBalance.toString(),
-				lastTransaction->getConfirmedTransaction()
+				lastConfirmedTransaction
 			);
 			validate::Type validationLevel = validate::Type::SINGLE;
 			if (lastTransaction) {
@@ -197,7 +201,7 @@ namespace gradido {
 			}
 
 			validate::Context validator(*confirmedTransaction);
-			validator.setSenderPreviousConfirmedTransaction(lastTransaction->getConfirmedTransaction());
+			validator.setSenderPreviousConfirmedTransaction(lastConfirmedTransaction);
 			validator.run(validationLevel, getCommunityId(), getProvider());
 
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
@@ -227,7 +231,7 @@ namespace gradido {
 				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
 				notifyClientTask->scheduleTask(notifyClientTask);
 			}
-			return false;
+			return true;
 		}
 
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const

@@ -54,7 +54,7 @@ int WriteTransactionsToBlockTask::run()
 
 	LOG_F(INFO, "[%u;%u] transaction written to block file: %s",
 		(unsigned)mTransactions.begin()->first, (unsigned)(mTransactions.begin()->first + cursor),
-		mBlockFile->getBlockPath()
+		mBlockFile->getBlockPath().data()
 	);
 	return 0;
 }

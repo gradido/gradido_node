@@ -67,7 +67,7 @@ namespace cache {
 					Application::terminate();
 				}
 				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
-				mBlockIndex.reset();
+				mBlockIndex->reset();
 				std::for_each(transactionEntries.begin(), transactionEntries.end(),
 					[&](const std::shared_ptr<NodeTransactionEntry>& transactionEntry) {
 						mBlockIndex->addIndicesForTransaction(transactionEntry);
@@ -190,16 +190,14 @@ namespace cache {
 		return mBlockFile->getCurrentFileSize() + 32 < GRADIDO_NODE_CACHE_BLOCK_MAX_FILE_SIZE_BYTE;
 	}
 
-
 	TimerReturn Block::callFromTimer()
 	{
+		std::unique_lock lock(mFastMutex, std::defer_lock);
 		// if called from timer, while deconstruct was called, prevent dead lock
-		if (!mFastMutex.try_lock()) return TimerReturn::GO_ON;
+		if (!lock.try_lock()) return TimerReturn::GO_ON;
 		if (mExitCalled) {
-			mFastMutex.unlock();
 			return TimerReturn::REMOVE_ME;
 		}
-		std::lock_guard lock(mFastMutex);
 
 		if (mTransactionWriteTask) {
 			Timepoint now;

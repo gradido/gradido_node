@@ -2,6 +2,7 @@
 #define _GRADIDO_NODE_MODEL_FILES_FILE_EXCEPTIONS_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include <fstream>
 
 namespace model {
 	namespace files {
@@ -67,6 +68,19 @@ namespace model {
 			explicit InvalidReadBlockSize(const char* what, const char* filename, int readCursor, size_t blockSize) noexcept
 				: EndReachingException(what, filename, readCursor, blockSize) {};
 
+		};
+
+		class OpenFileException : public GradidoBlockchainException
+		{
+		public: 
+			explicit OpenFileException(const char* what, const char* fileName, std::ios::iostate errorState) noexcept
+				: GradidoBlockchainException(what), mFileName(fileName), mErrorState(errorState) {}
+
+			std::string getFullString() const;
+
+		protected:
+			std::string mFileName;
+			std::ios::iostate mErrorState;
 		};
 	}
 }

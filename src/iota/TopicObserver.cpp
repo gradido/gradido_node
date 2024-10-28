@@ -90,8 +90,7 @@ namespace iota
         };
         auto rc = MQTTAsync_unsubscribe(mqttClient, mTopicString.data(), &options);
 
-        if (rc != MQTTASYNC_SUCCESS)
-        {
+        if (rc != MQTTASYNC_SUCCESS) {
             throw MqttSubscribeException("error unsubscribing", rc, mTopicString);
         }
     }

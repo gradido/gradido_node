@@ -99,5 +99,23 @@ namespace model {
 			resultString += ", try to read from " + readCursorString + ", " + blockSizeString + " bytes";
 			return resultString;
 		}
+
+		std::string OpenFileException::getFullString() const
+		{
+			std::string resultString = what();
+			resultString += ", file name: " + mFileName;
+			if ((std::ios::eofbit & mErrorState) == std::ios::eofbit) {
+				resultString += ", End-of-File reached on input operation";
+			}
+
+			if ((std::ios::failbit & mErrorState) == std::ios::failbit) {
+				resultString += ", Logical error on i/o operation";
+			}
+
+			if ((std::ios::badbit & mErrorState) == std::ios::badbit) {
+				resultString += ", Read/writing error on i/o operation";
+			}
+			return resultString;
+		}
 	}
 }

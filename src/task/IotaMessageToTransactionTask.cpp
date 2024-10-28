@@ -46,7 +46,7 @@ int IotaMessageToTransactionTask::run()
     try {
         Profiler getIndexDataTime;
         dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);
-        LOG_F(ERROR, "time for getting indexiation message from iota: %s", getIndexDataTime.string().data());
+        LOG_F(INFO, "time for getting indexiation message from iota: %s", getIndexDataTime.string().data());
     }
     catch (...) {
         IotaRequest::defaultExceptionHandler(false);
@@ -85,15 +85,18 @@ int IotaMessageToTransactionTask::run()
     }
 
     // log transaction in json format with low verbosity level 1 = debug
+
     toJson::Context toJson(*transaction);    
+    auto transactionAsJson = toJson.run(true);
+    auto messageIdHex = mMessageId.toHex();
     LOG_F(
         2, 
-        "%u %s %s %s\n%s",
+        "%u %s %s\n%s",
         mMilestoneIndex, 
         DataTypeConverter::timePointToString(mTimestamp).data(),
-        *dataIndex.second.get()->data(),
-        mMessageId.toHex().data(),
-        toJson.run(true).data()
+        // dataIndex.second.get()->data(),
+        messageIdHex.data(),
+        transactionAsJson.data()
     );
 
     // if simple validation already failed, we can stop here

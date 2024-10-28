@@ -13,7 +13,7 @@ using namespace blockchain;
 using namespace interaction;
 
 OrderingManager::OrderingManager()
-    : task::Thread("order")
+    : task::Thread("OrderingManager")
 {
     mMessageValidator.init();
 }
@@ -120,7 +120,7 @@ int OrderingManager::ThreadFunction()
                 return a.transaction->getTransactionBody()->getCreatedAt() < b.transaction->getTransactionBody()->getCreatedAt();
                 });
 
-            LOG_F(INFO, "milestone %d, transactions: %d", milestoneId, mt->transactions.size());
+            LOG_F(1, "milestone %d, transactions: %llu", milestoneId, mt->transactions.size());
 
             for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
                 auto transaction = itTransaction->transaction.get();
@@ -131,7 +131,7 @@ int OrderingManager::ThreadFunction()
                 // auto transactionCopy = std::make_unique<gradido::data::GradidoTransaction>(transaction->getSerialized().get());
                 // put transaction to blockchain
                 auto blockchain = blockchainProvider->findBlockchain(itTransaction->communityId);
-                if (blockchain) {
+                if (!blockchain) {
                     throw CommunityNotFoundExceptions("couldn't find group", itTransaction->communityId);
                 }
                 try {
@@ -160,7 +160,7 @@ int OrderingManager::ThreadFunction()
         // remove not longer needed milestone transactions entry
         mMilestonesWithTransactionsMutex.lock();
         mMilestonesWithTransactions.erase(workSetIt);
-        printf("[%s] processed milestone: %d\n", __FUNCTION__, milestoneId);
+        LOG_F(INFO, "processed milestone: %d", milestoneId);
         mMilestonesWithTransactionsMutex.unlock();
     }
     return 0;

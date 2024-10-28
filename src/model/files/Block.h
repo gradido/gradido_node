@@ -42,7 +42,7 @@ namespace model {
 			const char* getResourceType() const { return "model::files::Block"; }
 
 			//! \return size of line (without size field in file)
-			uint16_t readLine(uint32_t startReading, memory::BlockPtr buffer);
+			uint16_t readLine(uint32_t startReading, memory::BlockPtr* buffer);
 			std::shared_ptr<memory::Block> readLine(uint32_t startReading);
 
 			//! \brief call appendLines

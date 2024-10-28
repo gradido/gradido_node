@@ -80,7 +80,7 @@ bool MainServer::init()
 		std::clog << "Error loading communities, please try to delete communities folders and try again!" << std::endl;
 		return false;
 	}
-	OrderingManager::getInstance();
+	OrderingManager::getInstance()->init();
 
 	// JSON Interface Server
 	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
