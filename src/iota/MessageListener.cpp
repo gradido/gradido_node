@@ -15,16 +15,18 @@ using namespace rapidjson;
 
 namespace iota
 {
-    MessageListener::MessageListener(const TopicIndex& index, std::chrono::milliseconds interval/* = 1000*/)
+    MessageListener::MessageListener(const TopicIndex& index, std::string_view alias, std::chrono::milliseconds interval/* = 1000*/)
     : mIndex(index),
+		mAlias(alias),
 	  mInterval(interval),
 	  mFirstRun(true)
     {
+			LOG_F(INFO, "Construct with: %s", mAlias.data());
     }
 
 	MessageListener::~MessageListener()
 	{
-		LOG_F(INFO, "Stop Listen to: %s", mIndex.getHexString().data());
+		LOG_F(INFO, "Stop Listen to: %s", mAlias.data());
 		lock();
 #ifdef IOTA_WITHOUT_MQTT
 		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
@@ -45,7 +47,7 @@ namespace iota
 #else
 		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
 #endif 
-		LOG_F(INFO, " Listen to : %s", mIndex.getHexString().data());
+		LOG_F(INFO, "Listen to: %s", mAlias.data());
 	}
 
     /*void MessageListener::listener(Poco::Timer& timer)
@@ -79,6 +81,7 @@ namespace iota
 		std::vector<MemoryBin> messageIds;
 		try {
 			messageIds = ServerGlobals::g_IotaRequestHandler->findByIndex(mIndex);
+			LOG_F(INFO, "find %d message ids", messageIds.size());
 		}
 		catch (...) {
 			unlock();
@@ -97,13 +100,14 @@ namespace iota
 
 	void MessageListener::messageArrived(MQTTAsync_message* message, TopicType type)
 	{
+		LOG_F(INFO, "message arrived, topic type: %d", type);
 		if (TopicType::MESSAGES_INDEXATION == type) {
 			MessageParser parser(message->payload, message->payloadlen);
 			auto messageId = parser.getMessageId();
 			if (addStoredMessage(messageId)) {
 				MqttClientWrapper::getInstance()->subscribe(messageId, this);
 			}
-			// LOG_F(1, "message arrived: %s", messageId.toHex().data());
+			LOG_F(1, "indexation message arrived: %s", messageId.toHex().data());
 		}
 		else if (TopicType::MESSAGES_METADATA == type) {
 			std::string messageString((const char*)message->payload, message->payloadlen);
@@ -114,14 +118,14 @@ namespace iota
 			
 			if (!document.HasMember("referencedByMilestoneIndex")) {
 				std::string messageIdString(document["messageId"].GetString());
-				// LOG_F(1, "metadata message received without milestone for message id: %s", messageIdString.data());
+				LOG_F(1, "metadata message received without milestone for message id: %s", messageIdString.data());
 				return;
 			}
 			assert(document["referencedByMilestoneIndex"].IsInt());
 
-			MessageId messageId(memory::Block::fromHex(document["messageId"].GetString()));			
+			MessageId messageId(memory::Block::fromHex(document["messageId"].GetString(), document["messageId"].GetStringLength()));			
 			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
-			LOG_F(1, "message arrived: %s confirmed in %d", messageId.toHex().data(), milestoneId);
+			LOG_F(1, "metadata message arrived: %s confirmed in %d", messageId.toHex().data(), milestoneId);
 			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
 		}		
 	}
@@ -146,7 +150,7 @@ namespace iota
 		else
 		{
 			// add if not exist
-			LOG_F(INFO, "%s add message: %s", mIndex.getHexString(), newMessageId.toHex().data());
+			LOG_F(INFO, "%s add message: %s", mAlias.data(), newMessageId.toHex().data());
 			mStoredMessageIds.insert({newMessageId, MESSAGE_NEW});
 			// and send to message validator
 			// validator->pushMessageId(newMessageId);
@@ -194,7 +198,7 @@ namespace iota
 				LOG_F(
 					INFO,
 					"%s add message: %s",
-					mIndex.getHexString().data(),
+					mAlias.data(),
 					messageId.toHex().data()
 				);
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });

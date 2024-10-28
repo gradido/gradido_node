@@ -38,8 +38,10 @@ namespace cache {
 					auto& communityEntry = communitiesArray[i];
 					CommunityIndexEntry entry;
 					rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
+					rapidjson_helper::checkMember(communityEntry, "communityId", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
 					entry.alias = communityEntry["alias"].GetString();
+					entry.communityId = communityEntry["communityId"].GetString();
 					entry.folderName = communityEntry["folder"].GetString();
 					if (communityEntry.HasMember("newBlockUri")) {
 						entry.newBlockUri = communityEntry["newBlockUri"].GetString();
@@ -47,7 +49,7 @@ namespace cache {
 					if (communityEntry.HasMember("blockUriType")) {
 						entry.blockUriType = communityEntry["blockUriType"].GetString();
 					}
-					mCommunities.insert({ entry.alias, entry });
+					mCommunities.insert({ entry.communityId, entry });
 				}
 			}
 			else {
@@ -62,11 +64,11 @@ namespace cache {
 		return mCommunities.size();
 	}
 
-	std::string GroupIndex::getFolder(const std::string& communityAlias)
+	std::string GroupIndex::getFolder(const std::string& communityId)
 	{
 		std::scoped_lock _lock(mWorkMutex);
 
-		auto it = mCommunities.find(communityAlias);
+		auto it = mCommunities.find(communityId);
 		if(it != mCommunities.end()) {
 			std::string folder = ServerGlobals::g_FilesPath + '/';
 			folder += it->second.folderName;
@@ -77,23 +79,23 @@ namespace cache {
 		}
 		return "";
 	}
-	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const std::string& communityAlias) const
+	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const std::string& communityId) const
 	{
 		std::scoped_lock _lock(mWorkMutex);
 
-		auto it = mCommunities.find(communityAlias);
+		auto it = mCommunities.find(communityId);
 		if (it != mCommunities.end()) {
 			return it->second;
 		}
-		throw controller::GroupNotFoundException("couldn't found config details for community", communityAlias);
+		throw controller::GroupNotFoundException("couldn't found config details for community", communityId);
 	}
-	bool GroupIndex::isCommunityInConfig(const std::string& communityAlias) const
+	bool GroupIndex::isCommunityInConfig(const std::string& communityId) const
 	{
 		std::scoped_lock _lock(mWorkMutex);
-		return mCommunities.find(communityAlias) != mCommunities.end();
+		return mCommunities.find(communityId) != mCommunities.end();
 	}
 
-	std::vector<std::string> GroupIndex::listGroupAliases()
+	std::vector<std::string> GroupIndex::listCommunitiesIds()
 	{
 		std::scoped_lock _lock(mWorkMutex);
 		std::vector<std::string> result;

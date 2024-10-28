@@ -45,8 +45,8 @@ namespace gradido {
 			FileBasedProvider& operator= (const FileBasedProvider&) = delete;
 
 			//! load or create blockchain for community, not locking woking mutex!
-			std::shared_ptr<FileBased> addCommunity(const std::string& alias, bool resetIndices);
-			void updateListenerCommunity(const std::string& alias, std::shared_ptr<FileBased> blockchain);
+			std::shared_ptr<FileBased> addCommunity(const std::string& communityId, const std::string&  alias, bool resetIndices);
+			void updateListenerCommunity(const std::string& communityId, const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
 			cache::GroupIndex* mGroupIndex;
 			cache::Dictionary  mCommunityIdIndex;

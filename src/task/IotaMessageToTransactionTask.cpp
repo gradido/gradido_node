@@ -40,9 +40,9 @@ IotaMessageToTransactionTask::~IotaMessageToTransactionTask()
 // TODO: has thrown a null pointer exception
 int IotaMessageToTransactionTask::run()
 {
-    
     std::pair<std::unique_ptr<std::string>, std::unique_ptr<std::string>> dataIndex;
     auto iotaMessageIdHex = mMessageId.toHex();
+    LOG_F(1, "start processing transaction: %s", iotaMessageIdHex.data());
     try {
         Profiler getIndexDataTime;
         dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);

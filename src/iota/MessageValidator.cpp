@@ -63,6 +63,7 @@ namespace iota {
 
     void MessageValidator::run()
     {
+        loguru::set_thread_name("MessageValidator");
         // thread loop, waiting on condition
         while(true) {
             // if at least one unconfirmed message exist, check every MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 
@@ -92,6 +93,7 @@ namespace iota {
                     notConfirmedCount = 0;
                     messageConfirmed(messageId, milestoneId);
 					// and start loading task for it
+                    LOG_F(1, "Milestone: %d was already confirmed, start milestone loading task", milestoneId);
 					std::shared_ptr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
 					task->scheduleTask(task);
                 }
@@ -108,6 +110,7 @@ namespace iota {
 
     void MessageValidator::pushMilestone(int32_t id, Timepoint timestamp)
     {
+        LOG_F(1, "process milestone: %d from timestamp: %s", id, DataTypeConverter::timePointToString(timestamp).data());
         std::lock_guard lock(mConfirmedMessagesMutex);
         
         auto it = mConfirmedMessages.find(id);
@@ -133,6 +136,7 @@ namespace iota {
 
     void MessageValidator::messageConfirmed(const iota::MessageId& messageId, int32_t milestoneId)
     {
+        LOG_F(1, "Message confirmed: %s in milestone: %d", messageId.toHex().data(), milestoneId);
 		// pop will be called in IotaMessageToTransactionTask
 		OrderingManager::getInstance()->pushMilestoneTaskObserver(milestoneId);
 		
@@ -144,6 +148,7 @@ namespace iota {
 				// found others messages which are confirmed from the same milestone
 				// push to list which will be processed after the milestone loading task was finished
 				it->second.push_back(messageId);
+                LOG_F(1, "other messages with same milestone found, push to list");
                 return;
 			}
 		} // scoped lock mConfirmedMessages end
@@ -155,6 +160,7 @@ namespace iota {
 			if (it != mMilestones.end()) {
 				std::shared_ptr<IotaMessageToTransactionTask> task(new IotaMessageToTransactionTask(milestoneId, it->second, messageId));
 				task->scheduleTask(task);
+                LOG_F(1, "found milestone in confirmed milestones list, schedule iota message to transaction task");
 				return;
 			}
 		} // scoped lock milestones end
@@ -162,6 +168,7 @@ namespace iota {
 		// milestone wasn't loaded and other messages for this milestone doesn't exist, so create entry for this milestone 
 		mConfirmedMessagesMutex.lock();
 		mConfirmedMessages.insert({ milestoneId, std::list<MessageId>(1, messageId) });
+        LOG_F(1, "add entry in confirmed messages map with this milestone");
 		mConfirmedMessagesMutex.unlock();
     }
 
@@ -169,6 +176,7 @@ namespace iota {
     {
         //MessageParser parsedMessage(message->payload, message->payloadlen);
         //std::string messageString((const char*)message->payload, message->payloadlen);
+        LOG_F(1, "message: %s", message->payload);
 		Document document;
 		document.Parse((const char*)message->payload);
         rapidjson_helper::checkMember(document, "index", rapidjson_helper::MemberType::INTEGER, "iota milestone/confirmed");
@@ -188,6 +196,7 @@ namespace iota {
 
     int MilestoneLoadingTask::run()
     {
+        LOG_F(1, "start loading milestone");
         auto milestoneTimestamp = ServerGlobals::g_IotaRequestHandler->getMilestoneTimestamp(mMilestoneId);
         if (milestoneTimestamp) {
             auto milestoneTimepoint = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds(milestoneTimestamp));

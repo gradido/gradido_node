@@ -31,9 +31,9 @@ namespace gradido {
 			struct Private { explicit Private() = default; };
 		public:
 			// Constructor is only usable by this class
-			FileBased(Private, std::string_view communityId, std::string_view folder);
+			FileBased(Private, std::string_view communityId, std::string_view alias, std::string_view folder);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
-			static inline std::shared_ptr<FileBased> create(std::string_view communityId, std::string_view folder);
+			static inline std::shared_ptr<FileBased> create(std::string_view communityId, std::string_view alias, std::string_view folder);
 			inline std::shared_ptr<FileBased> getptr();
 			inline std::shared_ptr<const FileBased> getptr() const;
 
@@ -143,9 +143,9 @@ namespace gradido {
 			std::shared_ptr<client::Base> mCommunityServer;
 		};
 
-		std::shared_ptr<FileBased> FileBased::create(std::string_view communityId, std::string_view folder) 
+		std::shared_ptr<FileBased> FileBased::create(std::string_view communityId, std::string_view alias, std::string_view folder) 
 		{
-			return std::make_shared<FileBased>(Private(), communityId, folder);
+			return std::make_shared<FileBased>(Private(), communityId, alias, folder);
 		}
 
 		std::shared_ptr<FileBased> FileBased::getptr()

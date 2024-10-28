@@ -23,12 +23,12 @@ using namespace cache;
 namespace gradido {
 	using namespace interaction;
 	namespace blockchain {
-		FileBased::FileBased(Private, std::string_view communityId, std::string_view folder)
+		FileBased::FileBased(Private, std::string_view communityId, std::string_view alias, std::string_view folder)
 			: Abstract(communityId),
 			mExitCalled(false),
 			mFolderPath(folder),
 			mTaskObserver(std::make_shared<TaskObserver>()),
-			mIotaMessageListener(new iota::MessageListener(communityId)),
+			mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeys.index"))),
 			mBlockchainState(std::string(folder).append("/.state")),
 			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache"), communityId),

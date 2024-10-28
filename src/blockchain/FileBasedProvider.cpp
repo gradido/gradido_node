@@ -54,11 +54,12 @@ namespace gradido {
 			}
 			mGroupIndex = new cache::GroupIndex(communityConfigFile);
 			mGroupIndex->update();
-			auto communitiesAlias = mGroupIndex->listGroupAliases();
-			for (auto& communityAlias : communitiesAlias) {
+			auto communitiesIds = mGroupIndex->listCommunitiesIds();
+			for (auto& communityId : communitiesIds) {
 				// exit if at least one blockchain from config couldn't be loaded
 				// should only occure with invalid config
-				if (!addCommunity(communityAlias, resetAllCommunityIndices)) {
+				const auto& details = mGroupIndex->getCommunityDetails(communityId);
+				if (!addCommunity(communityId, details.alias, resetAllCommunityIndices)) {
 					return false;
 				}
 			}
@@ -79,48 +80,49 @@ namespace gradido {
 				throw ClassNotInitalizedException("please call init before", "blockchain::FileBasedProvider");
 			}
 			mGroupIndex->update();
-			auto communitiesAlias = mGroupIndex->listGroupAliases();
+			auto communitiesIds = mGroupIndex->listCommunitiesIds();
 			int addedBlockchainsCount = 0;
-			for (auto& communityAlias : communitiesAlias) {
-				auto it = mBlockchainsPerGroup.find(communityAlias);
+			for (auto& communityId : communitiesIds) {
+				const auto& details = mGroupIndex->getCommunityDetails(communityId);
+				auto it = mBlockchainsPerGroup.find(communityId);
 				if (it == mBlockchainsPerGroup.end()) {
-					if(addCommunity(communityAlias, false)) {
+					if(addCommunity(communityId, details.alias, false)) {
 						addedBlockchainsCount++;
 					}
 				}
 				else {
-					updateListenerCommunity(communityAlias, it->second);
+					updateListenerCommunity(communityId, details.alias, it->second);
 				}
 			}
 			return addedBlockchainsCount;
 		}
 
-		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(const std::string& communityAlias, bool resetIndices)
+		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(const std::string& communityId, const std::string& alias, bool resetIndices)
 		{
 			try {
-				auto folder = mGroupIndex->getFolder(communityAlias);
+				auto folder = mGroupIndex->getFolder(communityId);
 
 				// with that call community will be initialized and start listening
-				auto blockchain = FileBased::create(communityAlias, folder);
-				updateListenerCommunity(communityAlias, blockchain);
+				auto blockchain = FileBased::create(communityId, alias, folder);
+				updateListenerCommunity(communityId, alias, blockchain);
 				if (!blockchain->init(false)) {
-					LOG_F(ERROR, "error initalizing blockchain: %s", communityAlias.data());
+					LOG_F(ERROR, "error initalizing blockchain: %s", communityId.data());
 					return nullptr;
 				}
-				mBlockchainsPerGroup.insert({ communityAlias, blockchain });
+				mBlockchainsPerGroup.insert({ communityId, blockchain });
 				return blockchain;
 			}
 			catch (GradidoBlockchainException& ex) {
 				LOG_F(ERROR, "gradido blockchain exception: %s in community : %s",
 					ex.getFullString().data(),
-					communityAlias.data()
+					communityId.data()
 				);
 				return nullptr;
 			}
 		}
-		void FileBasedProvider::updateListenerCommunity(const std::string& alias, std::shared_ptr<FileBased> blockchain)
+		void FileBasedProvider::updateListenerCommunity(const std::string& communityId, const std::string& alias, std::shared_ptr<FileBased> blockchain)
 		{
-			const auto& communityConfig = mGroupIndex->getCommunityDetails(alias);
+			const auto& communityConfig = mGroupIndex->getCommunityDetails(communityId);
 			// for notification of community server by new transaction
 			// deprecated, will be replaced with mqtt in future
 			if (!communityConfig.newBlockUri.empty()) {
