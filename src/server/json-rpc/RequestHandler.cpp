@@ -62,7 +62,7 @@ namespace server {
 
 		void RequestHandler::handleRequest(const httplib::Request& request, httplib::Response& response, MethodType method)
 		{
-			loguru::set_thread_name("json-rpc-server");
+			loguru::set_thread_name("json-rpc");
 			if (ServerConfig::g_AllowUnsecureFlags & ServerConfig::UNSECURE_CORS_ALL) {
 				response.set_header("Access-Control-Allow-Origin", "*");
 				response.set_header("Access-Control-Allow-Headers", "Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
@@ -121,7 +121,7 @@ namespace server {
 			StringBuffer buffer;
 			Writer<StringBuffer> writer(buffer);
 			responseJson.Accept(writer);
-			printf("response: %s\n", buffer.GetString());
+			//printf("response: %s\n", buffer.GetString());
 			response.set_content(buffer.GetString(), "application/json");
 		}
 
