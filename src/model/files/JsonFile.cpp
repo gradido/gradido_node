@@ -21,7 +21,12 @@ namespace model {
 				throw FileNotFoundException("cannot open json file", mFileName.data());
 			}
 			IStreamWrapper isw(fileStream);
-			mJson.Clear();
+			if (mJson.IsArray()) {
+				mJson.Clear();
+			}
+			else if (mJson.IsObject()) {
+				mJson.RemoveAllMembers();
+			}
 			mJson.ParseStream(isw);
 			if (mJson.HasParseError()) {
 				throw RapidjsonParseErrorException("error parsing json file", mJson.GetParseError(), mJson.GetErrorOffset())
