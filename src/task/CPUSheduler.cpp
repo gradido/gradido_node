@@ -19,6 +19,7 @@ namespace task {
 		for(int i = 0; i < threadCount; i++) {
 			sprintf(&nameBuffer[len], "%.2d", i); 
 			mThreads[i] = new CPUShedulerThread(this, nameBuffer);
+			mThreads[i]->init();
 		}
 	}
 
@@ -27,6 +28,7 @@ namespace task {
 		//printf("[CPUSheduler::~CPUSheduler]\n");
 		for(int i = 0; i < mThreadCount; i++) {
 			if (mThreads[i]) {
+				mThreads[i]->exit();
 				delete mThreads[i];
 			}
 		}

@@ -55,13 +55,10 @@ namespace task {
 
 		void setNewTask(TaskPtr cpuTask);
 
-#ifdef _UNI_LIB_DEBUG
 		std::string getName() {return mName;}
-#endif
-    protected:
-#ifdef _UNI_LIB_DEBUG
+		
+	protected:
 		std::string mName;
-#endif
 		std::mutex mWorkMutex;
 			
 	private: 

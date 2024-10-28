@@ -15,9 +15,7 @@ namespace task {
 	CPUShedulerThread::CPUShedulerThread(CPUSheduler* parent, const char* name)
 		: Thread(name), mParent(parent)
 	{
-#ifdef _UNI_LIB_DEBUG
 		mName = name;
-#endif
 		mWaitingTask = mParent->getNextUndoneTask(this);
 	}
 
@@ -27,6 +25,8 @@ namespace task {
 
 	int CPUShedulerThread::ThreadFunction()
 	{
+		loguru::set_thread_name(mName.data());
+		
 		while(mWaitingTask)
 		{
 				

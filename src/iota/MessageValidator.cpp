@@ -93,6 +93,7 @@ namespace iota {
                     notConfirmedCount = 0;
                     messageConfirmed(messageId, milestoneId);
 					// and start loading task for it
+                    LOG_F(1, "Milestone: %d was already confirmed, start milestone loading task", milestoneId);
 					std::shared_ptr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
 					task->scheduleTask(task);
                 }
@@ -195,6 +196,7 @@ namespace iota {
 
     int MilestoneLoadingTask::run()
     {
+        LOG_F(1, "start loading milestone");
         auto milestoneTimestamp = ServerGlobals::g_IotaRequestHandler->getMilestoneTimestamp(mMilestoneId);
         if (milestoneTimestamp) {
             auto milestoneTimepoint = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds(milestoneTimestamp));
