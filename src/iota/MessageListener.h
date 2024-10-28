@@ -52,7 +52,7 @@ namespace iota
     {
     public:
         //! \param index should be something like GRADIDO.gdd1
-        MessageListener(const TopicIndex& index, std::chrono::milliseconds interval = std::chrono::milliseconds(1000));
+        MessageListener(const TopicIndex& index, std::string_view alias, std::chrono::milliseconds interval = std::chrono::milliseconds(1000));
         ~MessageListener();
         
         //virtual void listener(Poco::Timer& timer);
@@ -75,6 +75,7 @@ namespace iota
         bool addStoredMessage(const MessageId& newMessageId);
 
         TopicIndex mIndex; 
+        std::string mAlias;
         std::chrono::milliseconds mInterval;
 
         enum MessageState 

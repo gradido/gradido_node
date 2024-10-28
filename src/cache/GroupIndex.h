@@ -13,6 +13,7 @@ namespace cache {
 	struct CommunityIndexEntry
 	{
 		std::string alias;
+		std::string communityId;
 		std::string folderName;
 		std::string newBlockUri;
 		std::string blockUriType;
@@ -49,14 +50,14 @@ namespace cache {
 		//! \brief get full folder path for group public key
 		//! if the hash from groupPublicKey exist multiple time, getting folder from mConfig, else from mHashList (faster)
 		//! \return complete path to group folder or empty path if not group not found
-		std::string getFolder(const std::string& communityAlias);
+		std::string getFolder(const std::string& communityId);
 		//! throw GroupNotFoundException Exception of community don't exist in config
-		const CommunityIndexEntry& getCommunityDetails(const std::string& communityAlias) const;
-		bool isCommunityInConfig(const std::string& communityAlias) const;
+		const CommunityIndexEntry& getCommunityDetails(const std::string& communityId) const;
+		bool isCommunityInConfig(const std::string& communityId) const;
 
 		//! \brief collect all froup aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server
-		std::vector<std::string> listGroupAliases();		
+		std::vector<std::string> listCommunitiesIds();		
 
 	protected:
 		mutable std::mutex mWorkMutex;
