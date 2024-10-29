@@ -46,7 +46,7 @@ int IotaMessageToTransactionTask::run()
     try {
         Profiler getIndexDataTime;
         dataIndex = ServerGlobals::g_IotaRequestHandler->getIndexiationMessageDataIndex(iotaMessageIdHex);
-        LOG_F(INFO, "time for getting indexiation message from iota: %s", getIndexDataTime.string().data());
+        // LOG_F(INFO, "time for getting indexiation message from iota: %s", getIndexDataTime.string().data());
     }
     catch (...) {
         IotaRequest::defaultExceptionHandler(false);

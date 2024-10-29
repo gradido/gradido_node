@@ -178,7 +178,14 @@ namespace gradido {
 			uint64_t id = 1;
 			if (lastTransaction) {
 				id = lastTransaction->getTransactionNr() + 1;
+			}			
+			
+			auto& lastBlock = getBlock(mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1));
+			if (id <= lastBlock.getBlockIndex().getTransactionsCount()) {
+				// don't find correct last transaction even if it should exist
+				lastTransaction = findOne(Filter::LAST_TRANSACTION);
 			}
+			
 			auto transactionBody = gradidoTransaction->getTransactionBody();
 			// check for deferred transfer and if found, add to deferred transfer cache
 			memory::ConstBlockPtr transferSenderPublicKey = nullptr;
@@ -251,6 +258,7 @@ namespace gradido {
 				LOG_F(WARNING, "couldn't push transaction: %llu to block: %d", id, blockNr);
 				return false;
 			}
+			LOG_F(1, "update last Transaction to: %llu", id);
 			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, id);
 			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
 			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
@@ -559,10 +567,8 @@ namespace gradido {
 		void FileBased::iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const
 		{
 			bool orderDesc = filter.searchDirection == SearchDirection::DESC;
-			int blockNr = 1;
-			if (orderDesc) {
-				blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
-			}
+			auto lastBlockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
+			int blockNr = orderDesc ? lastBlockNr : 1;
 			do {
 				auto& block = getBlock(blockNr);
 				if (!block.getBlockIndex().getTransactionsCount()) {
@@ -577,7 +583,7 @@ namespace gradido {
 				else {
 					blockNr++;
 				}
-			} while (blockNr >= 1);
+			} while (blockNr >= 1 && blockNr <= lastBlockNr);
 		}
 
 		cache::Block& FileBased::getBlock(uint32_t blockNr) const

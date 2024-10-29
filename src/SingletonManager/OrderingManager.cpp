@@ -136,6 +136,7 @@ int OrderingManager::ThreadFunction()
                 }
                 try {
                     bool result = blockchain->addGradidoTransaction(itTransaction->transaction, itTransaction->messageId, mt->milestoneTimestamp);
+                    LOG_F(INFO, "added transaction to blockchain with messageId:\n%s", itTransaction->messageId->convertToHex().data());
                 }
                 catch (GradidoBlockchainException& ex) {
                     auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
@@ -143,15 +144,13 @@ int OrderingManager::ThreadFunction()
                     if (communityServer) {
                         communityServer->notificateFailedTransaction(*itTransaction->transaction, ex.what(), itTransaction->messageId->convertToHex());
                     }
-                    LOG_F(INFO, "transaction not added: %s", ex.getFullString());
                     try {
                         toJson::Context toJson(*itTransaction->transaction);
-                        LOG_F(INFO, "transaction: %s", toJson.run(true).data());
-                    }
-                    catch (GradidoBlockchainException& ex) {
-                        LOG_F(ERROR, "gradido blockchain exception on parsing transaction: %s", ex.getFullString().data());
+                        LOG_F(INFO, "transaction not added:\n%s\n%s", ex.getFullString().data(), toJson.run(true).data());
+                    } catch (GradidoBlockchainException& ex) {
+                        LOG_F(ERROR, "gradido blockchain exception on parsing transaction\n%s", ex.getFullString().data());
                     } catch(std::exception& ex) {
-                        LOG_F(ERROR, "exception on parsing transaction: %s", ex.what());
+                        LOG_F(ERROR, "exception on parsing transaction:\n%s", ex.what());
                     }
                 }
             }
