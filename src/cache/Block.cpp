@@ -57,6 +57,7 @@ namespace cache {
 				if (!rebuildBlockIndexTask) {
 					throw GradidoNullPointerException("missing rebuild block index task", "RebuildBlockIndexTask", __FUNCTION__);
 				}
+				rebuildBlockIndexTask->scheduleTask(rebuildBlockIndexTask);
 				int sumWaited = 0;
 				while (!rebuildBlockIndexTask->isPendingQueueEmpty() && sumWaited < 1000) {
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -110,7 +111,6 @@ namespace cache {
 	void Block::addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor) const
 	{
 		auto transactionEntry = std::make_shared<NodeTransactionEntry>(serializedTransaction, mBlockchain, fileCursor);
-		std::lock_guard lock(mFastMutex);
 		if (mExitCalled) return;
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
 	}

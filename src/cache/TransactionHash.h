@@ -8,11 +8,9 @@
 #include <unordered_map>
 
 namespace gradido {
-	namespace blockchain {
-		class NodeTransactionEntry;
-	}
 	namespace data {
 		class GradidoTransaction;
+		class ConfirmedTransaction;
 	}
 }
 
@@ -22,7 +20,7 @@ namespace cache {
 	/*!
 	* @author einhornimmond
 	* @date 2024-10-18
-	* Cache for stroing transaction hashes for fast doublettes check
+	* Cache for storing transaction hashes for fast doublettes check
 	*/
 	class TransactionHash
 	{
@@ -30,8 +28,8 @@ namespace cache {
 		TransactionHash(std::string_view communityId);
 		virtual ~TransactionHash();
 
-		void push(std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> transactionEntry);
-		bool has(std::shared_ptr<const gradido::data::GradidoTransaction> transaction) const;
+		void push(const gradido::data::ConfirmedTransaction& confirmedTransaction);
+		bool has(const gradido::data::GradidoTransaction& gradidoTransaction) const;
 	protected:
 		//! key is first 8 Byte from Transaction Signature, the distribution on ed25519 signatures should be good enough even by using only the first 8 Bytes
 		//! data are transaction nr

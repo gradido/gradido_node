@@ -267,6 +267,9 @@ namespace cache {
 		unsigned int entryCursor = 0;
 		while (intervalIt != intervalEnd) 
 		{
+			if (revert) {
+				intervalIt--;
+			}
 			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
 			assert(yearIt != mYearMonthAddressIndexEntrys.end());
 			auto monthIt = yearIt->second.find(intervalIt->month());
@@ -310,10 +313,7 @@ namespace cache {
 				}
 				entryCursor++;
 			}
-			if (revert) {
-				intervalIt--;
-			}
-			else {
+			if(!revert) {
 				intervalIt++;
 			}
 		}

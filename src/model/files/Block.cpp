@@ -194,6 +194,7 @@ namespace model {
 				crypto_generichash_update(&state, hash, sizeof hash);
 				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
 				crypto_generichash_final(&state, hash, sizeof hash);
+				LOG_F(1, "block part hash in %s: %s", mBlockPath.data(), memory::Block(crypto_generichash_KEYBYTES, hash).convertToHex().data());
 				//printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
 			}
 
@@ -297,9 +298,7 @@ namespace model {
 				auto lineSize = readLine(fileCursor, &readBuffer);
 				fileCursor += lineSize + sizeof(uint16_t);
 				rebuildTask->pushLine(fileCursor, readBuffer);
-				rebuildTask->scheduleTask(rebuildTask);
-				//
-				crypto_generichash_update(&state, (const unsigned char*)readBuffer->data(), lineSize);
+				crypto_generichash_update(&state, (const unsigned char*)readBuffer->data(), readBuffer->size());
 			}
 			
 			crypto_generichash_final(&state, hash, sizeof hash);

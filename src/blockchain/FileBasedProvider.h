@@ -34,7 +34,7 @@ namespace gradido {
 		protected:
 			void clear();
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
-			std::mutex mWorkMutex;
+			std::recursive_mutex mWorkMutex;
 
 		private:
 			FileBasedProvider();

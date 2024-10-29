@@ -99,9 +99,11 @@ namespace model {
 			mFileName.append(fileNameStream.str());
 			
 			// create file if not exist
-			std::ofstream file(mFileName, std::ofstream::binary);
-			if(file.fail()) {
-				LOG_F(ERROR, "could not create block index file: %s", mFileName.data());
+			if (!std::filesystem::exists(mFileName)) {
+				std::ofstream file(mFileName, std::ofstream::binary);
+				if (file.fail()) {
+					LOG_F(ERROR, "could not create block index file: %s", mFileName.data());
+				}
 			}
 
 		}

@@ -53,8 +53,8 @@ namespace cache {
 		//! \brief load transaction from cache or file system
 		std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t transactionNr) const;
 
-		inline std::shared_ptr<BlockIndex> getBlockIndex() { return mBlockIndex; }
-		inline std::shared_ptr<const BlockIndex> getBlockIndex() const { return mBlockIndex; }
+		inline BlockIndex& getBlockIndex() { return *mBlockIndex; }
+		inline const BlockIndex& getBlockIndex() const { return *mBlockIndex; }
 
 		bool hasSpaceLeft();
 
@@ -64,6 +64,7 @@ namespace cache {
 		
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
+		//! not locking mutex!
 		void addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor) const;
 		
 		mutable std::mutex mFastMutex;

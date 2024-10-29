@@ -60,6 +60,7 @@ namespace gradido {
 				// should only occure with invalid config
 				const auto& details = mGroupIndex->getCommunityDetails(communityId);
 				if (!addCommunity(communityId, details.alias, resetAllCommunityIndices)) {
+					LOG_F(ERROR, "error adding community %s in folder: %s", details.alias.data(), details.folderName.data());
 					return false;
 				}
 			}
@@ -108,17 +109,19 @@ namespace gradido {
 				// with that call community will be initialized and start listening
 				auto blockchain = FileBased::create(communityId, alias, folder);
 				updateListenerCommunity(communityId, alias, blockchain);
+				// need to have blockchain in map for init able to work
+				mBlockchainsPerGroup.insert({ communityId, blockchain });
 				if (!blockchain->init(false)) {
 					LOG_F(ERROR, "error initalizing blockchain: %s", communityId.data());
+					mBlockchainsPerGroup.erase(communityId);
 					return nullptr;
 				}
-				mBlockchainsPerGroup.insert({ communityId, blockchain });
 				return blockchain;
 			}
 			catch (GradidoBlockchainException& ex) {
-				LOG_F(ERROR, "gradido blockchain exception: %s in community : %s",
+				LOG_F(ERROR, "gradido blockchain exception: \n%s\nin community : %s",
 					ex.getFullString().data(),
-					communityId.data()
+					alias.data()
 				);
 				return nullptr;
 			}

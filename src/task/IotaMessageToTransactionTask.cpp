@@ -170,8 +170,8 @@ int IotaMessageToTransactionTask::run()
     // if this transaction doesn't belong to us, we can quit here 
     // also if we already have this transaction
     auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
-    if (!fileBasedBlockchain || fileBasedBlockchain->isTransactionAlreadyExist(transaction)) {
-        LOG_F(ERROR, "transaction skipped because it cames from other group or was found in cache, messageId: %s",
+    if (!fileBasedBlockchain || fileBasedBlockchain->isTransactionAlreadyExist(*transaction)) {
+        LOG_F(INFO, "transaction skipped because it cames from other group or was found in cache, messageId: %s",
             mMessageId.toHex().data()
         );
         return 0;

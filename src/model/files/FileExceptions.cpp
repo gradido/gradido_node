@@ -57,8 +57,8 @@ namespace model {
 			resultSize += mHash1Hex.size() + mHash2Hex.size() + 2 + 9 + 9;
 			result.reserve(resultSize);
 			result = what();
-			result += ", hash1: " + mHash1Hex;
-			result += ", hash2: " + mHash2Hex;
+			result += "\nhash1: " + mHash1Hex;
+			result += "\nhash2: " + mHash2Hex;
 			return result;
 		}
 

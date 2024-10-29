@@ -27,6 +27,7 @@ namespace gradido {
 			: Abstract(communityId),
 			mExitCalled(false),
 			mFolderPath(folder),
+			mAlias(alias),
 			mTaskObserver(std::make_shared<TaskObserver>()),
 			mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeys.index"))),
@@ -93,6 +94,44 @@ namespace gradido {
 				mDeferredTransfersCache.reset();
 				rescanForDeferredTransfers();
 			}
+			// load first GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE transaction into cache and validate the transaction to check file integrity
+			Profiler timeUsed;
+			FilterBuilder builder;
+			int count = 0;
+			findAll(builder
+				.setSearchDirection(SearchDirection::DESC)
+				.setPagination({ GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE })
+				.setFilterFunction([this, &count](const TransactionEntry& transactionEntry) -> FilterResult {
+					auto previousTransactionNr = transactionEntry.getTransactionNr() - 1;
+					data::ConstConfirmedTransactionPtr previousConfirmedTransaction;
+					auto transactionBody = transactionEntry.getTransactionBody();
+					validate::Context validator(*transactionEntry.getConfirmedTransaction());
+					if (previousTransactionNr >= 1) {
+						auto entry = getTransactionForId(previousTransactionNr);
+						if (entry) {
+							previousConfirmedTransaction = entry->getConfirmedTransaction();
+						}
+					}
+					validate::Type validationLevel = validate::Type::SINGLE | validate::Type::ACCOUNT;
+					if (transactionBody->getType() != data::CrossGroupType::LOCAL) {
+						validationLevel = validationLevel | validate::Type::PAIRED;
+					}
+					if (previousConfirmedTransaction) {
+						validationLevel = validationLevel | validate::Type::PREVIOUS;
+						validator.setSenderPreviousConfirmedTransaction(previousConfirmedTransaction);
+					}										
+					validator.run(validationLevel, getCommunityId(), getProvider());
+					mTransactionHashCache.push(*transactionEntry.getConfirmedTransaction());
+					count++;
+					return FilterResult::DISMISS;
+				})
+				.build()
+			);
+			LOG_F(INFO, "time used for loading and validating last: %d/%d transactions: %s",
+				count,
+				GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE,
+				timeUsed.string().data()
+			);
 
 			mIotaMessageListener->run();
 			return true;
@@ -131,7 +170,7 @@ namespace gradido {
 			}
 			std::lock_guard _lock(mWorkMutex);
 			if (mExitCalled) { return false;}
-			if (isTransactionAlreadyExist(gradidoTransaction)) {
+			if (isTransactionAlreadyExist(*gradidoTransaction)) {
 				LOG_F(WARNING, "transaction skipped because it already exist");
 				return false;
 			}
@@ -188,7 +227,7 @@ namespace gradido {
 				accountBalance.toString(),
 				lastConfirmedTransaction
 			);
-			validate::Type validationLevel = validate::Type::SINGLE;
+			validate::Type validationLevel = validate::Type::SINGLE | validate::Type::ACCOUNT;
 			if (lastTransaction) {
 				validationLevel = validationLevel | validate::Type::PREVIOUS;
 			}
@@ -205,19 +244,16 @@ namespace gradido {
 			validator.run(validationLevel, getCommunityId(), getProvider());
 
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
-			auto block = getBlock(blockNr);
-			if (!block) {
-				throw GradidoNullPointerException("couldn't create new block", "cache::Block", __FUNCTION__);
-			}
+			auto& block = getBlock(blockNr);
 			auto nodeTransactionEntry = std::make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
-			if (!block->pushTransaction(nodeTransactionEntry)) {
+			if (!block.pushTransaction(nodeTransactionEntry)) {
 				// block was already stopped, so we can  stop here also 
 				LOG_F(WARNING, "couldn't push transaction: %llu to block: %d", id, blockNr);
 				return false;
 			}
 			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, id);
 			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
-			mTransactionHashCache.push(nodeTransactionEntry);
+			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
 			mMessageIdsCache.add(confirmedTransaction->getMessageId(), id);
 
 			// check if a deferred transfer was completly redeemed
@@ -239,7 +275,7 @@ namespace gradido {
 			TransactionEntries result;
 			bool stopped = false;
 			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex()->findTransactions(filter, *mPublicKeysIndex);
+				auto transactionNrs = block.getBlockIndex().findTransactions(filter, *mPublicKeysIndex);
 				for (auto transactionNr : transactionNrs) {
 					auto transaction = block.getTransaction(transactionNr);
 					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION, mCommunityId);
@@ -260,7 +296,7 @@ namespace gradido {
 		{
 			std::vector<uint64_t> result;
 			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex()->findTransactions(filter, *mPublicKeysIndex);
+				auto transactionNrs = block.getBlockIndex().findTransactions(filter, *mPublicKeysIndex);
 				result.insert(result.end(), transactionNrs.begin(), transactionNrs.end());
 				return true;
 			});
@@ -271,7 +307,7 @@ namespace gradido {
 		{
 			size_t count = 0;
 			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
-				count += block.getBlockIndex()->countTransactions(filter, *mPublicKeysIndex);
+				count += block.getBlockIndex().countTransactions(filter, *mPublicKeysIndex);
 				return true;
 			});
 			return count;
@@ -431,14 +467,15 @@ namespace gradido {
 		std::shared_ptr<const TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const
 		{
 			std::lock_guard _lock(mWorkMutex);
-			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
-			std::shared_ptr<cache::Block> block;
+			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			do {
-				block = getBlock(blockNr);
+				auto& block = getBlock(blockNr);
+				if (block.getBlockIndex().hasTransactionNr(transactionId)) {
+					return block.getTransaction(transactionId);
+				}
 				blockNr--;
-			} while (transactionId < block->getBlockIndex()->getMinTransactionNr() && blockNr > 0);
-
-			return block->getTransaction(transactionId);
+			} while (blockNr > 0);
+			return nullptr;
 		}
 		std::shared_ptr<const TransactionEntry> FileBased::findByMessageId(
 			memory::ConstBlockPtr messageId,
@@ -478,8 +515,8 @@ namespace gradido {
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
 			auto lastBlockNr = model::files::Block::findLastBlockFileInFolder(mFolderPath);
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_BLOCK_NR, lastBlockNr);
-			auto block = getBlock(lastBlockNr);
-			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_TRANSACTION_ID, block->getBlockIndex()->getMaxTransactionNr());			
+			auto& block = getBlock(lastBlockNr);
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_TRANSACTION_ID, block.getBlockIndex().getMaxTransactionNr());			
 			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
 		}
 		void FileBased::rescanForDeferredTransfers()
@@ -526,10 +563,12 @@ namespace gradido {
 			if (orderDesc) {
 				blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			}
-			auto block = getBlock(blockNr);
-			while (blockNr >= 1 && block->getBlockIndex()->getTransactionsCount()) 
-			{
-				if (!func(*block)) {
+			do {
+				auto& block = getBlock(blockNr);
+				if (!block.getBlockIndex().getTransactionsCount()) {
+					break;
+				}
+				if (!func(block)) {
 					break;
 				}
 				if (orderDesc) {
@@ -538,12 +577,12 @@ namespace gradido {
 				else {
 					blockNr++;
 				}
-				block = getBlock(blockNr);
-			}
+			} while (blockNr >= 1);
 		}
 
-		std::shared_ptr<cache::Block> FileBased::getBlock(uint32_t blockNr) const 
+		cache::Block& FileBased::getBlock(uint32_t blockNr) const
 		{
+			assert(blockNr);
 			auto block = mCachedBlocks.get(blockNr);
 			if (!block) {
 				auto block = std::make_shared<cache::Block>(blockNr, getptr());
@@ -554,9 +593,9 @@ namespace gradido {
 					}
 				}
 				mCachedBlocks.add(blockNr, block);
-				return block;
+				return *block;
 			}
-			return block.value();
+			return *block.value();
 		}
 	}
 }

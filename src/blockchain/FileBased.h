@@ -14,6 +14,10 @@
 #include "gradido_blockchain/blockchain/Abstract.h"
 #include "gradido_blockchain/lib/AccessExpireCache.h"
 
+//! how many transactions will be readed from disk on blockchain startup and put into cache for preventing doublettes
+//! iota stores up to 1000 transactions
+#define GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE 1500
+
 #include <mutex>
 
 namespace gradido {
@@ -96,9 +100,10 @@ namespace gradido {
 				return mPublicKeysIndex->getOrAddIndexForString(publicKey->copyAsString());
 			}
 			inline const std::string& getFolderPath() const { return mFolderPath; }
+			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
 
-			inline bool isTransactionAlreadyExist(std::shared_ptr<const gradido::data::GradidoTransaction> transaction) const {
+			inline bool isTransactionAlreadyExist(const gradido::data::GradidoTransaction& transaction) const {
 				return mTransactionHashCache.has(transaction);
 			}
 
@@ -114,11 +119,12 @@ namespace gradido {
 			//! \param func if function return false, stop iteration
 			void iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const;
 
-			std::shared_ptr<cache::Block> getBlock(uint32_t blockNr) const;
+			cache::Block& getBlock(uint32_t blockNr) const;
 
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
 			std::string mFolderPath;
+			std::string mAlias;
 
 			//! observe write to file tasks from block, mayber later more
 			mutable std::shared_ptr<TaskObserver> mTaskObserver;

@@ -41,9 +41,13 @@ bool MainServer::init()
 	std::string logPath = ServerGlobals::g_FilesPath + "/logs";
 	fs::create_directories(logPath);
 	// beware, no logrotation in loguru
+	// TODO: add config options to choose which to use
 	// TODO: check switching to https://github.com/gabime/spdlog
 	std::string errorLogFile = logPath + "/errors.log";
 	loguru::add_file(errorLogFile.data(), loguru::Append, loguru::Verbosity_WARNING);
+	// info 
+	std::string infoLogFile = logPath + "/infos.log";
+	loguru::add_file(infoLogFile.data(), loguru::Append, loguru::Verbosity_INFO);
 	// infos and above
 	std::string debugLogFile = logPath + "/debug.log";
 	loguru::add_file(debugLogFile.data(), loguru::Truncate, loguru::Verbosity_MAX);
@@ -77,7 +81,7 @@ bool MainServer::init()
 	iota::MqttClientWrapper::getInstance()->init();
 
 	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
-		std::clog << "Error loading communities, please try to delete communities folders and try again!" << std::endl;
+		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
 	OrderingManager::getInstance()->init();
@@ -99,9 +103,11 @@ void MainServer::exit()
 
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage
-	mHttpServer->exit();
-	delete mHttpServer;
-	mHttpServer = nullptr;
+	if (mHttpServer) {
+		mHttpServer->exit();
+		delete mHttpServer;
+		mHttpServer = nullptr;
+	}
 
 	iota::MqttClientWrapper::getInstance()->exit();
 	CacheManager::getInstance()->getFuzzyTimer()->stop();

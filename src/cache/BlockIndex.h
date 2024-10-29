@@ -121,7 +121,8 @@ namespace cache {
 	uint64_t BlockIndex::getTransactionsCount() const 
 	{ 
 		std::lock_guard _lock(mRecursiveMutex);
-		return mMaxTransactionNr - mMinTransactionNr; 
+		if (!mMaxTransactionNr && !mMinTransactionNr) return 0;
+		return mMaxTransactionNr - mMinTransactionNr + 1; 
 	}
 }
 

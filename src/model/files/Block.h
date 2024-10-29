@@ -98,7 +98,9 @@ namespace model {
 			std::vector<uint32_t> mCursorPositions;
 		};
 
-		
+		//! TODO: update for able to start with first line, while calling function is still loading more and more lines from file
+		//! gives the additional option to prevent task for storing to many lines at once
+		//! use ability of Task Object for resheduling
 		class RebuildBlockIndexTask : public task::CPUTask
 		{
 		public:

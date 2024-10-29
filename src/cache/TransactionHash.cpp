@@ -23,21 +23,21 @@ namespace cache {
 		mSignaturePartTransactionNrs.clear();
 	}
 
-	void TransactionHash::push(std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> transactionEntry)
+	void TransactionHash::push(const gradido::data::ConfirmedTransaction& confirmedTransaction)
 	{
-		auto gradidoTransaction = transactionEntry->getConfirmedTransaction()->getGradidoTransaction();
+		auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 		auto firstSignature = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getSignature();
 		auto pair = mSignaturePartTransactionNrs.get(firstSignature);
 		if (pair.has_value()) {
 			throw GradidoAlreadyExist("key already exist");
 		}
-		mSignaturePartTransactionNrs.add(firstSignature, transactionEntry->getTransactionNr());
+		mSignaturePartTransactionNrs.add(firstSignature, confirmedTransaction.getId());
 	}
 
-	bool TransactionHash::has(std::shared_ptr<const data::GradidoTransaction> transaction) const
+	bool TransactionHash::has(const data::GradidoTransaction& transaction) const
 	{
 		// get first signature from transaction
-		auto firstSignature = transaction->getSignatureMap().getSignaturePairs().front().getSignature();
+		auto firstSignature = transaction.getSignatureMap().getSignaturePairs().front().getSignature();
 		auto pair = mSignaturePartTransactionNrs.get(SignatureOctet(firstSignature));
 		if (pair.has_value()) {
 			// hash collision check
