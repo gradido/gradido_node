@@ -296,11 +296,10 @@ namespace model {
 			// read in every line
 			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
 				auto lineSize = readLine(fileCursor, &readBuffer);
-				fileCursor += lineSize + sizeof(uint16_t);
 				rebuildTask->pushLine(fileCursor, readBuffer);
 				crypto_generichash_update(&state, (const unsigned char*)readBuffer->data(), readBuffer->size());
-			}
-			
+				fileCursor += lineSize + sizeof(uint16_t);
+			}			
 			crypto_generichash_final(&state, hash, sizeof hash);
 
 			unsigned char hash2[crypto_generichash_KEYBYTES];
@@ -376,7 +375,8 @@ namespace model {
 
 		int RebuildBlockIndexTask::run()
 		{
-			while (!mPendingFileCursorLine.empty()) {
+			while (!mPendingFileCursorLine.empty()) 
+			{
 				std::pair<int32_t, std::shared_ptr<memory::Block>> fileCursorLine;
 				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
 					throw std::runtime_error("don't get next file cursor line");

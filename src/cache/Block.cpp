@@ -14,6 +14,7 @@
 #include "gradido_blockchain/Application.h"
 #include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/lib/Profiler.h"
 
 #include "loguru/loguru.hpp"
 
@@ -53,6 +54,7 @@ namespace cache {
 		if (!mBlockIndex->loadFromFile()) {
 			// check if Block exist
 			if (mBlockFile->getCurrentFileSize()) {
+				Profiler timeUsed;
 				auto rebuildBlockIndexTask = mBlockFile->rebuildBlockIndex(mBlockchain);
 				if (!rebuildBlockIndexTask) {
 					throw GradidoNullPointerException("missing rebuild block index task", "RebuildBlockIndexTask", __FUNCTION__);
@@ -74,6 +76,7 @@ namespace cache {
 						mBlockIndex->addIndicesForTransaction(transactionEntry);
 					}
 				);
+				LOG_F(INFO, "time for rebuilding block index for block %s: %s", mBlockFile->getBlockPath().data(), timeUsed.string().data());
 			}
 			else {
 				return false;

@@ -47,11 +47,11 @@ namespace cache {
 
 	void BlockIndex::reset()
 	{
-		LOG_F(INFO, "called");
 		std::lock_guard _lock(mRecursiveMutex);
 		clearIndexEntries();
 		mTransactionNrsFileCursors.clear();		
 		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr);
+		LOG_F(WARNING, "BlockIndex: %s was corrupted and must be rebuild", blockIndexFile.getFileName().data());
 		blockIndexFile.reset();
 		mMaxTransactionNr = 0;
 		mMinTransactionNr = 0;
