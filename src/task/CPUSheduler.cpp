@@ -1,8 +1,10 @@
 #include "CPUSheduler.h"
 #include "CPUShedulerThread.h"
 #include "CPUTask.h"
-#include <memory.h>
 
+#include "loguru/loguru.hpp"
+
+#include <memory.h>
 
 namespace task {
 
@@ -52,10 +54,12 @@ namespace task {
 			t->setNewTask(task);
 		} else {
 			// else put task to pending queue
-			printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
-			mPendingTasksMutex.lock();
-			mPendingTasks.push_back(task);
-			mPendingTasksMutex.unlock();
+			// printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
+			LOG_F(INFO, "sheduleTask in %s all %u threads in use, add to pending task list", mName.data(), getThreadCount());
+			{
+				std::lock_guard _lock(mPendingTasksMutex);
+				mPendingTasks.push_back(task);
+			}
 		}
 		return 0;
 	}

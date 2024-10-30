@@ -82,7 +82,7 @@ namespace task {
 		// work to do
 		//lib::MultithreadQueue<TaskPtr> mPendingTasks;
 		std::list<TaskPtr> mPendingTasks;
-		MultithreadContainer mPendingTasksMutex;
+		std::recursive_mutex mPendingTasksMutex;
 		bool mStopped;
 		std::mutex mCheckStopMutex;
 
