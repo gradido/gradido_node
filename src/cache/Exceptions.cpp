@@ -24,4 +24,19 @@ namespace cache {
 		result += ", min transaction nr: " + minTransactionString;
 		return std::move(result);
 	}
+
+
+	DictionaryNotFoundException::DictionaryNotFoundException(const char* what, const char* dictionaryName, const char* key) noexcept
+		: GradidoBlockchainException(what), mDictionaryName(dictionaryName), mKey(key)
+	{
+
+	}
+
+	std::string DictionaryNotFoundException::getFullString() const
+	{
+		std::string result = what();
+		result += ", dictionary name: " + mDictionaryName;
+		result += ", key: " + mKey;
+		return result;
+	}
 }

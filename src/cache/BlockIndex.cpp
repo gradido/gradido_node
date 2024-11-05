@@ -159,7 +159,8 @@ namespace cache {
 			throw GradidoNodeInvalidDataException("addressIndiceCount is bigger than 256, that cannot be");
 		}
 		entry.addressIndices = new uint32_t[addressIndiceCount];
-		memcpy(entry.addressIndices, addressIndices, addressIndiceCount);
+		memcpy(entry.addressIndices, addressIndices, sizeof(uint32_t) * addressIndiceCount);
+
 		if (monthIt->second.size() && monthIt->second.back().transactionNr >= entry.transactionNr) {
 			throw BlockIndexException("try to add new transaction to block index with same or lesser transaction nr!");
 		}
@@ -187,10 +188,14 @@ namespace cache {
 		}
 		auto fbp = gradido::blockchain::FileBasedProvider::getInstance();
 		
+		uint32_t coinCommunityIndex = 0;
+		if (!transactionEntry->getCoinCommunityId().empty()) {
+			coinCommunityIndex = fbp->getCommunityIdIndex(transactionEntry->getCoinCommunityId());
+		}
 		auto& publicKeyIndices = transactionEntry->getAddressIndices();
 		return addIndicesForTransaction(
 			transactionEntry->getTransactionType(),
-			fbp->getCommunityIdIndex(transactionEntry->getCoinCommunityId()),
+			coinCommunityIndex,
 			transactionEntry->getYear(),
 			transactionEntry->getMonth(),
 			transactionNr,
@@ -245,7 +250,11 @@ namespace cache {
 		}
 		uint32_t publicKeyIndex = 0;
 		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
-			publicKeyIndex = publicKeysDictionary.getIndexForString(filter.involvedPublicKey->copyAsString());
+			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
+			if (!publicKeysDictionary.hasIndexForString(involvedPublicKeyCopy)) {
+				return {};
+			}
+			publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
 		}
 		uint32_t coinCommunityKeyIndex = 0;
 		if (!filter.coinCommunityId.empty()) {
@@ -303,11 +312,14 @@ namespace cache {
 				return false; //break
 			}
 			entryCursor++;
+			return true;
 		};
+		/*
 		LOG_F(1, "startDate: %s, endDate: %s",
 			DataTypeConverter::timePointToString(interval.getStartDate()).data(),
 			DataTypeConverter::timePointToString(interval.getEndDate()).data()
 		);
+		*/
 		bool revert = filter.searchDirection == SearchDirection::DESC;
 		auto intervalIt = revert ? std::prev(interval.end()) : interval.begin();
 		auto intervalEnd = revert ? std::prev(interval.begin()) : interval.end();		

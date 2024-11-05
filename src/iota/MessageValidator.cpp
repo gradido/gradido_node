@@ -3,6 +3,7 @@
 #include "MqttClientWrapper.h"
 #include "../task/IotaMessageToTransactionTask.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
+#include "../SingletonManager/GlobalStateManager.h"
 #include "../SingletonManager/OrderingManager.h"
 #include "../ServerGlobals.h"
 
@@ -92,10 +93,6 @@ namespace iota {
                 if (milestoneId) {
                     notConfirmedCount = 0;
                     messageConfirmed(messageId, milestoneId);
-					// and start loading task for it
-                    LOG_F(1, "Milestone: %d was already confirmed, start milestone loading task", milestoneId);
-					std::shared_ptr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
-					task->scheduleTask(task);
                 }
                 else {
                     ++notConfirmedCount;
@@ -166,10 +163,19 @@ namespace iota {
 		} // scoped lock milestones end
 
 		// milestone wasn't loaded and other messages for this milestone doesn't exist, so create entry for this milestone 
-		mConfirmedMessagesMutex.lock();
-		mConfirmedMessages.insert({ milestoneId, std::list<MessageId>(1, messageId) });
-        LOG_F(1, "add entry in confirmed messages map with this milestone");
-		mConfirmedMessagesMutex.unlock();
+        {
+            std::lock_guard lock(mConfirmedMessagesMutex);
+            mConfirmedMessages.insert({ milestoneId, std::list<MessageId>(1, messageId) });
+            LOG_F(1, "add entry in confirmed messages map with this milestone");
+        }
+        // check last milestone we get via mqtt, it is not set or higher, than we need a milestone loading task
+        auto lastMilestone = GlobalStateManager::getInstance()->getLastIotaMilestone();
+        if (!lastMilestone || lastMilestone > milestoneId) {
+            // and start loading task for it
+            LOG_F(1, "Milestone: %d was already confirmed, start milestone loading task", milestoneId);
+            std::shared_ptr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
+            task->scheduleTask(task);
+        }
     }
 
     void MessageValidator::messageArrived(MQTTAsync_message* message, TopicType type)
@@ -183,7 +189,9 @@ namespace iota {
         rapidjson_helper::checkMember(document, "timestamp", rapidjson_helper::MemberType::INTEGER, "iota milestone/confirmed");
         auto milestoneTimestampSeconds = document["timestamp"].GetUint64();
         auto milestoneTimepoint = std::chrono::time_point<std::chrono::system_clock>(std::chrono::seconds(milestoneTimestampSeconds));
-        pushMilestone(document["index"].GetInt(), milestoneTimepoint);
+        auto milestoneIndex = document["index"].GetInt();
+        GlobalStateManager::getInstance()->updateLastIotaMilestone(milestoneIndex);
+        pushMilestone(milestoneIndex, milestoneTimepoint);
     }
 
 

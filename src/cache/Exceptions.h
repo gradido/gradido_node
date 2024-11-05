@@ -28,6 +28,17 @@ namespace cache {
 		uint64_t mTransactionNr;
 		uint64_t mMinTransactionNr;
 	};
+
+	class DictionaryNotFoundException : public GradidoBlockchainException
+	{
+	public:
+		explicit DictionaryNotFoundException(const char* what, const char* dictionaryName, const char* key) noexcept;
+		std::string getFullString() const;
+
+	protected:
+		std::string mDictionaryName;
+		std::string mKey;
+	};
 }
 
 #endif //__GRADIDO_NODE_CACHE_EXCEPTIONS_H

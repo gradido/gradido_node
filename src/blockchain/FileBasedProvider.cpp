@@ -116,6 +116,7 @@ namespace gradido {
 					mBlockchainsPerGroup.erase(communityId);
 					return nullptr;
 				}
+				mCommunityIdIndex.getOrAddIndexForString(communityId);
 				return blockchain;
 			}
 			catch (GradidoBlockchainException& ex) {

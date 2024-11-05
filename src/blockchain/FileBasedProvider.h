@@ -32,7 +32,7 @@ namespace gradido {
 			inline uint32_t getCommunityIdIndex(std::string_view communityId);
 			inline const std::string getCommunityIdString(uint32_t index);
 		protected:
-			void clear();
+
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
 			std::recursive_mutex mWorkMutex;
 

@@ -258,11 +258,15 @@ namespace gradido {
 				LOG_F(WARNING, "couldn't push transaction: %llu to block: %d", id, blockNr);
 				return false;
 			}
-			LOG_F(1, "update last Transaction to: %llu", id);
 			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, id);
 			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
 			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
 			mMessageIdsCache.add(confirmedTransaction->getMessageId(), id);
+			// add public keys to index
+			auto involvedAddresses = transactionBody->getInvolvedAddresses();
+			for (const auto& address : involvedAddresses) {
+				mPublicKeysIndex->getOrAddIndexForString(address->copyAsString());
+			}
 
 			// check if a deferred transfer was completly redeemed
 			if (transferSenderPublicKeyIndex && mDeferredTransfersCache.isDeferredTransfer(transferSenderPublicKeyIndex)) {										

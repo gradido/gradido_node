@@ -127,6 +127,7 @@ namespace iota
 			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
 			LOG_F(1, "metadata message arrived: %s confirmed in %d", messageId.toHex().data(), milestoneId);
 			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
+			MqttClientWrapper::getInstance()->unsubscribe(messageId, this);
 		}		
 	}
 

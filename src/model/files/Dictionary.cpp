@@ -65,6 +65,7 @@ namespace model {
 
 		bool Dictionary::add(const std::string& address, uint32_t index)
 		{
+			assert(index);
 			if (address == "") {
 				throw GradidoNodeInvalidDataException("empty address");
 			}
@@ -221,9 +222,5 @@ namespace model {
 
 			return true;
 		}
-
-		
-		
 	}
-
 }

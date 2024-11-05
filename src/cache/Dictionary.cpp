@@ -1,4 +1,5 @@
 #include "Dictionary.h"
+#include "Exceptions.h"
 #include "../ServerGlobals.h"
 #include "../SingletonManager/CacheManager.h"
 #include "../SystemExceptions.h"
@@ -57,14 +58,35 @@ namespace cache {
 
 	uint32_t Dictionary::getIndexForString(const std::string& string)  const
 	{
+		if (string.empty()) {
+			throw GradidoNodeInvalidDataException("string is empty");
+		}
+		std::lock_guard _lock(mFastMutex);
+		auto index = mDictionaryFile->getIndexForString(string);
+		if (!index) {
+			auto hex = DataTypeConverter::binToHex(string);
+			throw DictionaryNotFoundException("string not found in dictionary", mFileName.data(), hex.data());
+		}
+		return index;
+	}
+
+	bool Dictionary::hasIndexForString(const std::string& string) const
+	{
+		if (string.empty()) {
+			throw GradidoNodeInvalidDataException("string is empty");
+		}
 		std::lock_guard _lock(mFastMutex);
 		return mDictionaryFile->getIndexForString(string);
 	}
 
-	const std::string Dictionary::getStringForIndex(uint32_t index) const
+	std::string Dictionary::getStringForIndex(uint32_t index) const
 	{
 		std::lock_guard _lock(mFastMutex);
-		return mDictionaryFile->getStringForIndex(index);
+		auto key = mDictionaryFile->getStringForIndex(index);
+		if (key.empty()) {
+			throw DictionaryNotFoundException("index not found in dictionary", mFileName.data(), std::to_string(index).data());
+		}
+		return key;
 	}
 
 	uint32_t Dictionary::getOrAddIndexForString(const std::string& string)
@@ -73,7 +95,16 @@ namespace cache {
 		auto index = mDictionaryFile->getIndexForString(string);
 		if (!index) {
 			index = ++mLastIndex;
-			mDictionaryFile->add(string, index);
+			if (!mDictionaryFile->add(string, index)) {
+				auto hex = DataTypeConverter::binToHex(string);
+				LOG_F(
+					WARNING,
+					"couldn't find index for string, but adding return true so it should already exist, string: %s, index: %d in dictionary: %s",
+					hex.data(),
+					index,
+					mFileName.data()
+				);
+			}
 		}
 		return index;
 	}
