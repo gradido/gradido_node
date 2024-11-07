@@ -28,7 +28,7 @@ namespace cache
 		DeferredTransfer(std::string_view groupFolder, std::string_view communityName);
 		~DeferredTransfer();
 
-		bool init();
+		bool init(size_t cacheInBytes);
 		void exit();
 		void reset();
 

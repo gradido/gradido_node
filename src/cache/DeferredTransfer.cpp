@@ -19,10 +19,10 @@ namespace cache
 
 	}
 
-	bool DeferredTransfer::init()
+	bool DeferredTransfer::init(size_t cacheInBytes)
 	{
 		std::lock_guard _lock(mFastMutex);
-		if (!mState.init()) {
+		if (!mState.init(cacheInBytes)) {
 			return false;
 		}
 		loadFromState();
@@ -128,9 +128,11 @@ namespace cache
 	void DeferredTransfer::loadFromState()
 	{
 		mAddressIndexTransactionNrs.clear();
-		mState.readAllStates([&](const std::string key, const std::string value) {
-			auto transactionNrs = transactionNrsToVector(value);
-			mAddressIndexTransactionNrs.insert({ std::stoul(key), transactionNrs });
+		mState.readAllStates([&](leveldb::Slice key, leveldb::Slice value) {
+			// update using std::string_view instead if const std::string& to make use of leveldb::Slice instead of creating a new string
+			auto transactionNrs = transactionNrsToVector(value.ToString());
+			char* end = nullptr;
+			mAddressIndexTransactionNrs.insert({ std::strtoul(key.data(), &end, 10), transactionNrs});
 		});
 	}
 

@@ -17,6 +17,12 @@
 //! how many transactions will be readed from disk on blockchain startup and put into cache for preventing doublettes
 //! iota stores up to 1000 transactions
 #define GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE 1500
+//! should be enough to keep all 3 state values in memory all the time
+#define GRADIDO_NODE_MAGIC_NUMBER_BLOCKCHAIN_STATE_CACHE_SIZE_BYTES 192
+//! TODO: Test and Profile different values, or create dynamic algorithmus
+#define GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES 10
+#define GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES 1
+#define GRADIDO_NODE_MAGIC_NUMBER_DEFERRED_TRANSFERS_CACHE_MEGA_BTYES 1
 
 #include <mutex>
 

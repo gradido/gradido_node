@@ -1,10 +1,10 @@
-#ifndef GRADIDO_NODE_MODEL_FILES_GROUP_STATE_H
-#define GRADIDO_NODE_MODEL_FILES_GROUP_STATE_H
+#ifndef GRADIDO_NODE_MODEL_FILES_LEVEL_DB_WRAPPER_H
+#define GRADIDO_NODE_MODEL_FILES_LEVEL_DB_WRAPPER_H
 
 #include "leveldb/db.h"
 
 #include <mutex>
-
+#include <functional>
 
 /*!
  * @author Dario Rekowski
@@ -16,15 +16,16 @@
 
 namespace model {
 	namespace files {
-		class State
+		class LevelDBWrapper
 		{
 		public:
 			//! open level db file
-			State(std::string_view folderName);
+			LevelDBWrapper(std::string_view folderName);
 			//! close leveldb file, should save not already saved key value pairs
-			~State();
+			~LevelDBWrapper();
 
-			bool init();
+			//! \param cacheInByte use cache for leveldb sepcified in Byte
+			bool init(size_t cacheInByte = 0);
 			void exit();
 			//! remove level db folder, for example if level db was corrupted
 			void reset();
@@ -36,18 +37,22 @@ namespace model {
 
 			//! add new value key pair or update value if key exist
 			//! \return true, throw exception on error
-			bool setKeyValue(const char* key, const std::string& value);
+			void setKeyValue(const char* key, const std::string& value);
 
 			void removeKey(const char* key);
 
-			//! \brief get iterator for looping over every entry
-			inline leveldb::Iterator* getIterator() { return mLevelDB->NewIterator(leveldb::ReadOptions()); }
+			//! go through all entries and call callback for each with key, value
+			//! don't fill level db cache, verify checksum
+			void iterate(std::function<void(leveldb::Slice key, leveldb::Slice value)> callback);
+
+			inline std::string_view getFolderName() const { return mFolderName; }
 
 		protected:
 			std::string mFolderName;
+			leveldb::Options mOptions;
 			leveldb::DB* mLevelDB;
 		};
 	}
 }
 
-#endif //GRADIDO_NODE_MODEL_FILES_GROUP_STATE_H
+#endif //GRADIDO_NODE_MODEL_FILES_LEVEL_DB_WRAPPER_H

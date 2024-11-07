@@ -15,10 +15,10 @@ namespace cache {
 		using State::State;
 
 		// try to open db 
-		bool init() 
+		bool init(size_t cacheInBytes) 
 		{ 
 			std::lock_guard _lock(mFastMutex);
-			return State::init(); 
+			return State::init(cacheInBytes);
 		}
 		void exit() 
 		{ 

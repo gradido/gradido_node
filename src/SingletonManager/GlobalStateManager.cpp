@@ -4,7 +4,7 @@
 GlobalStateManager::GlobalStateManager()
 	: mGlobalStateFile(ServerGlobals::g_FilesPath + '/')
 {
-	mGlobalStateFile.init();
+	mGlobalStateFile.init(128);
 }
 
 GlobalStateManager::~GlobalStateManager()

@@ -25,9 +25,16 @@ namespace cache {
 		return std::move(result);
 	}
 
+	DictionaryException::DictionaryException(const char* what, const char* dictionaryName) noexcept
+		: GradidoBlockchainException(what), mDictionaryName(dictionaryName)
+	{
+
+	}
+
+
 
 	DictionaryNotFoundException::DictionaryNotFoundException(const char* what, const char* dictionaryName, const char* key) noexcept
-		: GradidoBlockchainException(what), mDictionaryName(dictionaryName), mKey(key)
+		: DictionaryException(what, dictionaryName), mKey(key)
 	{
 
 	}
@@ -37,6 +44,21 @@ namespace cache {
 		std::string result = what();
 		result += ", dictionary name: " + mDictionaryName;
 		result += ", key: " + mKey;
+		return result;
+	}
+
+	DictionaryInvalidNewKeyException::DictionaryInvalidNewKeyException(const char* what, const char* dictionaryName, uint32_t newKey, uint32_t oldKey) noexcept
+		: DictionaryException(what, dictionaryName), mNewKey(newKey), mOldKey(oldKey)
+	{
+
+	}
+
+	std::string DictionaryInvalidNewKeyException::getFullString() const
+	{
+		std::string result = what();
+		result += ", dictionary name: " + mDictionaryName;
+		result += ", current key: " + std::to_string(mOldKey);
+		result += ", new key: " + std::to_string(mNewKey);
 		return result;
 	}
 }

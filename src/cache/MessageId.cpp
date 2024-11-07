@@ -8,7 +8,7 @@
 namespace cache {
 	MessageId::MessageId(std::string_view folder)
 		: mInitalized(false),
-		mStateFile(folder),
+		mLevelDBFile(folder),
 		mMessageIdTransactionNrs(ServerGlobals::g_CacheTimeout)
 	{
 
@@ -19,12 +19,12 @@ namespace cache {
 	}
 
 	// try to open db 
-	bool MessageId::init()
+	bool MessageId::init(size_t cacheInBytes)
 	{
 		if (mInitalized) {
 			throw ClassAlreadyInitalizedException("init was already called", "cache::MessageId");
 		}
-		if (!mStateFile.init()) {
+		if (!mLevelDBFile.init(cacheInBytes)) {
 			return false;
 		}
 		mInitalized = true;
@@ -37,13 +37,13 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, cache::MessageId aren't stored in leveldb file, or exit was called more than once");
 		}
 		mInitalized = false;
-		mStateFile.exit();
+		mLevelDBFile.exit();
 	}
 
 	//! remove state level db folder, clear maps
 	void MessageId::reset()
 	{
-		mStateFile.reset();
+		mLevelDBFile.reset();
 		mMessageIdTransactionNrs.clear();
 	}
 
@@ -55,7 +55,7 @@ namespace cache {
 		}
 		mMessageIdTransactionNrs.add(messageIdObj, transactionNr);
 		if (mInitalized) {
-			mStateFile.setKeyValue(messageId->convertToHex().data(), std::to_string(transactionNr).data());
+			mLevelDBFile.setKeyValue(messageId->convertToHex().data(), std::to_string(transactionNr).data());
 		}
 	}
 
@@ -82,7 +82,7 @@ namespace cache {
 	{
 		if (mInitalized) {
 			std::string value;
-			if (mStateFile.getValueForKey(iotaMessageIdObj.toHex().data(), &value)) {
+			if (mLevelDBFile.getValueForKey(iotaMessageIdObj.toHex().data(), &value)) {
 				auto transactionNr = std::stoull(value);
 				mMessageIdTransactionNrs.add(iotaMessageIdObj, transactionNr);
 				return transactionNr;

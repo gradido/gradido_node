@@ -30,7 +30,7 @@ namespace gradido {
 			mAlias(alias),
 			mTaskObserver(std::make_shared<TaskObserver>()),
 			mIotaMessageListener(new iota::MessageListener(communityId, alias)),
-			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeys.index"))),
+			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeysCache"))),
 			mBlockchainState(std::string(folder).append("/.state")),
 			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache"), communityId),
 			mMessageIdsCache(std::string(folder).append("/messageIdCache")),
@@ -51,7 +51,7 @@ namespace gradido {
 			assert(!mExitCalled);
 			std::lock_guard _lock(mWorkMutex);
 			bool resetDeferredTransfersCache = false;
-			if (!mPublicKeysIndex->init()) {
+			if (!mPublicKeysIndex->init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES)) {
 				// remove index files for regenration
 				LOG_F(WARNING, "reset the public key index file");
 				// mCachedBlocks.clear();
@@ -59,14 +59,14 @@ namespace gradido {
 				resetDeferredTransfersCache = true;
 				resetBlockIndices = true;
 			}
-			if (!resetDeferredTransfersCache && !mDeferredTransfersCache.init()) {
+			if (!resetDeferredTransfersCache && !mDeferredTransfersCache.init(GRADIDO_NODE_MAGIC_NUMBER_DEFERRED_TRANSFERS_CACHE_MEGA_BTYES)) {
 				resetDeferredTransfersCache = true;
 			}
 			
 			if (resetBlockIndices) {
 				model::files::BlockIndex::removeAllBlockIndexFiles(mFolderPath);
 			}
-			if (!mBlockchainState.init() || resetBlockIndices) {
+			if (!mBlockchainState.init(GRADIDO_NODE_MAGIC_NUMBER_BLOCKCHAIN_STATE_CACHE_SIZE_BYTES) || resetBlockIndices) {
 				LOG_F(WARNING, "reset block state");
 				mBlockchainState.reset();
 				loadStateFromBlockCache();
@@ -76,9 +76,9 @@ namespace gradido {
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_TRANSACTION_ID, 0);
 
-			if (!mMessageIdsCache.init()) {
+			if (!mMessageIdsCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 				mMessageIdsCache.reset();
-				if (!mMessageIdsCache.init()) {
+				if (!mMessageIdsCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 					throw ClassNotInitalizedException("cannot initalize message id cache", "cache::MessageId");
 				}
 				// load last 20 message ids into cache

@@ -6,6 +6,8 @@
 #include "FileBased.h"
 #include "../cache/GroupIndex.h"
 
+#define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE 1
+
 namespace gradido {
 	namespace blockchain {
 		/*

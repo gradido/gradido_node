@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_CACHE_MESSAGE_ID_H
 #define __GRADIDO_NODE_CACHE_MESSAGE_ID_H
 
-#include "../model/files/State.h"
+#include "../model/files/LevelDBWrapper.h"
 #include "gradido_blockchain/lib/ExpireCache.h"
 #include "gradido_blockchain/data/iota/MessageId.h"
 
@@ -14,7 +14,8 @@ namespace cache
 		~MessageId();
 
 		// try to open db 
-		bool init();
+		//! \param cacheInBytes level db cache in bytes, 0 for no cache
+		bool init(size_t cacheInBytes);
 		void exit();
 		//! remove state level db folder, clear maps
 		void reset();
@@ -30,7 +31,7 @@ namespace cache
 		uint64_t readFromLevelDb(const iota::MessageId& iotaMessageIdObj);
 
 		bool mInitalized;
-		model::files::State mStateFile;
+		model::files::LevelDBWrapper mLevelDBFile;
 		//! key is iota message id, value is transaction nr
 		ExpireCache<iota::MessageId, uint64_t> mMessageIdTransactionNrs;
 	};

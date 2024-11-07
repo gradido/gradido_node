@@ -48,7 +48,7 @@ namespace gradido {
 			std::lock_guard _lock(mWorkMutex);
 			mInitalized = true;
 			bool resetAllCommunityIndices = false;
-			if (!mCommunityIdIndex.init()) {
+			if (!mCommunityIdIndex.init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE * 1024 * 1024)) {
 				mCommunityIdIndex.reset();
 				resetAllCommunityIndices = true;
 			}

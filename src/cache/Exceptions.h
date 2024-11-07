@@ -29,7 +29,15 @@ namespace cache {
 		uint64_t mMinTransactionNr;
 	};
 
-	class DictionaryNotFoundException : public GradidoBlockchainException
+	class DictionaryException : public GradidoBlockchainException
+	{
+	public: 
+		explicit DictionaryException(const char* what, const char* dictionaryName) noexcept;
+	protected:
+		std::string mDictionaryName;
+	};
+
+	class DictionaryNotFoundException : public DictionaryException
 	{
 	public:
 		explicit DictionaryNotFoundException(const char* what, const char* dictionaryName, const char* key) noexcept;
@@ -38,6 +46,17 @@ namespace cache {
 	protected:
 		std::string mDictionaryName;
 		std::string mKey;
+	};
+
+	class DictionaryInvalidNewKeyException : public DictionaryException
+	{
+	public:
+		explicit DictionaryInvalidNewKeyException(const char* what, const char* dictionaryName, uint32_t newKey, uint32_t oldKey) noexcept;
+		std::string getFullString() const;
+
+	protected:
+		uint32_t mNewKey;
+		uint32_t mOldKey;
 	};
 }
 

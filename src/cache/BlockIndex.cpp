@@ -251,7 +251,7 @@ namespace cache {
 		uint32_t publicKeyIndex = 0;
 		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
 			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
-			if (!publicKeysDictionary.hasIndexForString(involvedPublicKeyCopy)) {
+			if (!publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
 				return {};
 			}
 			publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);

@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_CACHE_STATE_H
 
 #include "DefaultStateKeys.h"
-#include "../model/files/State.h"
+#include "../model/files/LevelDBWrapper.h"
 
 #include "magic_enum/magic_enum.hpp"
 
@@ -17,7 +17,8 @@ namespace cache {
 		virtual ~State();
 
 		// try to open db 
-		bool init();
+		//! \param cacheInBytes cache for leveldb
+		bool init(size_t cacheInBytes);
 		void exit();
 		//! remove state level db folder, clear maps
 		void reset();
@@ -28,23 +29,17 @@ namespace cache {
 		void updateState(const char* key, int32_t value);
 		void removeState(const char* key);
 
-		//! first check if value for key is already in memory else read from file via leveldb
-		inline const std::string& readState(DefaultStateKeys key, const std::string& defaultValue);
-		const std::string& readState(const char* key, const std::string& defaultValue);
+		inline std::string readState(DefaultStateKeys key, const std::string& defaultValue);
+		std::string readState(const char* key, const std::string& defaultValue);
 		inline int32_t readInt32State(DefaultStateKeys key, int32_t defaultValue);
 		int32_t readInt32State(const char* key, int32_t defaultValue);
 
 		//! go through all states in call callback for each with key, value
-		//! don't read/put key value pairs into map, read direct from leveldb
-		void readAllStates(std::function<void(const std::string&, const std::string&)> callback);
+		inline void readAllStates(std::function<void(leveldb::Slice key, leveldb::Slice value)> callback) { mStateFile.iterate(callback); }
 
 	protected:
 		bool mInitalized;
-		model::files::State mStateFile;
-
-		std::unordered_map<std::string, int32_t> mIntStates;
-		std::unordered_map<std::string, std::string> mStates;
-
+		model::files::LevelDBWrapper mStateFile;
 	};
 
 	// simple functions for inline declarations
@@ -58,7 +53,7 @@ namespace cache {
 		return updateState(magic_enum::enum_name(key).data(), value);
 	}
 
-	const std::string& State::readState(DefaultStateKeys key, const std::string& defaultValue)
+	std::string State::readState(DefaultStateKeys key, const std::string& defaultValue)
 	{
 		return readState(magic_enum::enum_name(key).data(), defaultValue);
 	}

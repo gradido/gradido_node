@@ -27,18 +27,18 @@ namespace cache {
 	{
 		auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 		auto firstSignature = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getSignature();
-		auto pair = mSignaturePartTransactionNrs.get(firstSignature);
+		auto pair = mSignaturePartTransactionNrs.get(*firstSignature);
 		if (pair.has_value()) {
 			throw GradidoAlreadyExist("key already exist");
 		}
-		mSignaturePartTransactionNrs.add(firstSignature, confirmedTransaction.getId());
+		mSignaturePartTransactionNrs.add(*firstSignature, confirmedTransaction.getId());
 	}
 
 	bool TransactionHash::has(const data::GradidoTransaction& transaction) const
 	{
 		// get first signature from transaction
 		auto firstSignature = transaction.getSignatureMap().getSignaturePairs().front().getSignature();
-		auto pair = mSignaturePartTransactionNrs.get(SignatureOctet(firstSignature));
+		auto pair = mSignaturePartTransactionNrs.get(SignatureOctet(*firstSignature));
 		if (pair.has_value()) {
 			// hash collision check
 			auto transaction = FileBasedProvider::getInstance()->findBlockchain(mCommunityId)->getTransactionForId(pair.value());
