@@ -54,7 +54,6 @@ namespace iota
             auto topicObserver = static_cast<TopicObserver *>(context);
             topicObserver->mState = State::UNSUBSCRIBED;
             LOG_F(ERROR, "error subscribing to topic: %s", topicObserver->mTopicString.data());
-            delete[] context;
             TopicObserver::logResponseError(response);
         };
         auto rc = MQTTAsync_subscribe(mqttClient, mTopicString.data(), 1, &options);
