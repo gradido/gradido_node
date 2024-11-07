@@ -9,7 +9,7 @@
 namespace gradido {
 	namespace blockchain {
 		FileBasedProvider::FileBasedProvider()
-			:mGroupIndex(nullptr), mCommunityIdIndex(ServerGlobals::g_FilesPath + "/communityId.index"), mInitalized(false)
+			:mGroupIndex(nullptr), mCommunityIdIndex(ServerGlobals::g_FilesPath + "/communityIdsCache"), mInitalized(false)
 		{
 
 		}

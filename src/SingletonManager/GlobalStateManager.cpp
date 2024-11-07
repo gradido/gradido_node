@@ -2,7 +2,7 @@
 #include "../ServerGlobals.h"
 
 GlobalStateManager::GlobalStateManager()
-	: mGlobalStateFile(ServerGlobals::g_FilesPath + '/')
+	: mGlobalStateFile(ServerGlobals::g_FilesPath + "/.state")
 {
 	mGlobalStateFile.init(128);
 }
