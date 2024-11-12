@@ -62,7 +62,7 @@ int IotaMessageToTransactionTask::run()
     }
     
     if (!dataIndex.first->size()) {
-        LOG_F(INFO, "invalid gradido transaction, iota message ID: %s, empty body", iotaMessageIdHex.data());
+        LOG_F(INFO, "Transaction skipped (empty body), msgId: %s", iotaMessageIdHex.data());
         return 0;
     }
     auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
@@ -70,8 +70,8 @@ int IotaMessageToTransactionTask::run()
     auto blockchain = blockchainProvider->findBlockchain(communityId);
     
     if(!blockchain) {
-         LOG_F(INFO, "transaction skipped because it came from unknown community, messageId: %s, communityId: %s",
-            mMessageId.toHex().data(), communityId.data()
+         LOG_F(INFO, "Transaction skipped (unknown community), msgId: %s, communityId: %s",
+            iotaMessageIdHex.data(), communityId.data()
         );
         return 0;
     }
@@ -79,16 +79,14 @@ int IotaMessageToTransactionTask::run()
     ConstGradidoTransactionPtr transaction;
    
     auto hex = DataTypeConverter::binToHex((const unsigned char*)dataIndex.first.get()->data(), dataIndex.first.get()->size());
-    // printf("[IotaMessageToTransactionTask::run] iota message id hex: %s\n", iotaMessageIdHex.data());
-    // printf("[IotaMessageToTransactionTask::run] gradido transaction (%d): %s\n", dataIndex.first.get()->size(), hex.data());
     auto rawTransaction = std::make_shared<memory::Block>(*dataIndex.first.get());
     deserialize::Context deserializer(rawTransaction, deserialize::Type::GRADIDO_TRANSACTION);
     deserializer.run();
     if (deserializer.isGradidoTransaction()) {
         transaction = deserializer.getGradidoTransaction();
     } else {
-        LOG_F(INFO, "invalid gradido transaction, iota message ID: %s", iotaMessageIdHex.data());
-        LOG_F(INFO, "serialized: %s", rawTransaction->convertToHex().data());
+        LOG_F(INFO, "Transaction skipped (invalid), msgId: %s", iotaMessageIdHex.data());
+        LOG_F(2, "serialized: %s", rawTransaction->convertToHex().data());
         return 0;
     }
 
@@ -164,10 +162,10 @@ int IotaMessageToTransactionTask::run()
         }
         if (pairingTransaction) {
             if (!pairingTransaction->isPairing(*transaction)) {
-                std::string message = "transaction skipped because pairing transaction wasn't found";
+                std::string message = "Transaction skipped (pairing not found)";
                 notificateFailedTransaction(blockchain, *transaction, message);
-				LOG_F(INFO, "%s, messageId: %s, pairing message id: %s",
-                    message.data(), mMessageId.toHex().data(), parentMessageIdHex.data()
+				LOG_F(INFO, "%s, msgId: %s, pairing message msgId: %s",
+                    message.data(), messageIdHex.data(), parentMessageIdHex.data()
                 );
                 return 0;
             }
@@ -181,17 +179,17 @@ int IotaMessageToTransactionTask::run()
     auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
     assert(fileBasedBlockchain);
     if (fileBasedBlockchain->isTransactionAlreadyExist(*transaction)) {
-        LOG_F(INFO, "transaction skipped because it was found in cache, messageId: %s",
-            mMessageId.toHex().data()
+        LOG_F(INFO, "Transaction skipped (cached), msgId: %s",
+            messageIdHex.data()
         );
         return 0;
     }       
     auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
     if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
-        std::string message = "transaction skipped because it cames from the past";
+        std::string message = "Transaction skipped (from past)";
         notificateFailedTransaction(blockchain, *transaction, message);
-        LOG_F(INFO, "%s, messageId: %s", message.data(), mMessageId.toHex().data());
+        LOG_F(INFO, "%s, msgId: %s", message.data(), messageIdHex.data());
         return 0;
     }
 
