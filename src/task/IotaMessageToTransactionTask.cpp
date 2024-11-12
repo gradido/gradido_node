@@ -66,8 +66,16 @@ int IotaMessageToTransactionTask::run()
         return 0;
     }
     auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
-    auto blockchain = blockchainProvider->findBlockchain(getGradidoGroupAlias(*dataIndex.second.get()));
+    auto communityId = getGradidoGroupAlias(*dataIndex.second.get());
+    auto blockchain = blockchainProvider->findBlockchain(communityId);
     
+    if(!blockchain) {
+         LOG_F(INFO, "transaction skipped because it came from unknown community, messageId: %s, communityId: %s",
+            mMessageId.toHex().data(), communityId.data()
+        );
+        return 0;
+    }
+
     ConstGradidoTransactionPtr transaction;
    
     auto hex = DataTypeConverter::binToHex((const unsigned char*)dataIndex.first.get()->data(), dataIndex.first.get()->size());
@@ -98,7 +106,7 @@ int IotaMessageToTransactionTask::run()
         messageIdHex.data(),
         transactionAsJson.data()
     );
-
+    
     // if simple validation already failed, we can stop here
     try {
         validate::Context validator(*transaction);
@@ -108,6 +116,7 @@ int IotaMessageToTransactionTask::run()
         notificateFailedTransaction(blockchain, *transaction, e.what());
         return 0;
     }
+    
    
     // TODO: Cross Group Check
     // on inbound
@@ -170,8 +179,9 @@ int IotaMessageToTransactionTask::run()
     // if this transaction doesn't belong to us, we can quit here 
     // also if we already have this transaction
     auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
-    if (!fileBasedBlockchain || fileBasedBlockchain->isTransactionAlreadyExist(*transaction)) {
-        LOG_F(INFO, "transaction skipped because it cames from other group or was found in cache, messageId: %s",
+    assert(fileBasedBlockchain);
+    if (fileBasedBlockchain->isTransactionAlreadyExist(*transaction)) {
+        LOG_F(INFO, "transaction skipped because it was found in cache, messageId: %s",
             mMessageId.toHex().data()
         );
         return 0;
