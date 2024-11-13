@@ -47,12 +47,12 @@ namespace cache {
 			return updateState(magic_enum::enum_name(key).data(), value);
 		}
 
-		const std::string& readState(const char* key, const std::string& defaultValue) 
+		const std::string readState(const char* key, const std::string& defaultValue) 
 		{
 			std::lock_guard _lock(mFastMutex);
 			return State::readState(key, defaultValue);
 		}
-		const std::string& readState(DefaultStateKeys key, const std::string& defaultValue)
+		const std::string readState(DefaultStateKeys key, const std::string& defaultValue)
 		{
 			return readState(magic_enum::enum_name(key).data(), defaultValue);
 		}
