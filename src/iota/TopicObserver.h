@@ -23,10 +23,11 @@ namespace iota {
             PENDING
         };
         TopicObserver(const Topic& topic);
+        ~TopicObserver();
 
         // callbacks called from MqttClient
         //! called from MqttClient, notify all registered observers when a message arrives
-        void messageArrived(MQTTAsync_message* message);        
+        ObserverReturn messageArrived(MQTTAsync_message* message);        
 
         void subscribe(MQTTAsync& mqttClient);
         void unsubscribe(MQTTAsync& mqttClient);

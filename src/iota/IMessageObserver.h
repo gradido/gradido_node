@@ -5,11 +5,16 @@
 #include "Topic.h"
 
 namespace iota {
+     enum class ObserverReturn {
+        CONTINUE = 0, // do nothing
+        UNSUBSCRIBE = 1, // remove from observer list
+    };
+
     //! Base Class for derivation to receive mqtt messages from the topic
     class IMessageObserver
     {
     public:
-        virtual void messageArrived(MQTTAsync_message* message, TopicType type) = 0;
+        virtual ObserverReturn messageArrived(MQTTAsync_message* message, TopicType type) = 0;
     protected:
     };
 }

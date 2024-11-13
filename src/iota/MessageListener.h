@@ -63,8 +63,8 @@ namespace iota
 
 		TimerReturn callFromTimer();
 
-        //! called for every new transaction arriving on iota for this topic
-        void messageArrived(MQTTAsync_message* message, TopicType type);
+    //! called for every new transaction arriving on iota for this topic
+    ObserverReturn messageArrived(MQTTAsync_message* message, TopicType type);
 
 		const char* getResourceType() const { return "iota::MessageListener"; };
 

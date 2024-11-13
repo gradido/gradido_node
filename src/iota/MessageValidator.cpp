@@ -45,7 +45,7 @@ namespace iota {
             LOG_F(ERROR, "exception by shutdown MessageValidator thread: %s", e.what());
         }
         LOG_F(1, "Message Validator shutdown");
-        
+        MqttClientWrapper::getInstance()->unsubscribe(TopicType::MILESTONES_CONFIRMED, this);
 		mConfirmedMessagesMutex.lock();
 		mConfirmedMessages.clear();
 		mConfirmedMessagesMutex.unlock();
@@ -175,10 +175,12 @@ namespace iota {
             LOG_F(1, "Milestone: %d was already confirmed, start milestone loading task", milestoneId);
             std::shared_ptr<MilestoneLoadingTask> task(new MilestoneLoadingTask(milestoneId, this));
             task->scheduleTask(task);
+        } else {
+            LOG_F(1, "last iota milestone was: %d, so we wait on mqtt", lastMilestone);
         }
     }
 
-    void MessageValidator::messageArrived(MQTTAsync_message* message, TopicType type)
+    ObserverReturn MessageValidator::messageArrived(MQTTAsync_message* message, TopicType type)
     {
         //MessageParser parsedMessage(message->payload, message->payloadlen);
         //std::string messageString((const char*)message->payload, message->payloadlen);
@@ -192,6 +194,7 @@ namespace iota {
         auto milestoneIndex = document["index"].GetInt();
         GlobalStateManager::getInstance()->updateLastIotaMilestone(milestoneIndex);
         pushMilestone(milestoneIndex, milestoneTimepoint);
+        return ObserverReturn::CONTINUE;
     }
 
 

@@ -16,14 +16,22 @@ namespace iota
     {
     }
 
-    void TopicObserver::messageArrived(MQTTAsync_message *message)
+    TopicObserver::~TopicObserver()
+    {
+
+    }
+
+    ObserverReturn TopicObserver::messageArrived(MQTTAsync_message *message)
     {
         std::lock_guard<std::mutex> lock(mMutex);
         // Notify all registered observers
-        for (const auto &observer : mObservers)
-        {
-            observer->messageArrived(message, mType);
+        for (auto it = mObservers.begin(); it != mObservers.end(); ++it) {
+            auto result = (*it)->messageArrived(message, mType);
+            if(result == ObserverReturn::UNSUBSCRIBE) {
+                it = mObservers.erase(it);
+            }
         }
+        return mObservers.size() ? ObserverReturn::CONTINUE : ObserverReturn::UNSUBSCRIBE;
     }
 
     void TopicObserver::subscribe(MQTTAsync &mqttClient)
@@ -46,7 +54,7 @@ namespace iota
                 LOG_F(ERROR, "subscribed topic no longer exist: %s", topicString.data());
                 return;
             }
-            LOG_F(INFO, "successfully subscribed to topic: %s", topicObserver->mTopicString.data());
+            LOG_F(INFO, "subscribed to topic: %s", topicObserver->mTopicString.data());
             topicObserver->mState = State::SUBSCRIBED;
         };
         options.onFailure = [](void *context, MQTTAsync_failureData *response)
@@ -76,7 +84,7 @@ namespace iota
         options.onSuccess = [](void *context, MQTTAsync_successData *response)
         {
             auto topicObserver = static_cast<TopicObserver *>(context);
-            LOG_F(INFO, "successfully unsubscribed from topic: %s", topicObserver->mTopicString.data());
+            LOG_F(INFO, "unsubscribed from topic: %s", topicObserver->mTopicString.data());
             topicObserver->mState = State::UNSUBSCRIBED;
             MqttClientWrapper::getInstance()->removeTopicObserver(topicObserver->mTopicString);
         };
@@ -105,8 +113,7 @@ namespace iota
     {
         std::lock_guard<std::mutex> lock(mMutex);
         auto it = std::find(mObservers.begin(), mObservers.end(), observer);
-        if (it != mObservers.end())
-        {
+        if (it != mObservers.end()) {
             mObservers.erase(it);
         }
         return mObservers.size();

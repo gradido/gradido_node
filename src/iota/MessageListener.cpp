@@ -10,8 +10,10 @@
 #include "MessageParser.h"
 
 #include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 using namespace rapidjson;
+using namespace magic_enum;
 
 namespace iota
 {
@@ -98,18 +100,21 @@ namespace iota
 		return TimerReturn::GO_ON;
 	}
 
-	void MessageListener::messageArrived(MQTTAsync_message* message, TopicType type)
+	ObserverReturn MessageListener::messageArrived(MQTTAsync_message* message, TopicType type)
 	{
-		LOG_F(INFO, "message arrived, topic type: %d", type);
-		if (TopicType::MESSAGES_INDEXATION == type) {
+		//LOG_F(INFO, "Message arrived, topic type: %s", enum_name(type).data());
+		if (TopicType::MESSAGES_INDEXATION == type) 
+		{
 			MessageParser parser(message->payload, message->payloadlen);
 			auto messageId = parser.getMessageId();
 			if (addStoredMessage(messageId)) {
 				MqttClientWrapper::getInstance()->subscribe(messageId, this);
 			}
-			LOG_F(1, "indexation message arrived: %s", messageId.toHex().data());
-		}
-		else if (TopicType::MESSAGES_METADATA == type) {
+			LOG_F(1, "Metadata received, msgId: %s", messageId.toHex().data());
+			return ObserverReturn::CONTINUE;
+		} 
+		else if (TopicType::MESSAGES_METADATA == type) 
+		{
 			std::string messageString((const char*)message->payload, message->payloadlen);
 			Document document;
 			document.Parse((const char*)message->payload);
@@ -118,17 +123,20 @@ namespace iota
 			
 			if (!document.HasMember("referencedByMilestoneIndex")) {
 				std::string messageIdString(document["messageId"].GetString());
-				LOG_F(1, "metadata message received without milestone for message id: %s", messageIdString.data());
-				return;
+				LOG_F(1, "Metadata received; missing milestone, msgId: %s", messageIdString.data());
+				return ObserverReturn::CONTINUE;
 			}
 			assert(document["referencedByMilestoneIndex"].IsInt());
 
 			MessageId messageId(memory::Block::fromHex(document["messageId"].GetString(), document["messageId"].GetStringLength()));			
 			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
-			LOG_F(1, "metadata message arrived: %s confirmed in %d", messageId.toHex().data(), milestoneId);
+			LOG_F(1, "Metadata received, msgId: %s confirmed in milestone %d", messageId.toHex().data(), milestoneId);
 			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
-			MqttClientWrapper::getInstance()->unsubscribe(messageId, this);
-		}		
+			return ObserverReturn::UNSUBSCRIBE;
+		} else {
+			LOG_F(ERROR, "unexpected topic type: %s, unsubscribe", enum_name(type).data());
+			return ObserverReturn::UNSUBSCRIBE;
+		}
 	}
 
 	bool MessageListener::addStoredMessage(const MessageId &newMessageId)

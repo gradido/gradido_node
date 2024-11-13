@@ -107,7 +107,7 @@ namespace iota {
         inline void signal() { mCondition.notify_one(); }
 
         // implemented from IMessageObserver, called via mqtt from iota server
-        virtual void messageArrived(MQTTAsync_message* message, TopicType type);
+        virtual ObserverReturn messageArrived(MQTTAsync_message* message, TopicType type);
 
     protected:
 

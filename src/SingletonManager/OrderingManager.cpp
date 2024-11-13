@@ -136,7 +136,7 @@ int OrderingManager::ThreadFunction()
                 }
                 try {
                     bool result = blockchain->addGradidoTransaction(itTransaction->transaction, itTransaction->messageId, mt->milestoneTimestamp);
-                    LOG_F(INFO, "added transaction to blockchain with messageId:\n%s", itTransaction->messageId->convertToHex().data());
+                    LOG_F(INFO, "Transaction added, msgId: %s", itTransaction->messageId->convertToHex().data());
                 }
                 catch (GradidoBlockchainException& ex) {
                     auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);

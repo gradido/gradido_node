@@ -177,7 +177,10 @@ namespace iota {
 		std::lock_guard _lock(mWorkMutex);
 		auto it = mTopicObserver.find(topicName);
 		if(it != mTopicObserver.end()) {
-			it->second->messageArrived(message);
+			auto result = it->second->messageArrived(message);
+			if(result == ObserverReturn::UNSUBSCRIBE) {
+				it->second->unsubscribe(mMqttClient);
+			}
 		}
 		std::string payload((const char*)message->payload, message->payloadlen);
 		if(0 == strcmp(topicName, "messages/indexation/484f524e4554205370616d6d6572")) {
