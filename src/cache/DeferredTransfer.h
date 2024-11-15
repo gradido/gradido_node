@@ -6,6 +6,7 @@
 
 #include <map>
 #include <memory>
+#include <set>
 
 namespace cache
 {
@@ -48,14 +49,14 @@ namespace cache
 		virtual const char* getResourceType() const { return "DeferredTransfer"; };
 
 	protected:
-		void updateState(uint32_t addressIndex, std::vector<uint64_t> transactionNrs);
+		void updateState(uint32_t addressIndex, const std::set<uint64_t>& transactionNrs);
 		void loadFromState();
 
-		static std::unique_ptr<std::string> transactionNrsToString(std::vector<uint64_t> transactionNrs);
-		static std::vector<uint64_t> transactionNrsToVector(const std::string& transactionNrsString);
+		static std::unique_ptr<std::string> transactionNrsToString(const std::set<uint64_t>& transactionNrs);
+		static std::set<uint64_t> transactionNrsToSet(const std::string& transactionNrsString);
 
 		State mState;
-		std::map<uint32_t, std::vector<uint64_t>> mAddressIndexTransactionNrs;
+		std::map<uint32_t, std::set<uint64_t>> mAddressIndexTransactionNrs;
 		std::mutex mFastMutex;
 		std::string mTimerName;
 		std::string mCommunityName;

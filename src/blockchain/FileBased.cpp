@@ -433,7 +433,13 @@ namespace gradido {
 						if (transactionNr == deferredTransactionEntry.getTransactionNr()) {
 							continue;
 						}
+						if (transactionNr > maxTransactionNr) {
+							continue;
+						}
 						auto transaction = getTransactionForId(transactionNr);
+						if (!transaction) {
+							LOG_F(WARNING, "redeeming deferred transfer transaction not found: %d", transactionNr);
+						}
 						if (!timepointInterval.isInsideInterval(transaction->getTransactionBody()->getCreatedAt())) {
 							continue;
 						}

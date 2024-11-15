@@ -53,7 +53,7 @@ namespace cache
 			it = mAddressIndexTransactionNrs.insert({ addressIndex, {} }).first;
 		}
 
-		it->second.push_back(transactionNr);
+		it->second.insert(transactionNr);
 		updateState(addressIndex, it->second);
 	}
 
@@ -62,7 +62,10 @@ namespace cache
 		std::lock_guard _lock(mFastMutex);
 		auto it = mAddressIndexTransactionNrs.find(addressIndex);
 		if (it != mAddressIndexTransactionNrs.end()) {
-			return it->second;
+			std::vector<uint64_t> result;
+			result.reserve(it->second.size());
+			std::copy(it->second.begin(), it->second.end(), std::back_inserter(result));
+			return result;
 		}
 		return {};
 	}
@@ -102,7 +105,7 @@ namespace cache
 	void DeferredTransfer::removeAddressIndexes(std::function<bool(uint32_t addressIndex, uint64_t transactionNr)> canBeRemoved) {
 		std::lock_guard _lock(mFastMutex);
 		for (auto it = mAddressIndexTransactionNrs.begin(); it != mAddressIndexTransactionNrs.end(); it++) {
-			if (canBeRemoved(it->first, it->second.front())) {
+			if (canBeRemoved(it->first, *it->second.begin())) {
 				it = mAddressIndexTransactionNrs.erase(it);
 				mState.removeState(std::to_string(it->first).data());
 				if (it == mAddressIndexTransactionNrs.end()) {
@@ -120,7 +123,7 @@ namespace cache
 		return TimerReturn::GO_ON;
 	}
 
-	void DeferredTransfer::updateState(uint32_t addressIndex, std::vector<uint64_t> transactionNrs)
+	void DeferredTransfer::updateState(uint32_t addressIndex, const std::set<uint64_t>& transactionNrs)
 	{
 		mState.updateState(std::to_string(addressIndex).data(), *transactionNrsToString(transactionNrs).get());
 	}
@@ -130,21 +133,16 @@ namespace cache
 		mAddressIndexTransactionNrs.clear();
 		mState.readAllStates([&](leveldb::Slice key, leveldb::Slice value) {
 			// update using std::string_view instead if const std::string& to make use of leveldb::Slice instead of creating a new string
-			auto transactionNrs = transactionNrsToVector(value.ToString());
+			auto transactionNrs = transactionNrsToSet(value.ToString());
 			char* end = nullptr;
 			mAddressIndexTransactionNrs.insert({ std::strtoul(key.data(), &end, 10), transactionNrs});
 		});
 	}
 
-	std::unique_ptr<std::string> DeferredTransfer::transactionNrsToString(std::vector<uint64_t> transactionNrs)
+	std::unique_ptr<std::string> DeferredTransfer::transactionNrsToString(const std::set<uint64_t>& transactionNrs)
 	{
 		std::unique_ptr<std::string> transactionNrsString = std::make_unique<std::string>();
-		std::set<uint64_t> uniqueTransactionNrs;
 		for (auto it = transactionNrs.begin(); it != transactionNrs.end(); it++) {
-			// if transaction nr already exist, skip
-			if (!uniqueTransactionNrs.insert(*it).second) {
-				continue;
-			}
 			if (!transactionNrsString->empty()) {
 				transactionNrsString->append(",");
 			}
@@ -153,19 +151,19 @@ namespace cache
 		return std::move(transactionNrsString);
 	}
 
-	std::vector<uint64_t> DeferredTransfer::transactionNrsToVector(const std::string& transactionNrsString)
+	std::set<uint64_t> DeferredTransfer::transactionNrsToSet(const std::string& transactionNrsString)
 	{
-		std::vector<uint64_t> transactionNrs;
+		std::set<uint64_t> transactionNrs;
 		// taken code from https://stackoverflow.com/questions/5167625/splitting-a-c-stdstring-using-tokens-e-g
 		std::string::size_type prev_pos = 0, pos = 0;
 
 		while ((pos = transactionNrsString.find(',', pos)) != std::string::npos)
 		{
-			transactionNrs.push_back(std::stoull(transactionNrsString.substr(prev_pos, pos - prev_pos)));
+			transactionNrs.insert(std::stoull(transactionNrsString.substr(prev_pos, pos - prev_pos)));
 			prev_pos = ++pos;
 		}
 
-		transactionNrs.push_back(std::stoull(transactionNrsString.substr(prev_pos, pos - prev_pos))); // Last word
+		transactionNrs.insert(std::stoull(transactionNrsString.substr(prev_pos, pos - prev_pos))); // Last word
 		return transactionNrs;
 	}
 }
