@@ -1,7 +1,9 @@
 #include "TransactionList.h"
+#include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
 #include "../../blockchain/FileBased.h"
+#include "../../blockchain/NodeTransactionEntry.h"
 
 using namespace rapidjson;
 using namespace gradido::interaction;
@@ -18,7 +20,7 @@ namespace model {
 
 		}
 
-		Value TransactionList::generateList(Timepoint now, const Filter& filter, rapidjson::Document& root)
+		Value TransactionList::generateList(Timepoint now, const Filter& filter, Document& root)
 		{
 			auto fileBasedBlockchain = std::dynamic_pointer_cast<const gradido::blockchain::FileBased>(mBlockchain);
 			assert(fileBasedBlockchain);
@@ -111,7 +113,7 @@ namespace model {
 
 		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root)
 		{
-			model::Apollo::Transaction lastDecay(lastTransactionDate, Timepoint(), balance);
+			model::Apollo::Transaction lastDecay(lastTransactionDate, std::chrono::system_clock::now(), balance);
 			balance += lastDecay.getDecay()->getDecayAmount();
 			
 			return std::move(lastDecay.toJson(root.GetAllocator()));

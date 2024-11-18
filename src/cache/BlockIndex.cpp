@@ -385,15 +385,24 @@ namespace cache {
 			}
 		}
 		bool revert = filter.searchDirection == SearchDirection::DESC;
-		auto intervalIt = revert ? interval.end() : interval.begin();
-		auto intervalEnd = revert ? interval.begin() : interval.end();
+		auto intervalIt = revert ? std::prev(interval.end()) : interval.begin();
+		auto intervalEnd = revert ? std::prev(interval.begin()) : interval.end();
 		size_t result = 0;
 		unsigned int entryCursor = 0;
 		while (intervalIt != intervalEnd)
 		{
 			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
-			assert(yearIt != mYearMonthAddressIndexEntrys.end());
+			// assert(yearIt != mYearMonthAddressIndexEntrys.end());
+			if (yearIt == mYearMonthAddressIndexEntrys.end()) {
+				LOG_F(ERROR, "yearIt goes beyond array borders, tried to find: %d", (int)intervalIt->year());
+				break;
+			}
 			auto monthIt = yearIt->second.find(intervalIt->month());
+			//assert(monthIt != yearIt->second.end());
+			if (monthIt == yearIt->second.end()) {
+				LOG_F(ERROR, "monthIt goes beyond array borders, tried to find: %u", (unsigned)intervalIt->month());
+				break;
+			}
 			assert(monthIt != yearIt->second.end());
 
 			for (const auto& blockIndexEntry : monthIt->second) {

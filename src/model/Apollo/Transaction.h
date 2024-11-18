@@ -7,12 +7,15 @@
 namespace model {
 	namespace Apollo
 	{
-		enum TransactionType
+		enum class TransactionType
 		{
-			TRANSACTION_TYPE_CREATE,
-			TRANSACTION_TYPE_SEND,
-			TRANSACTION_TYPE_RECEIVE,
-			TRANSACTION_TYPE_DECAY,
+			NONE,
+			CREATE,
+			SEND,
+			RECEIVE,
+			DECAY,
+			LINK_SEND,
+			LINK_RECEIVE
 		};
 		class Transaction
 		{
@@ -32,8 +35,6 @@ namespace model {
 			void setBalance(GradidoUnit balance);
 
 			rapidjson::Value toJson(rapidjson::Document::AllocatorType& alloc);
-
-			static const char* transactionTypeToString(TransactionType type);
 
 			inline Timepoint getDate() const { return mDate; }
 			inline const GradidoUnit getAmount() const { return mAmount; }

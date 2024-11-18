@@ -1,8 +1,9 @@
 #ifndef __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_LIST_H
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_LIST_H
 
-#include "rapidjson/document.h"
 #include "Transaction.h"
+
+#include "rapidjson/document.h"
 
 namespace gradido {
 	namespace blockchain {
@@ -22,7 +23,6 @@ namespace model {
 				std::shared_ptr<const gradido::blockchain::Abstract> blockchain,
 				memory::ConstBlockPtr pubkey
 			);
-
 			rapidjson::Value generateList(Timepoint now, const gradido::blockchain::Filter& filter, rapidjson::Document& root);
 		protected:
 			void calculateDecay(

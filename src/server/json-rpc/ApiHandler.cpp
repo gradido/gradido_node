@@ -1,5 +1,8 @@
 #include "ApiHandler.h"
 
+// need to be here, else it produce a linker error, or more precisly the member function generateList
+// TODO: fix the reason
+#include "../../model/Apollo/TransactionList.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
@@ -12,8 +15,6 @@
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/FileBasedProvider.h"
 #include "../../blockchain/NodeTransactionEntry.h"
-
-#include "../../model/Apollo/TransactionList.h"
 
 #include "rapidjson/prettywriter.h"
 #include "magic_enum/magic_enum.hpp"
@@ -395,7 +396,7 @@ namespace server {
 			auto& alloc = mRootJson.GetAllocator();
 
 			model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey);
-			Timepoint now;
+			Timepoint now = std::chrono::system_clock::now();
 			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
 			calculateAccountBalance::Context calculateAddressBalance(*blockchain);
 			auto balance = calculateAddressBalance.run(filter.involvedPublicKey, now);

@@ -1,20 +1,25 @@
 #include "Transaction.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
+#include "magic_enum/magic_enum.hpp"
+#include "loguru/loguru.hpp"
+
 using namespace rapidjson;
 using namespace gradido::interaction;
+using namespace magic_enum;
 
 namespace model {
 	namespace Apollo {
 
 
 		Transaction::Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey)
+			: mType(TransactionType::NONE), mDecay(nullptr)
 		{			
 			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
 			
 			if (transactionBody->getTransactionType() == gradido::data::TransactionType::CREATION) {
-				mType = TRANSACTION_TYPE_CREATE;
+				mType = TransactionType::CREATE;
 				auto creation = transactionBody->getCreation();
 				mAmount = creation->getRecipient().getAmount();
 				mFirstName = "Gradido";
@@ -25,29 +30,30 @@ namespace model {
 				auto transfer = transactionBody->getTransfer();
 				mAmount = transfer->getSender().getAmount();
 				if(transfer->getRecipient()->isTheSame(pubkey)) {
-					mType = TRANSACTION_TYPE_RECEIVE;
+					mType = TransactionType::RECEIVE;
 					mPubkey = transfer->getSender().getPubkey()->convertToHex();
 				}
 				else if (transfer->getSender().getPubkey()->isTheSame(pubkey)) {
-					mType = TRANSACTION_TYPE_SEND;
+					mType = TransactionType::SEND;
 					mPubkey = transfer->getRecipient()->convertToHex();
-					mAmount *= -1.0;
+					mAmount *= GradidoUnit((int64_t)-1);
 				}				
 			}
 			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::DEFERRED_TRANSFER) {
 				auto transfer = transactionBody->getDeferredTransfer()->getTransfer();
 				mAmount = transfer.getSender().getAmount();
 				if (transfer.getRecipient()->isTheSame(pubkey)) {
-					mType = TRANSACTION_TYPE_RECEIVE;
+					mType = TransactionType::LINK_RECEIVE;
 					mPubkey = transfer.getSender().getPubkey()->convertToHex();
 				}
 				else if (transfer.getSender().getPubkey()->isTheSame(pubkey)) {
-					mType = TRANSACTION_TYPE_SEND;
+					mType = TransactionType::LINK_SEND;
 					mPubkey = transfer.getRecipient()->convertToHex();
-					mAmount *= -1.0;
+					mAmount *= GradidoUnit((int64_t)-1);
 				}
 			}
 			else {
+				LOG_F(ERROR, "not implemented yet: %s", enum_name(transactionBody->getTransactionType()).data());
 				throw std::runtime_error("transaction type not implemented yet");
 			}
 			mMemo = transactionBody->getMemo();
@@ -56,7 +62,7 @@ namespace model {
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
-			: mType(TRANSACTION_TYPE_DECAY), mId(-1), mDate(decayEnd)
+			: mType(TransactionType::DECAY), mId(-1), mDate(decayEnd), mDecay(nullptr)
 		{
 		
 			calculateDecay(decayStart, decayEnd, startBalance);
@@ -163,7 +169,7 @@ namespace model {
 		Value Transaction::toJson(Document::AllocatorType& alloc)
 		{
 			Value transaction(kObjectType);
-			transaction.AddMember("typeId", Value(transactionTypeToString(mType), alloc), alloc);
+			transaction.AddMember("typeId", Value(enum_name(mType).data(), alloc), alloc);
 			transaction.AddMember("amount", Value(mAmount.toString().data(), alloc), alloc);
 			transaction.AddMember("balance", Value(mBalance.toString().data(), alloc), alloc);
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
@@ -182,17 +188,6 @@ namespace model {
 			}
 			transaction.AddMember("__typename", "Transaction", alloc);
 			return std::move(transaction);
-		}
-
-		const char* Transaction::transactionTypeToString(TransactionType type)
-		{
-			switch (type) {
-			case TRANSACTION_TYPE_CREATE: return "CREATE";
-			case TRANSACTION_TYPE_SEND: return "SEND";
-			case TRANSACTION_TYPE_RECEIVE: return "RECEIVE";
-			case TRANSACTION_TYPE_DECAY: return "DECAY";
-			}
-			return "<unknown>";
 		}
 	}
 }
