@@ -396,13 +396,13 @@ namespace server {
 
 			model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey);
 			Timepoint now;
-			//auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
+			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
 			calculateAccountBalance::Context calculateAddressBalance(*blockchain);
 			auto balance = calculateAddressBalance.run(filter.involvedPublicKey, now);
 			std::string balanceString = balance.toString();
-			//transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
+			transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 
-			//resultJson.AddMember("transactionList", transactionListValue, alloc);
+			resultJson.AddMember("transactionList", transactionListValue, alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 		}
 
