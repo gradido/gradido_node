@@ -15,7 +15,8 @@ namespace model {
 			RECEIVE,
 			DECAY,
 			LINK_SEND,
-			LINK_RECEIVE
+			LINK_RECEIVE,
+			LINK_DELETE
 		};
 		class Transaction
 		{
@@ -23,16 +24,18 @@ namespace model {
 			Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey);
 			Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 
-			// Move Constrcutor
+			// Move constrcutor
 			Transaction(Transaction&& parent) noexcept;
 			// Copy constructor
 			Transaction(const Transaction& parent);
 			~Transaction();
 
-			Transaction& operator=(const Transaction& other);  // Kopierzuweisung
+			Transaction& operator=(const Transaction& other);  // copy
 
 			void calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 			void setBalance(GradidoUnit balance);
+			inline GradidoUnit getBalance() const {return mBalance;}
+			inline void setPreviousBalance(GradidoUnit previousBalance) {mPreviousBalance = previousBalance;}
 
 			rapidjson::Value toJson(rapidjson::Document::AllocatorType& alloc);
 
@@ -45,6 +48,7 @@ namespace model {
 			TransactionType mType;
 			GradidoUnit     mAmount;
 			GradidoUnit		mBalance;
+			GradidoUnit   mPreviousBalance;
 			std::string     mPubkey;
 			std::string		mFirstName;
 			std::string		mLastName;

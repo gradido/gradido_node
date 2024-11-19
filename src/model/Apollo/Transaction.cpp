@@ -68,6 +68,7 @@ namespace model {
 			calculateDecay(decayStart, decayEnd, startBalance);
 			mAmount = mDecay->getDecayAmount();
 			mBalance = startBalance + mDecay->getDecayAmount();
+			mPreviousBalance = startBalance;
 		}
 
 		/*
@@ -84,7 +85,8 @@ namespace model {
 		Transaction::Transaction(Transaction&& parent) noexcept
 			: mType(parent.mType),
 			mAmount(parent.mAmount),
-		    mBalance(parent.mBalance),
+			mBalance(parent.mBalance),
+			mPreviousBalance(parent.mPreviousBalance),
 			mPubkey(std::move(parent.mPubkey)),
 			mFirstName(std::move(parent.mFirstName)),
 			mLastName(std::move(parent.mLastName)),
@@ -99,6 +101,7 @@ namespace model {
 			: mType(parent.mType),
 			mAmount(parent.mAmount),
 			mBalance(parent.mBalance),
+			mPreviousBalance(parent.mPreviousBalance),
 			mPubkey(parent.mPubkey),
 			mFirstName(parent.mFirstName),
 			mLastName(parent.mLastName),
@@ -131,6 +134,7 @@ namespace model {
 			mType = other.mType;
 			mAmount = other.mAmount;
 			mBalance = other.mBalance;
+			mPreviousBalance = other.mPreviousBalance;
 			mPubkey = other.mPubkey;
 			mFirstName = other.mFirstName;
 			mLastName = other.mLastName;
@@ -169,11 +173,13 @@ namespace model {
 		Value Transaction::toJson(Document::AllocatorType& alloc)
 		{
 			Value transaction(kObjectType);
+			transaction.AddMember("id", mId, alloc);
 			transaction.AddMember("typeId", Value(enum_name(mType).data(), alloc), alloc);
 			transaction.AddMember("amount", Value(mAmount.toString().data(), alloc), alloc);
 			transaction.AddMember("balance", Value(mBalance.toString().data(), alloc), alloc);
+			transaction.AddMember("previousBalance", Value(mPreviousBalance.toString().data(), alloc), alloc);
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
-			transaction.AddMember("id", mId, alloc);
+			
 			Value linkedUser(kObjectType);
 			linkedUser.AddMember("pubkey", Value(mPubkey.data(), alloc), alloc);
 			linkedUser.AddMember("firstName", Value(mFirstName.data(), alloc), alloc);
@@ -181,8 +187,7 @@ namespace model {
 			linkedUser.AddMember("__typename", "User", alloc);
 			transaction.AddMember("linkedUser", linkedUser, alloc);
 
-			auto dateString = DataTypeConverter::timePointToString(mDate, jsDateTimeFormat);
-			transaction.AddMember("balanceDate", Value(dateString.data(), alloc), alloc);
+			transaction.AddMember("balanceDate", Value(formatJsCompatible(mDate).data(), alloc), alloc);
 			if (mDecay) {
 				transaction.AddMember("decay", mDecay->toJson(alloc), alloc);
 			}

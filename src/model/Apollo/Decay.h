@@ -8,6 +8,8 @@ namespace model {
 	namespace Apollo {
 		extern const char* jsDateTimeFormat;
 
+		std::string formatJsCompatible(Timepoint date);
+
 		class Decay
 		{
 		public:

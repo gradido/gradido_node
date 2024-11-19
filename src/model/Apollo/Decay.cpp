@@ -8,8 +8,15 @@ using namespace std::chrono;
 
 namespace model {
 	namespace Apollo {
-		const char* jsDateTimeFormat = "%Y-%m-%dT%H:%M:%S.%i%z";
+		const char* jsDateTimeFormat = "%FT%T";
 		static const Timepoint DECAY_START_TIME = DataTypeConverter::dateTimeStringToTimePoint("2021-05-13 17:46:31");
+
+		std::string formatJsCompatible(Timepoint date)
+		{
+			auto dateString = DataTypeConverter::timePointToString(date, jsDateTimeFormat);
+			return dateString;
+			// return dateString.substr(0, dateString.find_last_of('.'));
+		}
 
 		Decay::Decay(Decay* parent)
 			: mDecayStart(parent->mDecayStart), mDecayEnd(parent->mDecayEnd), mDecayAmount(parent->mDecayAmount)
@@ -31,10 +38,8 @@ namespace model {
 		{
 			Value decay(kObjectType);
 			decay.AddMember("decay", Value(mDecayAmount.toString().data(), alloc), alloc);
-			auto decayStartString = DataTypeConverter::timePointToString(mDecayStart, jsDateTimeFormat);
-			decay.AddMember("start", Value(decayStartString.data(), alloc), alloc);
-			auto decayEndString = DataTypeConverter::timePointToString(mDecayEnd, jsDateTimeFormat);
-			decay.AddMember("end", Value(decayEndString.data(), alloc), alloc);
+			decay.AddMember("start", Value(formatJsCompatible(mDecayStart).data(), alloc), alloc);
+			decay.AddMember("end", Value(formatJsCompatible(mDecayEnd).data(), alloc), alloc);
 			decay.AddMember("duration", duration_cast<seconds>(mDecayEnd - mDecayStart).count(), alloc);
 			decay.AddMember("__typename", "Decay", alloc);
 			return std::move(decay);
