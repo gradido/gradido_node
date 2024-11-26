@@ -56,7 +56,9 @@ namespace model {
 				balanceStartTimestamp = confirmedTransaction->getConfirmedAt();
 				balance = confirmedTransaction->getAccountBalance();
 			}
-			
+			// TODO: check used time and opimize eventually
+			calculateAccountBalance::Context balanceCalculator(*mBlockchain);
+
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
 			for (auto& entry: allTransactions)
 			{
@@ -67,6 +69,14 @@ namespace model {
 				}
 
 				transactionsVector.push_back(model::Apollo::Transaction(*confirmedTransaction, mPubkey));
+				balance = balanceCalculator.run(
+					filter.involvedPublicKey,
+					confirmedTransaction->getConfirmedAt(),
+					confirmedTransaction->getId()
+				);
+				transactionsVector.back().setBalance(
+					balance
+				);
 				
 				Timepoint prevTransactionDate(balanceStartTimestamp);
 				if (transactionsVector.size() > 1) {
@@ -114,6 +124,7 @@ namespace model {
 
 		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root)
 		{
+
 			model::Apollo::Transaction lastDecay(lastTransactionDate, std::chrono::system_clock::now(), balance);
 			balance += lastDecay.getDecay()->getDecayAmount();
 			

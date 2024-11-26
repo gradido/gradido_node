@@ -78,7 +78,9 @@ bool MainServer::init()
 	ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
 	ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
 	ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
-	iota::MqttClientWrapper::getInstance()->init();
+	if(!ServerGlobals::g_isOfflineMode) {
+		iota::MqttClientWrapper::getInstance()->init();
+	}
 
 	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");

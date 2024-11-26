@@ -19,6 +19,7 @@ namespace ServerGlobals {
 	std::string							g_IotaMqttBrokerUri;
 	std::atomic<size_t>		            g_NumberExistingTasks;
 	bool								g_LogTransactions = false;
+	bool								g_isOfflineMode = false;
 
 	void clearMemory()
 	{
@@ -58,7 +59,9 @@ namespace ServerGlobals {
 		std::string iotaMqttHost = cfg.getString("clients.iota.mqtt.host", "api.lb-0.h.chrysalis-devnet.iota.cafe");
 		int mqttPort = cfg.getInt("clients.iota.mqtt.port", 1883);
 		g_IotaMqttBrokerUri = iotaHost + ":" + std::to_string(mqttPort);
-    return true;
+
+		g_isOfflineMode = cfg.getBool("clients.isOfflineMode", false);
+	    return true;	
 	}
 
 	void loadTimeouts(const MapEnvironmentToConfig& cfg)

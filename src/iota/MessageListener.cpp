@@ -43,7 +43,9 @@ namespace iota
 
 	void MessageListener::run()
 	{
-		callFromTimer();
+		if(!ServerGlobals::g_isOfflineMode) {
+			callFromTimer();
+		}
 #ifdef IOTA_WITHOUT_MQTT
 		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
 #else

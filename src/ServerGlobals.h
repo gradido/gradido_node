@@ -26,6 +26,8 @@ namespace ServerGlobals {
 	extern std::string						g_IotaMqttBrokerUri;
 	extern std::atomic<size_t>              g_NumberExistingTasks;
 	extern bool								g_LogTransactions;
+	// if true serve only stored transactions, for example debug without internet connection
+	extern bool								g_isOfflineMode;
 
 	void clearMemory();
 	bool initIota(const MapEnvironmentToConfig& cfg);

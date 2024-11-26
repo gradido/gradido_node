@@ -387,6 +387,7 @@ namespace gradido {
 					return FilterResult::DISMISS;
 				};
 				auto redeemingTransactions = findAll(f2);
+				// TODO: calculate if transaction was redeemed fully
 				if (redeemingTransactions.size()) {
 					return FilterResult::DISMISS;
 				}
