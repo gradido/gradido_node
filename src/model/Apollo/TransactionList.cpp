@@ -118,13 +118,14 @@ namespace model {
 			model::Apollo::Transaction* currentTransaction
 		)
 		{
+
 			if (balance == GradidoUnit::zero()) {
 				calculateAccountBalance::Context c(*mBlockchain);
 				balance = c.run(mPubkey, prevTransactionDate);
 			}
 			currentTransaction->calculateDecay(prevTransactionDate, currentTransaction->getDate(), balance);
-			balance += currentTransaction->getDecay()->getDecayAmount() + currentTransaction->getAmount();			
-			currentTransaction->setBalance(balance);
+			//balance += currentTransaction->getDecay()->getDecayAmount() + currentTransaction->getAmount();			
+			//currentTransaction->setBalance(balance);
 		}
 
 		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root)
