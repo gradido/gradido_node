@@ -37,6 +37,7 @@ namespace model {
 
 			Timepoint balanceStartTimestamp(now);
 			GradidoUnit balance((int64_t)0);
+			GradidoUnit previousBalance((int64_t)0);
 
 			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
 			transactionList.AddMember("count", countTransactions, alloc);
@@ -74,14 +75,18 @@ namespace model {
 					confirmedTransaction->getConfirmedAt(),
 					confirmedTransaction->getId()
 				);
+				
 				transactionsVector.back().setBalance(
 					balance
 				);
-				
+				transactionsVector.back().setPreviousBalance(
+					previousBalance
+				);
+				previousBalance = balance;
 				Timepoint prevTransactionDate(balanceStartTimestamp);
 				if (transactionsVector.size() > 1) {
 					prevTransactionDate = transactionsVector[transactionsVector.size() - 2].getDate();
-					transactionsVector.back().setPreviousBalance(transactionsVector[transactionsVector.size() - 2].getBalance());
+					//transactionsVector.back().setPreviousBalance(transactionsVector[transactionsVector.size() - 1].getBalance());
 				}
 				if (prevTransactionDate != now) {
 					calculateDecay(balance, prevTransactionDate, &transactionsVector.back());
