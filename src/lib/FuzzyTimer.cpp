@@ -1,57 +1,56 @@
 #include "FuzzyTimer.h"
-#include "Poco/Timestamp.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/types.h"
+#include "../SystemExceptions.h"
 #include "../iota/IotaExceptions.h"
 
+#include "loguru/loguru.hpp"
+
 FuzzyTimer::FuzzyTimer()
-	: exit(false)
+	: exit(false), mThread(new std::thread(&FuzzyTimer::run, this))
 {
-	mThread.setName("FuzzyTimer");
-	mThread.start(*this);
-	//printf("FuzzyTimer::FuzzyTimer\n");
 }
 
 FuzzyTimer::~FuzzyTimer()
 {
-	//printf("FuzzyTimer::~FuzzyTimer\n");
 	mMutex.lock();
 	exit = true;
 	mMutex.unlock();
-	mThread.join();
+	if (mThread) {
+		mThread->join();
+		delete mThread;
+		mThread = nullptr;
+	}
 	mRegisteredAtTimer.clear();
 }
 
 // -----------------------------------------------------------------------------------------------------
 
-bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, uint64_t timeIntervall, int loopCount/* = -1*/)
+bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::chrono::milliseconds timeInterval, int loopCount/* = -1*/)
 {
-	//printf("FuzzyTimer::addTimer: %s\n", name.data());
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	LOG_F(1, "%s", name.data());
+	std::lock_guard _lock(mMutex);
 	if (exit) return false;
 
-	Poco::Timestamp now;
-	auto nowMilliseconds = (now.epochMicroseconds() / 1000);
-	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeIntervall, TimerEntry(callbackObject, timeIntervall, loopCount, name)));
+	Timepoint now;
+	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeInterval, TimerEntry(callbackObject, timeInterval, loopCount, name)));
 
 	return true;
 }
 
 int FuzzyTimer::removeTimer(std::string name)
 {
-	//printf("[FuzzyTimer::removeTimer] with name: %s, exit: %d\n", name.data(), exit);
-	if (mMutex.tryLock(100)) {
+	if (mMutex.try_lock()) {
 		mMutex.unlock();
 	}
 	else {
-		return -2;
+		throw CannotLockMutexAfterTimeout("FuzzyTimer::RemoveTimer", 100);
 	}
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	if (exit) return -1;
-	//printf("mRegisteredAtTimer size: %d\n", mRegisteredAtTimer.size());
 
-	size_t eraseCount = 0;
-				
+	size_t eraseCount = 0;				
 	for (auto it = mRegisteredAtTimer.begin(); it != mRegisteredAtTimer.end();)
 	{
 		if (name == it->second.name)
@@ -61,69 +60,65 @@ int FuzzyTimer::removeTimer(std::string name)
 			eraseCount++;
 		}
 		else {
-			//printf("not removed: %s\n", it->second.name.data());
 			it++;
 		}
 	}
-	//printf("removed %d timer with name: %s\n", eraseCount, name.data());
-	//printf("mRegisteredAtTimer size: %d\n", mRegisteredAtTimer.size());
+	LOG_F(1, "removed %llu timer with name : %s", eraseCount, name.data());
 	return eraseCount;
 }
 
 bool FuzzyTimer::move()
 {
-	//printf("FuzzyTimer::move\n");
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	if (exit) return false;
 			
 	auto it = mRegisteredAtTimer.begin();
 	if (it == mRegisteredAtTimer.end()) return true;
 
-	Poco::Timestamp now;
-	auto nowMilliseconds = (now.epochMicroseconds() / 1000);
+	Timepoint now;
+	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 
 	if (it->first <= nowMilliseconds) {
 		if (!it->second.callback) {
-			printf("[FuzzyTimer::move] empty callback\n");
-			printf("name: %s\n", it->second.name.data());
-			//printf("type: %s\n", it->second.callback->getResourceType());
+			LOG_F(WARNING, "empty callback, name: %s", it->second.name.data());
 		}
 		else {
-			//printf("[FuzzyTimer::move] about to call: %s\n", it->second.name.data());
-			Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
 			TimerReturn ret = TimerReturn::NOT_SET;
 			try {
 				ret = it->second.callback->callFromTimer();
 			}
-			catch (GradidoBlockchainException& ex) {
-				errorLog.error("[FuzzyTimer::move] Gradido Blockchain Exception: %s", ex.getFullString());
-				ret = TimerReturn::EXCEPTION;
-			}
-			catch (Poco::Exception& ex) {
-				errorLog.error("[FuzzyTimer::move] Poco Exception: %s", ex.displayText());
-				ret = TimerReturn::EXCEPTION;
-			} 
-			catch (std::runtime_error& ex) {
-				errorLog.error("[FuzzyTimer::move] std::runtime_error: %s", ex.what());
-				ret = TimerReturn::EXCEPTION;
-			}
 			catch (MessageIdFormatException& ex) {
-				errorLog.error("[FuzzyTimer::move] ... exception");
+				LOG_F(ERROR, "message id exception: %s", ex.getFullString().data());
 				ret = TimerReturn::EXCEPTION;
 			}
+			catch (GradidoBlockchainException& ex) {
+				LOG_F(ERROR, "Gradido Blockchain Exception: %s", ex.getFullString().data());
+				ret = TimerReturn::EXCEPTION;
+			}
+			catch (std::runtime_error& ex) {
+				LOG_F(ERROR, "std::runtime_error: %s", ex.what());
+				ret = TimerReturn::EXCEPTION;
+			}
+			
 			if (it->second.nextLoop() && ret == TimerReturn::GO_ON) {
-				mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeIntervall, it->second));
+				mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + it->second.timeInterval, it->second));
 			}
 
 			if (ret == TimerReturn::REPORT_ERROR) {
-				errorLog.error(
-					"[FuzzyTimer::move] timer run report error: timer type: %s, timer name: %s",
-					std::string(it->second.callback->getResourceType()), it->second.name);				
+				LOG_F(
+					ERROR, 
+					"timer run report error: timer type: %s, timer name: %s",
+					it->second.callback->getResourceType(),
+					it->second.name.data()
+				);
 			}
 			else if (ret == TimerReturn::EXCEPTION) {
-				errorLog.error(
-					"[FuzzyTimer::move] timer run throw a exception: timer type: %s, timer name: %s",
-					std::string(it->second.callback->getResourceType()), it->second.name);
+				LOG_F(
+					ERROR,
+					"timer run throw a exception: timer type: %s, timer name: %s",
+					it->second.callback->getResourceType(),
+					it->second.name.data()
+				);
 			}
 		}
 		mRegisteredAtTimer.erase(it);					
@@ -134,15 +129,16 @@ bool FuzzyTimer::move()
 
 void FuzzyTimer::stop()
 {
-	Poco::ScopedLock<Poco::Mutex> _lock(mMutex);
+	std::lock_guard _lock(mMutex);
 	exit = true;
 }
 void FuzzyTimer::run()
 {
+	loguru::set_thread_name("FuzzyTimer");
 	while (true) {
 		if (!move()) {
 			return;
 		}
-		Poco::Thread::sleep(MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS_MILLISECONDS);
+		std::this_thread::sleep_for(MAGIC_NUMBER_TIMER_THREAD_SLEEP_BETWEEN_MOVE_CALLS);
 	}
 }

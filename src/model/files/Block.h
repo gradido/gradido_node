@@ -1,20 +1,13 @@
 #ifndef __GRADIDO_NODE_MODEL_FILES_BLOCK_H
 #define __GRADIDO_NODE_MODEL_FILES_BLOCK_H
 
-#include "FileBase.h"
-
-#include "Poco/Path.h"
-#include "Poco/FileStream.h"
-#include "Poco/Timestamp.h"
-#include "Poco/Timer.h"
-
-#include "gradido_blockchain/MemoryManager.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
-#include "../../model/NodeTransactionEntry.h"
 
 #include "../../lib/FuzzyTimer.h"
 
 #include "../../task/CPUTask.h"
+
+#include <fstream>
 
 //! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
 #define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
@@ -23,14 +16,21 @@ namespace controller {
 	class AddressIndex;
 }
 
+namespace gradido {
+	namespace blockchain {
+		class NodeTransactionEntry;
+		class FileBased;
+	}
+}
+
 namespace model {
 	namespace files {
 		class RebuildBlockIndexTask;
 
-		class Block : public FileBase, public TimerCallback
+		class Block : public TimerCallback
 		{
 		public:
-			Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr);
+			Block(std::string_view groupFolderPath, uint32_t blockNr);
 			~Block();
 
 			//! \brief close block file if not used > ServerGlobals::g_CacheTimeout  
@@ -42,79 +42,82 @@ namespace model {
 			const char* getResourceType() const { return "model::files::Block"; }
 
 			//! \return size of line (without size field in file)
-			Poco::UInt16 readLine(Poco::UInt32 startReading, std::string& strBuffer);
-			std::unique_ptr<std::string> readLine(Poco::UInt32 startReading);			
+			uint16_t readLine(uint32_t startReading, memory::BlockPtr* buffer);
+			std::shared_ptr<memory::Block> readLine(uint32_t startReading);
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)
 			//! \return -1 if block file couldn't locked
 			//! \return -2 if uint32 data type isn't enough anymore
-			Poco::Int32 appendLine(const std::string* line);
-			std::vector<Poco::UInt32> appendLines(const std::vector<const std::string*>& lines);
+			int32_t appendLine(memory::ConstBlockPtr line);
+			std::vector<uint32_t> appendLines(const std::vector<memory::ConstBlockPtr>& lines);
 
-			inline Poco::UInt32 getCurrentFileSize() { Poco::FastMutex::ScopedLock lock(mFastMutex); return mCurrentFileSize; }
-			inline std::string getBlockPath() const { return mBlockPath.toString(); }
+			inline uint32_t getCurrentFileSize() { std::scoped_lock _lock(mFastMutex); return mCurrentFileSize; }
+			inline std::string getBlockPath() const { return mBlockPath; }
 
 			// very expensive, read in whole file and calculate hash
 			bool validateHash();
 
 			// read whole file, validate hash
-			Poco::AutoPtr<RebuildBlockIndexTask> rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex);
+			std::shared_ptr<RebuildBlockIndexTask> rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
 
+			static uint32_t findLastBlockFileInFolder(std::string_view groupFolderPath);
 
 		protected:
 			//! \brief open file stream if not already open and set mCurrentFileSize via tellg, update mLastUsed
 			//! \return block file stream
-			Poco::SharedPtr<Poco::FileStream> getOpenFile();
+			std::shared_ptr<std::fstream> getOpenFile();
 			//! \brief very expensive, read in whole file and calculate hash
-			MemoryBin* calculateHash();
+			std::shared_ptr<memory::Block> calculateHash();
 
 			//Poco::Timer mTimer;
 
-			Poco::Path   mBlockPath;
-			Poco::UInt32 mBlockNr;
-			Poco::UInt64 mLastWrittenTransactionNr;
+			std::string   mBlockPath;
+			uint32_t mBlockNr;
+			uint64_t mLastWrittenTransactionNr;
 
-			Poco::Timestamp mLastUsed;
-			Poco::SharedPtr<Poco::FileStream>	mBlockFile;
-			Poco::FastMutex mFastMutex;
-			Poco::UInt32    mCurrentFileSize;
+			Timepoint mLastUsed;
+			std::shared_ptr<std::fstream>	mBlockFile;
+			std::mutex mFastMutex;
+			uint32_t  mCurrentFileSize;
 
 		};
 
 		class BlockAppendLineTask : task::CPUTask
 		{
 		public:
-			BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<const std::string*> lines);
+			BlockAppendLineTask(std::shared_ptr<Block> block, std::vector<memory::ConstBlockPtr> lines);
 
 			const char* getResourceType() const { return "BlockAppendLineTask"; };
 
 			int run();
 
 		protected:
-			Poco::SharedPtr<Block> mTargetBlock;
-			std::vector<const std::string*> mLines;
-			std::vector<Poco::UInt32> mCursorPositions;
+			std::shared_ptr<Block> mTargetBlock;
+			std::vector<memory::ConstBlockPtr> mLines;
+			std::vector<uint32_t> mCursorPositions;
 		};
 
-		
+		//! TODO: update for able to start with first line, while calling function is still loading more and more lines from file
+		//! gives the additional option to prevent task for storing to many lines at once
+		//! use ability of Task Object for resheduling
 		class RebuildBlockIndexTask : public task::CPUTask
 		{
 		public:
-			RebuildBlockIndexTask(Poco::SharedPtr<controller::AddressIndex> addressIndex);
+			RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
 			const char* getResourceType() const { return "RebuildBlockIndexTask"; };
 
 			int run();
 			//! \param line will be moved
-			void pushLine(Poco::Int32 fileCursor, std::string line);
-			const std::list<Poco::SharedPtr<model::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
+			void pushLine(int32_t fileCursor, std::shared_ptr<memory::Block> line);
+			const std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
 
 			inline bool isPendingQueueEmpty() { return mPendingFileCursorLine.empty(); }
 
 		protected:
-			Poco::SharedPtr<controller::AddressIndex> mAddressIndex;
-			std::list<Poco::SharedPtr<model::NodeTransactionEntry>> mTransactionEntries;
-			MultithreadQueue<std::pair<Poco::Int32, std::string>> mPendingFileCursorLine;
+			std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
+			std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactionEntries;
+			MultithreadQueue<std::pair<int32_t, std::shared_ptr<memory::Block>>> mPendingFileCursorLine;
 		};
 	}
 }

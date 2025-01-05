@@ -1,12 +1,13 @@
 #ifndef __GRADIDO_NODE_IOTA_MESSAGE_LISTENER_
 #define __GRADIDO_NODE_IOTA_MESSAGE_LISTENER_
 
-//#include "Poco/Timer.h"
-#include "Poco/Logger.h"
+#include "MQTTAsync.h"
 
 #include "gradido_blockchain/lib/MultithreadContainer.h"
+#include "gradido_blockchain/data/iota/MessageId.h"
+#include "gradido_blockchain/data/iota/TopicIndex.h"
 #include "../lib/FuzzyTimer.h"
-#include "MessageId.h"
+#include "IMessageObserver.h"
 
 #include <vector>
 #include <map>
@@ -47,24 +48,35 @@ namespace iota
       \enduml
      */    
     
-    class MessageListener : public MultithreadContainer, public TimerCallback
+    class MessageListener : public MultithreadContainer, public TimerCallback, public IMessageObserver
     {
     public:
         //! \param index should be something like GRADIDO.gdd1
-        MessageListener(const std::string& index, long intervalMilliseconds = 1000);
+        MessageListener(const TopicIndex& index, std::string_view alias, std::chrono::milliseconds interval = std::chrono::milliseconds(1000));
         ~MessageListener();
         
         //virtual void listener(Poco::Timer& timer);
 
+        // start running, call after init existing signatures cache!
+        void run();
+
+
 		TimerReturn callFromTimer();
+
+    //! called for every new transaction arriving on iota for this topic
+    ObserverReturn messageArrived(MQTTAsync_message* message, TopicType type);
+
 		const char* getResourceType() const { return "iota::MessageListener"; };
 
     protected:
 
-        void updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds);
+        void updateStoredMessages(std::vector<MemoryBin>& currentMessageIds);
+        //! \return false if message already exist
+        bool addStoredMessage(const MessageId& newMessageId);
 
-        std::string mIndex; 
-        Poco::Logger& mErrorLog;
+        TopicIndex mIndex; 
+        std::string mAlias;
+        std::chrono::milliseconds mInterval;
 
         enum MessageState 
         {
@@ -74,6 +86,7 @@ namespace iota
             MESSAGE_REMOVED // not longer returned from iota
         };
         bool mFirstRun;
+        // TODO: use timeout cache with mqtt
         std::map<MessageId, MessageState> mStoredMessageIds;            
     };
 }

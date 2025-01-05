@@ -8,13 +8,23 @@
  */
 
 #include "CPUTask.h"
-#include "../model/NodeTransactionEntry.h"
-#include "../model/files/Block.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 
-#include "../controller/BlockIndex.h"
+namespace cache {
+	class BlockIndex;
+}
 
-#include "Poco/Timestamp.h"
+namespace model {
+	namespace files {
+		class Block;
+	}
+}
+
+namespace gradido {
+	namespace blockchain {
+		class NodeTransactionEntry;
+	}
+}
 
 /*! 
  * @author Dario Rekowski
@@ -25,7 +35,7 @@
 class WriteTransactionsToBlockTask : public task::CPUTask
 {
 public:
-	WriteTransactionsToBlockTask(Poco::AutoPtr<model::files::Block> blockFile, Poco::SharedPtr<controller::BlockIndex> blockIndex);
+	WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<cache::BlockIndex> blockIndex);
 	~WriteTransactionsToBlockTask();
 
 	const char* getResourceType() const { return "WriteTransactionsToBlockTask"; };
@@ -34,23 +44,23 @@ public:
 	//! \brief return creation date of object
 	//! 
 	//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
-	inline Poco::Timestamp getCreationDate() { return mCreationDate; }
+	inline Timepoint getCreationDate() { return mCreationDate; }
 
-	void addSerializedTransaction(Poco::SharedPtr<model::NodeTransactionEntry> transaction);
+	void addSerializedTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction);
 
 	//! return transaction by nr
-	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t nr);
+	std::shared_ptr<gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t nr);
 
-	inline const std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>>* getTransactionEntriesList() const {
+	inline const std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>>* getTransactionEntriesList() const {
 		return &mTransactions;
 	}
 
 protected:
-	Poco::AutoPtr<model::files::Block> mBlockFile;
-	Poco::SharedPtr<controller::BlockIndex> mBlockIndex;
-	Poco::Timestamp mCreationDate;
-	Poco::FastMutex mFastMutex;
-	std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>> mTransactions;
+	std::shared_ptr<model::files::Block> mBlockFile;
+	std::shared_ptr<cache::BlockIndex> mBlockIndex;
+	Timepoint mCreationDate;
+	std::mutex mFastMutex;
+	std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactions;
 };
 
 #endif 

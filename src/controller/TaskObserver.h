@@ -10,22 +10,18 @@
 #ifndef DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H
 #define DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H
 
-#include "Poco/Mutex.h"
-#include "Poco/AutoPtr.h"
-#include "Poco/SharedPtr.h"
-
 #include "gradido_blockchain/lib/DRHashList.h"
 #include "gradido_blockchain/lib/MultithreadContainer.h"
 #include "../task/Task.h"
 
-
 #include <vector>
 #include <map>
+#include <mutex>
 
-enum TaskObserverType {
-	TASK_OBSERVER_WRITE_BLOCK,
-	TASK_OBSERVER_COUNT,
-	TASK_OBSERVER_INVALID
+enum class TaskObserverType {
+	WRITE_BLOCK,
+	COUNT,
+	INVALID
 };
 
 /*! 
@@ -38,8 +34,11 @@ enum TaskObserverType {
 
 class WriteTransactionsToBlockTask;
 
-namespace model {
-	class NodeTransactionEntry;
+namespace gradido {
+	namespace blockchain {
+		class NodeTransactionEntry;
+		class FileBased;
+	}
 }
 
 class TaskObserver : public MultithreadContainer
@@ -50,7 +49,7 @@ public:
 	
 	//! \brief adding WriteTransactionsToBlockTask to map and read transactions
 	//! \return false if tasks already exist
-	bool addBlockWriteTask(Poco::AutoPtr<WriteTransactionsToBlockTask> blockWriteTask);
+	bool addBlockWriteTask(std::shared_ptr<WriteTransactionsToBlockTask> blockWriteTask);
 
 	//! \brief remove WriteTransactionsToBlockTask from map and transactions
 	//! \return false if entry not found, else return true
@@ -62,33 +61,32 @@ public:
 	
 	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
 	//! \return true if transaction is pending and false if not
-	bool isTransactionPending(uint64_t transactionNr);
+	bool isTransactionPending(uint64_t transactionNr) const;
 
 	//! \brief check if one of the pending WriteTransactionsToBlockTask contain this transaction
 	//! \return the transaction in question
-	Poco::SharedPtr<model::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
+	std::shared_ptr<gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t transactionNr);
 
-	static const char* TaskObserverTypeToString(TaskObserverType type);
-	static TaskObserverType StringToTaskObserverType(const std::string& typeString);
+	inline size_t getPendingTasksCount() const { std::lock_guard _lock(mFastMutex); return mBlockWriteTasks.size(); }
 
 protected:
-	Poco::FastMutex mFastMutex;
-	typedef std::pair<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
-	std::map<WriteTransactionsToBlockTask*, Poco::AutoPtr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
-	typedef std::pair<uint64_t, Poco::AutoPtr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
-	std::map<uint64_t, Poco::SharedPtr<model::NodeTransactionEntry>> mTransactionsFromPendingTasks;
+	mutable std::mutex mFastMutex;
+	typedef std::pair<WriteTransactionsToBlockTask*, std::shared_ptr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
+	std::map<WriteTransactionsToBlockTask*, std::shared_ptr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
+	typedef std::pair<uint64_t, std::shared_ptr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
+	std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactionsFromPendingTasks;
 	
 };
 
 class TaskObserverFinishCommand : public task::Command
 {
 public:
-	TaskObserverFinishCommand(TaskObserver* taskObserver) : mTaskObserver(taskObserver) {}
+	TaskObserverFinishCommand(std::shared_ptr<const gradido::blockchain::FileBased> blockchain) : mBlockchain(blockchain) {}
 
-	int taskFinished(task::Task* task) { mTaskObserver->removeTask(task); return 0; }
+	int taskFinished(task::Task* task);
 
 protected:
-	TaskObserver* mTaskObserver;
+	std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
 };
 
 #endif //DR_GRADIDO_LOGIN_SERVER_SINGLETON_MANAGER_SINGLETON_TASK_OBSERVER_H

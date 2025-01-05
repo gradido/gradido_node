@@ -1,9 +1,10 @@
 #include "FileLockManager.h"
-#include <assert.h>
-
-#include "Poco/Thread.h"
-
 #include "../model/files/FileExceptions.h"
+
+#include <assert.h>
+#include <thread>
+
+
 
 FileLockManager::FileLockManager()
 {
@@ -12,9 +13,8 @@ FileLockManager::FileLockManager()
 
 FileLockManager::~FileLockManager()
 {
-	printf("FileLockManager::~FileLockManager\n");
 	for (auto it = mFiles.begin(); it != mFiles.end(); it++) {
-		printf("%s \n", it->first.data());
+		// printf("%s \n", it->first.data());
 		delete it->second;
 	}
 	mFiles.clear();
@@ -28,7 +28,7 @@ FileLockManager* FileLockManager::getInstance()
 
 bool FileLockManager::isLock(const std::string& file)
 {
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	if (it != mFiles.end()) {
 		return *it->second;
@@ -39,7 +39,7 @@ bool FileLockManager::isLock(const std::string& file)
 
 bool FileLockManager::tryLock(const std::string& file)
 {
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	if (it != mFiles.end()) {
 		if (!*it->second) {
@@ -59,7 +59,7 @@ bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 	while (!fileLocked && timeoutRounds > 0) {
 		fileLocked = tryLock(file);
 		if (fileLocked) break;
-		Poco::Thread::sleep(10);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		timeoutRounds--;
 	}
 
@@ -72,7 +72,7 @@ bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 
 void FileLockManager::unlock(const std::string& file)
 {
-	Poco::Mutex::ScopedLock lock(mWorkingMutex);
+	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	assert(it != mFiles.end());
 	

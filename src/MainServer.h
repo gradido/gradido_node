@@ -1,9 +1,12 @@
 #ifndef MAIN_SERVER_INCLUDED
 #define MAIN_SERVER_INCLUDED
 
-#include "Poco/Util/ServerApplication.h"
+#include "gradido_blockchain/Application.h"
+#include "gradido_blockchain/http/Server.h"
 
-class MainServer : public Poco::Util::ServerApplication
+#include <string>
+
+class MainServer : public Application
 {
 
 	/// The main application class.
@@ -21,22 +24,15 @@ public:
 	~MainServer();
 
 protected:
-	void initialize(Application& self);
+	bool init();
+	void exit();
 
-	void uninitialize();
+	std::string findConfigFile();
+	std::string getHomeDir();
+	bool configExists(const std::string& fileName);
 
-	void defineOptions(Poco::Util::OptionSet& options);
-
-	void handleOption(const std::string& name, const std::string& value);
-	void displayHelp();
-
-	int main(const std::vector<std::string>& args);
-
-	void createConsoleFileAsyncLogger(std::string name, std::string filePath);
-	void createFileAsyncLogger(std::string name, std::string filePath);
-
+	Server* mHttpServer;
 private:
-	bool _helpRequested;
 };
 
 #endif //MAIN_SERVER_INCLUDED

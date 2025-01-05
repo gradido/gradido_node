@@ -35,12 +35,10 @@
 #include "Task.h"
 #include "CPUSheduler.h"
 
-#include "Poco/AutoPtr.h"
-
 namespace task {
 
     class CPUTask;
-    typedef Poco::AutoPtr<CPUTask> CPUTaskPtr;
+    typedef std::shared_ptr<CPUTask> CPUTaskPtr;
 
 	class CPUSheduler;
 

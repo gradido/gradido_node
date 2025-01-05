@@ -4,13 +4,13 @@
 
 namespace model {
 	namespace files {
-		IndexAddressPairAlreadyExistException::IndexAddressPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept
+		IndexStringPairAlreadyExistException::IndexStringPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept
 			: GradidoBlockchainException(what), mCurrentPair(currentPair), mLastPair(lastPair)
 		{
 
 		}
 
-		std::string IndexAddressPairAlreadyExistException::getFullString() const
+		std::string IndexStringPairAlreadyExistException::getFullString() const
 		{
 			std::string result;
 			size_t resultSize = strlen(what()) + mCurrentPair.size() + mLastPair.size() + 16 + 14 + 2;
@@ -45,11 +45,9 @@ namespace model {
 			: GradidoBlockchainException(what)
 		{
 		}
-		HashMismatchException::HashMismatchException(const char* what, MemoryBin* hash1, MemoryBin* hash2) noexcept
-			: GradidoBlockchainException(what)
+		HashMismatchException::HashMismatchException(const char* what, const memory::Block& hash1, const memory::Block& hash2) noexcept
+			: GradidoBlockchainException(what), mHash1Hex(hash1.convertToHex()), mHash2Hex(hash2.convertToHex())
 		{
-			mHash1Hex = DataTypeConverter::binToHex(hash1);
-			mHash2Hex = DataTypeConverter::binToHex(hash2);
 		}
 
 		std::string HashMismatchException::getFullString() const
@@ -59,8 +57,8 @@ namespace model {
 			resultSize += mHash1Hex.size() + mHash2Hex.size() + 2 + 9 + 9;
 			result.reserve(resultSize);
 			result = what();
-			result += ", hash1: " + mHash1Hex;
-			result += ", hash2: " + mHash2Hex;
+			result += "\nhash1: " + mHash1Hex;
+			result += "\nhash2: " + mHash2Hex;
 			return result;
 		}
 
@@ -99,6 +97,24 @@ namespace model {
 			resultString = what();
 			resultString += ", file: " + mFilename;
 			resultString += ", try to read from " + readCursorString + ", " + blockSizeString + " bytes";
+			return resultString;
+		}
+
+		std::string OpenFileException::getFullString() const
+		{
+			std::string resultString = what();
+			resultString += ", file name: " + mFileName;
+			if ((std::ios::eofbit & mErrorState) == std::ios::eofbit) {
+				resultString += ", End-of-File reached on input operation";
+			}
+
+			if ((std::ios::failbit & mErrorState) == std::ios::failbit) {
+				resultString += ", Logical error on i/o operation";
+			}
+
+			if ((std::ios::badbit & mErrorState) == std::ios::badbit) {
+				resultString += ", Read/writing error on i/o operation";
+			}
 			return resultString;
 		}
 	}

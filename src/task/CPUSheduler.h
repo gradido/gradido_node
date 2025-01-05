@@ -38,16 +38,14 @@
 #include <string>
 #include <list>
 #include <queue>
-
-#include "Poco/AutoPtr.h"
-#include "Poco/Mutex.h"
+#include <mutex>
 
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 
 namespace task {
     
 	class Task;
-	typedef Poco::AutoPtr<Task> TaskPtr;
+	typedef std::shared_ptr<Task> TaskPtr;
 
 	class CPUShedulerThread;
 
@@ -84,9 +82,9 @@ namespace task {
 		// work to do
 		//lib::MultithreadQueue<TaskPtr> mPendingTasks;
 		std::list<TaskPtr> mPendingTasks;
-		MultithreadContainer mPendingTasksMutex;
+		std::recursive_mutex mPendingTasksMutex;
 		bool mStopped;
-		Poco::FastMutex mCheckStopMutex;
+		std::mutex mCheckStopMutex;
 
     };
     

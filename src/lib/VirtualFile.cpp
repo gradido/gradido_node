@@ -1,12 +1,12 @@
 #include "VirtualFile.h"
 
-#include "Poco/File.h"
-#include "Poco/FileStream.h"
-
 #include "../model/files/FileExceptions.h"
 
 #include "../SingletonManager/FileLockManager.h"
-#include "../SingletonManager/LoggerManager.h"
+
+#include "loguru/loguru.hpp"
+
+#include <fstream>
 
 VirtualFile::VirtualFile(size_t bufferSize)
 	: mBuffer((unsigned char*)malloc(bufferSize)), mBufferSize(bufferSize), mCursor(0)
@@ -58,29 +58,21 @@ bool VirtualFile::setCursor(size_t dst)
 	return true;
 }
 
-bool VirtualFile::writeToFile(const char* filename)
+void VirtualFile::writeToFile(const char* filename)
 {
 	auto fl = FileLockManager::getInstance();
 
 	if (!fl->tryLockTimeout(filename, 100)) {
-		return false;
+		throw model::files::LockException("cannot lock file to write into virtual file", filename);
 	}
 
-	Poco::FileOutputStream file(filename);
-	file.seekp(0, std::ios_base::beg);
-
+	std::ofstream file(filename, std::ofstream::binary | std::ofstream::trunc);
 	file.write((const char*)mBuffer, mCursor);
 	file.close();
 
 	fl->unlock(filename);
-
-	return true;
 }
 
-bool VirtualFile::writeToFile(Poco::Path filePath)
-{
-	return writeToFile(filePath.toString(Poco::Path::Style::PATH_NATIVE).data());
-}
 
 VirtualFile* VirtualFile::readFromFile(const char* filename)
 {
@@ -90,7 +82,7 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 		throw model::files::LockException("cannot lock file to read into virtual file", filename);
 	}
 	try {
-		Poco::FileInputStream file(filename);
+		std::ifstream file(filename, std::ifstream::binary);
 		file.seekg(0, std::ios_base::end);
 		auto telled = file.tellg();
 		if (!telled) {
@@ -105,22 +97,13 @@ VirtualFile* VirtualFile::readFromFile(const char* filename)
 		file.close();
 
 		fl->unlock(filename);
-
 		return new VirtualFile(fileBuffer, telled);
 	} 
-	catch (Poco::FileNotFoundException& ex) {
-		return nullptr;
-	}
-	catch (Poco::Exception& ex) {
+	catch (std::exception& ex) {
 		fl->unlock(filename);
-
-		auto lm = LoggerManager::getInstance();
-		//printf("[%s] Poco Exception: %s\n", __FUNCTION__, ex.displayText().data());
-		std::string functionName = __FUNCTION__;
-		lm->mErrorLogging.error("[%s] Poco Exception: %s\n", functionName, ex.displayText());
+		LOG_F(ERROR, "exception: %s", ex.what());
 		return nullptr;
-	}
-	
+	}	
 }
 
 // ******************** Exceptions *********************************

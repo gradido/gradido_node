@@ -1,17 +1,21 @@
 #ifndef __GRADIDO_NODE_IOTA_MESSAGE_VALIDATOR
 #define __GRADIDO_NODE_IOTA_MESSAGE_VALIDATOR
 
-#include "Poco/Thread.h"
-#include "Poco/Condition.h"
-#include "Poco/Logger.h"
+#include "gradido_blockchain/data/iota/MessageId.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "../task/CPUTask.h"
-#include "MessageId.h"
+#include "../task/Thread.h"
+
+#include "IMessageObserver.h"
 
 
 #include <unordered_map>
 #include <map>
 #include <assert.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 namespace iota {
 
@@ -25,7 +29,7 @@ namespace iota {
     // but just in case we check more than one
     #define MAGIC_NUMBER_TRY_MESSAGE_GET_MILESTONE 3
 
-    #define MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT_MILLI_SECONDS 500 
+    #define MAGIC_NUMBER_WAIT_ON_IOTA_CONFIRMATION_TIMEOUT std::chrono::milliseconds(500)
 
     /*!
 		@author einhornimmond
@@ -85,42 +89,45 @@ namespace iota {
 
     
 
-    class MessageValidator : public Poco::Runnable
+    class MessageValidator : public IMessageObserver
     {
     public:
         MessageValidator();
         ~MessageValidator();
 
+        void init();
         inline void firstRunStart() { mMessageListenerFirstRunCount++; }
         inline void firstRunFinished() { mMessageListenerFirstRunCount--; mWaitOnEmptyQueue++; }
-        int getFirstRunCount() { return mMessageListenerFirstRunCount.value() + mWaitOnEmptyQueue.value(); }
-
+        int getFirstRunCount() { return mMessageListenerFirstRunCount + mWaitOnEmptyQueue; }
         inline void pushMessageId(const iota::MessageId& messageId) { mPendingMessages.push(messageId); }
         void run();
-        void pushMilestone(int32_t id, int64_t timestamp);
+        void pushMilestone(int32_t id, Timepoint timestamp);
+        void messageConfirmed(const iota::MessageId& messageId, int32_t milestoneId);
 
-        inline void signal() { mCondition.signal(); }
+        inline void signal() { mCondition.notify_one(); }
+
+        // implemented from IMessageObserver, called via mqtt from iota server
+        virtual ObserverReturn messageArrived(MQTTAsync_message* message, TopicType type);
 
     protected:
 
-
-        Poco::Thread mThread;
-        Poco::Condition mCondition;
-        Poco::FastMutex mWorkMutex;
+        std::thread* mThread;
+        std::condition_variable mCondition;
+        std::mutex mWorkMutex;
         bool mExitCalled;
-        Poco::FastMutex mExitMutex;
+        std::mutex mExitMutex;
 
         int mCountErrorsFetchingMilestone;
 
-        std::map<uint32_t, uint64_t> mMilestones;
-        Poco::FastMutex mMilestonesMutex;
+        std::map<uint32_t, Timepoint> mMilestones;
+        std::mutex mMilestonesMutex;
 
         std::unordered_map<uint32_t, std::list<MessageId>> mConfirmedMessages;
-        Poco::FastMutex mConfirmedMessagesMutex;
+        std::mutex mConfirmedMessagesMutex;
 
         MultithreadQueue<MessageId> mPendingMessages;
-        Poco::AtomicCounter mMessageListenerFirstRunCount;
-        Poco::AtomicCounter mWaitOnEmptyQueue;
+        std::atomic<size_t> mMessageListenerFirstRunCount;
+        std::atomic<size_t> mWaitOnEmptyQueue;
 
     };
 

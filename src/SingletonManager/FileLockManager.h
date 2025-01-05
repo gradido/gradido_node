@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_SINGLETON_MANAGER_FILE_LOCK_MANAGER_H
 
 #include <unordered_map>
-#include "Poco/Mutex.h"
+#include <mutex>
 
 /*!
 	@author einhornimmond
@@ -27,7 +27,7 @@ public:
 protected:
 	FileLockManager();
 
-	Poco::Mutex mWorkingMutex;
+	std::mutex mWorkingMutex;
 	std::unordered_map<std::string, bool*> mFiles;
 
 };

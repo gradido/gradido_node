@@ -23,15 +23,19 @@ make GradidoNode -j$(nproc)
 ### Debug
 Visual Studio 16 is the max Visual Studio Version supported from this current conanfile.txt
 ```bash
-conan install .. -s build_type=Debug
-cmake -DCMAKE_BUILD_TYPE=Debug -G"Visual Studio 16 2019" ..
+cd gradido_node
+conan install . --output-folder=build --build=missing
+cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=Release
 ```
-
-sudo apt install libcurl4-openssl-dev
 
 Code doc: https://gradido.github.io/gradido_node/html/index.html
 
 ## Install Linux
+On my Debian 12
+```bash 
+sudo apt install libsodium-dev libmpfr-dev libssl-dev
+``` 
 install rust compiler
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh

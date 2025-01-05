@@ -1,111 +1,106 @@
 #include "Block.h"
 #include "FileExceptions.h"
 
-#include "../../SingletonManager/FileLockManager.h"
-#include "../../SingletonManager/LoggerManager.h"
-#include "../../SingletonManager/CacheManager.h"
-#include "../../controller/AddressIndex.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
+#include "../../blockchain/FileBased.h"
+#include "../../blockchain/NodeTransactionEntry.h"
 #include "../../ServerGlobals.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "../../SingletonManager/FileLockManager.h"
+#include "../../SingletonManager/CacheManager.h"
 
-//#include "../../lib/BinTextConverter.h"
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
-#include "Poco/File.h"
+#include "loguru/loguru.hpp"
 
 #include <sodium.h>
+#include <sstream>
+#include <filesystem>
+#include <regex>
+
+using namespace gradido::interaction;
 
 namespace model {
 	namespace files {
-		Block::Block(Poco::Path groupFolderPath, Poco::UInt32 blockNr)
+		Block::Block(std::string_view groupFolderPath, uint32_t blockNr)
 			: //mTimer(0, ServerGlobals::g_TimeoutCheck),
 			  mBlockPath(groupFolderPath), mBlockNr(blockNr), mLastWrittenTransactionNr(0), mCurrentFileSize(0)
 		{
-			char fileName[16]; memset(fileName, 0, 16);
-			sprintf(fileName, "blk%08d.dat", blockNr);
-			mBlockPath.append(fileName);
-			Poco::File file(mBlockPath);
-			if (!file.exists()) {
-				file.createFile();
-			}
-			else {
-				getOpenFile();
-			}
+			std::stringstream fileNameStream;
+			fileNameStream << "/blk" << std::setw(8) << std::setfill('0') << blockNr << ".dat";
+			mBlockPath.append(fileNameStream.str());
 
-			//Poco::TimerCallback<Block> callback(*this, &Block::checkTimeout);
-			//mTimer.start(callback);
-			CacheManager::getInstance()->getFuzzyTimer()->addTimer("model::file::" + mBlockPath.toString(), this, ServerGlobals::g_TimeoutCheck, -1);
+			getOpenFile();		
+
+			CacheManager::getInstance()->getFuzzyTimer()->addTimer("model::file::" + mBlockPath, this, ServerGlobals::g_TimeoutCheck, -1);
 		}
 
 		Block::~Block()
 		{
-			Poco::FastMutex::ScopedLock lock(mFastMutex);
-			if (CacheManager::getInstance()->getFuzzyTimer()->removeTimer("model::file::" + mBlockPath.toString()) != 1) {
-				printf("[model::files::~Block] error removing timer\n");
+			std::scoped_lock lock(mFastMutex);
+			auto result = CacheManager::getInstance()->getFuzzyTimer()->removeTimer("model::file::" + mBlockPath);
+			if (result != 1 && result != -1) {
+				LOG_F(ERROR, "error removing timer");
 			}
-			//printf("[model::files::~Block]\n");
-			//mTimer.stop();
 		}
 
-		Poco::SharedPtr<Poco::FileStream> Block::getOpenFile()
+		std::shared_ptr<std::fstream> Block::getOpenFile()
 		{
 			//printf("Block::getOpenFile: %s\n", mBlockPath.toString().data());
-			Poco::FastMutex::ScopedLock lock(mFastMutex);
-			if (mBlockFile.isNull()) {
-				mBlockFile = new Poco::FileStream(mBlockPath.toString());
-				mBlockFile->seekg(0, std::ios_base::end);
+			std::scoped_lock _lock(mFastMutex);
+			if (!mBlockFile) {
+				// create file if not exist
+				if (!std::filesystem::exists(mBlockPath)) {
+					std::ofstream ofs(mBlockPath);
+					ofs.close();
+				}
+				// ate: at end	The output position starts at the end of the file.
+				// out: for creating file if not exist
+				mBlockFile = std::make_shared<std::fstream>(mBlockPath, std::fstream::binary | std::fstream::ate | std::fstream::out | std::fstream::in);
+				if (!mBlockFile->is_open()) {
+					throw OpenFileException("cannot open block file", mBlockPath.data(), mBlockFile->rdstate());
+				}
 				auto telled = mBlockFile->tellg();
 				if (telled && telled > crypto_generichash_KEYBYTES) {
-					mCurrentFileSize = (Poco::UInt32)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
+					mCurrentFileSize = (uint32_t)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
 				}
 			}
-			mLastUsed = Poco::Timestamp();
+			mLastUsed = Timepoint();
 			return mBlockFile;
 		}
-		/*
-		void Block::checkTimeout(Poco::Timer& timer)
-		{
-			if (!mFastMutex.tryLock()) return;
-			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
-				mBlockFile = nullptr;
-			}
-			mFastMutex.unlock();
-		}
-		*/
+
 		TimerReturn Block::callFromTimer()
 		{
-			if (!mFastMutex.tryLock()) return TimerReturn::GO_ON;
-			if (Poco::Timestamp() - mLastUsed > ServerGlobals::g_CacheTimeout) {
+			if (!mFastMutex.try_lock()) return TimerReturn::GO_ON;
+			if (Timepoint() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
 			return TimerReturn::GO_ON;
 		}
 
-		Poco::UInt16 Block::readLine(Poco::UInt32 startReading, std::string& strBuffer)
+		uint16_t Block::readLine(uint32_t startReading, memory::BlockPtr* buffer)
 		{
 			auto fileStream = getOpenFile();
 			if (fileStream->fail()) {
 				throw std::runtime_error("[model::files::Block::readLine] file stream is failing!");
 			}
-			auto minimalFileSize = sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
+			auto minimalFileSize = sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
 			if (mCurrentFileSize <= minimalFileSize) {
-				throw EndReachingException("file is smaller than minimal block size", mBlockPath.toString().data(), 0, minimalFileSize);
+				throw EndReachingException("file is smaller than minimal block size", mBlockPath.data(), 0, minimalFileSize);
 			}
 			if (startReading > mCurrentFileSize - minimalFileSize) {
-				throw EndReachingException("file is to small for read request", mBlockPath.toString().data(), startReading, minimalFileSize);
+				throw EndReachingException("file is to small for read request", mBlockPath.data(), startReading, minimalFileSize);
 			}
 			Profiler timeUsed;
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
-			auto fl = FileLockManager::getInstance();
-			auto mm = MemoryManager::getInstance();
-			std::string filePath = mBlockPath.toString();
-			if (!fl->tryLockTimeout(filePath, 100)) {
-				throw LockException("cannot lock file for reading", filePath.data());
+			auto fl = FileLockManager::getInstance();			
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+				throw LockException("cannot lock file for reading", mBlockPath.data());
 			}
 
-			Poco::UInt16 transactionSize = 0;
+			uint16_t transactionSize = 0;
 			// call seek only if it is really necessary 
 			// for example if a block file is read in complete line by line on program startup
 			// https://stackoverflow.com/questions/2438953/how-is-fseek-implemented-in-the-filesystem
@@ -122,64 +117,59 @@ namespace model {
 				fileStream->seekg(startReading, std::ios_base::beg);
 			}
 			//printf("state before read transaction size: %d\n", fileStream->rdstate());
-			fileStream->read((char*)&transactionSize, sizeof(Poco::UInt16));
+			fileStream->read((char*)&transactionSize, sizeof(uint16_t));
 			if (startReading + transactionSize > mCurrentFileSize) {
-				fl->unlock(filePath);
-				throw EndReachingException("file is to small for transaction size", mBlockPath.toString().data(), startReading, transactionSize);
+				fl->unlock(mBlockPath);
+				throw EndReachingException("file is to small for transaction size", mBlockPath.data(), startReading, transactionSize);
 			}
 			if (transactionSize < minimalFileSize) {
-				fl->unlock(filePath);
-				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.toString().data(), startReading, transactionSize);
+				fl->unlock(mBlockPath);
+				throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.data(), startReading, transactionSize);
 			}
-			if (strBuffer.capacity() < transactionSize) {
-				strBuffer.reserve(transactionSize);
-			}
-			strBuffer.resize(transactionSize);
-			fileStream->read(strBuffer.data(), transactionSize);			
-			fl->unlock(filePath);
+			*buffer = std::make_shared<memory::Block>(transactionSize);
+			fileStream->read((char*)(*buffer)->data(), transactionSize);
+			fl->unlock(mBlockPath);
 			return transactionSize;
 		}
 		
-		std::unique_ptr<std::string> Block::readLine(Poco::UInt32 startReading)
+		std::shared_ptr<memory::Block> Block::readLine(uint32_t startReading)
 		{
 			// set also mCurrentFileSize
 			//printf("[Block::readLine] cursor: %d\n", startReading);
-			auto resultString = std::make_unique<std::string>();
-			auto transactionSize = readLine(startReading, *resultString.get());
-			return std::move(resultString);
+			std::shared_ptr<memory::Block> result;
+			auto transactionSize = readLine(startReading, &result);
+			return result;
 		}
 
 
-		Poco::Int32 Block::appendLine(const std::string* line)
+		int32_t Block::appendLine(memory::ConstBlockPtr line)
 		{
-			std::vector<const std::string*> lines(1);
+			std::vector<memory::ConstBlockPtr> lines(1);
 			lines[0] = line;
 
 			return appendLines(lines)[0];
 
 		}
 
-		std::vector<Poco::UInt32> Block::appendLines(const std::vector<const std::string*>& lines)
+		std::vector<uint32_t> Block::appendLines(const std::vector<memory::ConstBlockPtr>& lines)
 		{
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
-			auto fl = FileLockManager::getInstance();
-			auto mm = MemoryManager::getInstance();
-			std::vector<Poco::UInt32> resultingCursorPositions;// (lines.size());
+			auto fl = FileLockManager::getInstance();			
+			std::vector<uint32_t> resultingCursorPositions;// (lines.size());
 			resultingCursorPositions.reserve(lines.size());
 
-			std::string filePath = mBlockPath.toString();
-			if (!fl->tryLockTimeout(filePath, 100)) {
-				throw LockException("couldn't lock file in time", filePath.data());
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+				throw LockException("couldn't lock file in time", mBlockPath.data());
 			}
 			
 			auto fileStream = getOpenFile();
 
 			// read current hash
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			memset(*hash, 0, crypto_generichash_KEYBYTES);
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			memset(hash, 0, crypto_generichash_KEYBYTES);
 			if (mCurrentFileSize > 0) {
 				fileStream->seekg(mCurrentFileSize);
-				fileStream->read(*hash, crypto_generichash_KEYBYTES);
+				fileStream->read((char*)hash, crypto_generichash_KEYBYTES);
 			}
 			fileStream->seekp(mCurrentFileSize);
 
@@ -189,176 +179,178 @@ namespace model {
 			for (auto itLines = lines.begin(); itLines != lines.end(); itLines++)
 			{
 				//fileStream->seekp(mCurrentFileSize);
-				Poco::Int32 cursorPos = fileStream->tellp();
-				Poco::UInt16 size = (*itLines)->size();
+				int32_t cursorPos = fileStream->tellp();
+				uint16_t size = (*itLines)->size();
 				// check data type overflow
-				assert((Poco::UInt32)size == (*itLines)->size());
+				assert((uint32_t)size == (*itLines)->size());
 
 				resultingCursorPositions.push_back(cursorPos);
 				
-				fileStream->write((char*)&size, sizeof(Poco::UInt16));
-				fileStream->write((*itLines)->data(), size);
-				mCurrentFileSize += sizeof(Poco::UInt16) + size;
+				fileStream->write((char*)&size, sizeof(uint16_t));
+				fileStream->write((const char*)(*itLines)->data(), size);
+				mCurrentFileSize += sizeof(uint16_t) + size;
 
 				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-				crypto_generichash_update(&state, *hash, hash->size());
+				crypto_generichash_update(&state, hash, sizeof hash);
 				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
-				crypto_generichash_final(&state, *hash, hash->size());
+				crypto_generichash_final(&state, hash, sizeof hash);
+				LOG_F(1, "block part hash in %s: %s", mBlockPath.data(), memory::Block(crypto_generichash_KEYBYTES, hash).convertToHex().data());
 				//printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
 			}
 
 			// write at end of file
-			fileStream->write(*hash, hash->size());
+			fileStream->write((const char*)hash, sizeof hash);
 			fileStream->flush();
-			fl->unlock(filePath);
-			mm->releaseMemory(hash);
-			return std::move(resultingCursorPositions);
+			fl->unlock(mBlockPath);
+			return resultingCursorPositions;
 		}
 
-		MemoryBin* Block::calculateHash()
+		std::shared_ptr<memory::Block> Block::calculateHash()
 		{
 			Profiler timeUsed;
-			auto mm = MemoryManager::getInstance();
 			auto fl = FileLockManager::getInstance();
-			auto lm = LoggerManager::getInstance();
-
+			
 			if (mCurrentFileSize == 0) {
 				return nullptr;
 			}
 
-			std::string filePath = mBlockPath.toString();
-			if (!fl->tryLockTimeout(filePath, 100)) {
-				lm->mErrorLogging.error("[%s] error locking file: %s", std::string(__FUNCTION__), filePath);
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+//				lm->mErrorLogging.error("[%s] error locking file: %s", std::string(__FUNCTION__), filePath);
 				return nullptr;
 			}
-
-			auto vfile = mm->getMemory(mCurrentFileSize);
+			// TODO: not good reading whole file into memory which can be up to 128 MByte
+			// use buffer approach instead and expect underlying os caching file reading efficiently
+			memory::Block vfile(mCurrentFileSize);
 			if (!vfile) {
-				fl->unlock(filePath);
-				lm->mErrorLogging.error("[%s] error reserve memory: %d", std::string(__FUNCTION__), mCurrentFileSize);
+				fl->unlock(mBlockPath);
+				LOG_F(ERROR, "error reserve memory: %d", mCurrentFileSize);
 				return nullptr;
 			}
 			auto fileStream = getOpenFile();
 
 			fileStream->seekg(0);
-			fileStream->read(*vfile, mCurrentFileSize);
+			fileStream->read((char*)vfile.data(), mCurrentFileSize);
 
-			fl->unlock(filePath);
+			fl->unlock(mBlockPath);
 
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			memset(*hash, 0, hash->size());
+			auto hash = std::make_shared<memory::Block>(crypto_generichash_KEYBYTES);
 			size_t cursor = 0;
-			const unsigned char* vfilep = *vfile;
+			const unsigned char* vfilep = vfile.data();
 			crypto_generichash_state state;
 			
 
 			while (cursor < mCurrentFileSize) {
-				Poco::UInt16 size;
-				memcpy(&size, &vfilep[cursor], sizeof(Poco::UInt16));
-				cursor += sizeof(Poco::UInt16);
+				uint16_t size;
+				memcpy(&size, &vfilep[cursor], sizeof(uint16_t));
+				cursor += sizeof(uint16_t);
 				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
 				crypto_generichash_update(&state, *hash, hash->size());
 				crypto_generichash_update(&state, &vfilep[cursor], size);
 				crypto_generichash_final(&state, *hash, hash->size());
 				cursor += size;
 			}
-			mm->releaseMemory(vfile);
 			
-			lm->mSpeedLogging.information("%s used for calculate hash for block: %s", timeUsed.string(), filePath);
+			// lm->mSpeedLogging.information("%s used for calculate hash for block: %s", timeUsed.string(), filePath);
 			return hash;
 		}
 
 		bool Block::validateHash()
 		{
-			auto mm = MemoryManager::getInstance();
 			auto fl = FileLockManager::getInstance();
-			auto lm = LoggerManager::getInstance();
 
-			std::string filePath = mBlockPath.toString();
-			if (!fl->tryLockTimeout(filePath, 100)) {
-				lm->mErrorLogging.error("[%s] error locking file: %s", std::string(__FUNCTION__), filePath);
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+				LOG_F(ERROR, "error locking file: %s", mBlockPath);
 				return false;
 			}
 			auto fileStream = getOpenFile();
 			fileStream->seekg(mCurrentFileSize);
 
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			fileStream->read(*hash, crypto_generichash_KEYBYTES);
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			fileStream->read((char*)hash, crypto_generichash_KEYBYTES);
 
-			fl->unlock(filePath);
+			fl->unlock(mBlockPath);
 	
 			auto hash2 = calculateHash();
 			bool result = false;
-			if (0 == sodium_memcmp(*hash, *hash2, crypto_generichash_KEYBYTES)) {
+			if (0 == sodium_memcmp(hash, *hash2, crypto_generichash_KEYBYTES)) {
 				result = true;
 			}
 
-			mm->releaseMemory(hash);
-			mm->releaseMemory(hash2);
 			return result;
 		}
 
-		Poco::AutoPtr<RebuildBlockIndexTask> Block::rebuildBlockIndex(Poco::SharedPtr<controller::AddressIndex> addressIndex)
-		{
-			auto mm = MemoryManager::getInstance();
+		std::shared_ptr<RebuildBlockIndexTask> Block::rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
+		{			
 			auto fl = FileLockManager::getInstance();
-			Poco::AutoPtr<RebuildBlockIndexTask> rebuildTask = new RebuildBlockIndexTask(addressIndex);;
-
-			std::string filePath = mBlockPath.toString();
+			std::shared_ptr<RebuildBlockIndexTask> rebuildTask = std::make_shared<RebuildBlockIndexTask>(blockchain);
 			
-			
-			Poco::Int32 fileCursor = 0;
-			std::string readBuffer;
-			auto hash = mm->getMemory(crypto_generichash_KEYBYTES);
-			memset(*hash, 0, crypto_generichash_KEYBYTES);
+			int32_t fileCursor = 0;
+			std::shared_ptr<memory::Block> readBuffer;
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			memset(hash, 0, sizeof hash);
 
 			crypto_generichash_state state;
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-			crypto_generichash_update(&state, *hash, hash->size());
+			crypto_generichash_update(&state, hash, sizeof hash);
 
 			// read in every line
-			while (fileCursor + sizeof(Poco::UInt16) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
-				auto lineSize = readLine(fileCursor, readBuffer);
-				fileCursor += lineSize + sizeof(Poco::UInt16);
-				rebuildTask->pushLine(fileCursor, std::string(readBuffer.begin(), readBuffer.begin() + lineSize));
-				rebuildTask->scheduleTask(rebuildTask);
-				//
+			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
+				auto lineSize = readLine(fileCursor, &readBuffer);
+				rebuildTask->pushLine(fileCursor, readBuffer);
+				crypto_generichash_update(&state, (const unsigned char*)readBuffer->data(), readBuffer->size());
+				fileCursor += lineSize + sizeof(uint16_t);
+			}			
+			crypto_generichash_final(&state, hash, sizeof hash);
 
-				crypto_generichash_update(&state, (const unsigned char*)readBuffer.data(), lineSize);
-
-			}
-			
-			crypto_generichash_final(&state, *hash, hash->size());
-
-			auto hash2 = mm->getMemory(crypto_generichash_KEYBYTES);
-			if (!fl->tryLockTimeout(filePath, 100)) {
-				throw LockException("couldn't lock file in time", filePath.data());
+			unsigned char hash2[crypto_generichash_KEYBYTES];
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+				throw LockException("couldn't lock file in time", mBlockPath.data());
 			}
 			auto fileStream = getOpenFile();			
-			fileStream->read(*hash2, crypto_generichash_KEYBYTES);
-			fl->unlock(filePath);
+			fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
+			fl->unlock(mBlockPath);
 
 			bool result = false;
-			if (0 == sodium_memcmp(*hash, *hash2, crypto_generichash_KEYBYTES)) {
+			if (0 == sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
 				result = true;
 			}
 
-			HashMismatchException exception("block hash mismatch", hash, hash2);
-			mm->releaseMemory(hash);
-			mm->releaseMemory(hash2);
 			if (result) {
 				return rebuildTask;
 			}
 			else {
-				throw exception;			
+				throw HashMismatchException(
+					"block hash mismatch",
+					memory::Block(sizeof hash, hash),
+					memory::Block(sizeof hash2, hash2)
+				);
 			}
 		}
 			
+		uint32_t Block::findLastBlockFileInFolder(std::string_view groupFolderPath)
+		{
+			std::filesystem::path groupFolder(groupFolderPath);
+			uint32_t largestBlockNr = 0;
+			std::regex isDatFile("blk(.*)\\.dat$");
+			std::smatch match;
+			for (const auto& entry : std::filesystem::directory_iterator(groupFolder)) {
+				auto fileName = entry.path().filename().string();
+				if (entry.is_regular_file() && std::regex_match(fileName, match, isDatFile)) {
+					if (match.size() == 2) {
+						auto blockNr = std::stoi(match[1].str());
+						if (blockNr > largestBlockNr) {
+							largestBlockNr = blockNr;
+						}
+					}
+				}
+			}
+			return largestBlockNr;
+		}
 
 
 		// *********************** TASKS ***********************************
 
-		BlockAppendLineTask::BlockAppendLineTask(Poco::SharedPtr<Block> block, std::vector<const std::string*> lines)
+		BlockAppendLineTask::BlockAppendLineTask(std::shared_ptr<Block> block, std::vector<memory::ConstBlockPtr> lines)
 			: task::CPUTask(ServerGlobals::g_WriteFileCPUScheduler), mTargetBlock(block), mLines(lines)
 		{
 
@@ -369,31 +361,36 @@ namespace model {
 #ifdef _UNI_LIB_DEBUG
 			setName(mTargetBlock->getBlockPath().data());
 #endif 
-			auto lm = LoggerManager::getInstance();
 			mCursorPositions = mTargetBlock->appendLines(mLines);
 
 			return 0;
 		}
 
 
-		RebuildBlockIndexTask::RebuildBlockIndexTask(Poco::SharedPtr<controller::AddressIndex> addressIndex)
-			: task::CPUTask(ServerGlobals::g_CPUScheduler), mAddressIndex(addressIndex)
+		RebuildBlockIndexTask::RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
+			: task::CPUTask(ServerGlobals::g_CPUScheduler), mBlockchain(blockchain)
 		{
 
 		}
 
 		int RebuildBlockIndexTask::run()
 		{
-			while (!mPendingFileCursorLine.empty()) {
-				std::pair<Poco::Int32, std::string> fileCursorLine;
+			while (!mPendingFileCursorLine.empty()) 
+			{
+				std::pair<int32_t, std::shared_ptr<memory::Block>> fileCursorLine;
 				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
 					throw std::runtime_error("don't get next file cursor line");
 				}
-				auto gradidoBlock = std::make_unique<model::gradido::GradidoBlock>(&fileCursorLine.second);
+				auto& serializedTransaction = fileCursorLine.second;
+				deserialize::Context deserializer(serializedTransaction, deserialize::Type::CONFIRMED_TRANSACTION);
+				deserializer.run();
+				if (!deserializer.isConfirmedTransaction()) {
+					throw InvalidGradidoTransaction("invalid transaction from block file while rebuilding block index", serializedTransaction);
+				}
 				lock();
-				Poco::SharedPtr<model::NodeTransactionEntry> transactionEntry = new model::NodeTransactionEntry(
-					gradidoBlock.get(), 
-					mAddressIndex, 
+				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry = std::make_shared<gradido::blockchain::NodeTransactionEntry>(
+					deserializer.getConfirmedTransaction(),
+					mBlockchain,
 					fileCursorLine.first
 				);
 				mTransactionEntries.push_back(transactionEntry);
@@ -402,9 +399,9 @@ namespace model {
 			return 0;
 		}
 
-		void RebuildBlockIndexTask::pushLine(Poco::Int32 fileCursor, std::string line)
+		void RebuildBlockIndexTask::pushLine(int32_t fileCursor, std::shared_ptr<memory::Block> line)
 		{
-			mPendingFileCursorLine.push({ fileCursor, std::move(line) });
+			mPendingFileCursorLine.push({ fileCursor, line });
 		}
 	}
 }

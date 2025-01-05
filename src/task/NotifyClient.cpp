@@ -1,10 +1,12 @@
 #include "NotifyClient.h"
-#include "../SingletonManager/LoggerManager.h"
 #include "../ServerGlobals.h"
+#include "gradido_blockchain/GradidoBlockchainException.h"
+
+#include "loguru/loguru.hpp"
 
 namespace task {
-	NotifyClient::NotifyClient(client::Base* client, Poco::SharedPtr<model::gradido::GradidoBlock> transactionBlock)
-		: CPUTask(ServerGlobals::g_CPUScheduler), mClient(client), mTransactionBlock(transactionBlock)
+	NotifyClient::NotifyClient(std::shared_ptr<client::Base> client, std::shared_ptr<const gradido::data::ConfirmedTransaction> confirmedTransaction)
+		: CPUTask(ServerGlobals::g_CPUScheduler), mClient(client), mConfirmedTransaction(confirmedTransaction)
 	{
 
 	}
@@ -12,10 +14,10 @@ namespace task {
 	int NotifyClient::run()
 	{
 		try {
-			mClient->notificateNewTransaction(mTransactionBlock);
+			mClient->notificateNewTransaction(*mConfirmedTransaction);
 		}
-		catch (Poco::NullPointerException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("poco null pointer exception by calling notificateNewTransaction");
+		catch (GradidoBlockchainException& ex) {
+			LOG_F(ERROR, "uncatched gradido blockchain exception: %s", ex.getFullString().data());
 			throw;
 		}
 		return 0;

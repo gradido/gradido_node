@@ -4,33 +4,54 @@
 #include "../SingletonManager/CacheManager.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
+#include "gradido_blockchain/lib/RapidjsonHelper.h"
 #include "../ServerGlobals.h"
+#include "MqttClientWrapper.h"
+#include "MessageParser.h"
+
+#include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
+using namespace rapidjson;
+using namespace magic_enum;
 
 namespace iota
 {
-    MessageListener::MessageListener(const std::string& index, long intervalMilliseconds/* = 1000*/)
+    MessageListener::MessageListener(const TopicIndex& index, std::string_view alias, std::chrono::milliseconds interval/* = 1000*/)
     : mIndex(index),
-      //mListenerTimer(0, intervalMilliseconds), 
-		mErrorLog(Poco::Logger::get("errorLog")),
-		mFirstRun(true)
+		mAlias(alias),
+	  mInterval(interval),
+	  mFirstRun(true)
     {
-        //Poco::TimerCallback<MessageListener> callback(*this, &MessageListener::listener);
-	    //mListenerTimer.start(callback);
-		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex, this, intervalMilliseconds, -1);
-		printf("[MessageListener::MessageListener] %s\n", index.data());
+			LOG_F(INFO, "Construct with: %s", mAlias.data());
     }
 
 	MessageListener::~MessageListener()
 	{
-
-		printf("[iota::~MessageListener] %s\n", mIndex.data());
+		LOG_F(INFO, "Stop Listen to: %s", mAlias.data());
 		lock();
-		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex);
-		if (removedTimer != 1) {
-			printf("[iota::~MessageListener] error removing timer, acutally removed timer count: %d\n", removedTimer);
+#ifdef IOTA_WITHOUT_MQTT
+		auto removedTimer = CacheManager::getInstance()->getFuzzyTimer()->removeTimer(mIndex.getBinString());
+		if (removedTimer != 1 && removedTimer != -1) {
+			LOG_F(ERROR, "error removing timer, actually removed timer count: %d", removedTimer);
 		}
-		//mListenerTimer.stop();
+#else
+		MqttClientWrapper::getInstance()->unsubscribe(mIndex, this);
+#endif
 		unlock();
+	}
+
+	void MessageListener::run()
+	{
+		if(!ServerGlobals::g_isOfflineMode) {
+			callFromTimer();
+		}
+#ifdef IOTA_WITHOUT_MQTT
+		CacheManager::getInstance()->getFuzzyTimer()->addTimer(mIndex.getBinString(), this, mInterval, -1);
+#else
+		MqttClientWrapper::getInstance()->subscribe(mIndex, this);
+#endif 
+		LOG_F(INFO, "Listen to: %s", mAlias.data());
 	}
 
     /*void MessageListener::listener(Poco::Timer& timer)
@@ -61,13 +82,14 @@ namespace iota
 		static const char* function_name = "MessageListener::listener";
 
 		// collect message ids for index from iota
-		std::vector<MemoryBin*> messageIds;
+		std::vector<MemoryBin> messageIds;
 		try {
 			messageIds = ServerGlobals::g_IotaRequestHandler->findByIndex(mIndex);
+			LOG_F(INFO, "find %d message ids", messageIds.size());
 		}
 		catch (...) {
 			unlock();
-			IotaRequest::defaultExceptionHandler(mErrorLog, true);
+			IotaRequest::defaultExceptionHandler(true);
 			return TimerReturn::EXCEPTION;
 		}
 	
@@ -75,14 +97,83 @@ namespace iota
 		if (messageIds.size()) {
 			updateStoredMessages(messageIds);
 		}
+		mFirstRun = false;
 		unlock();
 		return TimerReturn::GO_ON;
 	}
 
-    void MessageListener::updateStoredMessages(std::vector<MemoryBin*>& currentMessageIds)
-    {
+	ObserverReturn MessageListener::messageArrived(MQTTAsync_message* message, TopicType type)
+	{
+		//LOG_F(INFO, "Message arrived, topic type: %s", enum_name(type).data());
+		if (TopicType::MESSAGES_INDEXATION == type) 
+		{
+			MessageParser parser(message->payload, message->payloadlen);
+			auto messageId = parser.getMessageId();
+			if (addStoredMessage(messageId)) {
+				MqttClientWrapper::getInstance()->subscribe(messageId, this);
+			}
+			LOG_F(1, "Metadata received, msgId: %s", messageId.toHex().data());
+			return ObserverReturn::CONTINUE;
+		} 
+		else if (TopicType::MESSAGES_METADATA == type) 
+		{
+			std::string messageString((const char*)message->payload, message->payloadlen);
+			Document document;
+			document.Parse((const char*)message->payload);
+
+			rapidjson_helper::checkMember(document, "messageId", rapidjson_helper::MemberType::STRING, "iota milestone/metadata");
+			
+			if (!document.HasMember("referencedByMilestoneIndex")) {
+				std::string messageIdString(document["messageId"].GetString());
+				LOG_F(1, "Metadata received; missing milestone, msgId: %s", messageIdString.data());
+				return ObserverReturn::CONTINUE;
+			}
+			assert(document["referencedByMilestoneIndex"].IsInt());
+
+			MessageId messageId(memory::Block::fromHex(document["messageId"].GetString(), document["messageId"].GetStringLength()));			
+			auto milestoneId = document["referencedByMilestoneIndex"].GetInt();
+			LOG_F(1, "Metadata received, msgId: %s confirmed in milestone %d", messageId.toHex().data(), milestoneId);
+			OrderingManager::getInstance()->getIotaMessageValidator()->messageConfirmed(messageId, milestoneId);
+			return ObserverReturn::UNSUBSCRIBE;
+		} else {
+			LOG_F(ERROR, "unexpected topic type: %s, unsubscribe", enum_name(type).data());
+			return ObserverReturn::UNSUBSCRIBE;
+		}
+	}
+
+	bool MessageListener::addStoredMessage(const MessageId &newMessageId)
+	{
 		auto om = OrderingManager::getInstance();
-		auto mm = MemoryManager::getInstance();
+		auto validator = om->getIotaMessageValidator();		
+
+		lock();
+		assert(!mFirstRun);
+
+		auto storedIt = mStoredMessageIds.find(newMessageId);
+		if (storedIt != mStoredMessageIds.end())
+		{
+			// update status if already exist
+			storedIt->second = MESSAGE_EXIST;
+			LOG_F(ERROR, "mqtt deliver a transaction the second time!, messageId: %s", newMessageId.toHex().data());
+			unlock();
+			return false;
+		}
+		else
+		{
+			// add if not exist
+			LOG_F(INFO, "%s add message: %s", mAlias.data(), newMessageId.toHex().data());
+			mStoredMessageIds.insert({newMessageId, MESSAGE_NEW});
+			// and send to message validator
+			// validator->pushMessageId(newMessageId);
+			// validator->signal();
+		}
+		unlock();
+		return true;
+	}
+
+	void MessageListener::updateStoredMessages(std::vector<MemoryBin>& currentMessageIds)
+  {
+		auto om = OrderingManager::getInstance();
 		auto validator = om->getIotaMessageValidator();
 		if (mFirstRun) {
 			validator->firstRunStart();
@@ -107,9 +198,7 @@ namespace iota
 		for (auto it = currentMessageIds.begin(); it != currentMessageIds.end(); it++)
 		{
 			// check if it exist
-			MessageId messageId;
-			messageId.fromMemoryBin(*it);
-			mm->releaseMemory(*it);
+			MessageId messageId(*it);
 			auto storedIt = mStoredMessageIds.find(messageId);
 			if (storedIt != mStoredMessageIds.end()) {
 				// update status if already exist
@@ -117,7 +206,12 @@ namespace iota
 			}
 			else {
 				// add if not exist
-				printf("[MessageListener::updateStoredMessages] %s add message: %s\n",  mIndex.data(), messageId.toHex().data());
+				LOG_F(
+					INFO,
+					"%s add message: %s",
+					mAlias.data(),
+					messageId.toHex().data()
+				);
 				mStoredMessageIds.insert({ messageId, MESSAGE_NEW });
 				// and send to message validator
 				validator->pushMessageId(messageId);
@@ -127,10 +221,9 @@ namespace iota
 		// signal condition separate to make sure that by loading from the past, all known messages are in list before processing start
 		if (mFirstRun) {
 			validator->firstRunFinished();
-			mFirstRun = false;
 		}
 		if (atLeastOneNewMessagePushed) {
 			validator->signal();
 		}
-    }
+  }
 }

@@ -33,17 +33,12 @@
 #define __DR_UNIVERSUM_LIB_CONTROLLER_CPU_SHEDULER_THREAD_H__
 
 #define _UNI_LIB_DEBUG
-
 #include "Thread.h"
-#include "Poco/AutoPtr.h"
-#ifdef _UNI_LIB_DEBUG
-#include "Poco/Logger.h"
-#endif
 
 namespace task {
 
 	class  Task;
-	typedef Poco::AutoPtr<Task> TaskPtr;
+	typedef std::shared_ptr<Task> TaskPtr;
 	class CPUSheduler;
 
     class  CPUShedulerThread : public Thread
@@ -60,14 +55,11 @@ namespace task {
 
 		void setNewTask(TaskPtr cpuTask);
 
-#ifdef _UNI_LIB_DEBUG
 		std::string getName() {return mName;}
-#endif
-    protected:
-#ifdef _UNI_LIB_DEBUG
+		
+	protected:
 		std::string mName;
-		Poco::Logger& mSpeedLog;
-#endif
+		std::mutex mWorkMutex;
 			
 	private: 
 		TaskPtr mWaitingTask;

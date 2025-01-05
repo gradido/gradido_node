@@ -2,59 +2,62 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_H
 
 #include "Decay.h"
-#include "gradido_blockchain/model/protobufWrapper/GradidoBlock.h"
-
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
 
 namespace model {
 	namespace Apollo
 	{
-		enum TransactionType
+		enum class TransactionType
 		{
-			TRANSACTION_TYPE_CREATE,
-			TRANSACTION_TYPE_SEND,
-			TRANSACTION_TYPE_RECEIVE,
-			TRANSACTION_TYPE_DECAY,
+			NONE,
+			CREATE,
+			SEND,
+			RECEIVE,
+			DECAY,
+			LINK_SEND,
+			LINK_RECEIVE,
+			LINK_DELETE
 		};
 		class Transaction
 		{
 		public:
-			Transaction(const model::gradido::GradidoBlock* gradidoBlock, const std::string& pubkey);
-			Transaction(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance);
+			Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey);
+			Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 
-			// Move Constrcutor
-			Transaction(Transaction&& parent);
+			// Move constrcutor
+			Transaction(Transaction&& parent) noexcept;
+			// Copy constructor
+			Transaction(const Transaction& parent);
 			~Transaction();
 
-			void calculateDecay(Poco::Timestamp decayStart, Poco::Timestamp decayEnd, const mpfr_ptr startBalance);
-			void setBalance(mpfr_ptr balance);
+			Transaction& operator=(const Transaction& other);  // copy
+
+			void calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
+			void setBalance(GradidoUnit balance);
+			inline GradidoUnit getBalance() const {return mBalance;}
+			inline void setPreviousBalance(GradidoUnit previousBalance) {mPreviousBalance = previousBalance;}
 
 			rapidjson::Value toJson(rapidjson::Document::AllocatorType& alloc);
 
-			static const char* transactionTypeToString(TransactionType type);
-
-			void setFirstTransaction(bool firstTransaction);
-			inline bool isFirstTransaction() const { return mFirstTransaction; }
-
-			inline Poco::Timestamp getDate() const { return mDate; }
-			inline const mpfr_ptr getAmount() const { return mAmount; }
+			inline Timepoint getDate() const { return mDate; }
+			inline const GradidoUnit getAmount() const { return mAmount; }
 			inline const Decay* getDecay() const { return mDecay; }
 
 		protected:
 
 			TransactionType mType;
-			mpfr_ptr        mAmount;
-			mpfr_ptr		mBalance;
+			GradidoUnit     mAmount;
+			GradidoUnit		mBalance;
+			GradidoUnit   mPreviousBalance;
 			std::string     mPubkey;
 			std::string		mFirstName;
 			std::string		mLastName;
 			std::string		mMemo;
 			int64_t			mId;
-			Poco::Timestamp mDate;
+			Timepoint       mDate;
 			Decay*			mDecay;
-			bool			mFirstTransaction;
-		private: 
-			// Disable copy constructor
-			Transaction(const Transaction&) {};
+		private:
+			
 		};
 	}
 }

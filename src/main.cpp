@@ -2,48 +2,46 @@
 #include "main.h"
 #include "MainServer.h"
 #include "MQTTAsync.h"
-
-#include "proto/gradido/TransactionBody.pb.h"
-#include <sodium.h>
-#include <exception>
-#include "gradido_blockchain/lib/Profiler.h"
-#include "gradido_blockchain/lib/Decay.h"
-
 #include "ServerGlobals.h"
+
+#include "gradido_blockchain/lib/Profiler.h"
+
+#include "sodium.h"
+#include "loguru/loguru.hpp"
+
+#include <exception>
 
 #ifndef _TEST_BUILD
 
-
 int main(int argc, char** argv)
 {
-	GOOGLE_PROTOBUF_VERIFY_VERSION;
+	// libsodium
 	if (sodium_init() < 0) {
 		/* panic! the library couldn't be initialized, it is not safe to use */
 		printf("error initing sodium, early exit\n");
 		return -1;
 	}
-	initDefaultDecayFactors();
+	// mqtt
 	MQTTAsync_init_options options = MQTTAsync_init_options_initializer;
 	options.do_openssl_init = 0;
 	MQTTAsync_global_init(&options);
+
+	// loguru 
+	loguru::init(argc, argv);
 	
 	MainServer app;
-	int result = 0;
 	try {
-		result = app.run(argc, argv);
+		app.run();
 	}
-	catch (Poco::Exception& ex) {
-		printf("Poco Exception while init: %s\n", ex.displayText().data());
-		unloadDefaultDecayFactors();
+	catch (GradidoBlockchainException& ex) {
+		LOG_F(ERROR, "Gradido Blockchain Exception while init: %s\n", ex.getFullString().data());
 		return -1;
 	}
 	catch (std::exception& ex) {
-		printf("std exception while init: %s\n", ex.what());
-		unloadDefaultDecayFactors();
+		LOG_F(ERROR, "std exception while init: %s\n", ex.what());
 		return -2;
 	}
 	ServerGlobals::clearMemory();
-	unloadDefaultDecayFactors();
-	return result;
+	return 0;
 }
 #endif

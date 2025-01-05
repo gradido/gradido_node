@@ -2,19 +2,26 @@
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
-#include "../SingletonManager/LoggerManager.h"
+#include "gradido_blockchain/interaction/serialize/Context.h"
+#include "gradido_blockchain/interaction/toJson/Context.h"
 
+#include "magic_enum/magic_enum.hpp"
+#include "loguru/loguru.hpp"
+
+using namespace gradido::data;
+using namespace gradido::interaction;
+using namespace magic_enum::bitwise_operators;
 using namespace rapidjson;
 
 namespace client {
 
-	Base::Base(const Poco::URI& uri)
-		: mUri(uri), mFormat(NOTIFICATION_FORMAT_PROTOBUF_BASE64)
+	Base::Base(const std::string& uri)
+		: mUri(uri), mFormat(NotificationFormat::PROTOBUF_BASE64)
 	{
 
 	}
 
-	Base::Base(const Poco::URI& uri, NotificationFormat format)
+	Base::Base(const std::string& uri, NotificationFormat format)
 		: mUri(uri), mFormat(format)
 	{
 
@@ -25,54 +32,48 @@ namespace client {
 
 	}
 
-	bool Base::notificateNewTransaction(Poco::SharedPtr<model::gradido::GradidoBlock> gradidoBlock)
+	bool Base::notificateNewTransaction(const ConfirmedTransaction& confirmedTransaction)
 	{
-		Poco::Net::NameValueCollection params;
+		std::map<std::string, std::string> params;
 		
-		if (mFormat == NOTIFICATION_FORMAT_PROTOBUF_BASE64) {
-			auto transactionBase64 = DataTypeConverter::binToBase64(gradidoBlock->getSerialized());
-			params.add("transactionBase64", *transactionBase64.get());
+		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
+			serialize::Context serializer(confirmedTransaction);
+			params.insert({ "transactionBase64", serializer.run()->convertToBase64() });
 		}
-		else if (mFormat == NOTIFICATION_FORMAT_JSON) {
-			auto transactionJson = gradidoBlock->toJson();
-			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
-			params.add("transactionJson", transactionJson);
+		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
+			auto transactionJson = toJson::Context(confirmedTransaction).run();
+			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\'');
+			params.insert({ "transactionJson", transactionJson });
 		}
-		else {
-			throw GradidoUnknownEnumException("unknown format", "NotificationFormat", mFormat);
-		}
-		return notificate(std::move(params));
-		
+		return notificate(params);		
 	}
 
-	bool Base::notificateFailedTransaction(const model::gradido::GradidoTransaction* gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
+	bool Base::notificateFailedTransaction(const gradido::data::GradidoTransaction& gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
 	{
-		Poco::Net::NameValueCollection params;
+		std::map<std::string, std::string> params;
 
-		if (mFormat == NOTIFICATION_FORMAT_PROTOBUF_BASE64) {
-			auto transactionBase64 = DataTypeConverter::binToBase64(gradidoTransaction->getSerializedConst());
-			params.add("transactionBase64", *transactionBase64.get());
+		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
+			serialize::Context serializer(gradidoTransaction);
+			params.insert({ "transactionBase64", serializer.run()->convertToBase64() });
 		}
-		else if (mFormat == NOTIFICATION_FORMAT_JSON) {
-			auto transactionJson = gradidoTransaction->toJson();
+		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
+			auto transactionJson = toJson::Context(gradidoTransaction).run();
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
-			params.add("transactionJson", transactionJson);
+			params.insert({ "transactionJson", transactionJson });
 		}
-		else {
-			throw GradidoUnknownEnumException("unknown format", "NotificationFormat", mFormat);
-		}
-		params.add("error", errorMessage);
-		params.add("messageId", messageId);
+		
+		params.insert({ "error", errorMessage });
+		params.insert({ "messageId", messageId });
 		return notificate(std::move(params));
 	}
 
-	bool Base::notificate(Poco::Net::NameValueCollection params)
+	bool Base::notificate(const std::map<std::string, std::string>& params)
 	{
 		try {
 			return postRequest(params);
 		}
 		catch (RapidjsonParseErrorException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Result Json Exception: %s\n", ex.getFullString());
+			LOG_F(ERROR, "Result Json Exception: %s", ex.getFullString().data());
 		}
 		catch (RequestResponseInvalidJsonException& ex) {
 			if (ex.containRawHtmlClosingTag()) {
@@ -81,13 +82,10 @@ namespace client {
 			else {
 				ex.printToFile("notificate");
 			}
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Invalid Json excpetion, written to file: %s\n", ex.getFullString());
+			LOG_F(ERROR, "Invalid Json excpetion, written to file : %s", ex.getFullString().data());
 		}
 		catch (GradidoBlockchainException& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Gradido Blockchain Exception: %s\n", ex.getFullString());
-		}
-		catch (Poco::Exception& ex) {
-			LoggerManager::getInstance()->mErrorLogging.error("[Base::notificateNewTransaction] Poco Exception: %s\n", ex.displayText());
+			LOG_F(ERROR, "Gradido Blockchain Exception: %s", ex.getFullString().data());
 		}
 		return false;
 	}

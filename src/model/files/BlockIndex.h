@@ -1,31 +1,41 @@
 #ifndef __GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H
 #define __GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H
 
-
-#include "FileBase.h"
+#include "gradido_blockchain/data/TransactionType.h"
 
 #include "../../lib/VirtualFile.h"
 
-#include "Poco/SharedPtr.h"
+#include "date/date.h"
 
-#include "sodium.h"
 #include <queue>
 #include <string>
 
-namespace controller {
+namespace cache {
 	class BlockIndex;
 }
 
+namespace gradido {
+	namespace blockchain {
+		class NodeTransactionEntry;
+	}
+}
 namespace model {
-
-	class NodeTransactionEntry;
 
 	namespace files {
 
 		class IBlockIndexReceiver 
 		{
 		public:
-			virtual bool addIndicesForTransaction(const std::string& coinGroupId, uint16_t year, uint8_t month, uint64_t transactionNr, int32_t fileCursor, const uint32_t* addressIndices, uint8_t addressIndiceCount) = 0;
+			virtual bool addIndicesForTransaction(
+				gradido::data::TransactionType transactionType,
+				uint32_t coinCommunityIdIndex, 
+				date::year year,
+				date::month month,
+				uint64_t transactionNr, 
+				int32_t fileCursor, 
+				const uint32_t* addressIndices, 
+				uint8_t addressIndiceCount
+			) = 0;
 		};
 
 		/*!
@@ -39,25 +49,31 @@ namespace model {
 		 * and last block: file hash
 		*/		
 
-		class BlockIndex : public FileBase
+		class BlockIndex
 		{
 		public:
 			//! create filename from path and blocknr
-			BlockIndex(const Poco::Path& groupFolderPath, Poco::UInt32 blockNr);
+			BlockIndex(std::string_view groupFolderPath, uint32_t blockNr);
 			//! use full filename which includes also the block nr
-			BlockIndex(const Poco::Path& filename);
+			BlockIndex(std::string_view filename);
 			~BlockIndex();
 
-			inline void addMonthBlock(uint8_t month) {
+			inline void addMonthBlock(date::month month) {
 				mDataBlocks.push(new MonthBlock(month)); 
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
-			inline void addYearBlock(uint16_t year) { 
+			inline void addYearBlock(date::year year) { 
 				mDataBlocks.push(new YearBlock(year)); 
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
-			inline void addDataBlock(uint64_t transactionNr, int32_t fileCursor, const std::string& coinGroupId, const std::vector<uint32_t>& addressIndices) {
-				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, coinGroupId, addressIndices));
+			inline void addDataBlock(
+				uint64_t transactionNr,
+				int32_t fileCursor,
+				gradido::data::TransactionType transactionType,
+				uint32_t coinCommunityIdIndex,
+				const std::vector<uint32_t>& addressIndices
+			) {
+				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, transactionType, coinCommunityIdIndex, addressIndices));
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
 	
@@ -70,12 +86,16 @@ namespace model {
 			//! put blocks into binary file format
 			std::unique_ptr<VirtualFile> serialize();
 
-			bool writeToFile();
+			void writeToFile();
 
 			//! \brief clear data blocks
+			void exit();
+			//! remove index file
 			void reset();
 
-			inline const Poco::Path& getFileName() { return mFileName; }
+			inline const std::string& getFileName() { return mFileName; }
+
+			static void removeAllBlockIndexFiles(std::string_view groupFolderPath);
 
 		protected:
 			//! \brief replace Index File with new one, clear blocks after writing into file
@@ -111,56 +131,76 @@ namespace model {
 				}
 			};
 			struct YearBlock : public Block {
-				YearBlock(uint16_t _year) : Block(YEAR_BLOCK), year(_year) {}
+				YearBlock(date::year _year) : Block(YEAR_BLOCK), year(_year) {}
 				YearBlock() : Block(YEAR_BLOCK), year(0) {}
-				uint16_t year;
-				size_t size() { return sizeof(uint8_t) + sizeof(uint16_t); }
+				date::year year;
+				size_t size() { return sizeof(uint8_t) + sizeof(date::year); }
 
 				bool readFromFile(VirtualFile* vFile) {
-					return vFile->read(&year, sizeof(uint16_t));
+					return vFile->read(&year, sizeof(date::year));
 				}
 
 				void writeIntoFile(VirtualFile* vFile) {
 					Block::writeIntoFile(vFile);
-					vFile->write(&year, sizeof(uint16_t));
+					vFile->write(&year, sizeof(date::year));
 				}
 
 				void updateHash(crypto_generichash_state* state) {
 					//crypto_generichash_update(state, (const unsigned char*)this, size());
 					Block::updateHash(state);
-					crypto_generichash_update(state, (const unsigned char*)&year, sizeof(uint16_t));
+					crypto_generichash_update(state, (const unsigned char*)&year, sizeof(date::year));
 				}
 			};
 			struct MonthBlock: public Block {
-				MonthBlock(uint8_t _month) : Block(MONTH_BLOCK), month(_month) {}
+				MonthBlock(date::month _month) : Block(MONTH_BLOCK), month(_month) {}
 				MonthBlock() : Block(MONTH_BLOCK), month(0) {}
-				uint8_t month;
-				size_t size() { return sizeof(uint8_t) * 2; }
+				date::month month;
+				size_t size() { return sizeof(uint8_t) + sizeof(date::month); }
 
 				bool readFromFile(VirtualFile* vFile) {
-					return vFile->read(&month, sizeof(uint8_t));
+					return vFile->read(&month, sizeof(date::month));
 				}
 
 				void writeIntoFile(VirtualFile* vFile) {
 					Block::writeIntoFile(vFile);
-					vFile->write(&month, sizeof(uint8_t));
+					vFile->write(&month, sizeof(date::month));
 				}
 
 				void updateHash(crypto_generichash_state* state) {
 					//crypto_generichash_update(state, (const unsigned char*)this, size());
 					Block::updateHash(state);
-					crypto_generichash_update(state, (const unsigned char*)&month, sizeof(uint8_t));
+					crypto_generichash_update(state, (const unsigned char*)&month, sizeof(date::month));
 				}
 			};
 			struct DataBlock: public Block {
-				DataBlock(uint64_t _transactionNr, int32_t _fileCursor, const std::string& _coinGroupId, const std::vector<uint32_t>& _addressIndices)
-					: Block(DATA_BLOCK), transactionNr(_transactionNr), fileCursor(_fileCursor), coinGroupId(_coinGroupId), addressIndices(nullptr), addressIndicesCount(_addressIndices.size())
+				DataBlock(
+					uint64_t _transactionNr, 
+					int32_t _fileCursor, 
+					gradido::data::TransactionType _transactionType,
+					uint32_t _coinCommunityIdIndex,
+					const std::vector<uint32_t>& _addressIndices
+				) : 
+					Block(DATA_BLOCK), 
+					transactionNr(_transactionNr), 
+					fileCursor(_fileCursor), 
+					transactionType(_transactionType),
+					coinCommunityIdIndex(_coinCommunityIdIndex),
+					addressIndices(nullptr), 
+					addressIndicesCount(_addressIndices.size())
 				{
 					addressIndices = (uint32_t*)malloc(addressIndicesCount * sizeof(uint32_t));
+					assert(addressIndices);
 					memcpy(addressIndices, _addressIndices.data(), addressIndicesCount * sizeof(uint32_t));
 				}
 				DataBlock()
-					: Block(DATA_BLOCK), transactionNr(0), fileCursor(-10), addressIndices(nullptr), addressIndicesCount(0)
+					: 
+					Block(DATA_BLOCK), 
+					transactionNr(0), 
+					fileCursor(-10), 
+					transactionType(gradido::data::TransactionType::NONE), 
+					coinCommunityIdIndex(0),
+					addressIndices(nullptr), 
+					addressIndicesCount(0)
 				{
 
 				}
@@ -174,21 +214,28 @@ namespace model {
 				}
 				uint64_t transactionNr;
 				int32_t fileCursor;
-				std::string coinGroupId;
+				gradido::data::TransactionType transactionType;
+				uint32_t coinCommunityIdIndex;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;
 				size_t size() { 
-					return sizeof(uint8_t) + sizeof(uint64_t) + sizeof(int32_t) + sizeof(uint16_t) + coinGroupId.size() + sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; 
+					return 
+						  sizeof(uint8_t)  // Block Type
+						+ sizeof(uint64_t) // transaction nr
+						+ sizeof(int32_t)  // fileCursor
+						+ sizeof(gradido::data::TransactionType) // transaction type
+						+ sizeof(uint32_t) // coin community id index size
+						+ sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; // address index count, address indices array
 				}
 
 				virtual void writeIntoFile(VirtualFile* vFile);
 				virtual bool readFromFile(VirtualFile* vFile);
 				virtual void updateHash(crypto_generichash_state* state);
 
-				Poco::SharedPtr<NodeTransactionEntry> createTransactionEntry(uint8_t month, uint16_t year);
+				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> createTransactionEntry(date::month month, date::year year);
 			};
 
-			Poco::Path  mFileName;
+			std::string mFileName;
 			std::queue<Block*> mDataBlocks;
 			size_t mDataBlockSumSize;
 		};

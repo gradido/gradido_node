@@ -2,14 +2,14 @@
 #define _GRADIDO_NODE_MODEL_FILES_FILE_EXCEPTIONS_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
-#include "gradido_blockchain/MemoryManager.h"
+#include <fstream>
 
 namespace model {
 	namespace files {
-		class IndexAddressPairAlreadyExistException : public GradidoBlockchainException
+		class IndexStringPairAlreadyExistException : public GradidoBlockchainException
 		{
 		public:
-			explicit IndexAddressPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept;
+			explicit IndexStringPairAlreadyExistException(const char* what, std::string currentPair, std::string lastPair) noexcept;
 
 			std::string getFullString() const;
 
@@ -27,17 +27,11 @@ namespace model {
 			std::string mFileName;
 		};
 
-		class FileStreamException : public GradidoBlockchainException
-		{
-		public:
-			explicit FileStreamException(const char* what, const std::string& filename) noexcept;
-		};
-
 		class HashMismatchException : public GradidoBlockchainException
 		{
 		public:
 			explicit HashMismatchException(const char* what) noexcept;
-			explicit HashMismatchException(const char* what, MemoryBin* hash1, MemoryBin* hash2) noexcept;
+			explicit HashMismatchException(const char* what, const memory::Block& hash1, const memory::Block& hash2) noexcept;
 
 			std::string getFullString() const;
 		protected:
@@ -74,6 +68,19 @@ namespace model {
 			explicit InvalidReadBlockSize(const char* what, const char* filename, int readCursor, size_t blockSize) noexcept
 				: EndReachingException(what, filename, readCursor, blockSize) {};
 
+		};
+
+		class OpenFileException : public GradidoBlockchainException
+		{
+		public: 
+			explicit OpenFileException(const char* what, const char* fileName, std::ios::iostate errorState) noexcept
+				: GradidoBlockchainException(what), mFileName(fileName), mErrorState(errorState) {}
+
+			std::string getFullString() const;
+
+		protected:
+			std::string mFileName;
+			std::ios::iostate mErrorState;
 		};
 	}
 }

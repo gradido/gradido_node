@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_SINGLETON_MANAGER_GLOBAL_STATE_MANAGER
 #define __GRADIDO_NODE_SINGLETON_MANAGER_GLOBAL_STATE_MANAGER
 
-#include "../model/files/State.h"
+#include "../cache/StateThreadSafe.h"
 
 /*!
  * @author: Dario Rekowski
@@ -19,16 +19,18 @@ public:
 	static GlobalStateManager* getInstance();
 
 	// TODO: use a more generic approach instead writing update, get and member variable for every state 
+	inline void updateLastIotaMilestone(int32_t lastIotaMilestone) { 
+		mGlobalStateFile.updateState(cache::DefaultStateKeys::LAST_IOTA_MILESTONE, lastIotaMilestone);
+	}
+	inline int32_t getLastIotaMilestone() { return mGlobalStateFile.readInt32State(cache::DefaultStateKeys::LAST_IOTA_MILESTONE, 0); }
 
-	void updateLastIotaMilestone(int32_t lastIotaMilestone);
-	inline int32_t getLastIotaMilestone() { return mLastIotaMilestone; }
+	//! close leveldb file 
+	void exit();
 
 protected:
 	GlobalStateManager();
-	model::files::State* mGlobalStateFile;
-	bool mInitalized;
-
-	int32_t mLastIotaMilestone;
+	cache::StateThreadSafe mGlobalStateFile;
 };
+
 
 #endif // __GRADIDO_NODE_SINGLETON_MANAGER_GLOBAL_STATE_MANAGER

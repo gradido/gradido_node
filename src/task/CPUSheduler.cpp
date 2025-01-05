@@ -1,8 +1,10 @@
 #include "CPUSheduler.h"
 #include "CPUShedulerThread.h"
 #include "CPUTask.h"
-#include <memory.h>
 
+#include "loguru/loguru.hpp"
+
+#include <memory.h>
 
 namespace task {
 
@@ -19,6 +21,7 @@ namespace task {
 		for(int i = 0; i < threadCount; i++) {
 			sprintf(&nameBuffer[len], "%.2d", i); 
 			mThreads[i] = new CPUShedulerThread(this, nameBuffer);
+			mThreads[i]->init();
 		}
 	}
 
@@ -27,6 +30,7 @@ namespace task {
 		//printf("[CPUSheduler::~CPUSheduler]\n");
 		for(int i = 0; i < mThreadCount; i++) {
 			if (mThreads[i]) {
+				mThreads[i]->exit();
 				delete mThreads[i];
 			}
 		}
@@ -38,7 +42,7 @@ namespace task {
 	int CPUSheduler::sheduleTask(TaskPtr task)
 	{
 		{ // scoped lock
-			Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+			std::lock_guard _lock(mCheckStopMutex);
 			if (mStopped) {
 				return 0;
 			}
@@ -50,10 +54,12 @@ namespace task {
 			t->setNewTask(task);
 		} else {
 			// else put task to pending queue
-			printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
-			mPendingTasksMutex.lock();
-			mPendingTasks.push_back(task);
-			mPendingTasksMutex.unlock();
+			// printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
+			LOG_F(INFO, "sheduleTask in %s all %u threads in use, add to pending task list", mName.data(), getThreadCount());
+			{
+				std::lock_guard _lock(mPendingTasksMutex);
+				mPendingTasks.push_back(task);
+			}
 		}
 		return 0;
 	}
@@ -92,13 +98,13 @@ namespace task {
 	void CPUSheduler::checkPendingTasks()
 	{
 		{ // scoped lock
-			Poco::ScopedLock<Poco::FastMutex> _lock(mCheckStopMutex);
+			std::lock_guard _lock(mCheckStopMutex);
 			if (mStopped) {
 				return;
 			}
 		} // scoped lock end
 		TaskPtr task = getNextUndoneTask(NULL);
-		if (!task.isNull()) {
+		if (task) {
 			sheduleTask(task);
 		}
 	}

@@ -1,7 +1,6 @@
 #include "CPUTask.h"
 #include "CPUSheduler.h"
 #include "../ServerGlobals.h"
-#include "Poco/AtomicCounter.h"
 
 namespace task {
 	

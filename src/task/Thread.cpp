@@ -1,99 +1,88 @@
-//#include "lib/Thread.h"
-//#include "UniversumLib.h"
 #include "Thread.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
-#include "../SingletonManager/LoggerManager.h"
+#include "gradido_blockchain/Application.h"
+
+#include "loguru/loguru.hpp"
 
 namespace task {
-
-    Thread::Thread(const char* threadName/* = NULL*/, bool createInConstructor/* = true*/)
-        : mPocoThread(nullptr), exitCalled(false)
-    {
-		if (createInConstructor) init(threadName);
-    } 
-
-	int Thread::init(const char* threadName)
+	Thread::Thread(const char* threadName)
+		: mThread(nullptr), mExitCalled(false)
 	{
-		//semaphore.wait();
-		mPocoThread = new Poco::Thread(threadName);
-		mPocoThread->start(*this);
-		return 0;
+		if (threadName) {
+			mThreadName = threadName;
+		}
 	}
 
-    Thread::~Thread()
-    {
-		//printf("[Thread::~Thread]\n");
-        if(mPocoThread)
-        {
-            //Post Exit to Thread
-            exitCalled = true;
-			//printf("[Thread::~Thread] before semaphore wait\n");
-			//semaphore.wait();
-			//printf("[Thread::~Thread] after semaphore wait, before condSignal\n");
-            condSignal();
-			//printf("[Thread::~Thread] after condSignal, before thread join\n");
-            //SDL_Delay(500);
-			mPocoThread->join();
-			//printf("[Thread::~Thread] after thread join\n");
-            //SDL_WaitThread(thread, NULL);
-            //LOG_WARNING_SDL();
-			delete mPocoThread;
+	void Thread::init()
+	{
+		mThread = new std::thread(&Thread::run, this);
+	}
 
-			mPocoThread = nullptr;
-        }
-    }
+	void Thread::exit()
+	{
+		{
+			std::unique_lock _lock(mMutex);
+			//Post Exit to Thread
+			mExitCalled = true;
+			condSignal();
+		}
+		if (mThread)
+		{
+			mThread->join();
+			if (mThread) {
+				delete mThread;
+				mThread = nullptr;
+			}
+		}
+	}
 
-    int Thread::condSignal()
-    {
-		condition.signal();
-        return 0;
-    }
+	Thread::~Thread()
+	{
+		exit();
+	}
 
-    void Thread::run()
-    {
-        //Thread* t = this;
-		Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-		auto threadName = mPocoThread->getName();
+	void Thread::condSignal()
+	{
+		mCondition.notify_one();
+	}
+
+	void Thread::run()
+	{
+	 	loguru::set_thread_name(mThreadName.data());
 		while (true) {
 			try {
-				//semaphore.tryWait(100);
-				//printf("[Thread::%s] end worker thread\n", __FUNCTION__);
-				//break;
-				if (exitCalled) return;
+				if (mExitCalled) return;
 				// Lock work mutex
-				Poco::ScopedLock _lock(mutex);
-				//int status = SDL_CondWait(t->condition, t->mutex);
+				std::unique_lock _lock(mMutex);
 				try {
-					condition.wait(mutex);
-					if (exitCalled) {
+					mCondition.wait(_lock);
+					if (mExitCalled) {
 						return;
 					}
 					int ret = ThreadFunction();
 					if (ret) {
-						errorLog.error("[Thread::%s] error running thread functon: %d, exit thread\n", threadName, ret);
+						LOG_F(ERROR, "error running thread function, %s thread returned with: %d, exit thread", mThreadName.data(), ret);
 						return;
 					}
 				}
-				catch (Poco::NullPointerException& e) {
-					errorLog.error("[Thread::%s] null pointer exception", threadName);
-					return;
-				}
-				catch (Poco::Exception& e) {
-					//unlock mutex and exit
-					errorLog.error("[Thread::%s] Poco exception: %s\n", threadName, e.message());
-					return;
-				}
 				catch (GradidoBlockchainException& e) {
-					errorLog.error("[Thread::%s] Gradido Blockchain exception: %s\n", threadName, e.getFullString());
+					LOG_F(FATAL, "%s thread throw an uncatched GradidoBlockchainException exception: %s, exit thread", mThreadName.data(), e.getFullString().data());
+					Application::terminate();
+					return;
+				}
+				catch (std::exception& e) {
+					LOG_F(FATAL, "%s thread throw an uncatched exception: %s, exit thread", mThreadName.data(), e.what());
+					Application::terminate();
+					return;
 				}
 
-			} catch (Poco::TimeoutException& e) {
-				errorLog.error("[Thread::%s] timeout exception\n", threadName);
-			} catch (Poco::Exception& e) {
-				errorLog.error("[Thread::%s] exception: %s\n", threadName, e.message().data());
+			}
+			catch (std::system_error& e) {
+				LOG_F(FATAL, "%s Thread locking throw exception: %s, exit thread", mThreadName.data(), e.what());
+				Application::terminate();
 				return;
 			}
 		}
-     
-    }
+
+	}
 }

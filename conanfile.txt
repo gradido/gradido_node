@@ -1,24 +1,10 @@
 [requires]
-poco/1.11.1
 libsodium/1.0.18
-mpfr/4.1.0
+gtest/1.10.0
 
-[options]
-Poco:enable_data=False
-Poco:enable_data_mysql=False
-Poco:enable_data_postgresql=False
-Poco:enable_data_sqlite=False
-Poco:enable_active_record=False
-Poco:enable_encodings=False
-Poco:enable_redis=False
-Poco:enable_jwt=True
-#Poco:enable_xml=False
-Poco:enable_json=True
-#Poco:enable_data_mongo_db=False
-#Poco:enable_zip=False
-#Poco:enable_active_record=False
 
 [generators]
-cmake
+CMakeDeps
+CMakeToolchain
 
 

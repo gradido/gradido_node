@@ -1,7 +1,10 @@
 #include "ControllerExceptions.h"
-#include "gradido_blockchain/model/protobufWrapper/TransactionBody.h"
+
+#include "magic_enum/magic_enum.hpp"
 
 #include <string>
+
+using namespace gradido::data;
 
 namespace controller {
 	GroupNotFoundException::GroupNotFoundException(const char* what, const std::string& groupAlias) noexcept
@@ -38,34 +41,12 @@ namespace controller {
 	}
 
 
-	// ************************** Block Index Invalid File Cursor Exception ***********************
-	BlockIndexInvalidFileCursorException::BlockIndexInvalidFileCursorException(
-		const char* what, int32_t fileCursor, uint64_t transactionNr, uint64_t minTransactionNr
-	) noexcept
-		: BlockIndexException(what), mFileCursor(fileCursor), mTransactionNr(transactionNr), mMinTransactionNr(minTransactionNr)
-	{
-
-	}
-
-	std::string BlockIndexInvalidFileCursorException::getFullString() const
-	{
-		std::string result;
-		std::string fileCursorString = std::to_string(mFileCursor);
-		std::string transactionNrString = std::to_string(mTransactionNr);
-		std::string minTransactionString = std::to_string(mMinTransactionNr);
-		size_t resultSize = strlen(what()) + 2 + 15 + fileCursorString.size() + 18 + transactionNrString.size() + 23 + minTransactionString.size();
-		result.reserve(resultSize);
-		result = what();
-		result += ", file cursor: " + fileCursorString;
-		result += ", transaction nr: " + transactionNrString;
-		result += ", min transaction nr: " + minTransactionString;
-		return std::move(result);
-	}
+	
 
 	// ************************ Wrong Transaction Type Exception **********************************
 	WrongTransactionTypeException::WrongTransactionTypeException(
 		const char* what, 
-		model::gradido::TransactionType type,
+		TransactionType type,
 		std::string pubkeyHex
 	) noexcept
 		: GradidoBlockchainException(what), mType(type), mPubkeyHex(pubkeyHex)
@@ -76,7 +57,7 @@ namespace controller {
 	std::string WrongTransactionTypeException::getFullString() const
 	{
 		std::string resultString;
-		std::string transactionTypeString = model::gradido::TransactionBody::transactionTypeToString(mType);
+		std::string transactionTypeString(magic_enum::enum_name(mType));
 		size_t resultSize = strlen(what()) + 2 + 20 + transactionTypeString.size() + mPubkeyHex.size() + 10;
 		resultString.reserve(resultSize);
 		resultString = what();

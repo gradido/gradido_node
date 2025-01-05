@@ -5,7 +5,7 @@
 
 namespace task {
 
-	SerializeToVFileTask::SerializeToVFileTask(Poco::SharedPtr<ISerializeToVFile> dataProvider)
+	SerializeToVFileTask::SerializeToVFileTask(std::shared_ptr<ISerializeToVFile> dataProvider)
 		: CPUTask(ServerGlobals::g_CPUScheduler), mDataProvider(dataProvider)
 	{
 #ifdef _UNI_LIB_DEBUG
@@ -23,7 +23,7 @@ namespace task {
 	{
 		auto vfile = mDataProvider->serialize();
 		if (!vfile) return 0;
-		TaskPtr hddWriteBufferTask = new HddWriteBufferTask(std::move(vfile), std::move(mDataProvider->getFileNameString()));
+		TaskPtr hddWriteBufferTask = std::make_shared<HddWriteBufferTask>(std::move(vfile), mDataProvider->getFileNameString());
 		if (mFinishCommand) {
 			hddWriteBufferTask->setFinishCommand(mFinishCommand);
 			mFinishCommand = nullptr;

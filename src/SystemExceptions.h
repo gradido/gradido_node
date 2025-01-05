@@ -10,7 +10,42 @@ public:
 	std::string getFullString() const;
 protected:
 	std::string mFileName;
+};
 
+class CannotLockMutexAfterTimeout : public GradidoBlockchainException
+{
+public:
+	explicit CannotLockMutexAfterTimeout(const char* what, int timeoutMs) noexcept;
+	std::string getFullString() const;
+protected:
+	int mTimeoutMs;
+};
+
+class ClassNotInitalizedException : public GradidoBlockchainException
+{
+public:
+	explicit ClassNotInitalizedException(const char* what, const char* classname) noexcept;
+	std::string getFullString() const;
+protected:
+	std::string mClassName;
+};
+
+class ClassAlreadyInitalizedException : public GradidoBlockchainException
+{
+public:
+	explicit ClassAlreadyInitalizedException(const char* what, const char* classname) noexcept;
+	std::string getFullString() const;
+protected:
+	std::string mClassName;
+};
+
+class FileNotFoundException : public GradidoBlockchainException
+{
+public:
+	explicit FileNotFoundException(const char* what, const char* fileName) noexcept;
+	std::string getFullString() const;
+protected:
+	std::string mFileName;
 };
 
 

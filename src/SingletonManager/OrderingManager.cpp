@@ -1,32 +1,36 @@
 #include "OrderingManager.h"
-#include "LoggerManager.h"
 #include "GlobalStateManager.h"
-#include "GroupManager.h"
-#include <stdexcept>
-#include "../controller/Group.h"
-#include "../controller/ControllerExceptions.h"
+#include "../blockchain/FileBased.h"
+#include "../blockchain/FileBasedProvider.h"
+#include "../blockchain/Exceptions.h"
+#include "gradido_blockchain/interaction/toJson/Context.h"
+#include "loguru/loguru.hpp"
 
-#include "Poco/DateTimeFormatter.h"
+#include <stdexcept>
+
+using namespace gradido;
+using namespace blockchain;
+using namespace interaction;
 
 OrderingManager::OrderingManager()
-    : task::Thread("order")
+    : task::Thread("OrderingManager")
 {
-
+    mMessageValidator.init();
 }
 
 OrderingManager::~OrderingManager()
 {
-    mMilestoneTaskObserverMutex.lock();
-    
-    mMilestoneTaskObserver.clear();
-    mMilestoneTaskObserverMutex.unlock();
-
-    mMilestonesWithTransactionsMutex.lock();
-    for (auto it = mMilestonesWithTransactions.begin(); it != mMilestonesWithTransactions.end(); it++) {
-        delete it->second;
+    {
+        std::lock_guard _lock(mMilestoneTaskObserverMutex);
+        mMilestoneTaskObserver.clear();
     }
-    mMilestonesWithTransactions.clear();
-    mMilestonesWithTransactionsMutex.unlock();
+    {
+        std::lock_guard _lock(mMilestonesWithTransactionsMutex);
+        for (auto it = mMilestonesWithTransactions.begin(); it != mMilestonesWithTransactions.end(); it++) {
+            delete it->second;
+        }
+        mMilestonesWithTransactions.clear();
+    }
 }
 
 OrderingManager* OrderingManager::getInstance()
@@ -38,7 +42,7 @@ OrderingManager* OrderingManager::getInstance()
 void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
 {
     //printf("[OrderingManager::pushMilestoneTaskObserver] push: %d\n", milestoneId);
-    Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
+    std::lock_guard _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it == mMilestoneTaskObserver.end()) {
         mMilestoneTaskObserver.insert({ milestoneId, 1 });
@@ -50,7 +54,7 @@ void OrderingManager::pushMilestoneTaskObserver(int32_t milestoneId)
 void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 {
     //printf("[OrderingManager::popMilestoneTaskObserver] pop: %d\n", milestoneId);
-    Poco::ScopedLock<Poco::FastMutex> _lock(mMilestoneTaskObserverMutex);
+    std::lock_guard _lock(mMilestoneTaskObserverMutex);
     auto it = mMilestoneTaskObserver.find(milestoneId);
     if (it != mMilestoneTaskObserver.end()) {
         it->second--;
@@ -63,14 +67,13 @@ void OrderingManager::popMilestoneTaskObserver(int32_t milestoneId)
 
 int OrderingManager::ThreadFunction()
 {
-    auto gm = GroupManager::getInstance();
-    while (true) {
-        
+    auto blockchainProvider = FileBasedProvider::getInstance();
+    while (true) {        
         // we can only work on the lowest known milestone if no task with this milestone is running
         // the milestone must be processed in order to keep transactions in order and this is essential!
         // if node is starting up, wait until all existing messages are loaded from iota to prevent missing out one
         while (mMessageValidator.getFirstRunCount() > 0) {
-            Poco::Thread::sleep(100);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         // get first not processed milestone
         mMilestonesWithTransactionsMutex.lock();
@@ -87,15 +90,14 @@ int OrderingManager::ThreadFunction()
         }
         auto milestoneId = workSetIt->first;   
 
-		// make sure MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS time was passed since milestone was created 
-        // for more information see MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS
+		// make sure MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER time was passed since milestone was created 
+        // for more information see MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER
 		MilestoneTransactions* mt = workSetIt->second;
-		Poco::Timestamp now;
-        // Poco Timediff has a resolution of microseconds
-		int64_t sleepMilliSeconds = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS - (now - mt->entryCreationTime) / 1000;
+		Timepoint now;
+		Duration sleepDuration = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER - (now - mt->entryCreationTime);
 
-		if (sleepMilliSeconds > 0 && sleepMilliSeconds < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER_MILLI_SECONDS) {
-			Poco::Thread::sleep(sleepMilliSeconds);
+        if (sleepDuration > std::chrono::milliseconds(0) && sleepDuration < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER) {
+            std::this_thread::sleep_for(sleepDuration);
             // check if our workSet is still the first
             if (workSetIt != mMilestonesWithTransactions.begin()) {
                 continue;
@@ -115,34 +117,41 @@ int OrderingManager::ThreadFunction()
         {
             // sort transaction after creation date if more than one was processed with this milestone
             mt->transactions.sort([](const GradidoTransactionWithGroup& a, const GradidoTransactionWithGroup& b) {
-                return a.transaction->getTransactionBody()->getCreatedSeconds() < b.transaction->getTransactionBody()->getCreatedSeconds();
+                return a.transaction->getTransactionBody()->getCreatedAt() < b.transaction->getTransactionBody()->getCreatedAt();
                 });
 
-            printf("[OrderingManager::finishedMilestone] milestone %d, transactions: %d\n", milestoneId, mt->transactions.size());
+            LOG_F(1, "milestone %d, transactions: %llu", milestoneId, mt->transactions.size());
 
             for (auto itTransaction = mt->transactions.begin(); itTransaction != mt->transactions.end(); itTransaction++) {
                 auto transaction = itTransaction->transaction.get();
                 auto type = transaction->getTransactionBody()->getTransactionType();
-                auto seconds = transaction->getTransactionBody()->getCreatedSeconds();
-//                printf("transaction type: %d, created: %d\n", type, seconds);
-              
+                auto seconds = transaction->getTransactionBody()->getCreatedAt();
+
                 // TODO: check if it is really necessary
-                auto transactionCopy = std::make_unique<model::gradido::GradidoTransaction>(transaction->getSerialized().get());
+                // auto transactionCopy = std::make_unique<gradido::data::GradidoTransaction>(transaction->getSerialized().get());
                 // put transaction to blockchain
-                auto group = gm->findGroup(itTransaction->groupAlias);
-                if (group.isNull()) {
-                    throw controller::GroupNotFoundException("couldn't find group", itTransaction->groupAlias);
+                auto blockchain = blockchainProvider->findBlockchain(itTransaction->communityId);
+                if (!blockchain) {
+                    throw CommunityNotFoundExceptions("couldn't find group", itTransaction->communityId);
                 }
                 try {
-                    bool result = group->addTransaction(std::move(itTransaction->transaction), itTransaction->messageId, mt->milestoneTimestamp);
+                    bool result = blockchain->createAndAddConfirmedTransaction(itTransaction->transaction, itTransaction->messageId, mt->milestoneTimestamp);
+                    LOG_F(INFO, "Transaction added, msgId: %s", itTransaction->messageId->convertToHex().data());
                 }
                 catch (GradidoBlockchainException& ex) {
-                    Poco::Logger& errorLog = LoggerManager::getInstance()->mErrorLogging;
-                    auto communityServer = group->getListeningCommunityServer();
+                    auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
+                    auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
                     if (communityServer) {
-                        communityServer->notificateFailedTransaction(transactionCopy.get(), ex.what(), *itTransaction->messageId->convertToHex().get());
+                        communityServer->notificateFailedTransaction(*itTransaction->transaction, ex.what(), itTransaction->messageId->convertToHex());
                     }
-                    errorLog.information("[OrderingManager] transaction not added: %s", ex.getFullString());
+                    try {
+                        toJson::Context toJson(*itTransaction->transaction);
+                        LOG_F(INFO, "transaction not added:\n%s\n%s", ex.getFullString().data(), toJson.run(true).data());
+                    } catch (GradidoBlockchainException& ex) {
+                        LOG_F(ERROR, "gradido blockchain exception on parsing transaction\n%s", ex.getFullString().data());
+                    } catch(std::exception& ex) {
+                        LOG_F(ERROR, "exception on parsing transaction:\n%s", ex.what());
+                    }
                 }
             }
         }
@@ -150,7 +159,7 @@ int OrderingManager::ThreadFunction()
         // remove not longer needed milestone transactions entry
         mMilestonesWithTransactionsMutex.lock();
         mMilestonesWithTransactions.erase(workSetIt);
-        printf("[%s] processed milestone: %d\n", __FUNCTION__, milestoneId);
+        LOG_F(INFO, "processed milestone: %d", milestoneId);
         mMilestonesWithTransactionsMutex.unlock();
     }
     return 0;
@@ -158,11 +167,11 @@ int OrderingManager::ThreadFunction()
 
 
 int OrderingManager::pushTransaction(
-    std::unique_ptr<model::gradido::GradidoTransaction> transaction, 
-    int32_t milestoneId, uint64_t timestamp, 
-    const std::string& groupAlias, MemoryBin* messageId)
+    std::shared_ptr<const gradido::data::GradidoTransaction> transaction,
+    int32_t milestoneId, Timepoint timestamp,
+    std::string_view communityId, std::shared_ptr<const memory::Block> messageId)
 {
-    Poco::ScopedLock<Poco::FastMutex> _lock(mMilestonesWithTransactionsMutex);
+    std::lock_guard _lock(mMilestonesWithTransactionsMutex);
     auto it = mMilestonesWithTransactions.find(milestoneId);
     if (it == mMilestonesWithTransactions.end()) {
         auto insertResult = mMilestonesWithTransactions.insert({ milestoneId, new MilestoneTransactions(milestoneId, timestamp) });
@@ -171,9 +180,10 @@ int OrderingManager::pushTransaction(
         }
         it = insertResult.first;
     }
-    it->second->mutex.lock();
-    it->second->transactions.push_back(GradidoTransactionWithGroup(std::move(transaction), groupAlias, messageId));
-    it->second->mutex.unlock();
+    {
+        std::lock_guard _lock(it->second->mutex);
+        it->second->transactions.push_back(GradidoTransactionWithGroup(transaction, communityId, messageId));
+    } 
 
     return 0;
 }

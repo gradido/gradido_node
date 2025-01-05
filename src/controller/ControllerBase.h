@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_CONTROLLER_CONTROLLER_BASE_H
 #define __GRADIDO_NODE_CONTROLLER_CONTROLLER_BASE_H
 
-#include "Poco/Mutex.h"
+#include <mutex>
 
 namespace controller {
 
@@ -9,7 +9,8 @@ namespace controller {
 	{
 	public:
 	protected:
-		Poco::Mutex mWorkingMutex;
+		//! TODO think about needing recursive mutex
+		std::mutex mWorkingMutex;
 	};
 }
 
