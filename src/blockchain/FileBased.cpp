@@ -11,6 +11,7 @@
 #include "gradido_blockchain/const.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
+#include "gradido_blockchain/interaction/confirmTransaction/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -32,8 +33,8 @@ namespace gradido {
 			mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeysCache"))),
 			mBlockchainState(std::string(folder).append("/.state")),
-			mDeferredTransfersCache(std::string(folder).append("/deferredTransferCache"), communityId),
 			mMessageIdsCache(std::string(folder).append("/messageIdCache")),
+			mTransactionTriggerEventsCache(std::string(folder).append("/transactionTriggerEventCache")),
 			mCachedBlocks(ServerGlobals::g_CacheTimeout),
 			mTransactionHashCache(communityId)
 		{
@@ -50,17 +51,12 @@ namespace gradido {
 		{
 			assert(!mExitCalled);
 			std::lock_guard _lock(mWorkMutex);
-			bool resetDeferredTransfersCache = false;
-			if (!mPublicKeysIndex->init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES)) {
+			if (!mPublicKeysIndex->init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES * 1024 * 1024)) {
 				// remove index files for regenration
 				LOG_F(WARNING, "reset the public key index file");
 				// mCachedBlocks.clear();
 				mPublicKeysIndex->reset();
-				resetDeferredTransfersCache = true;
 				resetBlockIndices = true;
-			}
-			if (!resetDeferredTransfersCache && !mDeferredTransfersCache.init(GRADIDO_NODE_MAGIC_NUMBER_DEFERRED_TRANSFERS_CACHE_MEGA_BTYES)) {
-				resetDeferredTransfersCache = true;
 			}
 			
 			if (resetBlockIndices) {
@@ -89,11 +85,12 @@ namespace gradido {
 				}
 			}
 
-			if (resetDeferredTransfersCache) {
-				LOG_F(WARNING, "reset deferred transfer cache level db");
-				mDeferredTransfersCache.reset();
-				rescanForDeferredTransfers();
+			if (!mTransactionTriggerEventsCache.init(GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES * 1024 * 1024)) {
+				Profiler timeUsed;
+				rescanForTransactionTriggerEvents();
+				LOG_F(INFO, "rescan blockchain for transaction trigger events, time: %s", timeUsed.string().data());
 			}
+
 			// load first GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE transaction into cache and validate the transaction to check file integrity
 			Profiler timeUsed;
 			FilterBuilder builder;
@@ -120,7 +117,7 @@ namespace gradido {
 						validationLevel = validationLevel | validate::Type::PREVIOUS;
 						validator.setSenderPreviousConfirmedTransaction(previousConfirmedTransaction);
 					}										
-					validator.run(validationLevel, getCommunityId(), getProvider());
+					validator.run(validationLevel, getptr());
 					mTransactionHashCache.push(*transactionEntry.getConfirmedTransaction());
 					count++;
 					return FilterResult::DISMISS;
@@ -154,14 +151,17 @@ namespace gradido {
 					break;
 				}
 			}
-			mDeferredTransfersCache.exit();
 			mCachedBlocks.clear();
 			mBlockchainState.exit();
 			mPublicKeysIndex->exit();
 			mMessageIdsCache.exit();
+			mTransactionTriggerEventsCache.exit();
 		}
-		bool FileBased::addGradidoTransaction(data::ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt)
-		{
+		bool FileBased::createAndAddConfirmedTransaction(
+			data::ConstGradidoTransactionPtr gradidoTransaction,
+			memory::ConstBlockPtr messageId,
+			Timepoint confirmedAt
+		) {
 			if (!gradidoTransaction) {
 				throw GradidoNullPointerException("missing transaction", "GradidoTransactionPtr", __FUNCTION__);
 			}
@@ -170,116 +170,51 @@ namespace gradido {
 			}
 			std::lock_guard _lock(mWorkMutex);
 			if (mExitCalled) { return false;}
-			if (isTransactionAlreadyExist(*gradidoTransaction)) {
-				LOG_F(WARNING, "transaction skipped because it already exist");
-				return false;
-			}
-			auto lastTransaction = findOne(Filter::LAST_TRANSACTION);
-			uint64_t id = 1;
-			if (lastTransaction) {
-				id = lastTransaction->getTransactionNr() + 1;
-			}			
-			
-			auto& lastBlock = getBlock(mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1));
-			if (id <= lastBlock.getBlockIndex().getTransactionsCount()) {
-				// don't find correct last transaction even if it should exist
-				lastTransaction = findOne(Filter::LAST_TRANSACTION);
-			}
-			
-			auto transactionBody = gradidoTransaction->getTransactionBody();
-			// check for deferred transfer and if found, add to deferred transfer cache
-			memory::ConstBlockPtr transferSenderPublicKey = nullptr;
-			if (transactionBody->isDeferredTransfer()) {
-				auto deferredTransferRecipientPublicKeyIndex = mPublicKeysIndex->getOrAddIndexForString(
-					transactionBody
-					->getDeferredTransfer()
-					->getRecipientPublicKey()
-					->copyAsString()
-				);
-				mDeferredTransfersCache.addTransactionNrForAddressIndex(deferredTransferRecipientPublicKeyIndex, id);
-				transferSenderPublicKey = transactionBody
-					->getDeferredTransfer()
-					->getSenderPublicKey()
-					;
-			}
-			else if (transactionBody->isTransfer()) {
-				transferSenderPublicKey =
-					transactionBody
-					->getTransfer()
-					->getSender()
-					.getPubkey()
-				;
-			}
-			uint32_t transferSenderPublicKeyIndex = 0;
-			if (transferSenderPublicKey) {
-				transferSenderPublicKeyIndex = mPublicKeysIndex->getIndexForString(transferSenderPublicKey->copyAsString());
-				// if gradido source is a deferred transfer transaction
-				if (mDeferredTransfersCache.isDeferredTransfer(transferSenderPublicKeyIndex)) {
-					mDeferredTransfersCache.addTransactionNrForAddressIndex(transferSenderPublicKeyIndex, id);
-				}
-			}
-
-			calculateAccountBalance::Context accountBalanceCalculator(*this);
-			auto accountBalance = accountBalanceCalculator.run(gradidoTransaction, confirmedAt, id);
-			gradido::data::ConstConfirmedTransactionPtr lastConfirmedTransaction;
-			if (lastTransaction) {
-				lastConfirmedTransaction = lastTransaction->getConfirmedTransaction();
-			}
-			auto confirmedTransaction = std::make_shared<data::ConfirmedTransaction>(
-				id,
-				gradidoTransaction,
-				confirmedAt,
-				GRADIDO_CONFIRMED_TRANSACTION_V3_3_VERSION_STRING,
-				messageId,
-				accountBalance.toString(),
-				lastConfirmedTransaction
-			);
-			validate::Type validationLevel = validate::Type::SINGLE | validate::Type::ACCOUNT;
-			if (lastTransaction) {
-				validationLevel = validationLevel | validate::Type::PREVIOUS;
-			}
-			
-			if (transactionBody->getType() != data::CrossGroupType::LOCAL) {
-				validationLevel = validationLevel | validate::Type::PAIRED;
-			}
-			if (transactionBody->isCreation()) {
-				validationLevel = validationLevel | validate::Type::MONTH_RANGE;
-			}
-
-			validate::Context validator(*confirmedTransaction);
-			validator.setSenderPreviousConfirmedTransaction(lastConfirmedTransaction);
-			validator.run(validationLevel, getCommunityId(), getProvider());
-
+			confirmTransaction::Context confirmTransactionContext(getptr());
+			auto role = confirmTransactionContext.createRole(gradidoTransaction, messageId, confirmedAt);
+			auto confirmedTransaction = confirmTransactionContext.run(role);
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			auto& block = getBlock(blockNr);
 			auto nodeTransactionEntry = std::make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
 			if (!block.pushTransaction(nodeTransactionEntry)) {
 				// block was already stopped, so we can  stop here also 
-				LOG_F(WARNING, "couldn't push transaction: %llu to block: %d", id, blockNr);
+				LOG_F(WARNING, "couldn't push transaction: %llu to block: %d", confirmedTransaction->getId(), blockNr);
 				return false;
 			}
-			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, id);
+			role->runPastAddToBlockchain(confirmedTransaction, getptr());
+			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, confirmedTransaction->getId());
 			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
 			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
-			mMessageIdsCache.add(confirmedTransaction->getMessageId(), id);
+			mMessageIdsCache.add(confirmedTransaction->getMessageId(), confirmedTransaction->getId());
 			// add public keys to index
+			auto transactionBody = nodeTransactionEntry->getTransactionBody();
 			auto involvedAddresses = transactionBody->getInvolvedAddresses();
 			for (const auto& address : involvedAddresses) {
 				mPublicKeysIndex->getOrAddIndexForString(address->copyAsString());
-			}
-
-			// check if a deferred transfer was completly redeemed
-			if (transferSenderPublicKeyIndex && mDeferredTransfersCache.isDeferredTransfer(transferSenderPublicKeyIndex)) {										
-				auto balance = accountBalanceCalculator.run(transferSenderPublicKey, confirmedAt, id);
-				if (GradidoUnit::zero() == balance) {
-					mDeferredTransfersCache.removeAddressIndex(transferSenderPublicKeyIndex);
-				}
 			}
 			if (mCommunityServer) {
 				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
 				notifyClientTask->scheduleTask(notifyClientTask);
 			}
 			return true;
+		}
+
+		void FileBased::addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent)
+		{
+			std::lock_guard _lock(mWorkMutex);
+			mTransactionTriggerEventsCache.addTransactionTriggerEvent(transactionTriggerEvent);
+		}
+
+		void FileBased::removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent)
+		{
+			std::lock_guard _lock(mWorkMutex);
+			mTransactionTriggerEventsCache.removeTransactionTriggerEvent(transactionTriggerEvent);
+		}
+
+		std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> FileBased::findTransactionTriggerEventsInRange(TimepointInterval range)
+		{
+			std::lock_guard _lock(mWorkMutex);
+			return mTransactionTriggerEventsCache.findTransactionTriggerEventsInRange(range);
 		}
 
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
@@ -325,163 +260,6 @@ namespace gradido {
 			return count;
 		}
 
-		//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-		//! therefore boocked back to sender
-		TransactionEntries FileBased::findTimeoutedDeferredTransfersInRange(
-			memory::ConstBlockPtr senderPublicKey,
-			TimepointInterval timepointInterval,
-			uint64_t maxTransactionNr
-		) const {
-			Filter f;
-			f.involvedPublicKey = senderPublicKey;
-			f.timepointInterval = TimepointInterval(timepointInterval.getStartDate() - GRADIDO_DEFERRED_TRANSFER_MAX_TIMEOUT_INTERVAL, timepointInterval.getEndDate());
-			f.searchDirection = SearchDirection::ASC;
-			f.transactionType = data::TransactionType::DEFERRED_TRANSFER;
-			// nested findAll call
-			f.filterFunction = [&](const TransactionEntry& deferredTransactionEntry) -> FilterResult {
-				auto deferredTransfer = deferredTransactionEntry.getTransactionBody()->getDeferredTransfer();
-				if (!deferredTransfer) {
-					throw GradidoNullPointerException(
-						"transaction hasn't expected Type", 
-						"data::DeferredTransferTransaction", 
-						"FileBased::findTimeoutedDeferredTransfersInRange"
-					);
-				}
-				if (
-					!deferredTransfer->getSenderPublicKey()->isTheSame(senderPublicKey) ||
-					!timepointInterval.isInsideInterval(deferredTransfer->getTimeout())
-				) {
-					return FilterResult::DISMISS;
-				}
-				// first try cache
-				auto recipientPublicKeyIndex = mPublicKeysIndex->getOrAddIndexForString(
-					deferredTransfer->getRecipientPublicKey()->copyAsString()
-				);
-				auto transactionNrs = mDeferredTransfersCache.getTransactionNrsForAddressIndex(
-					recipientPublicKeyIndex
-				);
-				// if found in cache, there are not completly redeemed yet
-				if (transactionNrs.size()) {
-					return FilterResult::USE;
-				}
-
-				Filter f2;
-				f2.involvedPublicKey = deferredTransfer->getRecipientPublicKey();
-				f2.searchDirection = SearchDirection::ASC;
-				f2.timepointInterval = TimepointInterval(
-					deferredTransactionEntry.getConfirmedTransaction()->getConfirmedAt(), 
-					deferredTransfer->getTimeout()
-				);
-				f2.filterFunction = [&](const TransactionEntry& transaction) -> FilterResult {
-					auto transactionBody = transaction.getTransactionBody();
-					memory::ConstBlockPtr senderPublicKey = nullptr;
-					if (transactionBody->isDeferredTransfer()) {
-						senderPublicKey = transactionBody->getDeferredTransfer()->getSenderPublicKey();
-					}
-					else if (transactionBody->isTransfer()) {
-						senderPublicKey = transactionBody->getTransfer()->getSender().getPubkey();
-					}
-					if (deferredTransfer->getRecipientPublicKey()->isTheSame(senderPublicKey)) {
-						return FilterResult::USE | FilterResult::STOP;
-					}
-					return FilterResult::DISMISS;
-				};
-				auto redeemingTransactions = findAll(f2);
-				// TODO: calculate if transaction was redeemed fully
-				if (redeemingTransactions.size()) {
-					return FilterResult::DISMISS;
-				}
-				return FilterResult::USE;
-			};
-			
-			return findAll(f);
-		}
-
-		//! find all transfers which redeem a deferred transfer in date range
-		//! \param senderPublicKey sender public key of sending account of deferred transaction
-		//! \return list with transaction pairs, first is deferred transfer, second is redeeming transfer
-		std::list<DeferredRedeemedTransferPair> FileBased::findRedeemedDeferredTransfersInRange(
-			memory::ConstBlockPtr senderPublicKey,
-			TimepointInterval timepointInterval,
-			uint64_t maxTransactionNr
-		) const {
-			std::list<DeferredRedeemedTransferPair> result;
-			Filter f;
-			f.involvedPublicKey = senderPublicKey;
-			f.timepointInterval = timepointInterval;
-			f.maxTransactionNr = maxTransactionNr;
-			f.searchDirection = SearchDirection::ASC;
-			f.transactionType = data::TransactionType::DEFERRED_TRANSFER;
-			// nested findAll call
-			f.filterFunction = [&](const TransactionEntry& deferredTransactionEntry) -> FilterResult {
-				auto deferredTransfer = deferredTransactionEntry.getTransactionBody()->getDeferredTransfer();
-				if (!deferredTransfer) {
-					throw GradidoNullPointerException(
-						"transaction hasn't expected Type", 
-						"data::DeferredTransferTransaction", 
-						"FileBased::findRedeemedDeferredTransfersInRange"
-					);
-				}
-				// first try cache
-				auto recipientPublicKeyIndex = mPublicKeysIndex->getOrAddIndexForString(
-					deferredTransfer->getRecipientPublicKey()->copyAsString()
-				);
-				auto transactionNrs = mDeferredTransfersCache.getTransactionNrsForAddressIndex(
-					recipientPublicKeyIndex
-				);
-				if (transactionNrs.size()) {
-					for (auto transactionNr : transactionNrs) {
-						if (transactionNr == deferredTransactionEntry.getTransactionNr()) {
-							continue;
-						}
-						if (transactionNr > maxTransactionNr) {
-							continue;
-						}
-						auto transaction = getTransactionForId(transactionNr);
-						if (!transaction) {
-							LOG_F(WARNING, "redeeming deferred transfer transaction not found: %d", transactionNr);
-						}
-						if (!timepointInterval.isInsideInterval(transaction->getTransactionBody()->getCreatedAt())) {
-							continue;
-						}
-						result.push_back({
-							getTransactionForId(deferredTransactionEntry.getTransactionNr()),
-							transaction
-						});
-					}
-					return FilterResult::DISMISS;
-				}
-				// if deferred transfer was already completly redeemed or timeouted and removed from cache, try find all
-				Filter f2 = f;
-				f2.involvedPublicKey = deferredTransfer->getRecipientPublicKey();
-				f2.transactionType = data::TransactionType::NONE;
-				f2.filterFunction = [&](const TransactionEntry& transaction) -> FilterResult{
-					auto transactionBody = transaction.getTransactionBody();
-					memory::ConstBlockPtr senderPublicKey = nullptr;
-					if (transactionBody->isDeferredTransfer()) {
-						senderPublicKey = transactionBody->getDeferredTransfer()->getSenderPublicKey();
-					}
-					else if (transactionBody->isTransfer()) {
-						senderPublicKey = transactionBody->getTransfer()->getSender().getPubkey();
-					}
-					if (deferredTransfer->getRecipientPublicKey()->isTheSame(senderPublicKey)) {
-						if (result.back().first->getTransactionNr() == deferredTransactionEntry.getTransactionNr()) {
-							// TODO: update DeferredRedeemedTransferPair to include like in cache::DeferredTransfer multiple redeeming transactions
-							throw std::runtime_error("multiple redeeming deferred transfer transaction not implemented yet!");
-						}
-						result.push_back({ 
-							getTransactionForId(deferredTransactionEntry.getTransactionNr()), 
-							getTransactionForId(transaction.getTransactionNr())
-						});
-					}
-					return FilterResult::DISMISS;
-				};
-				findAll(f2);
-				return FilterResult::DISMISS;
-			};
-			findAll(f);
-			return result;
-		}
 
 		std::shared_ptr<const TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const
 		{
@@ -512,21 +290,6 @@ namespace gradido {
 			return FileBasedProvider::getInstance();
 		}
 
-		void FileBased::cleanupDeferredTransferCache()
-		{
-			mDeferredTransfersCache.removeAddressIndexes([&](uint32_t addressIndex, uint64_t transactionNr) -> bool {
-				auto transaction = getTransactionForId(transactionNr);
-				auto transactionBody = transaction->getTransactionBody();
-				if (!transactionBody->isDeferredTransfer()) {
-					throw GradidoNullPointerException("isn't a deferred transfer transaction in deferred transfer cache", "DeferredTransferTransaction", __FUNCTION__);
-				}
-				auto deferredTransfer = transactionBody->getDeferredTransfer();
-				if (deferredTransfer->getTimeout().getAsTimepoint() <= Timepoint()) {
-					return true;
-				}
-				return false;
-			});
-		}
 
 		void FileBased::loadStateFromBlockCache()
 		{
@@ -538,43 +301,53 @@ namespace gradido {
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_TRANSACTION_ID, block.getBlockIndex().getMaxTransactionNr());			
 			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
 		}
-		void FileBased::rescanForDeferredTransfers()
+
+		// TODO: look for a way of reusing logic from interaction::confirmTransaction, with nearly the same code in the roles
+		void FileBased::rescanForTransactionTriggerEvents()
 		{
-			Filter f;
-			Timepoint now;
-			Profiler timeUsed;
-			std::set<uint32_t> deferredTransfersAddressIndices;
-			f.timepointInterval = TimepointInterval(now - GRADIDO_DEFERRED_TRANSFER_MAX_TIMEOUT_INTERVAL, now);
+			mTransactionTriggerEventsCache.reset();
+			Filter f = Filter::ALL_TRANSACTIONS;
 			f.searchDirection = SearchDirection::ASC;
-			f.filterFunction = [&](const TransactionEntry& entry) -> FilterResult {
-				if (entry.isDeferredTransfer()) {
-					auto bodyBytes = entry.getTransactionBody();
-					if (!bodyBytes) {
-						throw GradidoNullPointerException("missing transaction body an TransactionEntry", "TransactionBody", __FUNCTION__);
-					}
-					auto recipient = bodyBytes->getDeferredTransfer()->getRecipientPublicKey();
-					if (!recipient) {
-						throw GradidoNullPointerException("missing public key on deferredTransfer", "memory::Block", __FUNCTION__);
-					}
-					auto recipientAddressIndex = mPublicKeysIndex->getOrAddIndexForString(recipient->copyAsString());
-					deferredTransfersAddressIndices.insert(recipientAddressIndex);
-					mDeferredTransfersCache.addTransactionNrForAddressIndex(recipientAddressIndex, entry.getTransactionNr());
+			f.filterFunction = [this](const TransactionEntry& entry) -> FilterResult {
+				if (entry.getTransactionType() == data::TransactionType::DEFERRED_TRANSFER) {
+					auto confirmedTransaction = entry.getConfirmedTransaction();
+					auto body = entry.getTransactionBody();
+					Timepoint targetDate = confirmedTransaction->getConfirmedAt().getAsTimepoint()
+						+ body->getDeferredTransfer()->getTimeoutDuration();
+
+					mTransactionTriggerEventsCache.addTransactionTriggerEvent(std::make_shared<data::TransactionTriggerEvent>(
+						confirmedTransaction->getId(),
+						targetDate,
+						data::TransactionTriggerEventType::DEFERRED_TIMEOUT_REVERSAL
+					));
 				}
-				// maybe it is a deferred transfer redeeming another deferred transfer so always look 
-				// mDeferredTransfersCache will check for dublettes
-				const NodeTransactionEntry* nodeEntry = dynamic_cast<const NodeTransactionEntry*>(&entry);
-				const auto& addressIndices = nodeEntry->getAddressIndices();
-				for (const auto& addressIndex : addressIndices) {
-					if (deferredTransfersAddressIndices.find(addressIndex) != deferredTransfersAddressIndices.end()) {
-						mDeferredTransfersCache.addTransactionNrForAddressIndex(addressIndex, entry.getTransactionNr());
-					}
+				else if (entry.getTransactionType() == data::TransactionType::REDEEM_DEFERRED_TRANSFER) {
+					// remove timeout transaction trigger event
+					auto confirmedTransaction = entry.getConfirmedTransaction();
+					auto body = entry.getTransactionBody();
+					assert(body->isRedeemDeferredTransfer());
+					auto redeemDeferredTransfer = body->getRedeemDeferredTransfer();
+					auto deferredTransferId = redeemDeferredTransfer->getDeferredTransferTransactionNr();
+					auto deferredTransferEntry = getTransactionForId(deferredTransferId);
+					assert(deferredTransferEntry->isDeferredTransfer());
+					auto deferredTransfer = deferredTransferEntry->getTransactionBody()->getDeferredTransfer();
+
+					auto transactionTriggerEventTargetDate =
+						confirmedTransaction->getConfirmedAt().getAsTimepoint()
+						+ deferredTransfer->getTimeoutDuration()
+						;
+
+					mTransactionTriggerEventsCache.removeTransactionTriggerEvent(data::TransactionTriggerEvent(
+						deferredTransferId,
+						transactionTriggerEventTargetDate,
+						data::TransactionTriggerEventType::DEFERRED_TIMEOUT_REVERSAL
+					));
 				}
 				return FilterResult::DISMISS;
 			};
 			findAll(f);
-			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
 		}
-
+		
 		void FileBased::iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const
 		{
 			bool orderDesc = filter.searchDirection == SearchDirection::DESC;

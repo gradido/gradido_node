@@ -135,7 +135,7 @@ int OrderingManager::ThreadFunction()
                     throw CommunityNotFoundExceptions("couldn't find group", itTransaction->communityId);
                 }
                 try {
-                    bool result = blockchain->addGradidoTransaction(itTransaction->transaction, itTransaction->messageId, mt->milestoneTimestamp);
+                    bool result = blockchain->createAndAddConfirmedTransaction(itTransaction->transaction, itTransaction->messageId, mt->milestoneTimestamp);
                     LOG_F(INFO, "Transaction added, msgId: %s", itTransaction->messageId->convertToHex().data());
                 }
                 catch (GradidoBlockchainException& ex) {

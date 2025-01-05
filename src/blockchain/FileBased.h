@@ -3,10 +3,10 @@
 
 #include "../cache/Block.h"
 #include "../cache/Dictionary.h"
-#include "../cache/DeferredTransfer.h"
 #include "../cache/MessageId.h"
 #include "../cache/State.h"
 #include "../cache/TransactionHash.h"
+#include "../cache/TransactionTriggerEvent.h"
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
 #include "../iota/MessageListener.h"
@@ -22,7 +22,7 @@
 //! TODO: Test and Profile different values, or create dynamic algorithmus
 #define GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES 10
 #define GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES 1
-#define GRADIDO_NODE_MAGIC_NUMBER_DEFERRED_TRANSFERS_CACHE_MEGA_BTYES 1
+#define GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES 1
 
 #include <mutex>
 
@@ -63,7 +63,20 @@ namespace gradido {
 			//! validate and generate confirmed transaction
 			//! throw if gradido transaction isn't valid
 			//! \return false if transaction already exist
-			virtual bool addGradidoTransaction(data::ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt);
+			virtual bool createAndAddConfirmedTransaction(
+				data::ConstGradidoTransactionPtr gradidoTransaction,
+				memory::ConstBlockPtr messageId,
+				Timepoint confirmedAt
+			);
+			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent);
+			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent);
+
+			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction) const {
+				return mTransactionHashCache.has(*gradidoTransaction);
+			}
+
+			//! return events in asc order of targetDate
+			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range);
 
 			//! main search function, do all the work, reference from other functions
 			virtual TransactionEntries findAll(const Filter& filter) const;
@@ -74,23 +87,6 @@ namespace gradido {
 
 			//! count results for a specific filter, using only the index, ignore filter function 
 			size_t findAllResultCount(const Filter& filter) const;
-
-			//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-			//! therefore boocked back to sender
-			virtual TransactionEntries findTimeoutedDeferredTransfersInRange(
-				memory::ConstBlockPtr senderPublicKey,
-				TimepointInterval timepointInterval,
-				uint64_t maxTransactionNr
-			) const;
-
-			//! find all transfers which redeem a deferred transfer in date range
-			//! \param senderPublicKey sender public key of sending account of deferred transaction
-			//! \return list with transaction pairs, first is deferred transfer, second is redeeming transfer
-			virtual std::list<DeferredRedeemedTransferPair> findRedeemedDeferredTransfersInRange(
-				memory::ConstBlockPtr senderPublicKey,
-				TimepointInterval timepointInterval,
-				uint64_t maxTransactionNr
-			) const;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 			virtual std::shared_ptr<const TransactionEntry> findByMessageId(
@@ -109,18 +105,12 @@ namespace gradido {
 			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
 
-			inline bool isTransactionAlreadyExist(const gradido::data::GradidoTransaction& transaction) const {
-				return mTransactionHashCache.has(transaction);
-			}
-
-			// check transactions in deferred transfer cache for timeout and remove all timeouted deferred transfer transactions
-			void cleanupDeferredTransferCache();
-
 		protected:
 			//! if state leveldb was invalid, recover values from block cache
 			void loadStateFromBlockCache();
-			//! scan blockchain for deferred transfer transaction which are not redeemed completly
-			void rescanForDeferredTransfers();
+
+			//! is transaction trigger event cache was invalid, rescan entire blockchain
+			void rescanForTransactionTriggerEvents();
 
 			//! \param func if function return false, stop iteration
 			void iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const;
@@ -142,9 +132,9 @@ namespace gradido {
 			// level db to store state values like last transaction
 			mutable cache::State mBlockchainState;
 
-			mutable cache::DeferredTransfer mDeferredTransfersCache;
-
 			mutable cache::MessageId mMessageIdsCache;
+
+			cache::TransactionTriggerEvent mTransactionTriggerEventsCache;
 
 			mutable AccessExpireCache<uint32_t, std::shared_ptr<cache::Block>> mCachedBlocks;
 

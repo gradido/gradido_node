@@ -25,13 +25,6 @@ namespace model {
 			);
 			rapidjson::Value generateList(Timepoint now, const gradido::blockchain::Filter& filter, rapidjson::Document& root);
 		protected:
-			void calculateDecay(
-				GradidoUnit balance, 
-				Timepoint prevTransactionDate,
-				model::Apollo::Transaction* currentTransaction
-			);
-
-			rapidjson::Value lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root);
 
 			std::shared_ptr<const gradido::blockchain::Abstract> mBlockchain;
 			memory::ConstBlockPtr mPubkey;

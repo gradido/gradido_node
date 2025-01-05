@@ -13,7 +13,7 @@ namespace model {
 
 
 		Transaction::Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey)
-			: mType(TransactionType::NONE), mDecay(nullptr)
+			: mType(TransactionType::NONE), mId(0), mDecay(nullptr)
 		{			
 			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
@@ -24,16 +24,16 @@ namespace model {
 				mAmount = creation->getRecipient().getAmount();
 				mFirstName = "Gradido";
 				mLastName = "Akademie";
-				mPubkey = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPubkey()->convertToHex();
+				mPubkey = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey()->convertToHex();
 			}
 			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::TRANSFER) {
 				auto transfer = transactionBody->getTransfer();
 				mAmount = transfer->getSender().getAmount();
 				if(transfer->getRecipient()->isTheSame(pubkey)) {
 					mType = TransactionType::RECEIVE;
-					mPubkey = transfer->getSender().getPubkey()->convertToHex();
+					mPubkey = transfer->getSender().getPublicKey()->convertToHex();
 				}
-				else if (transfer->getSender().getPubkey()->isTheSame(pubkey)) {
+				else if (transfer->getSender().getPublicKey()->isTheSame(pubkey)) {
 					mType = TransactionType::SEND;
 					mPubkey = transfer->getRecipient()->convertToHex();
 					mAmount *= GradidoUnit((int64_t)-1);
@@ -44,9 +44,9 @@ namespace model {
 				mAmount = transfer.getSender().getAmount();
 				if (transfer.getRecipient()->isTheSame(pubkey)) {
 					mType = TransactionType::LINK_RECEIVE;
-					mPubkey = transfer.getSender().getPubkey()->convertToHex();
+					mPubkey = transfer.getSender().getPublicKey()->convertToHex();
 				}
-				else if (transfer.getSender().getPubkey()->isTheSame(pubkey)) {
+				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
 					mType = TransactionType::LINK_SEND;
 					mPubkey = transfer.getRecipient()->convertToHex();
 					mAmount *= GradidoUnit((int64_t)-1);
@@ -56,9 +56,22 @@ namespace model {
 				LOG_F(ERROR, "not implemented yet: %s", enum_name(transactionBody->getTransactionType()).data());
 				throw std::runtime_error("transaction type not implemented yet");
 			}
-			mMemo = transactionBody->getMemo();
+			
+			auto& memos = transactionBody->getMemos();
+			for (auto& memo : memos) {
+				if (memo.getKeyType() == gradido::data::MemoKeyType::PLAIN) {
+					mMemo = memo.getMemo()->copyAsString();
+					return;
+				}
+			}
+			if (mMemo.empty()) {
+				if (memos.size()) {
+					mMemo = "memo is encrypted";
+				}
+			}
 			mId = confirmedTransaction.getId();
 			mDate = confirmedTransaction.getConfirmedAt();
+			mBalance = confirmedTransaction.getAccountBalance(pubkey).getBalance();
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)

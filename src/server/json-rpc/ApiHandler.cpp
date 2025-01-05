@@ -336,8 +336,9 @@ namespace server {
 		{
 			assert(blockchain);
 			auto& alloc = mRootJson.GetAllocator();
-			calculateAccountBalance::Context calculateAccountBalance(*blockchain);
-			auto balanceString = calculateAccountBalance.run(pubkey, date, 0, coinCommunityId).toString();
+			calculateAccountBalance::Context calculateAccountBalance(blockchain);
+			// TODO: add coinCommunityÍd Filter to calculateAccountBalance Context
+			auto balanceString = calculateAccountBalance.fromEnd(pubkey, date, 0).toString();
 
 			resultJson.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 		}
@@ -398,8 +399,8 @@ namespace server {
 			model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey);
 			Timepoint now = std::chrono::system_clock::now();
 			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
-			calculateAccountBalance::Context calculateAddressBalance(*blockchain);
-			auto balance = calculateAddressBalance.run(filter.involvedPublicKey, now);
+			calculateAccountBalance::Context calculateAddressBalance(blockchain);
+			auto balance = calculateAddressBalance.fromEnd(filter.involvedPublicKey, now);
 			std::string balanceString = balance.toString();
 			transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 

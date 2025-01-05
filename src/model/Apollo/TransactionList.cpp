@@ -35,33 +35,25 @@ namespace model {
 			std::vector<model::Apollo::Transaction> transactionsVector;
 			transactionsVector.reserve(filter.pagination.size);
 
-			Timepoint balanceStartTimestamp(now);
-			GradidoUnit balance((int64_t)0);
-			GradidoUnit previousBalance((int64_t)0);
-
 			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
 			transactionList.AddMember("count", countTransactions, alloc);
 
 			Filter filterCopy = filter;
-			filterCopy.searchDirection = SearchDirection::ASC;
 			auto allTransactions = mBlockchain->findAll(filterCopy);
 			if (!allTransactions.size()) {
 				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
 			}
-			filterCopy.pagination = Pagination(1, 0);
-			filterCopy.maxTransactionNr = allTransactions.front()->getTransactionNr() - 1;
-			auto prevTransaction = mBlockchain->findOne(filterCopy);
-			if (prevTransaction) {
-				auto confirmedTransaction = prevTransaction->getConfirmedTransaction();
-				balanceStartTimestamp = confirmedTransaction->getConfirmedAt();
-				balance = confirmedTransaction->getAccountBalance();
+			// copy into vector to make reversing and loop through faster (cache-hit)
+			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());
+			allTransactions.clear();
+			if (filter.searchDirection == SearchDirection::DESC) {
+				std::reverse(allTransactionsVector.begin(), allTransactionsVector.end());
 			}
-			// TODO: check used time and opimize eventually
-			calculateAccountBalance::Context balanceCalculator(*mBlockchain);
-
+			
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
-			for (auto& entry: allTransactions)
+			GradidoUnit previousBalance(0ll);
+			for (auto& entry: allTransactionsVector)
 			{
 				auto confirmedTransaction = entry->getConfirmedTransaction();
 				auto transactionBody = confirmedTransaction->getGradidoTransaction()->getTransactionBody();
@@ -70,31 +62,29 @@ namespace model {
 				}
 
 				transactionsVector.push_back(model::Apollo::Transaction(*confirmedTransaction, mPubkey));
-				balance = balanceCalculator.run(
-					filter.involvedPublicKey,
-					confirmedTransaction->getConfirmedAt(),
-					confirmedTransaction->getId()
-				);
-				
-				transactionsVector.back().setBalance(
-					balance
-				);
 				transactionsVector.back().setPreviousBalance(
 					previousBalance
 				);
-				previousBalance = balance;
-				Timepoint prevTransactionDate(balanceStartTimestamp);
-				if (transactionsVector.size() > 1) {
-					prevTransactionDate = transactionsVector[transactionsVector.size() - 2].getDate();
-					//transactionsVector.back().setPreviousBalance(transactionsVector[transactionsVector.size() - 1].getBalance());
-				}
-				if (prevTransactionDate != now) {
-					calculateDecay(balance, prevTransactionDate, &transactionsVector.back());
-				}
+				previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
 			}
+			allTransactionsVector.clear();
+
+			// check if it has last decay
+			auto& page = filter.pagination;
+			if (countTransactions <= page.size || // less entries than possible on a page
+				(filter.searchDirection == SearchDirection::ASC && page.skipEntriesCount() + page.size >= countTransactions) || // asc and on last page
+				(filter.searchDirection == SearchDirection::DESC && !page.page) // desc and on first page
+				) {
+				auto& lastTransaction = transactionsVector.back();
+				transactionsVector.push_back(model::Apollo::Transaction(
+					lastTransaction.getDate(), 
+					std::chrono::system_clock::now(), 
+					lastTransaction.getBalance())
+				);
+			}
+			// last decay 
 			// last decay if ordered DESC
 			if (transactionsVector.size() && filter.searchDirection == SearchDirection::DESC) {
-				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate(), root), alloc);
 				// reverse order of transactions in vector
 				std::reverse(transactionsVector.begin(), transactionsVector.end());
 			}
@@ -103,38 +93,9 @@ namespace model {
 			for (auto it = transactionsVector.begin(); it != transactionsVector.end(); it++) {
 				transactions.PushBack(it->toJson(alloc), alloc);
 			}
-			// last decay if ordered ASC
-			if (transactionsVector.size() && filter.searchDirection == SearchDirection::ASC) {
-				transactions.PushBack(lastDecay(balance, transactionsVector.back().getDate(), root), alloc);
-			}
 
 			transactionList.AddMember("transactions", transactions, alloc);
 			return std::move(transactionList);
-		}
-
-		void TransactionList::calculateDecay(
-			GradidoUnit balance,
-			Timepoint prevTransactionDate,
-			model::Apollo::Transaction* currentTransaction
-		)
-		{
-
-			if (balance == GradidoUnit::zero()) {
-				calculateAccountBalance::Context c(*mBlockchain);
-				balance = c.run(mPubkey, prevTransactionDate);
-			}
-			currentTransaction->calculateDecay(prevTransactionDate, currentTransaction->getDate(), balance);
-			//balance += currentTransaction->getDecay()->getDecayAmount() + currentTransaction->getAmount();			
-			//currentTransaction->setBalance(balance);
-		}
-
-		Value TransactionList::lastDecay(GradidoUnit balance, Timepoint lastTransactionDate, rapidjson::Document& root)
-		{
-
-			model::Apollo::Transaction lastDecay(lastTransactionDate, std::chrono::system_clock::now(), balance);
-			balance += lastDecay.getDecay()->getDecayAmount();
-			
-			return std::move(lastDecay.toJson(root.GetAllocator()));
 		}
 	}
 }

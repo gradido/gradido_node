@@ -178,7 +178,7 @@ int IotaMessageToTransactionTask::run()
     // also if we already have this transaction
     auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
     assert(fileBasedBlockchain);
-    if (fileBasedBlockchain->isTransactionAlreadyExist(*transaction)) {
+    if (fileBasedBlockchain->isTransactionExist(transaction)) {
         LOG_F(INFO, "Transaction skipped (cached), msgId: %s",
             messageIdHex.data()
         );
