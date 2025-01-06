@@ -36,7 +36,7 @@ namespace model {
 				else if (transfer->getSender().getPublicKey()->isTheSame(pubkey)) {
 					mType = TransactionType::SEND;
 					mPubkey = transfer->getRecipient()->convertToHex();
-					mAmount *= GradidoUnit((int64_t)-1);
+					mAmount.negate();
 				}				
 			}
 			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::DEFERRED_TRANSFER) {
@@ -49,7 +49,7 @@ namespace model {
 				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
 					mType = TransactionType::LINK_SEND;
 					mPubkey = transfer.getRecipient()->convertToHex();
-					mAmount *= GradidoUnit((int64_t)-1);
+					mAmount.negate();
 				}
 			}
 			else {

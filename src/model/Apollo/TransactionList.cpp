@@ -52,7 +52,7 @@ namespace model {
 			}
 			
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
-			GradidoUnit previousBalance(0ll);
+			GradidoUnit previousBalance(GradidoUnit::zero());
 			for (auto& entry: allTransactionsVector)
 			{
 				auto confirmedTransaction = entry->getConfirmedTransaction();
