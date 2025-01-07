@@ -12,10 +12,26 @@ namespace controller {
 	//! validate and generate confirmed transaction
 	//! throw if gradido transaction isn't valid
 	//! \return false if transaction already exist
-	bool RemoteGroup::addGradidoTransaction(
-		gradido::data::ConstGradidoTransactionPtr gradidoTransaction,
-		memory::ConstBlockPtr messageId,
-		Timepoint confirmedAt)
+	bool RemoteGroup::createAndAddConfirmedTransaction(ConstGradidoTransactionPtr gradidoTransaction, memory::ConstBlockPtr messageId, Timepoint confirmedAt)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+	void RemoteGroup::addTransactionTriggerEvent(std::shared_ptr<const TransactionTriggerEvent> transactionTriggerEvent)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+	void RemoteGroup::removeTransactionTriggerEvent(const TransactionTriggerEvent& transactionTriggerEvent)
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+
+	bool RemoteGroup::isTransactionExist(ConstGradidoTransactionPtr gradidoTransaction) const
+	{
+		throw std::runtime_error("not implemented yet");
+	}
+
+	//! return events in asc order of targetDate
+	std::vector<std::shared_ptr<const TransactionTriggerEvent>> RemoteGroup::findTransactionTriggerEventsInRange(TimepointInterval range)
 	{
 		throw std::runtime_error("not implemented yet");
 	}
@@ -26,30 +42,6 @@ namespace controller {
 		throw std::runtime_error("not implemented yet");
 	}
 
-	//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-	//! therefore boocked back to sender
-	//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-	//! therefore boocked back to sender
-	TransactionEntries RemoteGroup::findTimeoutedDeferredTransfersInRange(
-		memory::ConstBlockPtr senderPublicKey,
-		TimepointInterval timepointInterval,
-		uint64_t maxTransactionNr
-	) const
-	{
-		throw std::runtime_error("not implemented yet");
-	}
-
-	//! find all transfers which redeem a deferred transfer in date range
-	//! \param senderPublicKey sender public key of sending account of deferred transaction
-	//! \return list with transaction pairs, first is deferred transfer, second is redeeming transfer
-	std::list<DeferredRedeemedTransferPair> RemoteGroup::findRedeemedDeferredTransfersInRange(
-		memory::ConstBlockPtr senderPublicKey,
-		TimepointInterval timepointInterval,
-		uint64_t maxTransactionNr
-	) const
-	{
-		throw std::runtime_error("not implemented yet");
-	}
 
 	std::shared_ptr<const TransactionEntry> RemoteGroup::getTransactionForId(uint64_t transactionId) const
 	{

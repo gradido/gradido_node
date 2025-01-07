@@ -21,33 +21,21 @@ namespace controller {
 		//! validate and generate confirmed transaction
 		//! throw if gradido transaction isn't valid
 		//! \return false if transaction already exist
-		virtual bool addGradidoTransaction(
+		virtual bool createAndAddConfirmedTransaction(
 			gradido::data::ConstGradidoTransactionPtr gradidoTransaction,
-			memory::ConstBlockPtr messageId,
-			Timepoint confirmedAt);
+			memory::ConstBlockPtr messageId, 
+			Timepoint confirmedAt
+		);
+		virtual void addTransactionTriggerEvent(std::shared_ptr<const gradido::data::TransactionTriggerEvent> transactionTriggerEvent);
+		virtual void removeTransactionTriggerEvent(const gradido::data::TransactionTriggerEvent& transactionTriggerEvent);
 
+		virtual bool isTransactionExist(gradido::data::ConstGradidoTransactionPtr gradidoTransaction) const;
+
+		//! return events in asc order of targetDate
+		virtual std::vector<std::shared_ptr<const gradido::data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range);
 		// main search function, do all the work, reference from other functions
 		virtual gradido::blockchain::TransactionEntries findAll(const gradido::blockchain::Filter& filter = gradido::blockchain::Filter::ALL_TRANSACTIONS) const;
 		
-		//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-		//! therefore boocked back to sender
-		//! find all deferred transfers which have the timeout in date range between start and end, have senderPublicKey and are not redeemed,
-		//! therefore boocked back to sender
-		virtual gradido::blockchain::TransactionEntries findTimeoutedDeferredTransfersInRange(
-			memory::ConstBlockPtr senderPublicKey,
-			TimepointInterval timepointInterval,
-			uint64_t maxTransactionNr
-		) const;
-
-		//! find all transfers which redeem a deferred transfer in date range
-		//! \param senderPublicKey sender public key of sending account of deferred transaction
-		//! \return list with transaction pairs, first is deferred transfer, second is redeeming transfer
-		virtual std::list<gradido::blockchain::DeferredRedeemedTransferPair> findRedeemedDeferredTransfersInRange(
-			memory::ConstBlockPtr senderPublicKey,
-			TimepointInterval timepointInterval,
-			uint64_t maxTransactionNr
-		) const;
-
 		virtual std::shared_ptr<const gradido::blockchain::TransactionEntry> getTransactionForId(uint64_t transactionId) const;
 
 		//! \param filter use to speed up search if infos exist to narrow down search transactions range
