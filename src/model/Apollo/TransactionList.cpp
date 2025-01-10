@@ -53,11 +53,12 @@ namespace model {
 			
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
 			GradidoUnit previousBalance(GradidoUnit::zero());
+			Timepoint previousDate = mBlockchain->getStartDate();
 			for (auto& entry: allTransactionsVector)
 			{
 				auto confirmedTransaction = entry->getConfirmedTransaction();
 				auto transactionBody = confirmedTransaction->getGradidoTransaction()->getTransactionBody();
-				if (transactionBody->isRegisterAddress()) {
+				if (transactionBody->isRegisterAddress() || !confirmedTransaction->hasAccountBalance(*filter.involvedPublicKey)) {
 					continue;
 				}
 
@@ -65,6 +66,10 @@ namespace model {
 				transactionsVector.back().setPreviousBalance(
 					previousBalance
 				);
+				if (previousBalance > GradidoUnit::zero()) {
+					transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
+				}
+				previousDate = confirmedTransaction->getConfirmedAt();
 				previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
 			}
 			allTransactionsVector.clear();

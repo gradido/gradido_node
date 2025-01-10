@@ -260,6 +260,21 @@ namespace server {
 					}
 				}
 			}
+			// read gmw and auf balance
+			Timepoint now = std::chrono::system_clock::now();
+			calculateAccountBalance::Context calculateAddressBalance(blockchain);
+			auto communityRootEntry = blockchain->findOne(Filter::FIRST_TRANSACTION);
+			auto communityRootBody = communityRootEntry->getTransactionBody();
+			assert(communityRootBody->isCommunityRoot());
+			auto communityRoot = communityRootBody->getCommunityRoot();
+			auto gmwAddress = communityRoot->getGmwPubkey();
+			auto aufAddress = communityRoot->getAufPubkey();
+			printf("gmwAddress: %s, aufAddress: %s\n", gmwAddress->convertToHex().data(), aufAddress->convertToHex().data());
+			auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now);
+			auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now);
+			resultJson.AddMember("gmwBalance", gmwBalance.getGradidoCent(), alloc);
+			resultJson.AddMember("aufBalance", aufBalance.getGradidoCent(), alloc);
+
 			resultJson.AddMember("transactions", jsonTransactionArray, alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 		}
@@ -337,7 +352,7 @@ namespace server {
 			assert(blockchain);
 			auto& alloc = mRootJson.GetAllocator();
 			calculateAccountBalance::Context calculateAccountBalance(blockchain);
-			// TODO: add coinCommunityÍd Filter to calculateAccountBalance Context
+			// TODO: add coinCommunityï¿½d Filter to calculateAccountBalance Context
 			auto balanceString = calculateAccountBalance.fromEnd(pubkey, date, 0).toString();
 
 			resultJson.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
