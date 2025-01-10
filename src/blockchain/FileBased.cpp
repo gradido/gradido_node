@@ -187,8 +187,7 @@ namespace gradido {
 			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
 			mMessageIdsCache.add(confirmedTransaction->getMessageId(), confirmedTransaction->getId());
 			// add public keys to index
-			auto transactionBody = nodeTransactionEntry->getTransactionBody();
-			auto involvedAddresses = transactionBody->getInvolvedAddresses();
+			auto involvedAddresses = confirmedTransaction->getInvolvedAddresses();
 			for (const auto& address : involvedAddresses) {
 				mPublicKeysIndex->getOrAddIndexForString(address->copyAsString());
 			}
