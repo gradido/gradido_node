@@ -312,7 +312,7 @@ namespace gradido {
 					auto confirmedTransaction = entry.getConfirmedTransaction();
 					auto body = entry.getTransactionBody();
 					Timepoint targetDate = confirmedTransaction->getConfirmedAt().getAsTimepoint()
-						+ body->getDeferredTransfer()->getTimeoutDuration();
+						+ body->getDeferredTransfer()->getTimeoutDuration().getAsDuration();
 
 					mTransactionTriggerEventsCache.addTransactionTriggerEvent(std::make_shared<data::TransactionTriggerEvent>(
 						confirmedTransaction->getId(),
@@ -333,7 +333,7 @@ namespace gradido {
 
 					auto transactionTriggerEventTargetDate =
 						confirmedTransaction->getConfirmedAt().getAsTimepoint()
-						+ deferredTransfer->getTimeoutDuration()
+						+ deferredTransfer->getTimeoutDuration().getAsDuration()
 						;
 
 					mTransactionTriggerEventsCache.removeTransactionTriggerEvent(data::TransactionTriggerEvent(
