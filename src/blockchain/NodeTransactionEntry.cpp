@@ -11,7 +11,7 @@ namespace gradido {
 			int32_t fileCursor /*= -10*/
 		) : TransactionEntry(transaction), mFileCursor(fileCursor)
 		{
-			auto involvedPublicKeys = transaction->getGradidoTransaction()->getInvolvedAddresses();
+			auto involvedPublicKeys = transaction->getInvolvedAddresses();
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
 			for (auto& publicKey : involvedPublicKeys) {
 				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(publicKey));
@@ -42,7 +42,7 @@ namespace gradido {
 			int32_t fileCursor/* = -10 */
 		) : TransactionEntry(serializedTransaction), mFileCursor(fileCursor)
 		{
-			auto involvedPublicKeys = getConfirmedTransaction()->getGradidoTransaction()->getInvolvedAddresses();
+			auto involvedPublicKeys = getConfirmedTransaction()->getInvolvedAddresses();
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
 			for (auto& publicKey : involvedPublicKeys) {
 				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(publicKey));
