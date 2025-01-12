@@ -37,7 +37,7 @@ namespace model {
 		Value Decay::toJson(Document::AllocatorType& alloc)
 		{
 			Value decay(kObjectType);
-			decay.AddMember("decay", Value(mDecayAmount.toString().data(), alloc), alloc);
+			decay.AddMember("decay", Value(mDecayAmount.toString(2).data(), alloc), alloc);
 			decay.AddMember("start", Value(formatJsCompatible(mDecayStart).data(), alloc), alloc);
 			decay.AddMember("end", Value(formatJsCompatible(mDecayEnd).data(), alloc), alloc);
 			decay.AddMember("duration", duration_cast<seconds>(mDecayEnd - mDecayStart).count(), alloc);

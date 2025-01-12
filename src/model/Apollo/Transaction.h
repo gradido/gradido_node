@@ -44,6 +44,7 @@ namespace model {
 			inline const Decay* getDecay() const { return mDecay; }
 
 		protected:
+		  const gradido::data::GradidoTransfer& getTransfer(gradido::data::ConstTransactionBodyPtr transactionBody);
 
 			TransactionType mType;
 			GradidoUnit     mAmount;

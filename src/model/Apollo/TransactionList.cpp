@@ -58,7 +58,11 @@ namespace model {
 			{
 				auto confirmedTransaction = entry->getConfirmedTransaction();
 				auto transactionBody = confirmedTransaction->getGradidoTransaction()->getTransactionBody();
-				if (transactionBody->isRegisterAddress() || !confirmedTransaction->hasAccountBalance(*filter.involvedPublicKey)) {
+				if (
+					transactionBody->isRegisterAddress()
+					|| transactionBody->isCommunityRoot()
+				 	|| !confirmedTransaction->hasAccountBalance(*filter.involvedPublicKey)
+					) {
 					continue;
 				}
 

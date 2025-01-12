@@ -18,7 +18,7 @@ namespace model {
 			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
 			
-			if (transactionBody->getTransactionType() == gradido::data::TransactionType::CREATION) {
+			if (transactionBody->isCreation()) {
 				mType = TransactionType::CREATE;
 				auto creation = transactionBody->getCreation();
 				mAmount = creation->getRecipient().getAmount();
@@ -26,28 +26,20 @@ namespace model {
 				mLastName = "Akademie";
 				mPubkey = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey()->convertToHex();
 			}
-			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::TRANSFER) {
-				auto transfer = transactionBody->getTransfer();
-				mAmount = transfer->getSender().getAmount();
-				if(transfer->getRecipient()->isTheSame(pubkey)) {
-					mType = TransactionType::RECEIVE;
-					mPubkey = transfer->getSender().getPublicKey()->convertToHex();
-				}
-				else if (transfer->getSender().getPublicKey()->isTheSame(pubkey)) {
-					mType = TransactionType::SEND;
-					mPubkey = transfer->getRecipient()->convertToHex();
-					mAmount.negate();
-				}				
-			}
-			else if (transactionBody->getTransactionType() == gradido::data::TransactionType::DEFERRED_TRANSFER) {
-				auto transfer = transactionBody->getDeferredTransfer()->getTransfer();
+			else if (
+				transactionBody->isTransfer() 
+				|| transactionBody->isDeferredTransfer() 
+				|| transactionBody->isRedeemDeferredTransfer()
+				) {
+				auto transfer = getTransfer(transactionBody);
+				bool isLink = transactionBody->isDeferredTransfer() || transactionBody->isRedeemDeferredTransfer();
 				mAmount = transfer.getSender().getAmount();
 				if (transfer.getRecipient()->isTheSame(pubkey)) {
-					mType = TransactionType::LINK_RECEIVE;
+					mType = isLink ? TransactionType::LINK_RECEIVE : TransactionType::RECEIVE;
 					mPubkey = transfer.getSender().getPublicKey()->convertToHex();
 				}
 				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
-					mType = TransactionType::LINK_SEND;
+					mType = isLink ? TransactionType::LINK_SEND : TransactionType::SEND;
 					mPubkey = transfer.getRecipient()->convertToHex();
 					mAmount.negate();
 				}
@@ -188,9 +180,9 @@ namespace model {
 			Value transaction(kObjectType);
 			transaction.AddMember("id", mId, alloc);
 			transaction.AddMember("typeId", Value(enum_name(mType).data(), alloc), alloc);
-			transaction.AddMember("amount", Value(mAmount.toString().data(), alloc), alloc);
-			transaction.AddMember("balance", Value(mBalance.toString().data(), alloc), alloc);
-			transaction.AddMember("previousBalance", Value(mPreviousBalance.toString().data(), alloc), alloc);
+			transaction.AddMember("amount", Value(mAmount.toString(2).data(), alloc), alloc);
+			transaction.AddMember("balance", Value(mBalance.toString(2).data(), alloc), alloc);
+			transaction.AddMember("previousBalance", Value(mPreviousBalance.toString(2).data(), alloc), alloc);
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
 			
 			Value linkedUser(kObjectType);
@@ -206,6 +198,23 @@ namespace model {
 			}
 			transaction.AddMember("__typename", "Transaction", alloc);
 			return std::move(transaction);
+		}
+
+		const gradido::data::GradidoTransfer& Transaction::getTransfer(gradido::data::ConstTransactionBodyPtr transactionBody)
+		{
+			if (transactionBody->isTransfer()) {
+				return *transactionBody->getTransfer();
+			} else if (transactionBody->isDeferredTransfer()) {
+				return transactionBody->getDeferredTransfer()->getTransfer();
+			} else if (transactionBody->isRedeemDeferredTransfer()) {
+				return transactionBody->getRedeemDeferredTransfer()->getTransfer();
+			}
+			auto type = transactionBody->getTransactionType();
+			throw GradidoUnhandledEnum(
+				"getTransfer is not implemented",
+				enum_type_name<decltype(type)>().data(),
+				enum_name(type).data()
+			);
 		}
 	}
 }

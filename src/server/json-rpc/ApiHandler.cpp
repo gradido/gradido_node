@@ -269,11 +269,10 @@ namespace server {
 			auto communityRoot = communityRootBody->getCommunityRoot();
 			auto gmwAddress = communityRoot->getGmwPubkey();
 			auto aufAddress = communityRoot->getAufPubkey();
-			printf("gmwAddress: %s, aufAddress: %s\n", gmwAddress->convertToHex().data(), aufAddress->convertToHex().data());
 			auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now);
 			auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now);
-			resultJson.AddMember("gmwBalance", gmwBalance.getGradidoCent(), alloc);
-			resultJson.AddMember("aufBalance", aufBalance.getGradidoCent(), alloc);
+			resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
+			resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
 
 			resultJson.AddMember("transactions", jsonTransactionArray, alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
