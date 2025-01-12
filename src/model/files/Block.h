@@ -70,6 +70,8 @@ namespace model {
 			//! \brief very expensive, read in whole file and calculate hash
 			std::shared_ptr<memory::Block> calculateHash();
 
+			void calculateOneHashStep(unsigned char hash[crypto_generichash_KEYBYTES], const unsigned char* data, size_t dataSize);
+
 			//Poco::Timer mTimer;
 
 			std::string   mBlockPath;

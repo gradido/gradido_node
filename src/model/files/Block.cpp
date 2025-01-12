@@ -166,15 +166,13 @@ namespace model {
 
 			// read current hash
 			unsigned char hash[crypto_generichash_KEYBYTES];
+
 			memset(hash, 0, crypto_generichash_KEYBYTES);
 			if (mCurrentFileSize > 0) {
 				fileStream->seekg(mCurrentFileSize);
 				fileStream->read((char*)hash, crypto_generichash_KEYBYTES);
 			}
 			fileStream->seekp(mCurrentFileSize);
-
-			// create new hash
-			crypto_generichash_state state;			
 
 			for (auto itLines = lines.begin(); itLines != lines.end(); itLines++)
 			{
@@ -190,12 +188,8 @@ namespace model {
 				fileStream->write((const char*)(*itLines)->data(), size);
 				mCurrentFileSize += sizeof(uint16_t) + size;
 
-				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-				crypto_generichash_update(&state, hash, sizeof hash);
-				crypto_generichash_update(&state, (const unsigned char*)(*itLines)->data(), size);
-				crypto_generichash_final(&state, hash, sizeof hash);
+				calculateOneHashStep(hash, (const unsigned char*)(*itLines)->data(), size);
 				LOG_F(1, "block part hash in %s: %s", mBlockPath.data(), memory::Block(crypto_generichash_KEYBYTES, hash).convertToHex().data());
-				//printf("[%s] block part hash: %s\n", filePath.data(), DataTypeConverter::binToHex(hash).data());
 			}
 
 			// write at end of file
@@ -236,17 +230,12 @@ namespace model {
 			auto hash = std::make_shared<memory::Block>(crypto_generichash_KEYBYTES);
 			size_t cursor = 0;
 			const unsigned char* vfilep = vfile.data();
-			crypto_generichash_state state;
-			
 
 			while (cursor < mCurrentFileSize) {
 				uint16_t size;
 				memcpy(&size, &vfilep[cursor], sizeof(uint16_t));
 				cursor += sizeof(uint16_t);
-				crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-				crypto_generichash_update(&state, *hash, hash->size());
-				crypto_generichash_update(&state, &vfilep[cursor], size);
-				crypto_generichash_final(&state, *hash, hash->size());
+				calculateOneHashStep(*hash, &vfilep[cursor], size);
 				cursor += size;
 			}
 			
@@ -289,18 +278,13 @@ namespace model {
 			unsigned char hash[crypto_generichash_KEYBYTES];
 			memset(hash, 0, sizeof hash);
 
-			crypto_generichash_state state;
-			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
-			crypto_generichash_update(&state, hash, sizeof hash);
-
 			// read in every line
 			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
 				auto lineSize = readLine(fileCursor, &readBuffer);
 				rebuildTask->pushLine(fileCursor, readBuffer);
-				crypto_generichash_update(&state, (const unsigned char*)readBuffer->data(), readBuffer->size());
+				calculateOneHashStep(hash, (const unsigned char*)readBuffer->data(), readBuffer->size());
 				fileCursor += lineSize + sizeof(uint16_t);
-			}			
-			crypto_generichash_final(&state, hash, sizeof hash);
+			}		
 
 			unsigned char hash2[crypto_generichash_KEYBYTES];
 			if (!fl->tryLockTimeout(mBlockPath, 100)) {
@@ -345,6 +329,15 @@ namespace model {
 				}
 			}
 			return largestBlockNr;
+		}
+
+		void Block::calculateOneHashStep(unsigned char hash[crypto_generichash_KEYBYTES], const unsigned char* data, size_t dataSize)
+		{
+			crypto_generichash_state state;
+			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);
+			crypto_generichash_update(&state, hash, crypto_generichash_KEYBYTES);
+			crypto_generichash_update(&state, data, dataSize);
+			crypto_generichash_final(&state, hash, crypto_generichash_KEYBYTES);
 		}
 
 

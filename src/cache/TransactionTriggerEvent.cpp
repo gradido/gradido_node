@@ -30,7 +30,7 @@ namespace cache {
 					end = valueView.size();
 				}
 				// decode from base64 to raw data
-				auto raw = std::make_shared<memory::Block>(Block::fromBase64(&value.data()[start], end - start));
+				auto raw = std::make_shared<memory::Block>(Block::fromBase64(&value.data()[start], end - start, sodium_base64_VARIANT_ORIGINAL));
 				// deserialize with help of protopuf to TransactionTriggerEvent
 				deserialize::Context deserializer(raw, deserialize::Type::TRANSACTION_TRIGGER_EVENT);
 				deserializer.run();
