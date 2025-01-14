@@ -79,6 +79,9 @@ namespace model {
 				}				
 			}
 			allTransactionsVector.clear();
+			if (transactionsVector.empty()) {
+				return std::move(transactionList);
+			}
 
 			// check if it has last decay
 			auto& page = filter.pagination;
