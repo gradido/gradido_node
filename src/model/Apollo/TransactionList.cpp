@@ -1,13 +1,17 @@
 #include "TransactionList.h"
+#include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/NodeTransactionEntry.h"
 
+#include "magic_enum/magic_enum.hpp"
+
 using namespace rapidjson;
 using namespace gradido::interaction;
 using namespace gradido::blockchain;
+using namespace magic_enum;
 
 namespace model {
 	namespace Apollo {
@@ -37,6 +41,8 @@ namespace model {
 
 			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
 			transactionList.AddMember("count", countTransactions, alloc);
+			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
+			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);			
 
 			Filter filterCopy = filter;
 			auto allTransactions = mBlockchain->findAll(filterCopy);
@@ -44,6 +50,7 @@ namespace model {
 				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
 			}
+			
 			// copy into vector to make reversing and loop through faster (cache-hit)
 			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());
 			allTransactions.clear();
@@ -54,27 +61,22 @@ namespace model {
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
 			GradidoUnit previousBalance(GradidoUnit::zero());
 			Timepoint previousDate = mBlockchain->getStartDate();
+			createTransaction::Context createTransactionContext(mBlockchain, addressType);
 			for (auto& entry: allTransactionsVector)
 			{
 				auto confirmedTransaction = entry->getConfirmedTransaction();
-				auto transactionBody = confirmedTransaction->getGradidoTransaction()->getTransactionBody();
-				if (
-					transactionBody->isRegisterAddress()
-					|| transactionBody->isCommunityRoot()
-				 	|| !confirmedTransaction->hasAccountBalance(*filter.involvedPublicKey)
-					) {
-					continue;
-				}
-
-				transactionsVector.push_back(model::Apollo::Transaction(*confirmedTransaction, mPubkey));
-				transactionsVector.back().setPreviousBalance(
-					previousBalance
-				);
-				if (previousBalance > GradidoUnit::zero()) {
-					transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
-				}
-				previousDate = confirmedTransaction->getConfirmedAt();
-				previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
+				auto transactions = createTransactionContext.run(*confirmedTransaction, mPubkey);
+				for (auto& transaction: transactions) {
+					transactionsVector.push_back(transaction);
+					transactionsVector.back().setPreviousBalance(
+						previousBalance
+					);
+					if (previousBalance > GradidoUnit::zero()) {
+						transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
+					}
+					previousDate = confirmedTransaction->getConfirmedAt();
+					previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
+				}				
 			}
 			allTransactionsVector.clear();
 

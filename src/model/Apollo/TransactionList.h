@@ -2,7 +2,6 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_TRANSACTION_LIST_H
 
 #include "Transaction.h"
-
 #include "rapidjson/document.h"
 
 namespace gradido {

@@ -68,14 +68,14 @@ std::string convertBase58ToBin(const std::string& base58String)
 
 	size_t encodedSize = base58String.size();
 	size_t binSize = (size_t)ceil(((double)encodedSize / 4.0) * 3.0);
-	memory::Block bin(binSize);
+	unsigned char bin[binSize];
 
 	//size_t resultBinSize = 0;
 	if (!b58tobin(bin, &binSize, base58String.data(), encodedSize)) {
 		return "";
 	}
 
-	std::string binString((const char*)*bin, binSize);
+	std::string binString((const char*)bin, binSize);
 	return binString;
 }
 
@@ -85,13 +85,13 @@ std::string convertBinToBase58(const std::string& binString)
 
 	size_t binSize = binString.size();
 	size_t encodedSize = binSize * 138 / 100 + 1;
-	memory::Block encoded(encodedSize);
+	unsigned char encoded[encodedSize];
 	memset(encoded, 0, encodedSize);
 
-	if (!b58enc((char*)encoded.data(), &encodedSize, binString.data(), binSize)) {
+	if (!b58enc((char*)encoded, &encodedSize, binString.data(), binSize)) {
 		return "";
 	}
-	std::string base58String((const char*)*encoded, encodedSize-1);
+	std::string base58String((const char*)encoded, encodedSize-1);
 	
 	return base58String;
 }

@@ -11,6 +11,7 @@
 #include <winsock2.h>
 #endif
 
+#include <stdlib.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

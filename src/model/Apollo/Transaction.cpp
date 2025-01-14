@@ -1,53 +1,27 @@
 #include "Transaction.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/blockchain/Abstract.h"
 
 #include "magic_enum/magic_enum.hpp"
 #include "loguru/loguru.hpp"
 
 using namespace rapidjson;
-using namespace gradido::interaction;
+using namespace gradido;
+using namespace interaction;
+using namespace blockchain;
 using namespace magic_enum;
 
 namespace model {
 	namespace Apollo {
 
 
-		Transaction::Transaction(const gradido::data::ConfirmedTransaction& confirmedTransaction, memory::ConstBlockPtr pubkey)
-			: mType(TransactionType::NONE), mId(0), mDecay(nullptr)
+		Transaction::Transaction(
+				const data::ConfirmedTransaction& confirmedTransaction, 
+				memory::ConstBlockPtr pubkey
+				) : mType(TransactionType::NONE), mId(0), mDecay(nullptr), mHasChange(false)
 		{			
 			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
-			
-			if (transactionBody->isCreation()) {
-				mType = TransactionType::CREATE;
-				auto creation = transactionBody->getCreation();
-				mAmount = creation->getRecipient().getAmount();
-				mFirstName = "Gradido";
-				mLastName = "Akademie";
-				mPubkey = gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey()->convertToHex();
-			}
-			else if (
-				transactionBody->isTransfer() 
-				|| transactionBody->isDeferredTransfer() 
-				|| transactionBody->isRedeemDeferredTransfer()
-				) {
-				auto transfer = getTransfer(transactionBody);
-				bool isLink = transactionBody->isDeferredTransfer() || transactionBody->isRedeemDeferredTransfer();
-				mAmount = transfer.getSender().getAmount();
-				if (transfer.getRecipient()->isTheSame(pubkey)) {
-					mType = isLink ? TransactionType::LINK_RECEIVE : TransactionType::RECEIVE;
-					mPubkey = transfer.getSender().getPublicKey()->convertToHex();
-				}
-				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
-					mType = isLink ? TransactionType::LINK_SEND : TransactionType::SEND;
-					mPubkey = transfer.getRecipient()->convertToHex();
-					mAmount.negate();
-				}
-			}
-			else {
-				LOG_F(ERROR, "not implemented yet: %s", enum_name(transactionBody->getTransactionType()).data());
-				throw std::runtime_error("transaction type not implemented yet");
-			}
 			
 			auto& memos = transactionBody->getMemos();
 			for (auto& memo : memos) {
@@ -98,7 +72,9 @@ namespace model {
 			mMemo(std::move(parent.mMemo)),
 			mId(parent.mId),
 			mDate(parent.mDate),
-			mDecay(parent.mDecay)
+			mDecay(parent.mDecay),
+			mHasChange(parent.mHasChange)
+
 		{
 			parent.mDecay = nullptr;
 		}
@@ -113,7 +89,8 @@ namespace model {
 			mMemo(parent.mMemo),
 			mId(parent.mId),
 			mDate(parent.mDate),
-			mDecay(nullptr)	
+			mDecay(nullptr),
+			mHasChange(parent.mHasChange)	
 		{
 			if (parent.mDecay) {
 				mDecay = new Decay(parent.mDecay);
@@ -146,6 +123,7 @@ namespace model {
 			mMemo = other.mMemo;
 			mId = other.mId;
 			mDate = other.mDate;
+			mHasChange = other.mHasChange;
 
 			// Speicher von mDecay richtig verwalten
 			if (mDecay) {
@@ -198,23 +176,6 @@ namespace model {
 			}
 			transaction.AddMember("__typename", "Transaction", alloc);
 			return std::move(transaction);
-		}
-
-		const gradido::data::GradidoTransfer& Transaction::getTransfer(gradido::data::ConstTransactionBodyPtr transactionBody)
-		{
-			if (transactionBody->isTransfer()) {
-				return *transactionBody->getTransfer();
-			} else if (transactionBody->isDeferredTransfer()) {
-				return transactionBody->getDeferredTransfer()->getTransfer();
-			} else if (transactionBody->isRedeemDeferredTransfer()) {
-				return transactionBody->getRedeemDeferredTransfer()->getTransfer();
-			}
-			auto type = transactionBody->getTransactionType();
-			throw GradidoUnhandledEnum(
-				"getTransfer is not implemented",
-				enum_type_name<decltype(type)>().data(),
-				enum_name(type).data()
-			);
 		}
 	}
 }

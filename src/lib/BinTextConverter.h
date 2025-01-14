@@ -3,6 +3,7 @@
 
 #include <string>
 
+// TODO: move into memory::Block
 enum StringTransportType {
 	STRING_TRANSPORT_TYPE_BASE64,
 	STRING_TRANSPORT_TYPE_BASE58,

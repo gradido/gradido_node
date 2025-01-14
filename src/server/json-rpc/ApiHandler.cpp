@@ -264,15 +264,17 @@ namespace server {
 			Timepoint now = std::chrono::system_clock::now();
 			calculateAccountBalance::Context calculateAddressBalance(blockchain);
 			auto communityRootEntry = blockchain->findOne(Filter::FIRST_TRANSACTION);
-			auto communityRootBody = communityRootEntry->getTransactionBody();
-			assert(communityRootBody->isCommunityRoot());
-			auto communityRoot = communityRootBody->getCommunityRoot();
-			auto gmwAddress = communityRoot->getGmwPubkey();
-			auto aufAddress = communityRoot->getAufPubkey();
-			auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now);
-			auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now);
-			resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
-			resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
+			if (communityRootEntry) {
+				auto communityRootBody = communityRootEntry->getTransactionBody();
+				assert(communityRootBody->isCommunityRoot());
+				auto communityRoot = communityRootBody->getCommunityRoot();
+				auto gmwAddress = communityRoot->getGmwPubkey();
+				auto aufAddress = communityRoot->getAufPubkey();
+				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now);
+				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now);
+				resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
+				resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
+			}
 
 			resultJson.AddMember("transactions", jsonTransactionArray, alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
@@ -412,12 +414,13 @@ namespace server {
 
 			model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey);
 			Timepoint now = std::chrono::system_clock::now();
+
 			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
+
 			calculateAccountBalance::Context calculateAddressBalance(blockchain);
 			auto balance = calculateAddressBalance.fromEnd(filter.involvedPublicKey, now);
 			std::string balanceString = balance.toString();
 			transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
-
 			resultJson.AddMember("transactionList", transactionListValue, alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 		}
