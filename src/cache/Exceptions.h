@@ -44,7 +44,6 @@ namespace cache {
 		std::string getFullString() const;
 
 	protected:
-		std::string mDictionaryName;
 		std::string mKey;
 	};
 

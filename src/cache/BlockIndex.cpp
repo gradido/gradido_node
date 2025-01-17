@@ -369,7 +369,10 @@ namespace cache {
 		}
 		uint32_t publicKeyIndex = 0;
 		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
-			publicKeyIndex = publicKeysDictionary.getIndexForString(filter.involvedPublicKey->copyAsString());
+			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
+			if (publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
+				publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
+			}
 		}
 		uint32_t coinCommunityKeyIndex = 0;
 		if (!filter.coinCommunityId.empty()) {

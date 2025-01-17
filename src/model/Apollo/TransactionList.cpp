@@ -80,6 +80,7 @@ namespace model {
 			}
 			allTransactionsVector.clear();
 			if (transactionsVector.empty()) {
+				transactionList.AddMember("transactions", Value(kArrayType), alloc);
 				return std::move(transactionList);
 			}
 
