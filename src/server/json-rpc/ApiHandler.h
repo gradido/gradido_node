@@ -81,6 +81,11 @@ namespace server {
 				uint32_t maxResultCount,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain
 			);
+			void findUserByNameHash(
+				rapidjson::Value& resultJson,
+				memory::ConstBlockPtr nameHash,
+				std::shared_ptr<gradido::blockchain::Abstract> blockchain
+			);
 			// helper	
 
 		};

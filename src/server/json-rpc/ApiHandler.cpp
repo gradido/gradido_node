@@ -66,7 +66,7 @@ namespace server {
 			memory::BlockPtr pubkey;
 			std::string pubkeyHex;
 			std::set<std::string> noNeedForPubkey = {
-				"puttransaction", "getlasttransaction", "getTransactions", "gettransaction"
+				"puttransaction", "getlasttransaction", "getTransactions", "gettransaction", "findUserByNameHash"
 			};
 			if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
 				if (!getStringParameter(responseJson, params, "pubkey", pubkeyHex)) {
@@ -220,6 +220,17 @@ namespace server {
 					firstTransactionNr = params["firstTransactionNr"].GetUint64();
 				}
 				listTransactionsForAddress(resultJson, pubkey, firstTransactionNr, maxResultCount, blockchain);
+			}
+			else if (method == "findUserByNameHash") {
+				std::string nameHashHex;
+				if (!getStringParameter(responseJson, params, "nameHash", nameHashHex)) {
+					return;
+				}
+				findUserByNameHash(
+					resultJson,
+					std::make_shared<memory::Block>(memory::Block::fromHex(nameHashHex)),
+					blockchain
+				);
 			}
 			else {
 				error(responseJson, JSON_RPC_ERROR_METHODE_NOT_FOUND, "method not known");
@@ -449,6 +460,42 @@ namespace server {
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 		}
 
+		void ApiHandler::findUserByNameHash(
+			Value& resultJson,
+			memory::ConstBlockPtr nameHash,
+			std::shared_ptr<gradido::blockchain::Abstract> blockchain
+		)
+		{
+			Profiler timeUsed;
+			Filter f;
+			f.transactionType = data::TransactionType::REGISTER_ADDRESS;
+			// std::function<FilterResult(const TransactionEntry&)> filterFunction;
+			f.filterFunction = [nameHash](const TransactionEntry& entry) {
+				auto body = entry.getTransactionBody();
+				assert(body->isRegisterAddress());
+				auto registerAddress = body->getRegisterAddress();
+				if (registerAddress->getNameHash()->isTheSame(nameHash)) {
+					return FilterResult::USE | FilterResult::STOP;
+				}
+				return FilterResult::DISMISS;
+			};
+			auto transactions = blockchain->findAll(f);
+			auto& alloc = mRootJson.GetAllocator();
+			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
+
+			if (transactions.size() > 0) {
+				auto body = transactions.front()->getTransactionBody();
+				assert(body);
+				auto registerAddress = body->getRegisterAddress();
+				assert(registerAddress);
+				auto accountPubkey = registerAddress->getAccountPublicKey();
+				assert(accountPubkey);
+				resultJson.AddMember("pubkey", Value(accountPubkey->convertToHex().data(), alloc), alloc);
+			}
+			else {
+				error(resultJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");
+			}
+		}
 	}
 }
 
