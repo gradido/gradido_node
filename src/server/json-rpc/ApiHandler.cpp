@@ -51,9 +51,18 @@ namespace server {
 			std::string groupAlias;
 
 			// load group for all requests
-			if (!getStringParameter(responseJson, params, "groupAlias", groupAlias, true) &&
-				!getStringParameter(responseJson, params, "communityId", groupAlias, true)) {
-				error(responseJson, JSON_RPC_ERROR_UNKNOWN_GROUP, "neither groupAlias nor communityId were specified");
+			const char* groupAliasKeys[] = { "groupAlias", "communityId", "topic" };
+			for (auto key : groupAliasKeys) {
+				if (getStringParameter(responseJson, params, key, groupAlias, true)) {
+					break;
+				}
+			}
+			if (groupAlias.length() == 0) {
+				error(
+					responseJson,
+					JSON_RPC_ERROR_UNKNOWN_GROUP,
+					"neither topic, groupAlias nor communityId were specified"
+				);
 				return;
 			}
 			blockchain = FileBasedProvider::getInstance()->findBlockchain(groupAlias);
