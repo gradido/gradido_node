@@ -1,7 +1,8 @@
 #include "GroupIndex.h"
+#include "Exceptions.h"
 #include "../controller/ControllerExceptions.h"
-
 #include "../ServerGlobals.h"
+
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
 
 #include "loguru/loguru.hpp"
@@ -9,6 +10,22 @@
 #include <filesystem>
 
 namespace cache {
+	CommunityIndexEntry::CommunityIndexEntry()
+		: topicIds(std::make_shared<std::set<hiero::AccountId>>())
+	{
+
+	}
+
+	hiero::AccountId CommunityIndexEntry::getActiveTopicId()
+	{
+		if (topicIds->empty()) {
+			throw GroupIndexConfigException("no topicId found", alias.data());
+		}
+		return *topicIds->end();
+	}
+
+	// -------------------------- GroupIndex ---------------------------
+
 	GroupIndex::GroupIndex(const std::string& jsonConfigFileName)
 		: mConfig(jsonConfigFileName)
 	{
@@ -49,6 +66,15 @@ namespace cache {
 					if (communityEntry.HasMember("blockUriType")) {
 						entry.blockUriType = communityEntry["blockUriType"].GetString();
 					}
+					if (communityEntry.HasMember("topicIds") && communityEntry["topicIds"].IsArray()) {
+						const auto& topicIds = communityEntry["topicIds"].GetArray();
+						for (auto it = topicIds.Begin(); it != topicIds.End(); it++) {
+							if (it->IsString()) {
+								entry.topicIds->insert(hiero::AccountId({ it->GetString(), it->GetStringLength() }));
+							}
+						}
+					}
+				
 					mCommunities.insert({ entry.communityId, entry });
 				}
 			}

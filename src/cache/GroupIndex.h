@@ -2,11 +2,13 @@
 #define __GRADIDO_NODE_CONTROLLER_GROUP_INDEX_H
 
 #include "gradido_blockchain/lib/DRHash.h"
+#include "gradido_blockchain/data/hiero/AccountId.h"
 #include "../model/files/JsonFile.h"
 
 #include <unordered_map>
 #include <mutex>
 #include <vector>
+#include <set>
 
 namespace cache {
 
@@ -17,10 +19,16 @@ namespace cache {
 		std::string folderName;
 		std::string newBlockUri;
 		std::string blockUriType;
+		// topic ids belonging to community, could be multiple topics
+		// heighst will be used for listening for new messages
+		std::shared_ptr <std::set<hiero::AccountId>> topicIds;
 
+		CommunityIndexEntry();
 		DHASH makeHash() {
 			return DRMakeStringHash(alias.data(), alias.size());
 		}
+
+		hiero::AccountId getActiveTopicId();
 	};
 
 	/*!

@@ -95,7 +95,7 @@ source_group("task" FILES ${TASK})
 endif(MSVC)
 
 ############################## add dependencies  #########################################
-
+option(ENABLE_HTTP "Enable HTTP" ON)
 add_subdirectory("dependencies/gradido_blockchain")
 SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 
@@ -104,13 +104,52 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
+# Fetch Content Module
+#include(FetchContent)
+
+#set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
+#if(MSVC)
+#    set(CMAKE_GENERATOR_PLATFORM x64 CACHE STRING "" FORCE)
+#endif()
+# get hiero cpp sdk
+if(WIN32)
+	include(ExternalProject)
+
+	ExternalProject_Add(hiero
+		SOURCE_DIR ${CMAKE_SOURCE_DIR}/_deps/hiero-src
+		GIT_REPOSITORY https://github.com/hiero-ledger/hiero-sdk-cpp.git
+		GIT_TAG 303fd3adfdacb0de64322af2d3f8c506947d5306
+		INSTALL_DIR ${CMAKE_BINARY_DIR}/hiero-install
+		CMAKE_ARGS
+			--preset windows-x64-release
+	)
+	
+	# Importiertes Ziel für die fertige Lib
+	add_library(hiero-sdk-cpp STATIC IMPORTED GLOBAL)
+	
+	set_target_properties(hiero-sdk-cpp PROPERTIES
+		IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/hiero-prefix/src/hiero-build/src/sdk/main/Release/hiero-sdk-cpp.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_BINARY_DIR}/_deps/hiero-src/src/sdk/main/include"
+	)
+
+	# sicherstellen, dass hiero gebaut ist
+	add_dependencies(hiero-sdk-cpp hiero)
+endif()
+
+
+
+# get hiero cpp sdk
+#FetchContent_Declare(Hiero
+#    GIT_REPOSITORY https://github.com/hiero-ledger/hiero-sdk-cpp.git
+#    GIT_TAG 303fd3adfdacb0de64322af2d3f8c506947d5306 # release v0.44.0
+#)
+#FetchContent_MakeAvailable(Hiero)
 
 
 ############################## mqtt client ############################################
 add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
-find_package(libsodium REQUIRED)
 include_directories(${libsodium_INCLUDE_DIR})
 else()
 #find_package(Sodium REQUIRED)
@@ -139,10 +178,9 @@ target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
-	target_link_libraries(GradidoNode libsodium::libsodium)
-else()
-  target_link_libraries(GradidoNode sodium)
+	target_link_libraries(GradidoNode hiero-sdk-cpp)
 endif()
+target_link_libraries(GradidoNode sodium)
 
 IF(WIN32)
   add_custom_command(TARGET GradidoNode POST_BUILD

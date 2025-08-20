@@ -57,6 +57,17 @@ namespace cache {
 		uint32_t mNewKey;
 		uint32_t mOldKey;
 	};
+
+	class GroupIndexConfigException: public GradidoBlockchainException
+	{
+	public:
+		explicit GroupIndexConfigException(const char* what, const char* groupAlias) noexcept : GradidoBlockchainException(what), mAlias(groupAlias) {};
+		std::string getFullString() const { std::string result = what(); result += ", alias: " + mAlias; return result; }
+
+	protected:
+		std::string mAlias;
+	};
+
 }
 
 #endif //__GRADIDO_NODE_CACHE_EXCEPTIONS_H
