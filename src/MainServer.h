@@ -3,6 +3,7 @@
 
 #include "gradido_blockchain/Application.h"
 #include "gradido_blockchain/http/Server.h"
+#include "Client.h"
 
 #include <string>
 
@@ -32,6 +33,7 @@ protected:
 	bool configExists(const std::string& fileName);
 
 	Server* mHttpServer;
+	Hiero::Client* mHieroClient;
 private:
 };
 

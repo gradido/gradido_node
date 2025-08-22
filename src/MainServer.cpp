@@ -23,12 +23,16 @@ using namespace blockchain;
 namespace fs = std::filesystem;
 
 MainServer::MainServer()
-	: mHttpServer(nullptr)
+	: mHttpServer(nullptr), mHieroClient(nullptr)
 {
 }
 
 MainServer::~MainServer()
 {
+	if (!mHieroClient) {
+		delete mHieroClient;
+		mHieroClient = nullptr;
+	}
 }
 
 bool MainServer::init()
@@ -81,6 +85,8 @@ bool MainServer::init()
 	if(!ServerGlobals::g_isOfflineMode) {
 		iota::MqttClientWrapper::getInstance()->init();
 	}
+	auto hieroNetworkType = config.getString("hiero.network_type", "testnet");
+	mHieroClient = new Hiero::Client(Hiero::Client::forName(hieroNetworkType));
 
 	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");

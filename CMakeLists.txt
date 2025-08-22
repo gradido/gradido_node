@@ -42,6 +42,7 @@ FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
+FILE(GLOB HIERO "src/hiero/*.cpp" "src/hiero/*.h")
 FILE(GLOB SERVER "src/server/*.h" "src/server/*.cpp")
 FILE(GLOB SERVER_JSON_RPC "src/server/json-rpc/*.h" "src/server/json-rpc/*.cpp")
 FILE(GLOB LIB_SRC "src/lib/*.h" "src/lib/*.cpp" "src/lib/*.c")
@@ -62,7 +63,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 SET(LOCAL_SRCS 
 	${BLOCKCHAIN}
 	${CACHE_SRC}
-	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
+	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA} ${HIERO}
 	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
 	${MODEL}  ${MODEL_APOLLO} ${MODEL_APOLLO_CREATE_TRANSACTION} ${MODEL_FILES} ${MODEL_JSON}
@@ -80,6 +81,7 @@ source_group("container" FILES ${CONTAINER})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
 source_group("iota" FILES ${IOTA})
+source_group("hiero" FILES ${HIERO})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
 source_group("model\\Apollo\\createTransaction" FILES ${MODEL_APOLLO_CREATE_TRANSACTION})
@@ -104,9 +106,16 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
-# Fetch Content Module
-#include(FetchContent)
 
+# Fetch Content Module
+include(FetchContent)
+
+FetchContent_Declare(modernCppJson
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.12.0
+)
+FetchContent_MakeAvailable(modernCppJson)
+include_directories(${CMAKE_BINARY_DIR}/_deps/moderncppjson-src/include)
 #set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
 #if(MSVC)
 #    set(CMAKE_GENERATOR_PLATFORM x64 CACHE STRING "" FORCE)
@@ -116,27 +125,76 @@ if(WIN32)
 	include(ExternalProject)
 
 	ExternalProject_Add(hiero
-		SOURCE_DIR ${CMAKE_SOURCE_DIR}/_deps/hiero-src
+		SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/hiero-src
 		GIT_REPOSITORY https://github.com/hiero-ledger/hiero-sdk-cpp.git
 		GIT_TAG 303fd3adfdacb0de64322af2d3f8c506947d5306
 		INSTALL_DIR ${CMAKE_BINARY_DIR}/hiero-install
-		CMAKE_ARGS
-			--preset windows-x64-release
+		CMAKE_ARGS --preset windows-x64-release
+	)
+
+	ExternalProject_Add(hieroDebug
+		SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/hiero-src-debug
+		GIT_REPOSITORY https://github.com/hiero-ledger/hiero-sdk-cpp.git
+		GIT_TAG 303fd3adfdacb0de64322af2d3f8c506947d5306
+		INSTALL_DIR ${CMAKE_BINARY_DIR}/hiero-install
+		CMAKE_ARGS --preset windows-x64-debug
 	)
 	
-	# Importiertes Ziel für die fertige Lib
+	# Imported target for the final library
 	add_library(hiero-sdk-cpp STATIC IMPORTED GLOBAL)
+	add_library(hiero-sdk-cpp-debug STATIC IMPORTED GLOBAL)
+	SET(HIERO_BUILD_DIR "${CMAKE_BINARY_DIR}/hiero-prefix/src/hiero-build")
+	SET(HIERO_BUILD_DIR_DEBUG "${CMAKE_BINARY_DIR}/hieroDebug-prefix/src/hieroDebug-build")
+	file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/_deps/hiero-src/src/sdk/main/include")
+	file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/_deps/hiero-src-debug/src/sdk/main/include")
+	file(MAKE_DIRECTORY ${HIERO_BUILD_DIR}/vcpkg_installed/x64-windows/include)
+	file(MAKE_DIRECTORY ${HIERO_BUILD_DIR_DEBUG}/vcpkg_installed/x64-windows/include)
 	
 	set_target_properties(hiero-sdk-cpp PROPERTIES
-		IMPORTED_LOCATION "${CMAKE_BINARY_DIR}/hiero-prefix/src/hiero-build/src/sdk/main/Release/hiero-sdk-cpp.lib"
+		IMPORTED_LOCATION "${HIERO_BUILD_DIR}/src/sdk/main/Release/hiero-sdk-cpp.lib"
 		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_BINARY_DIR}/_deps/hiero-src/src/sdk/main/include"
 	)
+	set_target_properties(hiero-sdk-cpp-debug PROPERTIES
+		IMPORTED_LOCATION "${HIERO_BUILD_DIR_DEBUG}/src/sdk/main/Debug/hiero-sdk-cpp.lib"
+		INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_BINARY_DIR}/_deps/hiero-src-debug/src/sdk/main/include"
+	)
 
-	# sicherstellen, dass hiero gebaut ist
-	add_dependencies(hiero-sdk-cpp hiero)
+	# ensure hiero is built
+	#add_dependencies(hiero-sdk-cpp-debug hieroDebug)		
+	#add_dependencies(hiero-sdk-cpp hiero)		
+
+	# Release
+	set(HIERO_DEPENDENCIES_PATH "${HIERO_BUILD_DIR}/vcpkg_installed/x64-windows/lib")
+	file(GLOB HIERO_DEPENDENCIES_LIBS "${HIERO_DEPENDENCIES_PATH}/*.lib")
+
+	# Debug	
+	set(HIERO_DEPENDENCIES_PATH_DEBUG "${HIERO_BUILD_DIR_DEBUG}/vcpkg_installed/x64-windows/lib")
+	file(GLOB HIERO_DEPENDENCIES_LIBS_DEBUG "${HIERO_DEPENDENCIES_PATH_DEBUG}/*.lib")
+
+	set(HIERO_HAPI_LIB "${HIERO_BUILD_DIR}/proto/Release/hapi.lib")
+	set(HIERO_HAPI_LIB_DEBUG "${HIERO_BUILD_DIR_DEBUG}/proto/Debug/hapi.lib")
+	set(HIERO_DEP_LOG4CXX "${HIERO_BUILD_DIR}/_deps/log4cxx-build/src/main/cpp/Release/log4cxx.lib")
+	set(HIERO_DEP_LOG4CXX_DEBUG "${HIERO_BUILD_DIR_DEBUG}/_deps/log4cxx-build/src/main/cpp/Debug/log4cxx.lib")
+	set(HIERO_DEPENDENCIES_LIBS 
+		${HIERO_DEPENDENCIES_LIBS}
+		${HIERO_DEP_LOG4CXX}
+		${HIERO_HAPI_LIB}
+	)
+	set(HIERO_DEPENDENCIES_LIBS_DEBUG 
+		${HIERO_DEPENDENCIES_LIBS_DEBUG}
+		${HIERO_DEP_LOG4CXX_DEBUG}
+		${HIERO_HAPI_LIB_DEBUG}
+	)
+	#message("release hiero deps:${HIERO_DEPENDENCIES_LIBS}")
+	#message("debug hiero deps:${HIERO_DEPENDENCIES_LIBS_DEBUG}")
+	include_directories(
+		${HIERO_BUILD_DIR}/vcpkg_installed/x64-windows/include 
+		#${CMAKE_BINARY_DIR}/_deps/hiero-src/src/sdk/main/include	
+	)
+	# prepare for dll copy
+	file(GLOB HIERO_DLLS "${HIERO_BUILD_DIR}/vcpkg_installed/x64-windows/bin/*.dll")
+	file(GLOB HIERO_DLLS_DEBUG "${HIERO_BUILD_DIR_DEBUG}/vcpkg_installed/x64-windows/bin/*.dll")
 endif()
-
-
 
 # get hiero cpp sdk
 #FetchContent_Declare(Hiero
@@ -177,8 +235,11 @@ add_executable(GradidoNode ${LOCAL_SRCS})
 target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
+	target_link_libraries(GradidoNode optimized hiero-sdk-cpp)
+	target_link_libraries(GradidoNode optimized ${HIERO_DEPENDENCIES_LIBS})
 	target_link_libraries(GradidoNode debug Shlwapi)
-	target_link_libraries(GradidoNode hiero-sdk-cpp)
+	target_link_libraries(GradidoNode debug hiero-sdk-cpp-debug)
+	#target_link_libraries(GradidoNode debug ${HIERO_DEPENDENCIES_LIBS_DEBUG})
 endif()
 target_link_libraries(GradidoNode sodium)
 
@@ -186,6 +247,12 @@ IF(WIN32)
   add_custom_command(TARGET GradidoNode POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
     COMMAND_EXPAND_LISTS
+  )
+  add_custom_command(TARGET GradidoNode POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<$<CONFIG:Debug>:${HIERO_DLLS_DEBUG}> 
+        $<$<CONFIG:Release>:${HIERO_DLLS}>
+        $<TARGET_FILE_DIR:GradidoNode>
   )
 ENDIF()
 
