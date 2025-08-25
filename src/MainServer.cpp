@@ -10,6 +10,9 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/ServerConfig.h"
 
+// Hiero
+#include "Client.h"
+
 #include <algorithm>
 #include <sodium.h>
 #include <iostream>
@@ -23,7 +26,7 @@ using namespace blockchain;
 namespace fs = std::filesystem;
 
 MainServer::MainServer()
-	: mHttpServer(nullptr)
+	: mHttpServer(nullptr), mHieroClient(nullptr)
 {
 }
 
@@ -88,6 +91,15 @@ bool MainServer::init()
 	}
 	OrderingManager::getInstance()->init();
 
+	// Hiero Client
+	mHieroClient = new Hiero::Client(
+		std::move(
+			Hiero::Client::forName(
+				config.getString("hiero.network_type", "testnet")
+			)
+		)
+	);
+
 	// JSON Interface Server
 	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
 	mHttpServer->init();
@@ -109,6 +121,12 @@ void MainServer::exit()
 		mHttpServer->exit();
 		delete mHttpServer;
 		mHttpServer = nullptr;
+	}
+
+	if (mHieroClient) {
+		mHieroClient->close();
+		delete mHieroClient;
+		mHieroClient = nullptr;
 	}
 
 	iota::MqttClientWrapper::getInstance()->exit();

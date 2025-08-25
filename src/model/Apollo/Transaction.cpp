@@ -26,7 +26,7 @@ namespace model {
 			auto& memos = transactionBody->getMemos();
 			for (auto& memo : memos) {
 				if (memo.getKeyType() == gradido::data::MemoKeyType::PLAIN) {
-					mMemo = memo.getMemo()->copyAsString();
+					mMemo = memo.getMemo().copyAsString();
 					return;
 				}
 			}

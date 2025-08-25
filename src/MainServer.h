@@ -6,6 +6,10 @@
 
 #include <string>
 
+namespace Hiero {
+	class Client;
+}
+
 class MainServer : public Application
 {
 
@@ -32,6 +36,7 @@ protected:
 	bool configExists(const std::string& fileName);
 
 	Server* mHttpServer;
+	Hiero::Client* mHieroClient;
 private:
 };
 
