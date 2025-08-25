@@ -136,8 +136,8 @@ if(WIN32)
 		SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/hiero-src-debug
 		GIT_REPOSITORY https://github.com/hiero-ledger/hiero-sdk-cpp.git
 		GIT_TAG 303fd3adfdacb0de64322af2d3f8c506947d5306
-		INSTALL_DIR ${CMAKE_BINARY_DIR}/hiero-install
-		CMAKE_ARGS --preset windows-x64-debug
+		INSTALL_DIR ${CMAKE_BINARY_DIR}/hiero-install-debug
+		CMAKE_ARGS --preset windows-x64-debug -DCMAKE_BUILD_TYPE=Debug
 	)
 	
 	# Imported target for the final library
@@ -248,12 +248,25 @@ IF(WIN32)
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
     COMMAND_EXPAND_LISTS
   )
-  add_custom_command(TARGET GradidoNode POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<$<CONFIG:Debug>:${HIERO_DLLS_DEBUG}> 
-        $<$<CONFIG:Release>:${HIERO_DLLS}>
-        $<TARGET_FILE_DIR:GradidoNode>
-  )
+  	# Release DLLs
+	foreach(DLL ${HIERO_DLLS})
+		add_custom_command(TARGET GradidoNode POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${DLL}"
+			${CMAKE_BINARY_DIR}/bin/Release/
+			COMMENT "Copying Release DLL: ${DLL}"
+		)
+	endforeach()
+
+	# Debug DLLs
+	foreach(DLL ${HIERO_DLLS_DEBUG})
+		add_custom_command(TARGET GradidoNode POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${DLL}"
+			${CMAKE_BINARY_DIR}/bin/Debug/
+			COMMENT "Copying Debug DLL: ${DLL}"
+		)
+	endforeach()
 ENDIF()
 
 # install 
