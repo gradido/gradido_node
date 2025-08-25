@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.18.2)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
@@ -95,7 +96,7 @@ source_group("task" FILES ${TASK})
 endif(MSVC)
 
 ############################## add dependencies  #########################################
-
+option(ENABLE_HTTP "Enable HTTP" ON)
 add_subdirectory("dependencies/gradido_blockchain")
 SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 
@@ -104,14 +105,68 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 2.24:
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+  cmake_policy(SET CMP0135 NEW)
+endif()
 
+if(MSVC)
+    message(STATUS "Make Hiero-cpp-sdk Available for Windows")
+	# Fetch Content Module
+	include(FetchContent)
+
+	# Visual C++
+	## Hiero-cpp-sdk
+	FetchContent_Declare(
+		hiero
+		URL     https://github.com/hiero-ledger/hiero-sdk-cpp/releases/download/v0.45.0/hiero-sdk-cpp-v0.45.0-12509303.tar.gz
+		URL_HASH SHA256=5fdb2d1fb9175f7c6ce71d982f0600c506a8466537e104f7342d87d4dbf65608
+	)
+	FetchContent_MakeAvailable(hiero)
+    add_library(Hiero STATIC IMPORTED GLOBAL)
+    set(Hiero_LIB_PATH "${hiero_SOURCE_DIR}/Release/Windows/AMD64/lib")
+	set(Hiero_INCLUDE_DIR "${hiero_SOURCE_DIR}/Release/Windows/AMD64/include")
+    set_target_properties(Hiero PROPERTIES
+        IMPORTED_LOCATION "${Hiero_LIB_PATH}/hiero-sdk-cpp.lib"
+        INTERFACE_INCLUDE_DIRECTORIES "${Hiero_INCLUDE_DIR}"
+    )
+	# abseil for protobuf
+	message(STATUS "Make abseil (needed by protobuf) for Windows")
+	FetchContent_Declare(
+  		abseil
+  		GIT_REPOSITORY https://github.com/abseil/abseil-cpp.git
+  		GIT_TAG        20250127.0
+	)
+	FetchContent_MakeAvailable(abseil)
+
+	# gRPC
+	message(STATUS "Make gRPC Available for Windows")
+	FetchContent_Declare(
+		grpc
+		GIT_REPOSITORY https://github.com/grpc/grpc.git
+		GIT_TAG        v1.71.0
+	)
+	FetchContent_MakeAvailable(grpc)
+
+	# Since FetchContent uses add_subdirectory under the hood, we can use
+	# the grpc targets directly from this build.
+	set(_PROTOBUF_LIBPROTOBUF libprotobuf)
+	#set(_REFLECTION grpc++_reflection)
+	#set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+	set(_GRPC_GRPCPP grpc++)
+	#message("grpc++: ${_GRPC_GRPCPP}")
+else()
+	#find_package(Hiero REQUIRED)
+endif()
 
 ############################## mqtt client ############################################
 add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
-find_package(libsodium REQUIRED)
+#find_package(libsodium REQUIRED)
 include_directories(${libsodium_INCLUDE_DIR})
+include_directories(${Hiero_INCLUDE_DIR})
+message("hiero include dir: ${Hiero_INCLUDE_DIR}")
 else()
 #find_package(Sodium REQUIRED)
 endif()
@@ -139,9 +194,11 @@ target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
-	target_link_libraries(GradidoNode libsodium::libsodium)
+	target_link_libraries(GradidoNode Hiero ${Hiero_LIB_PATH}/Release/hapi.lib ${_GRPC_GRPCPP})
+	# 
+	#target_link_libraries(GradidoNode libsodium::libsodium)
 else()
-  target_link_libraries(GradidoNode sodium)
+  #target_link_libraries(GradidoNode sodium)
 endif()
 
 IF(WIN32)
