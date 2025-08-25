@@ -119,17 +119,18 @@ if(MSVC)
 	## Hiero-cpp-sdk
 	FetchContent_Declare(
 		hiero
-		URL     https://github.com/hiero-ledger/hiero-sdk-cpp/releases/download/v0.45.0/hiero-sdk-cpp-v0.45.0-12509303.tar.gz
-		URL_HASH SHA256=5fdb2d1fb9175f7c6ce71d982f0600c506a8466537e104f7342d87d4dbf65608
+		GIT_REPOSITORY https://github.com/hiero-ledger/hiero-sdk-cpp.git
+		GIT_TAG        v0.45.0
 	)
+	find_package(OpenSSL REQUIRED)
 	FetchContent_MakeAvailable(hiero)
-    add_library(Hiero STATIC IMPORTED GLOBAL)
-    set(Hiero_LIB_PATH "${hiero_SOURCE_DIR}/Release/Windows/AMD64/lib")
-	set(Hiero_INCLUDE_DIR "${hiero_SOURCE_DIR}/Release/Windows/AMD64/include")
-    set_target_properties(Hiero PROPERTIES
-        IMPORTED_LOCATION "${Hiero_LIB_PATH}/hiero-sdk-cpp.lib"
-        INTERFACE_INCLUDE_DIRECTORIES "${Hiero_INCLUDE_DIR}"
-    )
+    #add_library(Hiero STATIC IMPORTED GLOBAL)
+    #set(Hiero_LIB_PATH "${hiero_SOURCE_DIR}/Release/Windows/AMD64/lib")
+	#set(Hiero_INCLUDE_DIR "${hiero_SOURCE_DIR}/Release/Windows/AMD64/include")
+    #set_target_properties(Hiero PROPERTIES
+     #   IMPORTED_LOCATION "${Hiero_LIB_PATH}/hiero-sdk-cpp.lib"
+     #   INTERFACE_INCLUDE_DIRECTORIES "${Hiero_INCLUDE_DIR}"
+    #)
 	# abseil for protobuf
 	message(STATUS "Make abseil (needed by protobuf) for Windows")
 	FetchContent_Declare(
@@ -165,8 +166,8 @@ add_subdirectory("dependencies/paho.mqtt.c")
 if(WIN32)
 #find_package(libsodium REQUIRED)
 include_directories(${libsodium_INCLUDE_DIR})
-include_directories(${Hiero_INCLUDE_DIR})
-message("hiero include dir: ${Hiero_INCLUDE_DIR}")
+include_directories(${hiero_INCLUDE_DIR})
+message("hiero include dir: ${hiero_INCLUDE_DIR}")
 else()
 #find_package(Sodium REQUIRED)
 endif()
@@ -195,6 +196,9 @@ if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
 	target_link_libraries(GradidoNode Hiero ${Hiero_LIB_PATH}/Release/hapi.lib ${_GRPC_GRPCPP})
+  	#target_link_libraries(main PRIVATE OpenSSL::SSL)
+    #target_link_libraries(main PRIVATE OpenSSL::Crypto)
+
 	# 
 	#target_link_libraries(GradidoNode libsodium::libsodium)
 else()
