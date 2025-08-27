@@ -86,13 +86,17 @@ bool MainServer::init()
 	std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + config.getString("clients.hiero.networkType", "testnet") + ".pb";
 	client::grpc::Addressbook addressbook(grpcAddressesFile.data());
 	addressbook.load();
-	auto hieroServiceEndpointUrl = addressbook.pickRandomEndpoint().getConnectionString();
+	const auto& hieroNode = addressbook.pickRandomNode();
+	auto hieroServiceEndpointUrl = hieroNode.pickRandomEndpoint().getConnectionString();
 	mHieroClient = client::grpc::Client::createForTarget(hieroServiceEndpointUrl);
 	if (!mHieroClient) {
 		LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
 		return false;
 	}
-	LOG_F(INFO, "Connect with Hiero Network via service endpoint: %s", hieroServiceEndpointUrl.data());
+	LOG_F(INFO, "Hiero endpoint: %s (%s)", 
+		hieroServiceEndpointUrl.data(),
+		hieroNode.description.data()
+	);
 	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;

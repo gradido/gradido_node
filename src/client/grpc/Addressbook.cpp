@@ -52,6 +52,15 @@ namespace client {
 			return url;
 		}
 
+		const ServiceEndpoint& NodeAddress::pickRandomEndpoint() const
+		{
+			size_t randomIndex = std::rand() % serviceEndpoint.size();
+			if (randomIndex >= serviceEndpoint.size()) {
+				LOG_F(FATAL, "random generator don't work like expected");
+			}
+			return serviceEndpoint[randomIndex];
+		}
+
 		Addressbook::Addressbook(const char* filePath)
 			: mFilePath(filePath)
 		{
@@ -144,16 +153,6 @@ namespace client {
 				LOG_F(FATAL, "random generator don't work like expected");
 			}
 			return mNodeAddresses[randomIndex];
-		}
-
-		const ServiceEndpoint& Addressbook::pickRandomEndpoint() const
-		{
-			const auto& node = pickRandomNode();
-			size_t randomIndex = std::rand() % node.serviceEndpoint.size();
-			if (randomIndex >= node.serviceEndpoint.size()) {
-				LOG_F(FATAL, "random generator don't work like expected");
-			}
-			return node.serviceEndpoint[randomIndex];
 		}
 	}
 }

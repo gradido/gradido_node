@@ -43,6 +43,7 @@ namespace client {
 		struct NodeAddress
 		{
 			NodeAddress(): nodeCertHash(0), nodeId(0) {}
+			const ServiceEndpoint& pickRandomEndpoint() const;
 			std::string rsaPubkey;
 			int64_t nodeId;
 			hiero::AccountId nodeAccountId;
@@ -60,7 +61,10 @@ namespace client {
 			// load node addresses from <networkType>.pb file
 			void load();
 			const NodeAddress& pickRandomNode() const;
-			const ServiceEndpoint& pickRandomEndpoint() const;
+			inline const ServiceEndpoint& pickRandomEndpoint() const {
+				return pickRandomNode().pickRandomEndpoint();
+			}
+
 		protected:
 			std::string mFilePath;
 			std::vector<NodeAddress> mNodeAddresses;
