@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.18.2)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
@@ -41,6 +42,7 @@ FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
+FILE(GLOB CLIENT_GRPC "src/client/grpc/*.cpp" "src/client/grpc/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
 FILE(GLOB SERVER "src/server/*.h" "src/server/*.cpp")
 FILE(GLOB SERVER_JSON_RPC "src/server/json-rpc/*.h" "src/server/json-rpc/*.cpp")
@@ -62,7 +64,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 SET(LOCAL_SRCS 
 	${BLOCKCHAIN}
 	${CACHE_SRC}
-	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
+	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_GRPC} ${IOTA}
 	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
 	${MODEL}  ${MODEL_APOLLO} ${MODEL_APOLLO_CREATE_TRANSACTION} ${MODEL_FILES} ${MODEL_JSON}
@@ -77,6 +79,7 @@ if(MSVC)
 source_group("blockchain" FILES ${BLOCKCHAIN})
 source_group("cache" FILES ${CACHE_SRC})
 source_group("container" FILES ${CONTAINER})
+source_group("client\\grpc" FILES ${CLIENT_GRPC})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
 source_group("iota" FILES ${IOTA})
@@ -104,13 +107,29 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
+if (MSVC)
+	# gRPC
+	message(STATUS "Make gRPC Available for Windows")
+	FetchContent_Declare(
+		grpc
+		GIT_REPOSITORY https://github.com/grpc/grpc.git
+		GIT_TAG        v1.74.1
+	)
+	FetchContent_MakeAvailable(grpc)
 
-
+	# Since FetchContent uses add_subdirectory under the hood, we can use
+	# the grpc targets directly from this build.
+	# set(_PROTOBUF_LIBPROTOBUF libprotobuf)
+	#set(_REFLECTION grpc++_reflection)
+	#set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+	set(_GRPC_GRPCPP grpc++)
+	#message("grpc++: ${_GRPC_GRPCPP}")
+endif()
 ############################## mqtt client ############################################
 add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
-find_package(libsodium REQUIRED)
+#find_package(libsodium REQUIRED)
 include_directories(${libsodium_INCLUDE_DIR})
 else()
 #find_package(Sodium REQUIRED)
@@ -139,7 +158,8 @@ target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
-	target_link_libraries(GradidoNode libsodium::libsodium)
+	#target_link_libraries(GradidoNode libsodium::libsodium)
+	target_link_libraries(GradidoNode ${_GRPC_GRPCPP})
 else()
   target_link_libraries(GradidoNode sodium)
 endif()
