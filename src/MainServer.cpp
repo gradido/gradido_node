@@ -6,6 +6,8 @@
 #include "server/json-rpc/ApiHandlerFactory.h"
 #include "SingletonManager/OrderingManager.h"
 #include "SingletonManager/CacheManager.h"
+#include "client/grpc/Client.h"
+#include "client/grpc/Addressbook.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/ServerConfig.h"
@@ -81,12 +83,21 @@ bool MainServer::init()
 	if(!ServerGlobals::g_isOfflineMode) {
 		iota::MqttClientWrapper::getInstance()->init();
 	}
-
+	std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + config.getString("clients.hiero.networkType", "testnet") + ".pb";
+	client::grpc::Addressbook addressbook(grpcAddressesFile.data());
+	addressbook.load();
+	auto hieroServiceEndpointUrl = addressbook.pickRandomEndpoint().getConnectionString();
+	mHieroClient = client::grpc::Client::createForTarget(hieroServiceEndpointUrl);
+	if (!mHieroClient) {
+		LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
+		return false;
+	}
+	LOG_F(INFO, "Connect with Hiero Network via service endpoint: %s", hieroServiceEndpointUrl.data());
 	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
-	OrderingManager::getInstance()->init();
+	// OrderingManager::getInstance()->init();
 
 	// JSON Interface Server
 	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");

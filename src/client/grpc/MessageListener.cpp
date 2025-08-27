@@ -7,6 +7,21 @@
 
 using namespace gradido::interaction::deserialize;
 
+using ConsensusMessageChunkInfoMessage = message<
+	message_field<"initialTransactionID", 1, HieroTransactionIdMessage>, // The TransactionID of the first chunk.
+	int32_field<"total", 2>, // The total number of chunks in the message.
+	int32_field<"number", 3> // The sequence number (from 1 to total) of the current chunk in the message.
+>;
+
+using ConsensusTopicResponseMessage = message<
+	message_field<"consensusTimestamp", 1, TimestampMessage>,
+	bytes_field<"message", 2>,
+	bytes_field<"runningHash", 3>,
+	uint64_field<"sequenceNumber", 4>,
+	uint64_field<"runningHashVersion", 5>,
+	message_field<"chunkInfo", 6, ConsensusMessageChunkInfoMessage>
+>;
+
 namespace client {
 	namespace grpc {
 
@@ -34,21 +49,7 @@ namespace client {
 		}
 
 		std::shared_ptr<const gradido::data::GradidoTransaction> MessageListener::processConsensusTopicResponse(const memory::Block& raw)
-		{
-			using ConsensusMessageChunkInfoMessage = message<
-				message_field<"initialTransactionID", 1, HieroTransactionIdMessage>, // The TransactionID of the first chunk.
-				int32_field<"total", 2>, // The total number of chunks in the message.
-				int32_field<"number", 3> // The sequence number (from 1 to total) of the current chunk in the message.
-			>;
-
-			using ConsensusTopicResponseMessage = message<
-				message_field<"consensusTimestamp", 1, TimestampMessage>,
-				bytes_field<"message", 2>,
-				bytes_field<"runningHash", 3>,
-				uint64_field<"sequenceNumber", 4>,
-				uint64_field<"runningHashVersion", 5>,
-				message_field<"chunkInfo", 6, ConsensusMessageChunkInfoMessage>
-			>;
+		{			
 			auto result = message_coder<ConsensusTopicResponseMessage>::decode(raw.span());
 			if (!result.has_value()) {
 				LOG_F(WARNING, "invalid grpc response");

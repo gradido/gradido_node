@@ -10,11 +10,13 @@
 #include "loguru/loguru.hpp"
 
 #include <exception>
+#include <cstdlib>
 
 #ifndef _TEST_BUILD
 
 int main(int argc, char** argv)
 {
+	std::srand(std::time({}));
 	// libsodium
 	if (sodium_init() < 0) {
 		/* panic! the library couldn't be initialized, it is not safe to use */
