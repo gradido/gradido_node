@@ -1,7 +1,8 @@
 #include "MessageListener.h"
-#include "../../task/HieroMessageToTransactionTask.h"
+#include "../../SingletonManager/SimpleOrderingManager.h"
 #include "gradido_blockchain/interaction/deserialize/Protopuf.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/interaction/deserialize/HieroTransactionIdRole.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "loguru/loguru.hpp"
 
@@ -48,19 +49,21 @@ namespace client {
 
 		}
 
-		std::shared_ptr<const gradido::data::GradidoTransaction> MessageListener::processConsensusTopicResponse(const memory::Block& raw)
+		void MessageListener::processConsensusTopicResponse(const memory::Block& raw)
 		{			
 			auto result = message_coder<ConsensusTopicResponseMessage>::decode(raw.span());
 			if (!result.has_value()) {
 				LOG_F(WARNING, "invalid grpc response");
-				return nullptr;
+				return;
 			}
 			const auto& [message, bufferEnd2] = *result;
 			auto ownMessage = message["message"_f];
+			auto runningHashMessage = message["runningHash"_f];
 			auto consensusTimestampMessage = message["consensusTimestamp"_f].value();
 			gradido::data::Timestamp consensusTimestamp(consensusTimestampMessage["seconds"_f].value(), consensusTimestampMessage["nanos"_f].value());
 			std::shared_ptr<const gradido::data::GradidoTransaction> gradidoTransaction;
-			LOG_F(1, "sequence number: %d", message["sequenceNumber"_f].value());
+			memory::Block runningHash(0);
+			LOG_F(1, "sequence number: %llu", message["sequenceNumber"_f].value());
 			LOG_F(1, "consensus: %s", DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
 
 			if (ownMessage.has_value()) {
@@ -71,21 +74,30 @@ namespace client {
 					gradidoTransaction = c.getGradidoTransaction();
 				}
 			}
+
+			if (runningHashMessage.has_value()) {
+				runningHash = memory::Block(runningHashMessage.value());
+			}
 			
-			auto chunkInfoMessage = message["chunkInfo"_f];
-			if (chunkInfoMessage.has_value()) {
-				auto total = chunkInfoMessage.value()["total"_f].value();
+			hiero::TransactionId startTransactionId;
+			if (message["chunkInfo"_f].has_value()) {
+				auto chunkInfoMessage = message["chunkInfo"_f].value();
+				auto total = chunkInfoMessage["total"_f].value();
 				if (total > 1) {
 					LOG_F(FATAL, "grpc Message contain more than one chunks: %d", total);
 					throw GradidoNotImplementedException("Chunked Message processing");
 				}
+				auto transactionIdMessage = chunkInfoMessage["initialTransactionID"_f].value();
+				startTransactionId = HieroTransactionIdRole(transactionIdMessage);
 			}
-			std::shared_ptr<HieroMessageToTransactionTask> task(new HieroMessageToTransactionTask(
-				consensusTimestamp, gradidoTransaction, mCommunityId
-			));
-			task->scheduleTask(task);
-			
-			return nullptr;
+			SimpleOrderingManager::getInstance()->pushTransaction(
+				std::move(runningHash),
+				startTransactionId,
+				message["sequenceNumber"_f].value(),
+				std::make_shared<memory::Block>(ownMessage.value()),
+				consensusTimestamp,
+				mCommunityId
+			);
 		}
 
 	}

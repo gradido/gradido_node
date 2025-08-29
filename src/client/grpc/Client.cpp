@@ -6,7 +6,33 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/generic/generic_stub.h>
 
+
+
 using namespace gradido::interaction::serialize;
+
+using QueryHeaderMessage = message<
+>;
+
+using ResponseHeaderMessage = message<
+>;
+
+using TransactionReceiptMessage = message<
+>;
+
+using TransactionGetReceiptQueryMessage = message<
+	message_field<"header", 1, QueryHeaderMessage>,
+	message_field<"transactionID", 2, HieroTransactionIdMessage>,
+	bool_field<"includeDuplicates", 3>, 
+	bool_field<"include_child_receipts", 4>
+>;
+
+using TransactionGetReceiptResponseMessage = message<
+	message_field<"header", 1, ResponseHeaderMessage>,
+	message_field<"receipt", 2, TransactionReceiptMessage>,
+	message_field<"duplicateTransactionReceipts", 4, TransactionReceiptMessage, repeated>,
+	message_field<"child_transaction_receipts", 5, TransactionReceiptMessage, repeated>
+>;
+
 
 namespace client {
 	namespace grpc {

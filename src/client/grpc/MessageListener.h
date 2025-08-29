@@ -19,7 +19,7 @@ namespace client {
 			// will be called from grpc client if connection was closed
 			virtual void messagesStopped();
 		protected:
-			std::shared_ptr<const gradido::data::GradidoTransaction> processConsensusTopicResponse(const memory::Block& raw);
+			void processConsensusTopicResponse(const memory::Block& raw);
 			hiero::TopicId mTopicId;
 			std::string mCommunityId;
 		};

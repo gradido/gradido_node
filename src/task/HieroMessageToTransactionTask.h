@@ -27,13 +27,15 @@ class HieroMessageToTransactionTask : public task::CPUTask
 {
 public:
     HieroMessageToTransactionTask(
-        gradido::data::Timestamp consensusTimestamp,
-        std::shared_ptr<const gradido::data::GradidoTransaction> transaction,
-        const std::string& communityId
+        const gradido::data::Timestamp& consensusTimestamp,
+        std::shared_ptr<const memory::Block> transactionRaw,
+        const std::string_view communityId
     );
 
     const char* getResourceType() const {return "HieroMessageToTransactionTask";};
     int run();
+    bool isSuccess() const { return mSuccess; }
+    std::shared_ptr<const gradido::data::GradidoTransaction> getGradidoTransaction() { return mTransaction; }
 
     ~HieroMessageToTransactionTask();
 
@@ -45,8 +47,10 @@ protected:
     );    
 
     gradido::data::Timestamp mConsensusTimestamp;
-    std::shared_ptr<const gradido::data::GradidoTransaction> mTransaction;
+    std::shared_ptr<const memory::Block> mTransactionRaw;
     std::string mCommunityId;
+    std::shared_ptr<const gradido::data::GradidoTransaction> mTransaction;    
+    std::atomic<bool> mSuccess;
 };
 
 #endif //__GRADIDO_NODE_TASK_HIERO_MESSAGE_TO_TRANSACTION_TASK

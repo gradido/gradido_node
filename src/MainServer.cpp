@@ -4,7 +4,7 @@
 #include "blockchain/FileBasedProvider.h"
 #include "iota/MqttClientWrapper.h"
 #include "server/json-rpc/ApiHandlerFactory.h"
-#include "SingletonManager/OrderingManager.h"
+#include "SingletonManager/SimpleOrderingManager.h"
 #include "SingletonManager/CacheManager.h"
 #include "client/grpc/Client.h"
 #include "client/grpc/Addressbook.h"
@@ -101,7 +101,7 @@ bool MainServer::init()
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
-	// OrderingManager::getInstance()->init();
+	SimpleOrderingManager::getInstance()->init();
 
 	// JSON Interface Server
 	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");

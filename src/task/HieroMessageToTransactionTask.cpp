@@ -2,8 +2,8 @@
 
 #include "gradido_blockchain/lib/Profiler.h"
 
-#include "../SingletonManager/OrderingManager.h"
 #include "../blockchain/FileBasedProvider.h"
+#include "../SingletonManager/SimpleOrderingManager.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
@@ -24,10 +24,10 @@ using namespace interaction;
 using namespace std::chrono_literals;
 
 HieroMessageToTransactionTask::HieroMessageToTransactionTask(
-    Timestamp consensusTimestamp,
-    std::shared_ptr<const gradido::data::GradidoTransaction> transaction,
-    const std::string& communityId
-) : mConsensusTimestamp(consensusTimestamp), mTransaction(transaction), mCommunityId(communityId)
+    const gradido::data::Timestamp& consensusTimestamp,
+    std::shared_ptr<const memory::Block> transactionRaw,
+    const std::string_view communityId
+) : mConsensusTimestamp(consensusTimestamp), mTransactionRaw(transactionRaw), mCommunityId(communityId), mSuccess(false)
 {
 #ifdef _UNI_LIB_DEBUG
     setName(DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
@@ -41,14 +41,31 @@ HieroMessageToTransactionTask::~HieroMessageToTransactionTask()
 
 int HieroMessageToTransactionTask::run()
 {
-    
-    LOG_F(1, "start processing transaction: %s", DataTypeConverter::timePointToString(mConsensusTimestamp.getAsTimepoint()).data());
+    if (loguru::g_stderr_verbosity >= 1) {
+        LOG_F(1, "start processing transaction: %s", DataTypeConverter::timePointToString(mConsensusTimestamp.getAsTimepoint()).data());
+    }
     
     auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
     auto blockchain = blockchainProvider->findBlockchain(mCommunityId);
     
     if(!blockchain) {
         LOG_F(INFO, "Transaction skipped (unknown community), communityId: %s", mCommunityId.data());
+        return 0;
+    }
+
+    // deserialize
+    deserialize::Context deserializer(mTransactionRaw, deserialize::Type::GRADIDO_TRANSACTION);
+    deserializer.run();
+    if (deserializer.isGradidoTransaction()) {
+        mTransaction = deserializer.getGradidoTransaction();
+    }
+    else {
+        if (loguru::g_stderr_verbosity >= 0) {
+            LOG_F(INFO, "Transaction skipped (invalid): %s", DataTypeConverter::timePointToString(mConsensusTimestamp.getAsTimepoint()).data());
+            if (loguru::g_stderr_verbosity >= 2) {
+                LOG_F(2, "serialized: %s", mTransactionRaw->convertToHex().data());
+            }
+        }        
         return 0;
     }
 
@@ -114,7 +131,7 @@ int HieroMessageToTransactionTask::run()
                     }
                 }
             }
-            std::this_thread::sleep_for(100ms);
+            std::this_thread::sleep_for(50ms);
             // try to find pairing transaction until max time for consensus after consensus timestamp from INBOUND transaction
         } while (!pairingTransaction && mConsensusTimestamp.getAsTimepoint() + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION >= Timepoint());
 
@@ -139,8 +156,9 @@ int HieroMessageToTransactionTask::run()
     // hand over to OrderingManager
     //std::clog << "transaction: " << std::endl << transaction->getJson() << std::endl;
     // OrderingManager::getInstance()->pushTransaction(mTransaction, mConsensusTimestamp, mCommunityId);
-    blockchain->createAndAddConfirmedTransaction(mTransaction, std::make_shared<memory::Block>(0), mConsensusTimestamp.getAsTimepoint());
-
+    // blockchain->createAndAddConfirmedTransaction(mTransaction, std::make_shared<memory::Block>(0), mConsensusTimestamp.getAsTimepoint());
+    mSuccess = true;
+    SimpleOrderingManager::getInstance()->condSignal();
     return 0;
 }
 

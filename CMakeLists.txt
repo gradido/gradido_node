@@ -41,6 +41,7 @@ FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
 FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
+FILE(GLOB HIERO "src/hiero/*.h" "src/hiero/*.cpp")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
 FILE(GLOB CLIENT_GRPC "src/client/grpc/*.cpp" "src/client/grpc/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
@@ -65,6 +66,7 @@ SET(LOCAL_SRCS
 	${BLOCKCHAIN}
 	${CACHE_SRC}
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_GRPC} ${IOTA}
+	${HIERO}
 	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
 	${MODEL}  ${MODEL_APOLLO} ${MODEL_APOLLO_CREATE_TRANSACTION} ${MODEL_FILES} ${MODEL_JSON}
@@ -82,6 +84,7 @@ source_group("container" FILES ${CONTAINER})
 source_group("client\\grpc" FILES ${CLIENT_GRPC})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
+source_group("hiero" FILES ${HIERO})
 source_group("iota" FILES ${IOTA})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})

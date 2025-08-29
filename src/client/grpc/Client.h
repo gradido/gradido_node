@@ -43,6 +43,8 @@ namespace client {
 				uint64_t limit = 0				
 			);
 
+			//getTransactionReceipts()
+
 		protected:
 			Client(std::shared_ptr<::grpc::Channel> channel);
 
