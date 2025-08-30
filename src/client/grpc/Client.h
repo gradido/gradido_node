@@ -2,9 +2,13 @@
 #define __GRADIDO_NODE_CLIENT_GRPC_H
 
 #include "gradido_blockchain/data/hiero/TopicId.h"
+#include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/data/Timestamp.h"
 #include "IMessageObserver.h"
 #include "TopicMessageQueryReactor.h"
+#include "../../hiero/TransactionGetReceiptResponse.h"
+#include "../../hiero/ConsensusTopicQuery.h"
+#include "../../hiero/Query.h"
 
 #include <string>
 #include <memory>
@@ -29,31 +33,16 @@ namespace client {
 			//! \param targetUrl full url with port and protocol
 			static std::shared_ptr<Client> createForTarget(const std::string& targetUrl);
 
-			//! will use ConsensusTopicQuery from hiero/hedera consensus_service.proto
 			//! \param IMessageObserver handler for messages, will use TopicMessageQueryReactor for translate from grpc to gradido_node 
-			//! \param topicId A required topic ID to retrieve messages for.
-			//! \param consensusStartTime Include messages which reached consensus on or after this time. Defaults to current time if not set.
-			//! \param consensusEndTime Include messages which reached consensus before this time. If not set it will receive indefinitely.
-			//! \param limit The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
-			void subscribeTopic(
-				IMessageObserver* handler,
-				const hiero::TopicId& topicId,
-				gradido::data::Timestamp consensusStartTime = gradido::data::Timestamp(),
-				gradido::data::Timestamp consensusEndTime = gradido::data::Timestamp(),
-				uint64_t limit = 0				
-			);
+			void subscribeTopic(IMessageObserver* handler, const hiero::ConsensusTopicQuery& consensusTopicQuery);
 
-			//getTransactionReceipts()
+			hiero::TransactionGetReceiptResponse getTransactionReceipts(const hiero::TransactionId& transactionId);
 
 		protected:
 			Client(std::shared_ptr<::grpc::Channel> channel);
 
-			memory::Block serializeConsensusTopicQuery(
-				const hiero::TopicId& topicId,
-				const gradido::data::Timestamp& consensusStartTime,
-				const gradido::data::Timestamp& consensusEndTime,
-				uint64_t limit
-			);
+			memory::Block serializeConsensusTopicQuery(const hiero::ConsensusTopicQuery& consensusTopicQuery);
+			memory::Block serializeQuery(const hiero::Query& query);
 			// grpc 
 			std::unique_ptr<::grpc::GenericStub> mGenericStub;
 		};

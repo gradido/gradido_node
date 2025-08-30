@@ -7,6 +7,7 @@
 #include "gradido_blockchain/lib/ExpireCache.h"
 #include "../task/Thread.h"
 #include "../task/HieroMessageToTransactionTask.h"
+#include "../hiero/ConsensusTopicResponse.h"
 
 #include <map>
 #include <mutex>
@@ -34,14 +35,7 @@ public:
         ADDED
     };
 
-    PushResult pushTransaction(
-        memory::Block&& transactionHash,
-        const hiero::TransactionId transactionId,
-        uint64_t hieroSequenceNumber,
-        std::shared_ptr<const memory::Block> transactionRaw, 
-        const gradido::data::Timestamp& consensusTimestamp,
-        const std::string_view communityId
-    );
+    PushResult pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse, const std::string_view communityId);
 
 protected:
     // Singleton Protected Constructor
@@ -56,36 +50,24 @@ protected:
     struct GradidoTransactionWithGroup
     {
         GradidoTransactionWithGroup(
-            const hiero::TransactionId& _hieroTransactionId,
-            uint64_t _hieroSequenceNumber,
-            std::shared_ptr<const memory::Block> _transactionRaw,
-            const gradido::data::Timestamp& _consensusTimestamp,
+            hiero::ConsensusTopicResponse&& _consensusTopicResponse,
             std::string_view _communityId,
             std::shared_ptr<HieroMessageToTransactionTask> _deserializeTask
-        ) : hieroTransactionId(_hieroTransactionId),
-            hieroSequenceNumber(_hieroSequenceNumber), 
-            transactionRaw(_transactionRaw), 
-            consensusTimestamp(_consensusTimestamp), 
+        ) : consensusTopicResponse(std::move(_consensusTopicResponse)),
             communityId(_communityId),
             deserializeTask(_deserializeTask)
         {
         }
 
         GradidoTransactionWithGroup(GradidoTransactionWithGroup&& move) noexcept
-            : hieroTransactionId(std::move(move.hieroTransactionId)),
-            hieroSequenceNumber(move.hieroSequenceNumber),
-            transactionRaw(std::move(move.transactionRaw)),
-            consensusTimestamp(std::move(move.consensusTimestamp)),
+            : consensusTopicResponse(std::move(move.consensusTopicResponse)),
             communityId(std::move(move.communityId)),
             deserializeTask(std::move(move.deserializeTask))
         {
         }
 
         GradidoTransactionWithGroup(const GradidoTransactionWithGroup& other) noexcept
-            : hieroTransactionId(other.hieroTransactionId),
-            hieroSequenceNumber(other.hieroSequenceNumber), 
-            transactionRaw(other.transactionRaw),
-            consensusTimestamp(other.consensusTimestamp),
+            : consensusTopicResponse(other.consensusTopicResponse),
             communityId(other.communityId),
             deserializeTask(other.deserializeTask) 
         {
@@ -94,10 +76,7 @@ protected:
 
         ~GradidoTransactionWithGroup() {}        
 
-        hiero::TransactionId hieroTransactionId;
-        uint64_t hieroSequenceNumber;
-        std::shared_ptr<const memory::Block> transactionRaw;
-        gradido::data::Timestamp consensusTimestamp;        
+        hiero::ConsensusTopicResponse consensusTopicResponse;
         std::string communityId;
         std::shared_ptr<HieroMessageToTransactionTask> deserializeTask;
     };

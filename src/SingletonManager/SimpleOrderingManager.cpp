@@ -43,21 +43,22 @@ int SimpleOrderingManager::ThreadFunction()
             // with return 0, thread is still running, and this function will called again with next condSignal call
             return 0;
         }
+        auto currentSequenceNumber = it->second.consensusTopicResponse.getSequenceNumber();
         auto lastSequenceNumber = getLastSequenceNumber(it->second.communityId);
-        if (lastSequenceNumber + 1 < it->second.hieroSequenceNumber) {
+        if (lastSequenceNumber + 1 < currentSequenceNumber) {
             // the transaction before is missing so we wait
             LOG_F(2, "transactions arrived out of order from hiero, communityId: %s, last sequence number: %llu, current sequence number: %llu",
-                it->second.communityId.data(), lastSequenceNumber, it->second.hieroSequenceNumber
+                it->second.communityId.data(), lastSequenceNumber, currentSequenceNumber
             );
             return 0;
         }
         // only true if lastSequenceNumber is at least 1 and therefore already set once
-        if (lastSequenceNumber && lastSequenceNumber + 1 > it->second.hieroSequenceNumber) {
+        if (lastSequenceNumber && lastSequenceNumber + 1 > currentSequenceNumber) {
             // the transaction after this transaction was already put into blockchain
             // maybe we have an error
             // or hiero has used the same sequence number twice?
             LOG_F(FATAL, "transaction after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %llu, current sequence number: %llu",
-                it->second.communityId.data(), lastSequenceNumber, it->second.hieroSequenceNumber
+                it->second.communityId.data(), lastSequenceNumber, currentSequenceNumber
             );
             throw GradidoNodeInvalidDataException("data set wasn't like expected, seem to be an error in code or hiero work not like expected");
         }
@@ -79,20 +80,24 @@ void SimpleOrderingManager::processTransaction(const GradidoTransactionWithGroup
         throw CommunityNotFoundExceptions("couldn't find group", gradidoTransactionWorkData.communityId);
     }
     auto transaction = gradidoTransactionWorkData.deserializeTask->getGradidoTransaction();
-    try {
-        serialize::Context serializer(gradidoTransactionWorkData.hieroTransactionId);
+    const auto& transactionId = gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
+    if (!transactionId.empty()) {
+        throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
+    }
+    try {                
+        serialize::Context serializer(transactionId);
         bool result = blockchain->createAndAddConfirmedTransaction(
             transaction, 
             serializer.run(),
-            gradidoTransactionWorkData.consensusTimestamp.getAsTimepoint()
+            gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp().getAsTimepoint()
         );
-        LOG_F(INFO, "Transaction added, msgId: %s", gradidoTransactionWorkData.hieroTransactionId.toString().data());
+        LOG_F(INFO, "Transaction added, msgId: %s", transactionId.toString().data());
     }
     catch (GradidoBlockchainException& ex) {
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
         if (communityServer) {
-            communityServer->notificateFailedTransaction(*transaction, ex.what(), gradidoTransactionWorkData.hieroTransactionId.toString());
+            communityServer->notificateFailedTransaction(*transaction, ex.what(), transactionId.toString());
         }
         try {
             toJson::Context toJson(*transaction);
@@ -108,14 +113,11 @@ void SimpleOrderingManager::processTransaction(const GradidoTransactionWithGroup
 }
 
 SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(
-    memory::Block&& transactionHash,
-    const hiero::TransactionId transactionId,
-    uint64_t hieroSequenceNumber,
-    std::shared_ptr<const memory::Block> transactionRaw,
-    const gradido::data::Timestamp& consensusTimestamp,
-    const std::string_view communityId
+    hiero::ConsensusTopicResponse&& consensusTopicResponse, const std::string_view communityId
 ) {
-    auto existingTransactionConsensusTimestamp = mLastTransactions.get(SignatureOctet(transactionHash));
+    auto consensusTimestamp = consensusTopicResponse.getConsensusTimestamp();
+
+    auto existingTransactionConsensusTimestamp = mLastTransactions.get(SignatureOctet(*consensusTopicResponse.getRunningHash()));
     if (existingTransactionConsensusTimestamp) {
         if (existingTransactionConsensusTimestamp.value() == consensusTimestamp) {
             LOG_F(2, "skip: %s", DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
@@ -125,24 +127,15 @@ SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(
     std::lock_guard _lock(mTransactionsMutex);
     auto range = mTransactions.equal_range(consensusTimestamp);
     for (auto& it = range.first; it != range.second; ++it) {
-        if (it->second.communityId == communityId && it->second.transactionRaw->isTheSame(transactionRaw)) {
+        if (it->second.communityId == communityId && it->second.consensusTopicResponse.isMessageSame(consensusTopicResponse)) {
             LOG_F(2, "unexpected skip: %s", DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
             return PushResult::FOUND_IN_TRANSACTIONS;
         }
     }
     std::shared_ptr<HieroMessageToTransactionTask> task(new HieroMessageToTransactionTask(
-        consensusTimestamp, transactionRaw, communityId
+        consensusTimestamp, consensusTopicResponse.getMessageData(), communityId
     ));
-    mTransactions.insert({ 
-        consensusTimestamp, GradidoTransactionWithGroup(
-            transactionId,
-            hieroSequenceNumber,
-            std::move(transactionRaw), 
-            consensusTimestamp, 
-            communityId,
-            task
-        )
-    });
+    mTransactions.insert({ consensusTimestamp, GradidoTransactionWithGroup(std::move(consensusTopicResponse), communityId, task) });
     
     task->scheduleTask(task);
     if (loguru::g_stderr_verbosity >= 0) {

@@ -5,6 +5,10 @@
 #include "gradido_blockchain/data/hiero/TopicId.h"
 #include "gradido_blockchain/data/GradidoTransaction.h"
 
+namespace hiero {
+	class ConsensusTopicResponse;
+};
+
 namespace client {
 	namespace grpc {
 		class MessageListener : public IMessageObserver
@@ -14,12 +18,12 @@ namespace client {
 			~MessageListener();
 
 			// move message binary
-			virtual void messageArrived(memory::Block&& message);
+			virtual void messageArrived(memory::Block&& consensusTopicResponseRaw);
 
 			// will be called from grpc client if connection was closed
 			virtual void messagesStopped();
 		protected:
-			void processConsensusTopicResponse(const memory::Block& raw);
+			void processConsensusTopicResponse(hiero::ConsensusTopicResponse&& response);
 			hiero::TopicId mTopicId;
 			std::string mCommunityId;
 		};

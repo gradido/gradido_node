@@ -1,38 +1,11 @@
 #include "Client.h"
 #include "Exceptions.h"
-#include "gradido_blockchain/memory/VectorCacheAllocator.h"
 #include "gradido_blockchain/interaction/serialize/Protopuf.h"
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/generic/generic_stub.h>
 
-
-
 using namespace gradido::interaction::serialize;
-
-using QueryHeaderMessage = message<
->;
-
-using ResponseHeaderMessage = message<
->;
-
-using TransactionReceiptMessage = message<
->;
-
-using TransactionGetReceiptQueryMessage = message<
-	message_field<"header", 1, QueryHeaderMessage>,
-	message_field<"transactionID", 2, HieroTransactionIdMessage>,
-	bool_field<"includeDuplicates", 3>, 
-	bool_field<"include_child_receipts", 4>
->;
-
-using TransactionGetReceiptResponseMessage = message<
-	message_field<"header", 1, ResponseHeaderMessage>,
-	message_field<"receipt", 2, TransactionReceiptMessage>,
-	message_field<"duplicateTransactionReceipts", 4, TransactionReceiptMessage, repeated>,
-	message_field<"child_transaction_receipts", 5, TransactionReceiptMessage, repeated>
->;
-
 
 namespace client {
 	namespace grpc {
@@ -62,13 +35,10 @@ namespace client {
 
 		void Client::subscribeTopic(
 			IMessageObserver* handler,
-			const hiero::TopicId& topicId,
-			gradido::data::Timestamp consensusStartTime /* = gradido::data::Timestamp() */,
-			gradido::data::Timestamp consensusEndTime /* = gradido::data::Timestamp() */,
-			uint64_t limit /* = 0 */
+			const hiero::ConsensusTopicQuery& consensusTopicQuery
 		)
 		{
-			auto rawRequest = serializeConsensusTopicQuery(topicId, consensusStartTime, consensusEndTime, limit);
+			auto rawRequest = serializeConsensusTopicQuery(consensusTopicQuery);
 			auto reactor = new TopicMessageQueryReactor(handler, std::move(rawRequest));
 			::grpc::ClientContext context;
 			::grpc::StubOptions options;
@@ -78,28 +48,24 @@ namespace client {
 			reactor->StartWriteLast(reactor->getBuffer(), writeOptions);
 		}
 
-		memory::Block Client::serializeConsensusTopicQuery(
-			const hiero::TopicId& topicId,
-			const gradido::data::Timestamp& consensusStartTime,
-			const gradido::data::Timestamp& consensusEndTime,
-			uint64_t limit
-		) {
-			using ConsensusTopicQuery = message<
-				message_field<"topicID", 1, HieroTopicIdMessage>,
-				message_field<"consensusStartTime", 2, TimestampMessage>,
-				message_field<"consensusEndTime", 3, TimestampMessage>,
-				uint64_field<"limit", 4>
-			>;
+		hiero::TransactionGetReceiptResponse Client::getTransactionReceipts(const hiero::TransactionId& transactionId)
+		{
+			auto rawRequest = serializeQuery(std::make_shared<hiero::TransactionGetReceiptQuery>(
+				hiero::QueryHeader(hiero::ResponseType::ANSWER_ONLY),
+				transactionId)
+			);
+			::grpc::ClientContext context;
+			::grpc::StubOptions options;
+			::grpc::Slice rawRequestSlice(rawRequest.data(), rawRequest.size());
+			::grpc::ByteBuffer rawRequestByteBuffer(&rawRequestSlice, 1);
+			::grpc::ByteBuffer response;
+			mGenericStub->UnaryCall(&context, "/CryptoService/getTransactionReceipts", options, &rawRequestByteBuffer, &response, )
+		}
 
-			ConsensusTopicQuery message {
-				HieroTopicIdMessage { topicId.getShardNum(), topicId.getRealmNum(), topicId.getTopicNum() },
-				TimestampMessage { consensusStartTime.getSeconds(), consensusStartTime.getNanos() },
-				TimestampMessage { consensusEndTime.getSeconds(), consensusEndTime.getNanos() },
-				limit
-			};
-			constexpr size_t bufferSize = 6 * 8 + 2 * 4 + 6;
-			std::array<std::byte, bufferSize> buffer;
-			auto bufferEnd = pp::message_coder<ConsensusTopicQuery>::encode(message, buffer);
+		memory::Block Client::serializeConsensusTopicQuery(const hiero::ConsensusTopicQuery& consensusTopicQuery) {
+			array<std::byte, hiero::ConsensusTopicQuery::maxSize()> buffer;
+			auto message = consensusTopicQuery.getMessage();
+			auto bufferEnd = message_coder<hiero::ConsensusTopicQueryMessage>::encode(message, buffer);
 			if (!bufferEnd.has_value()) {
 				throw GradidoNodeInvalidDataException("couldn't serialize to ConsensusTopicQuery");
 			}
@@ -108,7 +74,26 @@ namespace client {
 			if (!actualSize) {
 				throw GradidoNodeInvalidDataException("shouldn't be possible");
 			}
+			LOG_F(2, "consensusTopicQuery serialized size: %llu/%llu", actualSize, hiero::ConsensusTopicQuery::maxSize());
 			return memory::Block(actualSize, (const uint8_t*)buffer.data());
 		}
+
+		memory::Block Client::serializeQuery(const hiero::Query& query)
+		{
+			array<std::byte, hiero::Query::maxSize()> buffer;
+			auto message = query.getMessage();
+			auto bufferEnd = message_coder<hiero::QueryMessage>::encode(message, buffer);
+			if (!bufferEnd.has_value()) {
+				throw GradidoNodeInvalidDataException("couldn't serialize to Query");
+			}
+			auto bufferEndValue = bufferEnd.value();
+			auto actualSize = pp::begin_diff(bufferEndValue, buffer);
+			if (!actualSize) {
+				throw GradidoNodeInvalidDataException("shouldn't be possible");
+			}
+			LOG_F(2, "Query serialized size: %llu/%llu", actualSize, hiero::ConsensusTopicQuery::maxSize());
+			return memory::Block(actualSize, (const uint8_t*)buffer.data());
+		}
+		
 	}
 }

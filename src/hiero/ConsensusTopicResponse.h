@@ -38,6 +38,7 @@ namespace hiero {
         inline uint64_t getSequenceNumber() const { return mSequenceNumber; }
         inline uint64_t getRunningHashVersion() const { return mRunningHashVersion; }
         inline const ConsensusMessageChunkInfo& getChunkInfo() const { return mChunkInfo; }
+        inline bool isMessageSame(const ConsensusTopicResponse& other) { return mMessage->isTheSame(other.mMessage); }
     protected:
         gradido::data::Timestamp mConsensusTimestamp;
         memory::ConstBlockPtr mMessage;
