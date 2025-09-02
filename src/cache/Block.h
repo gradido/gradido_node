@@ -74,7 +74,7 @@ namespace cache {
 
 		std::shared_ptr<BlockIndex> mBlockIndex;
 		std::shared_ptr<model::files::Block> mBlockFile;
-		std::shared_ptr<WriteTransactionsToBlockTask> mTransactionWriteTask;
+		std::shared_ptr<task::WriteTransactionsToBlockTask> mTransactionWriteTask;
 		std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
 		bool mExitCalled;
 	};

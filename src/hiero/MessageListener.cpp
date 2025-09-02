@@ -1,5 +1,6 @@
 #include "MessageListener.h"
-#include "../SingletonManager/SimpleOrderingManager.h"
+#include "../controller/SimpleOrderingManager.h"
+#include "../blockchain/FileBasedProvider.h"
 #include "ConsensusTopicResponse.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
@@ -35,7 +36,10 @@ namespace hiero {
 			}
 			startTransactionId = response.getChunkInfo().getInitialTransactionId();
 		}
-		SimpleOrderingManager::getInstance()->pushTransaction(std::move(response), mCommunityId);
+		auto blockchain = gradido::blockchain::FileBasedProvider::getInstance()->findBlockchain(mCommunityId);
+		auto fileBasedBlockchain = static_cast<gradido::blockchain::FileBased*>(blockchain.get());
+
+		fileBasedBlockchain->getOrderingManager()->pushTransaction(std::move(response));
 	}
 
 	// will be called from grpc client if connection was closed

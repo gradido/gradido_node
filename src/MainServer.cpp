@@ -1,12 +1,12 @@
+#include "client/grpc/Client.h"
 #include "MainServer.h"
 #include "ServerGlobals.h"
 
 #include "blockchain/FileBasedProvider.h"
 // #include "iota/MqttClientWrapper.h"
 #include "server/json-rpc/ApiHandlerFactory.h"
-#include "SingletonManager/SimpleOrderingManager.h"
 #include "SingletonManager/CacheManager.h"
-#include "client/grpc/Client.h"
+
 #include "hiero/Addressbook.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
@@ -119,7 +119,6 @@ bool MainServer::init()
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
-	SimpleOrderingManager::getInstance()->init();
 
 	// JSON Interface Server
 	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");

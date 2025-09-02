@@ -39,6 +39,7 @@ namespace gradido {
 			mFolderPath(folder),
 			mAlias(alias),
 			mTaskObserver(std::make_shared<TaskObserver>()),
+			mOrderingManager(std::make_shared<controller::SimpleOrderingManager>(communityId)),
 			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeysCache"))),
 			mBlockchainState(std::string(folder).append("/.state")),
@@ -141,6 +142,7 @@ namespace gradido {
 				GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE,
 				timeUsed.string().data()
 			);
+			mOrderingManager->init();
 			mHieroMessageListeners.reserve(mHieroClients.size());
 			for (auto& hieroClient : mHieroClients) {
 				auto messageListener = std::make_shared<hiero::MessageListener>(mHieroTopicId, mCommunityId);
@@ -171,6 +173,7 @@ namespace gradido {
 					break;
 				}
 			}
+			mOrderingManager->exit();
 			mCachedBlocks.clear();
 			mBlockchainState.exit();
 			mPublicKeysIndex->exit();

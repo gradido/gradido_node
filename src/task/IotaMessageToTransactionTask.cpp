@@ -185,7 +185,7 @@ int IotaMessageToTransactionTask::run()
         return 0;
     }       
     auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
-    if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt() > mTimestamp) {
+    if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
         std::string message = "Transaction skipped (from past)";
         notificateFailedTransaction(blockchain, *transaction, message);

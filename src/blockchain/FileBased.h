@@ -9,6 +9,7 @@
 #include "../cache/TransactionTriggerEvent.h"
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
+#include "../controller/SimpleOrderingManager.h"
 
 #include "gradido_blockchain/blockchain/Abstract.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
@@ -34,6 +35,10 @@ namespace client {
 
 namespace hiero {
 	class MessageListener;
+}
+
+namespace controller {
+	class SimpleOrderingManager;
 }
 
 namespace gradido {
@@ -128,6 +133,7 @@ namespace gradido {
 			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
 			inline std::shared_ptr<client::grpc::Client> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
+			std::shared_ptr<controller::SimpleOrderingManager> getOrderingManager() { return mOrderingManager; }
 
 		protected:
 			//! if state leveldb was invalid, recover values from block cache
@@ -149,6 +155,7 @@ namespace gradido {
 
 			//! observe write to file tasks from block, mayber later more
 			mutable std::shared_ptr<TaskObserver> mTaskObserver;
+			std::shared_ptr<controller::SimpleOrderingManager> mOrderingManager;
 			//! connect via mqtt to iota server and get new messages
 			//iota::MessageListener* mIotaMessageListener;
 			std::vector<std::shared_ptr<hiero::MessageListener>> mHieroMessageListeners;

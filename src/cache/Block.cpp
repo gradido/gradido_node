@@ -103,7 +103,7 @@ namespace cache {
 
 		if (!mTransactionWriteTask) {
 			// std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<cache::BlockIndex> blockIndex
-			mTransactionWriteTask = std::make_shared<WriteTransactionsToBlockTask>(mBlockFile, mBlockIndex);
+			mTransactionWriteTask = std::make_shared<task::WriteTransactionsToBlockTask>(mBlockFile, mBlockIndex);
 		}
 		mTransactionWriteTask->addSerializedTransaction(transaction);
 		mSerializedTransactions.add(transaction->getTransactionNr(), transaction);

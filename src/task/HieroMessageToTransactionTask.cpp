@@ -1,11 +1,10 @@
 #include "HieroMessageToTransactionTask.h"
-#include "CheckForCrossGroupPairTask.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 
 #include "../client/grpc/Client.h"
 #include "../blockchain/FileBasedProvider.h"
-#include "../SingletonManager/SimpleOrderingManager.h"
+#include "../controller/SimpleOrderingManager.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
@@ -103,67 +102,14 @@ namespace task {
         }
         catch (GradidoBlockchainException& e) {
             LOG_F(ERROR, e.getFullString().data());
-            notificateFailedTransaction(blockchain, *mTransaction, e.what());
+            notificateFailedTransaction(blockchain, e.what());
             return 0;
-        }
-
-        // TODO: Cross Group Check
-        // on inbound
-        // check if we listen to other group 
-        // try to find the pairing transaction 
-        if (CrossGroupType::INBOUND == mTransaction->getTransactionBody()->getType()) {
-            deserialize::Context topicIdDeserializer(mTransaction->getParingMessageId(), deserialize::Type::HIERO_TRANSACTION_ID);
-            topicIdDeserializer.run();
-            if (!topicIdDeserializer.isHieroTopicId()) {
-                std::string message = "Transaction skipped (pairing transactionId invalid)";
-                notificateFailedTransaction(blockchain, *mTransaction, message);
-                LOG_F(INFO, "%s: %s", message.data(), DataTypeConverter::timePointToString(mConsensusTimestamp).data());
-                return 0;
-            }
-            mCheckForCrossGroupPairTask = std::make_shared<CheckForCrossGroupPairTask>(mTransaction);
-            auto hieroClient = fileBasedBlockchain->pickHieroClient();
-            hieroClient->getTransactionReceipts(topicIdDeserializer.getHieroTransactionId(), mCheckForCrossGroupPairTask);
-            ConstGradidoTransactionPtr pairingTransaction;
-            do {
-                auto otherGroup = blockchainProvider->findBlockchain(mTransaction->getTransactionBody()->getOtherGroup());
-                if (otherGroup) {
-                    interaction::deserialize::Context c(mTransaction->getParingMessageId(), interaction::deserialize::Type::HIERO_TRANSACTION_ID);
-                    if (c.isHieroTransactionId()) {
-                        auto transactionId = c.getHieroTransactionId();
-                        Filter f;
-                        f.timepointInterval = TimepointInterval(transactionId.getTransactionValidStart(), Timepoint());
-                        f.searchDirection = SearchDirection::ASC;
-                        f.filterFunction = [&](const TransactionEntry& entry) -> FilterResult {
-                            if (entry.getConfirmedTransaction()->getGradidoTransaction()->isPairing(*mTransaction)) {
-                                return FilterResult::USE | FilterResult::STOP;
-                            }
-                            return FilterResult::DISMISS;
-                            };
-                        auto transactionEntry = otherGroup->findOne(f);
-                        if (transactionEntry) {
-                            pairingTransaction = transactionEntry->getConfirmedTransaction()->getGradidoTransaction();
-                        }
-                    }
-                }
-                std::this_thread::sleep_for(50ms);
-                // try to find pairing transaction until max time for consensus after consensus timestamp from INBOUND transaction
-            } while (!pairingTransaction && mConsensusTimestamp.getAsTimepoint() + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION >= Timepoint());
-
-            if (!pairingTransaction)
-            {
-                std::string message = "Transaction skipped (pairing not found)";
-                notificateFailedTransaction(blockchain, *mTransaction, message);
-                LOG_F(INFO, "%s: %s", message.data(), DataTypeConverter::timePointToString(mConsensusTimestamp).data());
-                return 0;
-            }
         }
 
         auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
         if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint() > mConsensusTimestamp.getAsTimepoint()) {
             // this transaction seems to be from the past, a transaction which happen after this was already added
-            std::string message = "Transaction skipped (from past)";
-            notificateFailedTransaction(blockchain, *mTransaction, message);
-            LOG_F(INFO, "%s: %s", message.data(), DataTypeConverter::timePointToString(mConsensusTimestamp).data());
+            notificateFailedTransaction(blockchain, "Transaction skipped (from past)");
             return 0;
         }
 
@@ -172,30 +118,20 @@ namespace task {
         // OrderingManager::getInstance()->pushTransaction(mTransaction, mConsensusTimestamp, mCommunityId);
         // blockchain->createAndAddConfirmedTransaction(mTransaction, std::make_shared<memory::Block>(0), mConsensusTimestamp.getAsTimepoint());
         mSuccess = true;
-        SimpleOrderingManager::getInstance()->condSignal();
+        static_cast<gradido::blockchain::FileBased*>(blockchain.get())->getOrderingManager()->condSignal();
         return 0;
     }
 
-    bool HieroMessageToTransactionTask::isTaskFinished()
-    {
-        bool ret = CPUTask::isTaskFinished();
-        lock();
-        bool ret = ret && (!mCheckForCrossGroupPairTask || mCheckForCrossGroupPairTask->isTaskFinished());
-        unlock();
-        return ret;
-    }
-
-
     void HieroMessageToTransactionTask::notificateFailedTransaction(
         std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-        const gradido::data::GradidoTransaction transaction,
         const std::string& errorMessage
     )
     {
+        LOG_F(INFO, "%s: %s", errorMessage.data(), DataTypeConverter::timePointToString(mConsensusTimestamp).data());
         if (blockchain) {
             auto communityServer = std::dynamic_pointer_cast<gradido::blockchain::FileBased>(blockchain)->getListeningCommunityServer();
             if (communityServer) {
-                communityServer->notificateFailedTransaction(transaction, errorMessage, DataTypeConverter::timePointToString(mConsensusTimestamp));
+                communityServer->notificateFailedTransaction(*mTransaction, errorMessage, DataTypeConverter::timePointToString(mConsensusTimestamp));
             }
         }
     }

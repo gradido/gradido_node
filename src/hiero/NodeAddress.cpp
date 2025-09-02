@@ -6,7 +6,7 @@
 using namespace gradido::interaction;
 
 namespace hiero {
-	NodeAddress::NodeAddress(): mNodeCertHash(0), mNodeId(0) 
+	NodeAddress::NodeAddress(): mNodeId(0), mNodeCertHash(0)
 	{
 	}
 
@@ -27,7 +27,7 @@ namespace hiero {
     }
 
 	NodeAddress::NodeAddress(const NodeAddressMessage& message)
-		: mNodeId(0)
+		: mNodeId(0), mNodeCertHash(0)
 	{		
 		mRsaPubkey = message["RSA_Pubkey"_f].value();
 		if (message["nodeId"_f].has_value()) {

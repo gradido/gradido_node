@@ -10,7 +10,7 @@ namespace task {
 
     int CheckForCrossGroupPairTask::run()
     {
-        
+        return 0;
     }
 
     void CheckForCrossGroupPairTask::onMessageArrived(const hiero::TransactionGetReceiptResponseMessage& message)

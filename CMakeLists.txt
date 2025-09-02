@@ -101,7 +101,7 @@ source_group("task" FILES ${TASK})
 endif(MSVC)
 
 ############################## add dependencies  #########################################
-
+set(ENABLE_HTTP ON)
 add_subdirectory("dependencies/gradido_blockchain")
 SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 

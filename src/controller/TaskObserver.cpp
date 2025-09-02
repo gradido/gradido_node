@@ -19,7 +19,7 @@ TaskObserver::~TaskObserver()
 
 }
 
-bool TaskObserver::addBlockWriteTask(std::shared_ptr<WriteTransactionsToBlockTask> blockWriteTask)
+bool TaskObserver::addBlockWriteTask(std::shared_ptr<task::WriteTransactionsToBlockTask> blockWriteTask)
 {
 	std::lock_guard _lock(mFastMutex);
 	auto result = mBlockWriteTasks.insert(BlockWriteMapPair(blockWriteTask.get(), blockWriteTask));
@@ -36,13 +36,13 @@ bool TaskObserver::removeTask(task::Task* task)
 {
 	auto ressourceType = task->getResourceType();
 	if (strcmp("WriteTransactionsToBlockTask", ressourceType) == 0) {
-		auto blockWriteTask = (WriteTransactionsToBlockTask*)task;
+		auto blockWriteTask = (task::WriteTransactionsToBlockTask*)task;
 		return removeBlockWriteTask(blockWriteTask);
 	}
 	return false;
 }
 
-bool TaskObserver::removeBlockWriteTask(WriteTransactionsToBlockTask* blockWriteTask)
+bool TaskObserver::removeBlockWriteTask(task::WriteTransactionsToBlockTask* blockWriteTask)
 {
 	std::lock_guard _lock(mFastMutex);
 	auto entry = mBlockWriteTasks.find(blockWriteTask);
