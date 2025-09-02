@@ -40,8 +40,10 @@ namespace cache {
 					rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "communityId", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
+					rapidjson_helper::checkMember(communityEntry, "hieroTopicId", rapidjson_helper::MemberType::STRING);
 					entry.alias = communityEntry["alias"].GetString();
 					entry.communityId = communityEntry["communityId"].GetString();
+					entry.topicId = communityEntry["hieroTopicId"].GetString();
 					entry.folderName = communityEntry["folder"].GetString();
 					if (communityEntry.HasMember("newBlockUri")) {
 						entry.newBlockUri = communityEntry["newBlockUri"].GetString();

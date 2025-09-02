@@ -2,11 +2,13 @@
 #include "FileBasedProvider.h"
 #include "NodeTransactionEntry.h"
 #include "../cache/Exceptions.h"
+#include "../hiero/MessageListener.h"
 #include "../model/files/Block.h"
 #include "../model/files/BlockIndex.h"
 #include "../ServerGlobals.h"
 #include "../SystemExceptions.h"
 #include "../task/NotifyClient.h"
+#include "../client/grpc/Client.h"
 
 #include "gradido_blockchain/const.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
@@ -18,34 +20,44 @@
 #include "loguru/loguru.hpp"
 
 #include <set>
+#include <chrono>
 
 using namespace cache;
 
 namespace gradido {
 	using namespace interaction;
 	namespace blockchain {
-		FileBased::FileBased(Private, std::string_view communityId, std::string_view alias, std::string_view folder)
+		FileBased::FileBased(
+			Private,
+			std::string_view communityId,
+			const hiero::TopicId& topicId,
+			std::string_view alias,
+			std::string_view folder,
+			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients)
 			: Abstract(communityId),
 			mExitCalled(false),
 			mFolderPath(folder),
 			mAlias(alias),
 			mTaskObserver(std::make_shared<TaskObserver>()),
-			mIotaMessageListener(new iota::MessageListener(communityId, alias)),
+			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeysCache"))),
 			mBlockchainState(std::string(folder).append("/.state")),
 			mMessageIdsCache(std::string(folder).append("/messageIdCache")),
 			mTransactionTriggerEventsCache(std::string(folder).append("/transactionTriggerEventCache")),
 			mCachedBlocks(ServerGlobals::g_CacheTimeout),
-			mTransactionHashCache(communityId)
+			mTransactionHashCache(communityId),
+			mHieroClients(std::move(hieroClients))
 		{
+			assert(mHieroClients.size());
 		}
 
 		FileBased::~FileBased()
 		{
-			if (mIotaMessageListener) {
+			/*if (mIotaMessageListener) {
 				delete mIotaMessageListener;
 				mIotaMessageListener = nullptr;
 			}
+			*/
 		}
 		bool FileBased::init(bool resetBlockIndices)
 		{
@@ -129,17 +141,25 @@ namespace gradido {
 				GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE,
 				timeUsed.string().data()
 			);
-
-			mIotaMessageListener->run();
+			mHieroMessageListeners.reserve(mHieroClients.size());
+			for (auto& hieroClient : mHieroClients) {
+				auto messageListener = std::make_shared<hiero::MessageListener>(mHieroTopicId, mCommunityId);
+				hieroClient->subscribeTopic({ mHieroTopicId }, messageListener);
+				mHieroMessageListeners.push_back(messageListener);
+			}
+			
 			return true;
 		}
 		void FileBased::exit()
 		{
 			std::lock_guard _lock(mWorkMutex);
 			mExitCalled = true;
-			if (mIotaMessageListener) {
+			/*if (mIotaMessageListener) {
 				delete mIotaMessageListener;
 				mIotaMessageListener = nullptr;
+			}*/
+			for (const auto& messageListener : mHieroMessageListeners) {
+				messageListener->cancelConnection();
 			}
 
 			Profiler timeUsed;

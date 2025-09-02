@@ -1,5 +1,7 @@
 #include "Client.h"
 #include "Exceptions.h"
+#include "SubscriptionReactor.h"
+#include "RequestReactor.h"
 #include "gradido_blockchain/interaction/serialize/Protopuf.h"
 
 #include <grpcpp/grpcpp.h>
@@ -9,14 +11,13 @@ using namespace gradido::interaction::serialize;
 
 namespace client {
 	namespace grpc {
+
+		using GenericStub = ::grpc::TemplatedGenericStub<::grpc::ByteBuffer, ::grpc::ByteBuffer>;
 		
 		Client::Client(std::shared_ptr<::grpc::Channel> channel)
-			: mGenericStub(std::make_unique<::grpc::GenericStub>(channel))
+			: mChannel(channel)
 		{
 
-		}
-		Client::~Client()
-		{
 		}
 
 		std::shared_ptr<Client> Client::createForTarget(const std::string& targetUrl)
@@ -34,32 +35,43 @@ namespace client {
 		}
 
 		void Client::subscribeTopic(
-			IMessageObserver* handler,
-			const hiero::ConsensusTopicQuery& consensusTopicQuery
+			const hiero::ConsensusTopicQuery& consensusTopicQuery,
+			std::shared_ptr<MessageObserver<hiero::ConsensusTopicResponseMessage>> responseListener
 		)
 		{
 			auto rawRequest = serializeConsensusTopicQuery(consensusTopicQuery);
-			auto reactor = new TopicMessageQueryReactor(handler, std::move(rawRequest));
-			::grpc::ClientContext context;
+			// will self destroy on connection close call from grpc
+			auto reactor = new SubscriptionReactor(responseListener, std::move(rawRequest));
 			::grpc::StubOptions options;
-			// TODO: check intern channel pointer for dangling pointer
-			mGenericStub->PrepareBidiStreamingCall(&context, "/ConsensusService/subscribeTopic", options, reactor);
+			GenericStub genericStub(mChannel);
+			genericStub.PrepareBidiStreamingCall(responseListener->getClientContextPtr(), "/ConsensusService/subscribeTopic", options, reactor);
 			::grpc::WriteOptions writeOptions;
 			reactor->StartWriteLast(reactor->getBuffer(), writeOptions);
 		}
-
-		hiero::TransactionGetReceiptResponse Client::getTransactionReceipts(const hiero::TransactionId& transactionId)
-		{
-			auto rawRequest = serializeQuery(std::make_shared<hiero::TransactionGetReceiptQuery>(
-				hiero::QueryHeader(hiero::ResponseType::ANSWER_ONLY),
-				transactionId)
+		void Client::getTransactionReceipts(
+			const hiero::TransactionId& request,
+			std::shared_ptr<MessageObserver<hiero::TransactionGetReceiptResponseMessage>> responseListener
+		) {
+			auto rawRequest = serializeQuery(
+				std::make_shared<hiero::TransactionGetReceiptQuery>(
+					hiero::QueryHeader(hiero::ResponseType::ANSWER_ONLY),
+					request
+				)
 			);
-			::grpc::ClientContext context;
 			::grpc::StubOptions options;
 			::grpc::Slice rawRequestSlice(rawRequest.data(), rawRequest.size());
 			::grpc::ByteBuffer rawRequestByteBuffer(&rawRequestSlice, 1);
-			::grpc::ByteBuffer response;
-			mGenericStub->UnaryCall(&context, "/CryptoService/getTransactionReceipts", options, &rawRequestByteBuffer, &response, )
+			GenericStub genericStub(mChannel);
+			// will self destroy on connection close call from grpc
+			auto reactor = new RequestReactor<hiero::TransactionGetReceiptResponseMessage>(responseListener);
+			genericStub.PrepareUnaryCall(
+				responseListener->getClientContextPtr(),
+				"/CryptoService/getTransactionReceipts",
+				options,
+				&rawRequestByteBuffer,
+				reactor->getBuffer(),
+				reactor
+			);
 		}
 
 		memory::Block Client::serializeConsensusTopicQuery(const hiero::ConsensusTopicQuery& consensusTopicQuery) {
@@ -91,7 +103,7 @@ namespace client {
 			if (!actualSize) {
 				throw GradidoNodeInvalidDataException("shouldn't be possible");
 			}
-			LOG_F(2, "Query serialized size: %llu/%llu", actualSize, hiero::ConsensusTopicQuery::maxSize());
+			LOG_F(2, "Query serialized size: %llu/%llu", actualSize, hiero::Query::maxSize());
 			return memory::Block(actualSize, (const uint8_t*)buffer.data());
 		}
 		

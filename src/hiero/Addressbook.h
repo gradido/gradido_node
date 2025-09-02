@@ -19,6 +19,9 @@ namespace hiero {
 		inline const ServiceEndpoint& pickRandomEndpoint() const {
 			return mNodeAddressBook.pickRandomNode().pickRandomEndpoint();
 		}
+		inline const NodeAddress& pickRandomNode() const {
+			return mNodeAddressBook.pickRandomNode();
+		}
 
 	protected:
 		std::string mFilePath;

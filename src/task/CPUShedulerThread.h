@@ -51,7 +51,7 @@ namespace task {
 		//! will be called from thread with locked working mutex,<br>
 		//! mutex will be unlock after calling this function
 		//! \return if return isn't 0, thread will exit
-		virtual int ThreadFunction();
+		virtual int ThreadFunction() override;
 
 		void setNewTask(TaskPtr cpuTask);
 

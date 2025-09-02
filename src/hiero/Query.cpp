@@ -32,12 +32,4 @@ namespace hiero {
 		}
 		return message;
 	}
-
-	size_t Query::maxSize() const
-	{
-		if (mTransactionGetReceiptQuery) {
-			return mTransactionGetReceiptQuery->maxSize();
-		}
-		return 0;
-	}
 }

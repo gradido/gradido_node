@@ -115,6 +115,7 @@ void SimpleOrderingManager::processTransaction(const GradidoTransactionWithGroup
 SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(
     hiero::ConsensusTopicResponse&& consensusTopicResponse, const std::string_view communityId
 ) {
+    if (isExitCalled()) { return; }
     auto consensusTimestamp = consensusTopicResponse.getConsensusTimestamp();
 
     auto existingTransactionConsensusTimestamp = mLastTransactions.get(SignatureOctet(*consensusTopicResponse.getRunningHash()));

@@ -28,8 +28,8 @@ class IotaMessageToTransactionTask : public task::CPUTask
 public:
     IotaMessageToTransactionTask(uint32_t milestoneIndex, Timepoint timestamp, iota::MessageId message);
 
-    const char* getResourceType() const {return "IotaMessageToTransactionTask";};
-    int run();
+    const char* getResourceType() const override {return "IotaMessageToTransactionTask";};
+    int run() override;
 
     ~IotaMessageToTransactionTask();
     inline uint32_t getMilestoneIndex() const { return mMilestoneIndex; }

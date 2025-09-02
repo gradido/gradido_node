@@ -14,6 +14,7 @@ namespace cache {
 	{
 		std::string alias;
 		std::string communityId;
+		std::string topicId;
 		std::string folderName;
 		std::string newBlockUri;
 		std::string blockUriType;

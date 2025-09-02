@@ -6,12 +6,6 @@
 
 #include <string>
 
-namespace client {
-	namespace grpc {
-		class Client;
-	}
-}
-
 class MainServer : public Application
 {
 
@@ -38,7 +32,6 @@ protected:
 	bool configExists(const std::string& fileName);
 
 	Server* mHttpServer;
-	std::shared_ptr<client::grpc::Client> mHieroClient;
 private:
 };
 

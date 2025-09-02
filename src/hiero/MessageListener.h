@@ -1,0 +1,35 @@
+#ifndef __GRADIDO_NODE_CLIENT_GRPC_H
+#define __GRADIDO_NODE_CLIENT_GRPC_H
+
+#include "../client/grpc/MessageObserver.h"
+#include "ConsensusTopicResponse.h"
+
+#include "gradido_blockchain/data/hiero/TopicId.h"
+
+#include <atomic>
+
+namespace hiero {
+		
+	class MessageListener : public client::grpc::MessageObserver<ConsensusTopicResponseMessage>
+	{
+	public:
+		MessageListener(const TopicId& topicId, std::string_view communityId);
+		~MessageListener();
+
+		// move message binary
+		virtual void onMessageArrived(const ConsensusTopicResponseMessage& consensusTopicResponse);
+
+		// will be called from grpc client if connection was closed
+		virtual void onConnectionClosed();
+
+		inline bool isClosed() const { return mIsClosed; }
+		inline void cancelConnection() { mClientContext.TryCancel(); }
+	protected:
+		TopicId mTopicId;
+		std::string mCommunityId;
+		std::atomic<bool> mIsClosed;
+
+	};
+}
+
+#endif //__GRADIDO_NODE_CLIENT_GRPC_H

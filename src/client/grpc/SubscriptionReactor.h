@@ -1,34 +1,40 @@
 #ifndef __GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
 #define __GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
 
-#include "grpcpp/support/client_callback.h"
-#include "grpcpp/impl/status.h"
+#include <string>
+#include <bit>
+#include "protopuf/message.h"
+
+#include "../Exceptions.h"
+#include "MessageObserver.h"
+
+#include "gradido_blockchain/lib/Profiler.h"
+
+#include <grpcpp/support/client_callback.h>
+#include <grpcpp/impl/status.h>
+#include <grpcpp/support/byte_buffer.h>
+
 #include "loguru/loguru.hpp"
 #include "magic_enum/magic_enum.hpp"
-#include "../Exceptions.h"
-#include "IMessageObserver.h"
-
-#include <grpcpp/support/byte_buffer.h>
-#include <atomic>
 
 namespace client {
 	namespace grpc {
-		class TopicMessageQueryReactor : public ::grpc::ClientBidiReactor<::grpc::ByteBuffer, ::grpc::ByteBuffer>
+		template<class T>
+		class SubscriptionReactor : public ::grpc::ClientBidiReactor<::grpc::ByteBuffer, ::grpc::ByteBuffer>
 		{
 		public:
-			TopicMessageQueryReactor(IMessageObserver* callback, memory::Block&& rawRequest)
-				: mCallback(callback), mIsFinished(false)
+			SubscriptionReactor(std::shared_ptr<MessageObserver<T>> messageObserver, const memory::Block& rawRequest)
+				: mMessageObserver(messageObserver)
 			{
-				if (!callback) {
+				if (!messageObserver) {
 					throw GradidoNullPointerException(
-						"empty callback", 
-						"IMessageObserver", 
+						"empty messageObserver", 
+						"MessageObserver", 
 						"client::grpc::TopicMessageQueryReactor"
 					);
 				}
 				::grpc::Slice slice(rawRequest.data(), rawRequest.size());
 				mBuffer = ::grpc::ByteBuffer(&slice, 1);
-
 			}
 			/// Notifies the application that a StartWrite or StartWriteLast operation
 			/// completed.
@@ -36,14 +42,9 @@ namespace client {
 			/// \param[in] ok Was it successful? If false, no new read/write operation
 			///               will succeed.
 			virtual void OnWriteDone(bool ok) {
-				if (mIsFinished) {
-					LOG_F(WARNING, "OnWriteDone called after mIsFinished was already set to true");
-					return;
-				}
 				if (!ok) {
 					LOG_F(ERROR, "write operation failed, need to restart subscription");
-					mCallback->messagesStopped();
-					mIsFinished = true;
+					mMessageObserver->onConnectionClosed();
 				}
 				LOG_F(1, "OnWriteDone");
 				// after topic subscription request was transfered, we read listen to the result
@@ -54,20 +55,26 @@ namespace client {
 			/// \param[in] ok Was it successful? If false, no new read/write operation
 			///               will succeed.
 			virtual void OnReadDone(bool ok) {
-				if (mIsFinished) {
-					LOG_F(WARNING, "OnReadDone called after mIsFinished was already set to true");
-					return;
-				}
 				if (!ok) {
 					LOG_F(ERROR, "read operation failed, need to restart subscription");
-					mCallback->messagesStopped();
-					mIsFinished = true;
+					mMessageObserver->onConnectionClosed();
 				}
-				LOG_F(1, "OnReadDone");
+				Profiler timeUsed;
 				::grpc::Slice slice;
 				mBuffer.TrySingleSlice(&slice);
-				mCallback->messageArrived(memory::Block(slice.size(), slice.begin()));
-				// after on read was successfull we await the next
+				auto data = pp::bytes(const_cast<std::byte*>(reinterpret_cast<const std::byte*>(slice.begin())), slice.size());
+				auto result = pp::message_coder<T>::decode(data);
+				if (!result.has_value()) {
+					LOG_F(ERROR, "result couldn't be deserialized");
+				}
+				else {
+					const auto& [message, bufferEnd2] = *result;
+					LOG_F(1, "timeUsed for deserialize: %s", timeUsed.string().data());
+					mMessageObserver->onMessageArrived(message);
+					LOG_F(1, "OnReadDone");
+				}
+
+				// after on read was successful we await the next
 				StartRead(&mBuffer);
 			}
 
@@ -98,15 +105,12 @@ namespace client {
 					);
 				}
 				LOG_F(1, "OnDone");
-				mCallback->messagesStopped();
-				mIsFinished = true;
+				mMessageObserver->onConnectionClosed();
 				delete this;
 			}
-			bool isFinished() const { return mIsFinished; }
 			::grpc::ByteBuffer* getBuffer() { return &mBuffer; }
 		protected:
-			IMessageObserver* mCallback;
-			std::atomic<bool> mIsFinished;
+			std::shared_ptr<MessageObserver<T>> mMessageObserver;
 			::grpc::ByteBuffer mBuffer;
 		};
 

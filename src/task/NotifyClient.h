@@ -10,8 +10,8 @@ namespace task {
 	public:
 		NotifyClient(std::shared_ptr<client::Base> client, std::shared_ptr<const gradido::data::ConfirmedTransaction> confirmedTransaction);
 
-		const char* getResourceType() const { return "task::NotifyClient"; };
-		int run();
+		const char* getResourceType() const override { return "task::NotifyClient"; };
+		int run() override;
 
 	protected:
 		std::shared_ptr<client::Base> mClient;

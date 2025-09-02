@@ -10,8 +10,8 @@ namespace task {
 	public:
 		HddWriteBufferTask(std::unique_ptr<VirtualFile> vFile, const std::string& path);
 
-		const char* getResourceType() const { return "HddWriteBufferTask"; };
-		int run();
+		const char* getResourceType() const override { return "HddWriteBufferTask"; };
+		int run() override;
 
 	protected:
 		std::unique_ptr<VirtualFile> mVirtualFile;

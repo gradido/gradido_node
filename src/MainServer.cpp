@@ -2,12 +2,12 @@
 #include "ServerGlobals.h"
 
 #include "blockchain/FileBasedProvider.h"
-#include "iota/MqttClientWrapper.h"
+// #include "iota/MqttClientWrapper.h"
 #include "server/json-rpc/ApiHandlerFactory.h"
 #include "SingletonManager/SimpleOrderingManager.h"
 #include "SingletonManager/CacheManager.h"
 #include "client/grpc/Client.h"
-#include "client/grpc/Addressbook.h"
+#include "hiero/Addressbook.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/ServerConfig.h"
@@ -80,24 +80,42 @@ bool MainServer::init()
 	ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
 	ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
 	ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
-	if(!ServerGlobals::g_isOfflineMode) {
-		iota::MqttClientWrapper::getInstance()->init();
+
+	uint8_t hieroNodeCount = config.getInt("clients.hiero.nodeCount", 3);
+	uint8_t hieroNodeCountPerCommunity = config.getInt("clients.hiero.nodeCountPerCommunity", 3);
+	std::vector<std::shared_ptr<client::grpc::Client>> hieroClients;
+
+	if (!ServerGlobals::g_isOfflineMode) {		
+		//iota::MqttClientWrapper::getInstance()->init();
+
+		std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + config.getString("clients.hiero.networkType", "testnet") + ".pb";
+		
+		if (!hieroNodeCount || !hieroNodeCountPerCommunity) {
+			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity and clients.hiero.nodeCount need to be both >0");
+		}
+		if (hieroNodeCountPerCommunity > hieroNodeCount) {
+			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity (%d) mustn't be greate than clients.hiero.nodeCount (%d)", hieroNodeCount, hieroNodeCountPerCommunity);
+		}
+		hiero::Addressbook addressbook(grpcAddressesFile.data());
+		addressbook.load();
+		
+		hieroClients.reserve(hieroNodeCount);
+		for (int i = 0; i < hieroNodeCount; i++) {
+			const auto& hieroNode = addressbook.pickRandomNode();
+			auto hieroServiceEndpointUrl = hieroNode.pickRandomEndpoint().getConnectionString();
+			auto hieroClient = client::grpc::Client::createForTarget(hieroServiceEndpointUrl);
+			if (!hieroClient) {
+				LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
+				return false;
+			}
+			LOG_F(INFO, "Hiero endpoint: %s (%s)",
+				hieroServiceEndpointUrl.data(),
+				hieroNode.getDescription().data()
+			);
+			hieroClients.push_back(hieroClient);
+		}
 	}
-	std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + config.getString("clients.hiero.networkType", "testnet") + ".pb";
-	client::grpc::Addressbook addressbook(grpcAddressesFile.data());
-	addressbook.load();
-	const auto& hieroNode = addressbook.pickRandomNode();
-	auto hieroServiceEndpointUrl = hieroNode.pickRandomEndpoint().getConnectionString();
-	mHieroClient = client::grpc::Client::createForTarget(hieroServiceEndpointUrl);
-	if (!mHieroClient) {
-		LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
-		return false;
-	}
-	LOG_F(INFO, "Hiero endpoint: %s (%s)", 
-		hieroServiceEndpointUrl.data(),
-		hieroNode.description.data()
-	);
-	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
+	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json", std::move(hieroClients), hieroNodeCountPerCommunity)) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
@@ -126,7 +144,7 @@ void MainServer::exit()
 		mHttpServer = nullptr;
 	}
 
-	iota::MqttClientWrapper::getInstance()->exit();
+	// iota::MqttClientWrapper::getInstance()->exit();
 	CacheManager::getInstance()->getFuzzyTimer()->stop();
 	ServerGlobals::g_CPUScheduler->stop();
 	ServerGlobals::g_WriteFileCPUScheduler->stop();

@@ -8,6 +8,16 @@
 
 #define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE 1
 
+namespace hiero {
+	class TopicId;
+}
+
+namespace client {
+	namespace grpc {
+		class Client;
+	}
+}
+
 namespace gradido {
 	namespace blockchain {
 		/*
@@ -22,7 +32,11 @@ namespace gradido {
 
 			std::shared_ptr<Abstract> findBlockchain(std::string_view communityId);
 			//! \return true if successfully else return false
-			bool init(const std::string& communityConfigFile);
+			bool init(
+				const std::string& communityConfigFile,
+				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients,
+				uint8_t hieroClientsPerCommunity = 3
+			);
 			void exit();
 
 			//! expensive,  reload config file from disk and add new blockchains, recreate community listener from all
@@ -47,11 +61,18 @@ namespace gradido {
 			FileBasedProvider& operator= (const FileBasedProvider&) = delete;
 
 			//! load or create blockchain for community, not locking woking mutex!
-			std::shared_ptr<FileBased> addCommunity(const std::string& communityId, const std::string&  alias, bool resetIndices);
+			std::shared_ptr<FileBased> addCommunity(
+				const std::string& communityId,
+				const hiero::TopicId& topicId,
+				const std::string&  alias,
+				bool resetIndices
+			);
 			void updateListenerCommunity(const std::string& communityId, const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
 			cache::GroupIndex* mGroupIndex;
 			cache::Dictionary  mCommunityIdIndex;
+			std::vector<std::shared_ptr<client::grpc::Client>> mHieroClients;
+			uint8_t mHieroClientsPerCommunity;
 			bool mInitalized;
 		};
 

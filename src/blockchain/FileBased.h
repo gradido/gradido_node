@@ -9,9 +9,9 @@
 #include "../cache/TransactionTriggerEvent.h"
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
-#include "../iota/MessageListener.h"
 
 #include "gradido_blockchain/blockchain/Abstract.h"
+#include "gradido_blockchain/data/hiero/TopicId.h"
 #include "gradido_blockchain/lib/AccessExpireCache.h"
 
 //! how many transactions will be readed from disk on blockchain startup and put into cache for preventing doublettes
@@ -25,6 +25,16 @@
 #define GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES 1
 
 #include <mutex>
+
+namespace client {
+	namespace grpc {
+		class Client;
+	}
+}
+
+namespace hiero {
+	class MessageListener;
+}
 
 namespace gradido {
 	namespace blockchain {
@@ -41,9 +51,22 @@ namespace gradido {
 			struct Private { explicit Private() = default; };
 		public:
 			// Constructor is only usable by this class
-			FileBased(Private, std::string_view communityId, std::string_view alias, std::string_view folder);
+			FileBased(
+				Private, 
+				std::string_view communityId,
+				const hiero::TopicId& topicId,
+				std::string_view alias, 
+				std::string_view folder,
+				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+			);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
-			static inline std::shared_ptr<FileBased> create(std::string_view communityId, std::string_view alias, std::string_view folder);
+			static inline std::shared_ptr<FileBased> create(
+				std::string_view communityId,
+				const hiero::TopicId& topicId,
+				std::string_view alias,
+				std::string_view folder,
+				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+			);
 			inline std::shared_ptr<FileBased> getptr();
 			inline std::shared_ptr<const FileBased> getptr() const;
 
@@ -104,6 +127,7 @@ namespace gradido {
 			inline const std::string& getFolderPath() const { return mFolderPath; }
 			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
+			inline std::shared_ptr<client::grpc::Client> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
 
 		protected:
 			//! if state leveldb was invalid, recover values from block cache
@@ -119,13 +143,15 @@ namespace gradido {
 
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
-			std::string mFolderPath;
+			hiero::TopicId mHieroTopicId;
 			std::string mAlias;
+			std::string mFolderPath;
 
 			//! observe write to file tasks from block, mayber later more
 			mutable std::shared_ptr<TaskObserver> mTaskObserver;
 			//! connect via mqtt to iota server and get new messages
-			iota::MessageListener* mIotaMessageListener;
+			//iota::MessageListener* mIotaMessageListener;
+			std::vector<std::shared_ptr<hiero::MessageListener>> mHieroMessageListeners;
 
 			//! contain indices for every public key address, used overall for optimisation
 			mutable std::shared_ptr<cache::Dictionary> mPublicKeysIndex;
@@ -143,11 +169,17 @@ namespace gradido {
 			//! Community Server listening on new blocks for his group
 			//! TODO: replace with more abstract but simple event system and/or mqtt
 			std::shared_ptr<client::Base> mCommunityServer;
+			std::vector<std::shared_ptr<client::grpc::Client>> mHieroClients;
 		};
 
-		std::shared_ptr<FileBased> FileBased::create(std::string_view communityId, std::string_view alias, std::string_view folder) 
-		{
-			return std::make_shared<FileBased>(Private(), communityId, alias, folder);
+		std::shared_ptr<FileBased> FileBased::create(
+			std::string_view communityId,
+			const hiero::TopicId& topicId,
+			std::string_view alias,
+			std::string_view folder,
+			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+		) {
+			return std::make_shared<FileBased>(Private(), communityId, topicId, alias, folder, std::move(hieroClients));
 		}
 
 		std::shared_ptr<FileBased> FileBased::getptr()
