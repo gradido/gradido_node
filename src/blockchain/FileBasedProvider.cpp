@@ -4,6 +4,7 @@
 #include "../client/grpc/Client.h"
 #include "../client/GraphQL.h"
 #include "../ServerGlobals.h"
+#include "../task/SyncTopicOnStartup.h"
 
 #include "gradido_blockchain/data/hiero/TopicId.h"
 
@@ -46,6 +47,18 @@ namespace gradido {
 			if (it != mBlockchainsPerGroup.end()) {
 				return it->second;
 			}
+			// go manual
+			try {
+				const auto& groupIndexEntry = mGroupIndex->getCommunityDetails(hiero::TopicId(std::string(communityId)));
+				auto it = mBlockchainsPerGroup.find(groupIndexEntry.communityId);
+				if (it != mBlockchainsPerGroup.end()) {
+					return it->second;
+				}
+			}
+			catch (GradidoBlockchainException& ex) {
+				LOG_F(WARNING, "%s", ex.getFullString().data());
+			}
+
 			return nullptr;
 		}
 		bool FileBasedProvider::init(
@@ -69,6 +82,8 @@ namespace gradido {
 			mGroupIndex = new cache::GroupIndex(communityConfigFile);
 			mGroupIndex->update();
 			auto communitiesIds = mGroupIndex->listCommunitiesIds();
+
+			// step 1: check existing blockchain data, one after another
 			for (auto& communityId : communitiesIds) {
 				// exit if at least one blockchain from config couldn't be loaded
 				// should only occure with invalid config
@@ -78,6 +93,14 @@ namespace gradido {
 					return false;
 				}
 			}
+			// step 2: check for new transactions in hiero network, all blockchains at the same time
+			for (const auto& pair : mBlockchainsPerGroup) {
+				auto task = pair.second->initOnline();
+				auto hieroClient = pair.second->pickHieroClient();
+				hieroClient->getTopicInfo(pair.second->getHieroTopicId(), task);
+				task->scheduleTask(task);
+			}
+
 			return true;
 		}
 		void FileBasedProvider::exit()

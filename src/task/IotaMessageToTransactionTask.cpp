@@ -1,3 +1,4 @@
+#ifdef _USING_IOTA
 #include "IotaMessageToTransactionTask.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
@@ -229,3 +230,4 @@ void IotaMessageToTransactionTask::notificateFailedTransaction(
 		}
 	}
 }
+#endif //_USING_IOTA

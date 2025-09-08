@@ -24,7 +24,7 @@ namespace hiero {
 			const std::string rsaPubkey,
 			int64_t nodeId,
 			const AccountId& nodeAccountId,
-			const Block& nodeCertHash,
+			ConstBlockPtr nodeCertHash,
 			const vector<ServiceEndpoint>& serviceEndpoints,
 			const std::string description
 		);
@@ -37,7 +37,7 @@ namespace hiero {
 		inline const std::string& getRsaPubkey() const { return mRsaPubkey; }
         inline const int64_t& getNodeId() const { return mNodeId; }
         inline const AccountId& getNodeAccountId() const { return mNodeAccountId; }
-        inline const Block& getNodeCertHash() const { return mNodeCertHash; }
+        inline ConstBlockPtr getNodeCertHash() const { return mNodeCertHash; }
         inline const std::vector<ServiceEndpoint>& getServiceEndpoinst() const { return mServiceEndpoint; }
         inline const std::string& getDescription() const { return mDescription; }
 
@@ -45,7 +45,7 @@ namespace hiero {
 		string mRsaPubkey;
 		int64_t mNodeId;
 		AccountId mNodeAccountId;
-		Block mNodeCertHash;
+		ConstBlockPtr mNodeCertHash;
 		vector<ServiceEndpoint> mServiceEndpoint;
 		string mDescription;
 	};

@@ -8,6 +8,7 @@
 #include "SingletonManager/CacheManager.h"
 
 #include "hiero/Addressbook.h"
+#include "client/hiero/const.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/ServerConfig.h"
@@ -69,7 +70,7 @@ bool MainServer::init()
 	// timeouts
 	ServerGlobals::loadTimeouts(config);
 	ServerGlobals::g_LogTransactions = config.getBool("logging.log_transactions", ServerGlobals::g_LogTransactions);
-	ServerGlobals::initIota(config);
+	// ServerGlobals::initIota(config);
 	ServerConfig::readUnsecureFlags(config);
 
 	// start cpu scheduler
@@ -78,8 +79,12 @@ bool MainServer::init()
 	// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
 	uint8_t io_worker_count = config.getInt("io.worker_count", 2);
 	ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
+	// let scheduler check if one of the pending tasks is now ready
+	CacheManager::getInstance()->getFuzzyTimer()->addTimer("mainCPUScheduler", ServerGlobals::g_CPUScheduler, std::chrono::milliseconds(100));
 	ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
-	ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
+	// ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
+	std::string hieroNetworkType = config.getString("clients.hiero.networkType", "testnet");
+	ServerGlobals::initHiero(hieroNetworkType);
 
 	uint8_t hieroNodeCount = config.getInt("clients.hiero.nodeCount", 3);
 	uint8_t hieroNodeCountPerCommunity = config.getInt("clients.hiero.nodeCountPerCommunity", 3);
@@ -87,8 +92,7 @@ bool MainServer::init()
 
 	if (!ServerGlobals::g_isOfflineMode) {		
 		//iota::MqttClientWrapper::getInstance()->init();
-
-		std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + config.getString("clients.hiero.networkType", "testnet") + ".pb";
+		std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + hieroNetworkType + ".pb";
 		
 		if (!hieroNodeCount || !hieroNodeCountPerCommunity) {
 			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity and clients.hiero.nodeCount need to be both >0");
@@ -102,8 +106,13 @@ bool MainServer::init()
 		hieroClients.reserve(hieroNodeCount);
 		for (int i = 0; i < hieroNodeCount; i++) {
 			const auto& hieroNode = addressbook.pickRandomNode();
-			auto hieroServiceEndpointUrl = hieroNode.pickRandomEndpoint().getConnectionString();
-			auto hieroClient = client::grpc::Client::createForTarget(hieroServiceEndpointUrl);
+			const auto& endpoint = hieroNode.pickRandomEndpoint();
+			auto hieroServiceEndpointUrl = endpoint.getConnectionString();
+			auto hieroClient = client::grpc::Client::createForTarget(
+				hieroServiceEndpointUrl, 
+				endpoint.getPort() == hiero::PORT_NODE_TLS,
+				hieroNode.getNodeCertHash()
+			);
 			if (!hieroClient) {
 				LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
 				return false;

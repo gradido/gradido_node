@@ -203,7 +203,7 @@ namespace cache {
 		}
 
 		if (mTransactionWriteTask) {
-			Timepoint now;
+			Timepoint now = std::chrono::system_clock::now();
 			if (now - mTransactionWriteTask->getCreationDate() > ServerGlobals::g_WriteToDiskTimeout) 
 			{
 				auto copyTask = mTransactionWriteTask;

@@ -32,7 +32,7 @@ bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::
 	std::lock_guard _lock(mMutex);
 	if (exit) return false;
 
-	Timepoint now;
+	Timepoint now = std::chrono::system_clock::now();
 	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeInterval, TimerEntry(callbackObject, timeInterval, loopCount, name)));
 
@@ -75,7 +75,7 @@ bool FuzzyTimer::move()
 	auto it = mRegisteredAtTimer.begin();
 	if (it == mRegisteredAtTimer.end()) return true;
 
-	Timepoint now;
+	Timepoint now = std::chrono::system_clock::now();
 	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 
 	if (it->first <= nowMilliseconds) {

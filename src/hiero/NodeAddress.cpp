@@ -14,7 +14,7 @@ namespace hiero {
         const std::string rsaPubkey,
         int64_t nodeId,
         const AccountId& nodeAccountId,
-        const Block& nodeCertHash,
+        ConstBlockPtr nodeCertHash,
         const vector<ServiceEndpoint>& serviceEndpoints,
         const std::string description
     ) : mRsaPubkey(rsaPubkey), 
@@ -34,7 +34,8 @@ namespace hiero {
 			mNodeId = message["nodeId"_f].value();
 		}
 		mNodeAccountId = deserialize::HieroAccountIdRole(message["nodeAccountId"_f].value());
-		mNodeCertHash = message["nodeCertHash"_f].value();
+		auto temp = Block::fromHex(Block(message["nodeCertHash"_f].value()).copyAsString());
+		mNodeCertHash = std::make_shared<const Block>(temp);
 		auto serviceEndpointMessages = message["serviceEndpoint"_f];
 		mServiceEndpoint.reserve(serviceEndpointMessages.size());
 		for (int j = 0; j < message["serviceEndpoint"_f].size(); j++) {
@@ -57,7 +58,7 @@ namespace hiero {
 		}
 		auto serializeAccountId = serialize::HieroAccountIdRole(mNodeAccountId);
 		message["nodeAccountId"_f].value() = serializeAccountId.getMessage();
-		message["nodeCertHash"_f] = mNodeCertHash.copyAsVector();
+		message["nodeCertHash"_f] = mNodeCertHash->copyAsVector();
 		message["serviceEndpoint"_f].reserve(mServiceEndpoint.size());
 		for (const auto& serviceEndpoint : mServiceEndpoint) {
 			message["serviceEndpoint"_f].push_back(serviceEndpoint.getMessage());

@@ -23,6 +23,7 @@ namespace client {
         class RequestReactor : public ::grpc::ClientUnaryReactor {
         public:
             RequestReactor(std::shared_ptr<MessageObserver<T>> messageObserver)
+                : mMessageObserver(messageObserver)
             {
                 if (!messageObserver) {
                     throw GradidoNullPointerException(
@@ -35,9 +36,10 @@ namespace client {
 
             void OnDone(const ::grpc::Status& s) {
                 if (!s.ok()) {
-                    LOG_F(ERROR, "onDone called from grpc with status: %s, error: %s",
+                    LOG_F(ERROR, "onDone called from grpc with status: %s, error: %s, details: %s",
                         magic_enum::enum_name<::grpc::StatusCode>(s.error_code()).data(),
-                        s.error_message().data()
+                        s.error_message().data(),
+                        s.error_details().data()
                     );
                 }
                 else {
@@ -52,7 +54,15 @@ namespace client {
                     else {
                         const auto& [message, bufferEnd2] = *result;
                         LOG_F(1, "timeUsed for deserialize: %s", timeUsed.string().data());
-                        mMessageObserver->onMessageArrived(message);
+                        try {
+                            mMessageObserver->onMessageArrived(message);
+                        }
+                        catch (GradidoBlockchainException& ex) {
+                            LOG_F(ERROR, ex.getFullString().data());
+                        }
+                        catch (std::exception& ex) {
+                            LOG_F(ERROR, ex.what());
+                        }
                     }
                 }
                 mMessageObserver->onConnectionClosed();

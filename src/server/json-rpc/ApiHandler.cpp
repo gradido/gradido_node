@@ -117,9 +117,8 @@ namespace server {
 				uint64_t transactionId = 0;
 				uint32_t maxResultCount = 100;
 
-				if (!getUInt64Parameter(responseJson, params, "fromTransactionId", transactionId) || !getStringParameter(responseJson, params, "format", format)) {
-					return;
-				}
+				if (!getUInt64Parameter(responseJson, params, "fromTransactionId", transactionId) || 
+					!getStringParameter(responseJson, params, "format", format)) { return; }
 				getUIntParameter(responseJson, params, "maxResultCount", maxResultCount, true);
 				//printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
 				FilterBuilder builder;
@@ -180,7 +179,7 @@ namespace server {
 					return;
 				}
 
-				getTransaction(resultJson, blockchain, format, transactionId, iotaMessageId);
+				getTransaction(resultJson, responseJson, blockchain, format, transactionId, iotaMessageId);
 			}
 			else if (method == "getcreationsumformonth") {
 				int month, year;
@@ -237,6 +236,7 @@ namespace server {
 				}
 				findUserByNameHash(
 					resultJson,
+					responseJson,
 					std::make_shared<memory::Block>(memory::Block::fromHex(nameHashHex)),
 					blockchain
 				);
@@ -244,8 +244,9 @@ namespace server {
 			else {
 				error(responseJson, JSON_RPC_ERROR_METHODE_NOT_FOUND, "method not known");
 			}
-
-			responseJson.AddMember("result", resultJson, alloc);
+			if (!responseJson.HasMember("error")) {
+				responseJson.AddMember("result", resultJson, alloc);
+			}
 		}
 		void ApiHandler::findAllTransactions(
 			rapidjson::Value& resultJson,
@@ -301,8 +302,9 @@ namespace server {
 		}
 
 		void ApiHandler::getTransaction(
-			rapidjson::Value& resultJson,
-			std::shared_ptr<gradido::blockchain::Abstract> blockchain,
+			Value& resultJson,
+			Value& responseJson,
+			std::shared_ptr<Abstract> blockchain,
 			const std::string& format,
 			uint64_t transactionId/* = 0*/,
 			std::shared_ptr<memory::Block> iotaMessageId /* = nullptr */
@@ -319,7 +321,7 @@ namespace server {
 				transactionEntry = blockchain->findByMessageId(iotaMessageId);
 			}
 			if (!transactionEntry) {
-				error(resultJson, JSON_RPC_ERROR_TRANSACTION_NOT_FOUND, "transaction not found");
+				error(responseJson, JSON_RPC_ERROR_TRANSACTION_NOT_FOUND, "transaction not found");
 				return;
 			}
 
@@ -471,6 +473,7 @@ namespace server {
 
 		void ApiHandler::findUserByNameHash(
 			Value& resultJson,
+			Value& responseJson,
 			memory::ConstBlockPtr nameHash,
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain
 		)
@@ -502,7 +505,7 @@ namespace server {
 				resultJson.AddMember("pubkey", Value(accountPubkey->convertToHex().data(), alloc), alloc);
 			}
 			else {
-				error(resultJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");
+				error(responseJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");
 			}
 		}
 	}

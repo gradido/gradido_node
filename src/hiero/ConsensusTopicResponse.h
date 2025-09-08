@@ -3,6 +3,7 @@
 
 #include "ConsensusMessageChunkInfo.h"
 #include "gradido_blockchain/data/Timestamp.h"
+#include "rapidjson/document.h"
 
 namespace hiero {
 
@@ -28,6 +29,7 @@ namespace hiero {
             uint64_t runningHashVersion,
             const ConsensusMessageChunkInfo& chunkInfo
         );
+        ConsensusTopicResponse(const rapidjson::Value& json);
 		~ConsensusTopicResponse();
 
         ConsensusTopicResponseMessage getMessage() const;

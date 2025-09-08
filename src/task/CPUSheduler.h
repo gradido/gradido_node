@@ -34,7 +34,7 @@
 #ifndef __DR_UNIVERSUM_LIB_CONTROLLER_CPU_SHEDULER_H__
 #define __DR_UNIVERSUM_LIB_CONTROLLER_CPU_SHEDULER_H__
 
-//#include "UniversumLib.h"
+#include "../lib/FuzzyTimer.h"
 #include <string>
 #include <list>
 #include <queue>
@@ -49,7 +49,7 @@ namespace task {
 
 	class CPUShedulerThread;
 
-    class CPUSheduler 
+	class CPUSheduler: public TimerCallback
     {
     public: 
 		// \param threadCount how many threads should be used
@@ -69,6 +69,11 @@ namespace task {
 		TaskPtr getNextUndoneTask(CPUShedulerThread* Me);
 
 		inline uint8_t getThreadCount() { return mThreadCount; }
+
+		// from fuzzy timer
+		TimerReturn callFromTimer() override { checkPendingTasks(); return TimerReturn::GO_ON; }
+		const char* getResourceType() const override { return "CPUSheduler"; };
+
     protected:
 			
 			
@@ -85,7 +90,6 @@ namespace task {
 		std::recursive_mutex mPendingTasksMutex;
 		bool mStopped;
 		std::mutex mCheckStopMutex;
-
     };
     
 }

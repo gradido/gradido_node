@@ -3,6 +3,7 @@
 
 #include "../ServerGlobals.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
+#include "gradido_blockchain/data/hiero/TopicId.h"
 
 #include "loguru/loguru.hpp"
 
@@ -90,6 +91,16 @@ namespace cache {
 			return it->second;
 		}
 		throw controller::GroupNotFoundException("couldn't found config details for community", communityId);
+	}
+	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const hiero::TopicId& topicId) const
+	{
+		std::scoped_lock _lock(mWorkMutex);
+		for (auto& it : mCommunities) {
+			if (topicId == hiero::TopicId(it.second.topicId)) {
+				return it.second;
+			}
+		}
+		throw controller::GroupNotFoundException("couldn't found config details for community by topic id", topicId.toString());
 	}
 	bool GroupIndex::isCommunityInConfig(const std::string& communityId) const
 	{

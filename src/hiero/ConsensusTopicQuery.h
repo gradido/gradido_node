@@ -25,7 +25,7 @@ namespace hiero {
         ConsensusTopicQuery(
             const TopicId& topicId, 
             const gradido::data::Timestamp& consensusStartTime = gradido::data::Timestamp(),
-            const gradido::data::Timestamp& consensusEndTime = gradido::data::Timestamp(),
+            const gradido::data::Timestamp& consensusEndTime = gradido::data::Timestamp(0, 0),
             uint64_t limit = 0
         );
         ~ConsensusTopicQuery();

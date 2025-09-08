@@ -1,4 +1,5 @@
 #include "FileBased.h"
+#include "../client/grpc/Client.h"
 #include "FileBasedProvider.h"
 #include "NodeTransactionEntry.h"
 #include "../cache/Exceptions.h"
@@ -8,7 +9,8 @@
 #include "../ServerGlobals.h"
 #include "../SystemExceptions.h"
 #include "../task/NotifyClient.h"
-#include "../client/grpc/Client.h"
+#include "../task/SyncTopicOnStartup.h"
+#include "../client/hiero/MirrorClient.h"
 
 #include "gradido_blockchain/const.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
@@ -36,8 +38,9 @@ namespace gradido {
 			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients)
 			: Abstract(communityId),
 			mExitCalled(false),
-			mFolderPath(folder),
+			mHieroTopicId(topicId),
 			mAlias(alias),
+			mFolderPath(folder),			
 			mTaskObserver(std::make_shared<TaskObserver>()),
 			mOrderingManager(std::make_shared<controller::SimpleOrderingManager>(communityId)),
 			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
@@ -84,6 +87,8 @@ namespace gradido {
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, 0);
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_TRANSACTION_ID, 0);
+			mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0);
+			mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
 
 			if (!mMessageIdsCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 				mMessageIdsCache.reset();
@@ -141,17 +146,33 @@ namespace gradido {
 				count,
 				GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE,
 				timeUsed.string().data()
+			);			
+			return true;
+		}
+
+		std::shared_ptr<task::SyncTopicOnStartup> FileBased::initOnline()
+		{
+			return std::make_shared<task::SyncTopicOnStartup>(
+				mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0),
+				hiero::TopicId(mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString())),
+				getptr()
 			);
-			mOrderingManager->init();
+		}
+
+		void FileBased::startListening()
+		{
+			if (mHieroMessageListeners.size()) {
+				LOG_F(WARNING, "called again, while listener where already existing");
+			}
 			mHieroMessageListeners.reserve(mHieroClients.size());
 			for (auto& hieroClient : mHieroClients) {
 				auto messageListener = std::make_shared<hiero::MessageListener>(mHieroTopicId, mCommunityId);
 				hieroClient->subscribeTopic({ mHieroTopicId }, messageListener);
 				mHieroMessageListeners.push_back(messageListener);
 			}
-			
-			return true;
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
 		}
+
 		void FileBased::exit()
 		{
 			std::lock_guard _lock(mWorkMutex);
@@ -219,6 +240,11 @@ namespace gradido {
 				notifyClientTask->scheduleTask(notifyClientTask);
 			}
 			return true;
+		}
+
+		void FileBased::updateLastKnownSequenceNumber(uint64_t newSequenceNumber)
+		{
+			mBlockchainState.updateState(DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, newSequenceNumber);
 		}
 
 		void FileBased::addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent)

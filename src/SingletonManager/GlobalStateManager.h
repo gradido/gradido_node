@@ -18,12 +18,6 @@ public:
 	~GlobalStateManager();
 	static GlobalStateManager* getInstance();
 
-	// TODO: use a more generic approach instead writing update, get and member variable for every state 
-	inline void updateLastIotaMilestone(int32_t lastIotaMilestone) { 
-		mGlobalStateFile.updateState(cache::DefaultStateKeys::LAST_IOTA_MILESTONE, lastIotaMilestone);
-	}
-	inline int32_t getLastIotaMilestone() { return mGlobalStateFile.readInt32State(cache::DefaultStateKeys::LAST_IOTA_MILESTONE, 0); }
-
 	//! close leveldb file 
 	void exit();
 

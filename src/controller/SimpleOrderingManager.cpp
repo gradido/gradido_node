@@ -31,6 +31,12 @@ namespace controller {
     {
     }
 
+    void SimpleOrderingManager::init(uint64_t lastKnownSequenceNumber) 
+    {
+        mLastSequenceNumber = lastKnownSequenceNumber;
+        Thread::init();
+    }
+
     int SimpleOrderingManager::ThreadFunction()
     {
         size_t transactionsCount = 0;
@@ -62,15 +68,16 @@ namespace controller {
                 throw GradidoNodeInvalidDataException("data set wasn't like expected, seem to be an error in code or hiero work not like expected");
             }
             auto gradidoTransaction = it->second.deserializeTask->getGradidoTransaction();
-            auto task = it->second.deserializeTask;
+            auto& task = it->second.deserializeTask;
             auto body = gradidoTransaction->getTransactionBody();
             // on cross group transaction inbound check if we can found outbound on this gradido node
             // TODO: ask other gradido node(s) if we don't capture the otherGroup (community)
             if (gradido::data::CrossGroupType::INBOUND == body->getType()) {
-                auto& transactionId = it->second.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
                 auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
                 auto blockchain = blockchainProvider->findBlockchain(mCommunityId);
-                if (transactionId.getTransactionValidStart().getAsTimepoint() + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION < Timepoint()) {
+                Timepoint now = std::chrono::system_clock::now();
+
+                if (it->second.putIntoListTime + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION < now) {
                     // timeouted                    
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing not found)");
                     mTransactions.erase(it);
@@ -126,6 +133,7 @@ namespace controller {
         if (!transactionId.empty()) {
             throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
         }
+        auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         try {
             serialize::Context serializer(transactionId);
             bool result = blockchain->createAndAddConfirmedTransaction(
@@ -133,10 +141,10 @@ namespace controller {
                 serializer.run(),
                 gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp().getAsTimepoint()
             );
+            fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
             LOG_F(INFO, "Transaction added, msgId: %s", transactionId.toString().data());
         }
         catch (GradidoBlockchainException& ex) {
-            auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
             auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
             if (communityServer) {
                 communityServer->notificateFailedTransaction(*transaction, ex.what(), transactionId.toString());

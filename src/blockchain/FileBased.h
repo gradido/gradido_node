@@ -41,6 +41,10 @@ namespace controller {
 	class SimpleOrderingManager;
 }
 
+namespace task {
+	class SyncTopicOnStartup;
+}
+
 namespace gradido {
 	namespace blockchain {
 		/*
@@ -77,12 +81,22 @@ namespace gradido {
 
 			virtual ~FileBased();
 
+			//! init 1
 			//! load blockchain from files and check if index and states seems ok
 			//! if address index or block index is corrupt, remove address index and block index files, they will rebuild automatic on get block calls
 			//! if state leveldb file is corrupt, reconstruct values from block cache
 			//! \param resetBlockIndices will be set to true if community id index was corrupted which invalidate block index
 			//! \return true on success, else false
 			bool init(bool resetBlockIndices);
+
+			//! init 2
+			//! prepare task for syncronize with hiero topic
+			//! all SyncTopicOnStartup for all communities should be started/scheduled at the same time because there could need each other for new cross group transactions
+			std::shared_ptr<task::SyncTopicOnStartup> initOnline();
+
+			//! init 3
+			//! start listening to topic, will be called from SyncTopicOnStartup at the end, will update last known TopicId 
+			void startListening();
 
 			// clean up group, stopp all running processes
 			void exit();
@@ -96,6 +110,7 @@ namespace gradido {
 				memory::ConstBlockPtr messageId,
 				Timepoint confirmedAt
 			);
+			void updateLastKnownSequenceNumber(uint64_t newSequenceNumber);
 			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent);
 			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent);
 
@@ -129,6 +144,7 @@ namespace gradido {
 			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) const {
 				return mPublicKeysIndex->getOrAddIndexForString(publicKey->copyAsString());
 			}
+			inline const hiero::TopicId& getHieroTopicId() const { return mHieroTopicId; }
 			inline const std::string& getFolderPath() const { return mFolderPath; }
 			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }

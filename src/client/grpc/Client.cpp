@@ -1,13 +1,17 @@
+#include "RequestReactor.h"
+#include "SubscriptionReactor.h"
 #include "Client.h"
 #include "Exceptions.h"
-#include "SubscriptionReactor.h"
-#include "RequestReactor.h"
-#include "gradido_blockchain/interaction/serialize/Protopuf.h"
+#include "CertificateVerifier.h"
 
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/generic/generic_stub.h>
 
-using namespace gradido::interaction::serialize;
+#ifdef _WIN32
+#include <fstream>
+#include <sstream>
+#endif //_WIN32
+
 
 namespace client {
 	namespace grpc {
@@ -20,14 +24,30 @@ namespace client {
 
 		}
 
-		std::shared_ptr<Client> Client::createForTarget(const std::string& targetUrl)
-		{
-			// load ssl certificate from default folder, overwritten with GRPC_DEFAULT_SSL_ROOTS_FILE_PATH 
-			auto sslCredentials = ::grpc::SslCredentials(::grpc::SslCredentialsOptions());
-			if (!sslCredentials) {
-				throw SSLException("cannot load ssl root certificate, consider setting env GRPC_DEFAULT_SSL_ROOTS_FILE_PATH");
+		std::shared_ptr<Client> Client::createForTarget(
+			const std::string& targetUrl,
+			bool isTransportSecurity, 
+			memory::ConstBlockPtr certificateHash
+		) {			
+			std::shared_ptr<::grpc::ChannelCredentials> credentials;
+			if (isTransportSecurity) {
+				credentials = getTlsChannelCredentials(certificateHash);
 			}
-			auto channel = ::grpc::CreateChannel(targetUrl, sslCredentials);
+			else {
+				credentials = ::grpc::InsecureChannelCredentials();
+			}
+			::grpc::ChannelArguments channelArguments;
+			channelArguments.SetInt(GRPC_ARG_ENABLE_RETRIES, 0);
+			channelArguments.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 10000);
+			channelArguments.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+
+			/*
+			if (const std::string authority = getAuthority(); !authority.empty())
+			{
+				channelArguments.SetString(GRPC_ARG_DEFAULT_AUTHORITY, authority);
+			}
+			*/
+			auto channel = ::grpc::CreateCustomChannel(targetUrl, credentials, channelArguments);
 			if (!channel) {
 				throw ChannelException("cannot connect to grpc server", targetUrl.data());
 			}
@@ -44,18 +64,18 @@ namespace client {
 			auto reactor = new SubscriptionReactor(responseListener, std::move(rawRequest));
 			::grpc::StubOptions options;
 			GenericStub genericStub(mChannel);
-			genericStub.PrepareBidiStreamingCall(responseListener->getClientContextPtr(), "/ConsensusService/subscribeTopic", options, reactor);
+			genericStub.PrepareBidiStreamingCall(responseListener->getClientContextPtr(), "/proto.ConsensusService/subscribeTopic", options, reactor);
 			::grpc::WriteOptions writeOptions;
 			reactor->StartWriteLast(reactor->getBuffer(), writeOptions);
 		}
 		void Client::getTransactionReceipts(
-			const hiero::TransactionId& request,
+			const hiero::TransactionId& transactionId,
 			std::shared_ptr<MessageObserver<hiero::TransactionGetReceiptResponseMessage>> responseListener
 		) {
 			auto rawRequest = serializeQuery(
-				std::make_shared<hiero::TransactionGetReceiptQuery>(
+				hiero::TransactionGetReceiptQuery(
 					hiero::QueryHeader(hiero::ResponseType::ANSWER_ONLY),
-					request
+					transactionId
 				)
 			);
 			::grpc::StubOptions options;
@@ -66,12 +86,68 @@ namespace client {
 			auto reactor = new RequestReactor<hiero::TransactionGetReceiptResponseMessage>(responseListener);
 			genericStub.PrepareUnaryCall(
 				responseListener->getClientContextPtr(),
-				"/CryptoService/getTransactionReceipts",
+				"/proto.CryptoService/getTransactionReceipts",
 				options,
 				&rawRequestByteBuffer,
 				reactor->getBuffer(),
 				reactor
 			);
+		}
+
+		void Client::getTopicInfo(
+			const hiero::TopicId& topicId,
+			std::shared_ptr<MessageObserver<hiero::ConsensusGetTopicInfoResponseMessage>> responseListener
+		) {
+			auto rawRequest = serializeQuery(
+				hiero::ConsensusGetTopicInfoQuery(
+					hiero::QueryHeader(hiero::ResponseType::ANSWER_ONLY),
+					topicId
+				)
+			);
+		
+			::grpc::StubOptions options;
+			::grpc::Slice rawRequestSlice(rawRequest.data(), rawRequest.size());
+			::grpc::ByteBuffer rawRequestByteBuffer(&rawRequestSlice, 1);
+			GenericStub genericStub(mChannel);
+			// will self destroy on connection close call from grpc
+			auto reactor = new RequestReactor<hiero::ConsensusGetTopicInfoResponseMessage>(responseListener);
+			genericStub.PrepareUnaryCall(
+				responseListener->getClientContextPtr(),
+				"/proto.ConsensusService/getTopicInfo",
+				options,
+				&rawRequestByteBuffer,
+				reactor->getBuffer(),
+				reactor
+			);
+			reactor->StartCall();
+		}
+
+		std::shared_ptr<::grpc::ChannelCredentials> Client::getTlsChannelCredentials(memory::ConstBlockPtr certificateHash)
+		{
+			// code copied from hedera c++ sdk
+			::grpc::experimental::TlsChannelCredentialsOptions tlsChannelCredentialsOptions;
+
+			// Custom verification using the node's certificate chain hash
+			tlsChannelCredentialsOptions.set_verify_server_certs(false);
+			tlsChannelCredentialsOptions.set_check_call_host(false);
+
+			tlsChannelCredentialsOptions.set_certificate_verifier(
+				::grpc::experimental::ExternalCertificateVerifier::Create<CertificateVerifier>(certificateHash)
+			);
+
+			// Feed in the root CA's file manually for Windows (this is a bug in the gRPC implementation and says here
+			// https://deploy-preview-763--grpc-io.netlify.app/docs/guides/auth/#using-client-side-ssltls that this needs to be
+			// specified manually).
+#ifdef _WIN32
+			tlsChannelCredentialsOptions.set_certificate_provider(
+				std::make_shared<::grpc::experimental::FileWatcherCertificateProvider>(CACERT_PEM_PATH, -1));
+			tlsChannelCredentialsOptions.watch_root_certs();
+#endif
+			auto tlsCredentials = ::grpc::experimental::TlsCredentials(tlsChannelCredentialsOptions);
+			if (!tlsCredentials) {
+				throw SSLException("cannot load ssl root certificate, consider setting env GRPC_DEFAULT_SSL_ROOTS_FILE_PATH");
+			}
+			return tlsCredentials;
 		}
 
 		memory::Block Client::serializeConsensusTopicQuery(const hiero::ConsensusTopicQuery& consensusTopicQuery) {

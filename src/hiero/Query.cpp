@@ -6,8 +6,14 @@ namespace hiero {
 
 	}
 
-	Query::Query(std::shared_ptr<TransactionGetReceiptQuery> transactionGetReceiptQuery)
-		: mTransactionGetReceiptQuery(transactionGetReceiptQuery)
+	Query::Query(const TransactionGetReceiptQuery& transactionGetReceiptQuery)
+		: mTransactionGetReceiptQuery(std::make_unique<TransactionGetReceiptQuery>(transactionGetReceiptQuery))
+	{
+
+	}
+
+	Query::Query(const ConsensusGetTopicInfoQuery& consensusGetTopicInfoQuery)
+		: mConsensusGetTopicInfoQuery(std::make_unique<ConsensusGetTopicInfoQuery>(consensusGetTopicInfoQuery))
 	{
 
 	}
@@ -15,7 +21,10 @@ namespace hiero {
 	Query::Query(const QueryMessage& message)
 	{
 		if (message["transactionGetReceipt"_f].has_value()) {
-			mTransactionGetReceiptQuery = std::make_shared<TransactionGetReceiptQuery>(message["transactionGetReceipt"_f].value());
+			mTransactionGetReceiptQuery = std::make_unique<TransactionGetReceiptQuery>(message["transactionGetReceipt"_f].value());
+		}
+		else if (message["consensusGetTopicInfo"_f].has_value()) {
+			mConsensusGetTopicInfoQuery = std::make_unique<ConsensusGetTopicInfoQuery>(message["consensusGetTopicInfo"_f].value());
 		}
 	}
 
@@ -29,6 +38,9 @@ namespace hiero {
 		QueryMessage message;
 		if (mTransactionGetReceiptQuery) {
 			message["transactionGetReceipt"_f] = mTransactionGetReceiptQuery->getMessage();
+		}
+		else if (mConsensusGetTopicInfoQuery) {
+			message["consensusGetTopicInfo"_f] = mConsensusGetTopicInfoQuery->getMessage();
 		}
 		return message;
 	}

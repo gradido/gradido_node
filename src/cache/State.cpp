@@ -60,6 +60,34 @@ namespace cache {
 		
 		mStateFile.setKeyValue(key, std::to_string(value));			
 	}
+
+	void State::updateState(const char* key, uint32_t value)
+	{
+		if (!mInitalized) {
+			throw ClassNotInitalizedException("cannot update state, state wasn't initalized", "cache::State");
+		}
+
+		mStateFile.setKeyValue(key, std::to_string(value));
+	}
+
+	void State::updateState(const char* key, int64_t value)
+	{
+		if (!mInitalized) {
+			throw ClassNotInitalizedException("cannot update state, state wasn't initalized", "cache::State");
+		}
+
+		mStateFile.setKeyValue(key, std::to_string(value));
+	}
+
+	void State::updateState(const char* key, uint64_t value)
+	{
+		if (!mInitalized) {
+			throw ClassNotInitalizedException("cannot update state, state wasn't initalized", "cache::State");
+		}
+
+		mStateFile.setKeyValue(key, std::to_string(value));
+	}
+
 	void State::removeState(const char* key)
 	{
 		if (mInitalized) {
@@ -89,6 +117,19 @@ namespace cache {
 		std::string tmp;
 		if (mStateFile.getValueForKey(key, &tmp)) {
 			return atoi(tmp.data());
+		}
+		return defaultValue;
+	}
+
+	int64_t State::readInt64State(const char* key, int64_t defaultValue)
+	{
+		if (!mInitalized) {
+			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
+			return defaultValue;
+		}
+		std::string tmp;
+		if (mStateFile.getValueForKey(key, &tmp)) {
+			return strtoll(tmp.data(), nullptr, 10);
 		}
 		return defaultValue;
 	}
