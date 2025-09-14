@@ -44,6 +44,7 @@ FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB HIERO "src/hiero/*.h" "src/hiero/*.cpp")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
 FILE(GLOB CLIENT_GRPC "src/client/grpc/*.cpp" "src/client/grpc/*.h")
+FILE(GLOB CLIENT_HIERO "src/client/hiero/*.cpp" "src/client/hiero/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
 FILE(GLOB SERVER "src/server/*.h" "src/server/*.cpp")
 FILE(GLOB SERVER_JSON_RPC "src/server/json-rpc/*.h" "src/server/json-rpc/*.cpp")
@@ -65,7 +66,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 SET(LOCAL_SRCS 
 	${BLOCKCHAIN}
 	${CACHE_SRC}
-	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_GRPC} ${IOTA}
+	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_HIERO} ${CLIENT_GRPC}
 	${HIERO}
 	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
@@ -81,6 +82,7 @@ if(MSVC)
 source_group("blockchain" FILES ${BLOCKCHAIN})
 source_group("cache" FILES ${CACHE_SRC})
 source_group("container" FILES ${CONTAINER})
+source_group("client\\hiero" FILES ${CLIENT_HIERO})
 source_group("client\\grpc" FILES ${CLIENT_GRPC})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
@@ -101,9 +103,12 @@ source_group("task" FILES ${TASK})
 endif(MSVC)
 
 ############################## add dependencies  #########################################
-set(ENABLE_HTTP ON)
+set(ENABLE_HTTPS ON)
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
+set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
 add_subdirectory("dependencies/gradido_blockchain")
-SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
+# reuse cacert.pem from gradido_blockchain
+add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
@@ -111,7 +116,11 @@ add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
 if (MSVC)
+	# Fetch Content Module
+	include(FetchContent)
+
 	# gRPC
+	set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)
 	message(STATUS "Make gRPC Available for Windows")
 	FetchContent_Declare(
 		grpc
@@ -128,8 +137,11 @@ if (MSVC)
 	set(_GRPC_GRPCPP grpc++)
 	#message("grpc++: ${_GRPC_GRPCPP}")
 endif()
+
+
+SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 ############################## mqtt client ############################################
-add_subdirectory("dependencies/paho.mqtt.c")
+#add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
 #find_package(libsodium REQUIRED)
@@ -157,7 +169,7 @@ endif()
 add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain)# paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)

@@ -35,7 +35,8 @@ namespace client {
             ::hiero::ConsensusTopicResponse getTopicMessageBySequenceNumber(const ::hiero::TopicId& topicId, uint64_t sequenceNumber);
 
         protected:
-            inline std::string getBasePath() const { return "https://" + mNetworkType + ".mirrornode.hedera.com/api/v1/"; }
+            inline std::string getProtocolHost() const { return "https://" + mNetworkType + ".mirrornode.hedera.com"; }
+            inline std::string getBasePath() const { return "/api/v1"; }
             std::string mNetworkType;
         };
     }

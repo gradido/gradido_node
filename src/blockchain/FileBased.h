@@ -3,7 +3,7 @@
 
 #include "../cache/Block.h"
 #include "../cache/Dictionary.h"
-#include "../cache/MessageId.h"
+#include "../cache/HieroTransactionId.h"
 #include "../cache/State.h"
 #include "../cache/TransactionHash.h"
 #include "../cache/TransactionTriggerEvent.h"
@@ -181,7 +181,7 @@ namespace gradido {
 			// level db to store state values like last transaction
 			mutable cache::State mBlockchainState;
 
-			mutable cache::MessageId mMessageIdsCache;
+			mutable cache::HieroTransactionId mMessageIdsCache;
 
 			cache::TransactionTriggerEvent mTransactionTriggerEventsCache;
 

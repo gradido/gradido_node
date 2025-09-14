@@ -130,7 +130,7 @@ namespace controller {
         }
         auto transaction = gradidoTransactionWorkData.deserializeTask->getGradidoTransaction();
         const auto& transactionId = gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
-        if (!transactionId.empty()) {
+        if (transactionId.empty()) {
             throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
         }
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);

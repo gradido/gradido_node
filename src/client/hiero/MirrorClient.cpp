@@ -29,11 +29,13 @@ namespace client {
             std::vector<::hiero::ConsensusTopicResponse> results;
             // std::string url = getBasePath();
             // url += "topics/" + topicId.toString();
-            JsonRequest request(getBasePath());
-            std::string requestPath = "topics/" + topicId.toString();
+            JsonRequest request(getProtocolHost());
+            std::string requestPath = getBasePath();
+            requestPath += "/topics/" + topicId.toString();
+            requestPath += "/messages";
             requestPath += "?limit=" + std::to_string(limit);
             requestPath += "&order=" + order;
-            requestPath += "&sequencenumber" + std::to_string(sequenceNumber);
+            requestPath += "&sequencenumber=" + std::to_string(sequenceNumber);
             auto resultJson = request.getRequest(requestPath.data());
             auto messages = resultJson["messages"].GetArray();
             results.reserve(messages.Size());
@@ -46,8 +48,9 @@ namespace client {
         ::hiero::ConsensusTopicResponse MirrorClient::getTopicMessageBySequenceNumber(const ::hiero::TopicId& topicId, uint64_t sequenceNumber)
         {
             // https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.2/messages/2
-            JsonRequest request(getBasePath());
-            std::string requestPath = "topics/" + topicId.toString();
+            JsonRequest request(getProtocolHost());
+            std::string requestPath = getBasePath();
+            requestPath += "/topics/" + topicId.toString();
             requestPath += "/messages/" + std::to_string(sequenceNumber);
             auto resultJson = request.getRequest(requestPath.data());
             if (resultJson.HasMember("_status")) {
