@@ -156,7 +156,7 @@ void MainServer::exit()
 	CacheManager::getInstance()->getFuzzyTimer()->stop();
 	ServerGlobals::g_CPUScheduler->stop();
 	ServerGlobals::g_WriteFileCPUScheduler->stop();
-	ServerGlobals::g_IotaRequestCPUScheduler->stop();
+	// ServerGlobals::g_IotaRequestCPUScheduler->stop();
 	FileBasedProvider::getInstance()->exit();
 }
 

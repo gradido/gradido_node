@@ -28,12 +28,25 @@ namespace task {
         const char* getResourceType() const override { return "SyncTopicOnStartup"; }
 
     protected:
-        bool checkLastTransaction() const; 
-        uint32_t loadTransactionsFromMirrorNode(hiero::TopicId topicId, uint64_t startSequenceNumber);
+        enum class LastTransactionState 
+        {
+            IDENTICAL,
+            NONE, 
+            NOT_FOUND,
+            INVALID,
+            NOT_IDENTICAL         
+        };
+        LastTransactionState checkLastTransaction() const;
+        uint32_t loadTransactionsFromMirrorNode(hiero::TopicId topicId);
 
         uint64_t mLastKnownSequenceNumber;
         hiero::TopicId mLastKnowTopicId;
         std::shared_ptr<gradido::blockchain::FileBased> mBlockchain;
+
+        // state
+        // contain timestamp from last readed transaction, for requesting in next call from mirror node, only the transaction after this
+        // will be set to confirmedAt from last transacion in run and the last in loadTransactionsFromMirrorNode
+        gradido::data::Timestamp mConfirmedAtLastReadedTransaction;
     };
 }
 

@@ -96,7 +96,7 @@ namespace gradido {
 
 			//! init 3
 			//! start listening to topic, will be called from SyncTopicOnStartup at the end, will update last known TopicId 
-			void startListening();
+			void startListening(data::Timestamp lastTransactionConfirmedAt);
 
 			// clean up group, stopp all running processes
 			void exit();
@@ -108,8 +108,8 @@ namespace gradido {
 			virtual bool createAndAddConfirmedTransaction(
 				data::ConstGradidoTransactionPtr gradidoTransaction,
 				memory::ConstBlockPtr messageId,
-				Timepoint confirmedAt
-			);
+				data::Timestamp confirmedAt
+		 	) override;
 			void updateLastKnownSequenceNumber(uint64_t newSequenceNumber);
 			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent);
 			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent);

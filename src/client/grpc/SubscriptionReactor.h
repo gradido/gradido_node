@@ -7,6 +7,8 @@
 
 #include "../Exceptions.h"
 #include "MessageObserver.h"
+#include "../../lib/FuzzyTimer.h"
+#include "../../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -17,24 +19,40 @@
 #include "loguru/loguru.hpp"
 #include "magic_enum/magic_enum.hpp"
 
+/*
+* class TimerCallback
+{
+public:
+	virtual TimerReturn callFromTimer() = 0;
+	virtual const char* getResourceType() const { return "TimerCallback"; };
+};
+*/
+
 namespace client {
 	namespace grpc {
 		template<class T>
-		class SubscriptionReactor : public ::grpc::ClientBidiReactor<::grpc::ByteBuffer, ::grpc::ByteBuffer>
+		class SubscriptionReactor : public ::grpc::ClientBidiReactor<::grpc::ByteBuffer, ::grpc::ByteBuffer>, public TimerCallback
 		{
 		public:
-			SubscriptionReactor(std::shared_ptr<MessageObserver<T>> messageObserver, const memory::Block& rawRequest)
+			SubscriptionReactor(std::shared_ptr<MessageObserver<T>> messageObserver, const MemoryBlock& rawRequest)
 				: mMessageObserver(messageObserver)
 			{
 				if (!messageObserver) {
 					throw GradidoNullPointerException(
 						"empty messageObserver", 
 						"MessageObserver", 
-						"client::grpc::TopicMessageQueryReactor"
+						"client::grpc::SubscriptionReactor"
 					);
 				}
-				::grpc::Slice slice(rawRequest.data(), rawRequest.size());
-				mBuffer = ::grpc::ByteBuffer(&slice, 1);
+				mBuffer = rawRequest.createGrpcBuffer();
+			}
+			virtual ~SubscriptionReactor() {
+				// CacheManager::getInstance()->getFuzzyTimer()->removeTimer(std::to_string((long long)this));
+			}
+			const char* getResourceType() const override { return "SubscriptionReactor"; };
+			TimerReturn callFromTimer() override {
+				StartRead(&mBuffer);
+				return TimerReturn::REMOVE_ME;
 			}
 			/// Notifies the application that a StartWrite or StartWriteLast operation
 			/// completed.
@@ -56,8 +74,11 @@ namespace client {
 			///               will succeed.
 			virtual void OnReadDone(bool ok) {
 				if (!ok) {
-					LOG_F(ERROR, "read operation failed, need to restart subscription");
-					mMessageObserver->onConnectionClosed();
+					LOG_F(WARNING, "read done with ok = false");
+					// LOG_F(ERROR, "read operation failed, need to restart subscription");
+					// mMessageObserver->onConnectionClosed();
+					// CacheManager::getInstance()->getFuzzyTimer()->addTimer(std::to_string((long long)this), this, std::chrono::milliseconds(250), 1);
+					return;
 				}
 				Profiler timeUsed;
 				::grpc::Slice slice;
@@ -73,7 +94,7 @@ namespace client {
 					mMessageObserver->onMessageArrived(message);
 					LOG_F(1, "OnReadDone");
 				}
-
+				
 				// after on read was successful we await the next
 				StartRead(&mBuffer);
 			}

@@ -39,6 +39,7 @@
 #include <list>
 #include <queue>
 #include <mutex>
+#include <atomic>
 
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 
@@ -88,7 +89,7 @@ namespace task {
 		//lib::MultithreadQueue<TaskPtr> mPendingTasks;
 		std::list<TaskPtr> mPendingTasks;
 		std::recursive_mutex mPendingTasksMutex;
-		bool mStopped;
+		std::atomic<bool> mStopped;
 		std::mutex mCheckStopMutex;
     };
     

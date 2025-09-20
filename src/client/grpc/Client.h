@@ -5,6 +5,7 @@
 #include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/data/Timestamp.h"
 #include "MessageObserver.h"
+// #include "SubscriptionThread.h"
 #include "../../hiero/TransactionGetReceiptResponse.h"
 #include "../../hiero/ConsensusGetTopicInfoResponse.h"
 #include "../../hiero/ConsensusGetTopicInfoQuery.h"
@@ -44,30 +45,32 @@ namespace client {
 
 			//! \param MessageObserver handler for messages, will use SubscriptionReactor for translate from grpc to gradido_node 
 			void subscribeTopic(
-				const hiero::ConsensusTopicQuery& consensusTopicQuery,
-				std::shared_ptr<MessageObserver<hiero::ConsensusTopicResponseMessage>> responseListener
+				const ::hiero::ConsensusTopicQuery& consensusTopicQuery,
+				std::shared_ptr<MessageObserver<::hiero::ConsensusTopicResponseMessage>> responseListener
+				// SubscriptionThread* responseListener
 			);
 
 			void getTransactionReceipts(
-				const hiero::TransactionId& transactionId,
-				std::shared_ptr<MessageObserver<hiero::TransactionGetReceiptResponseMessage>> responseListener
+				const ::hiero::TransactionId& transactionId,
+				std::shared_ptr<MessageObserver<::hiero::TransactionGetReceiptResponseMessage>> responseListener
 			);			
 
 			void getTopicInfo(
-				const hiero::TopicId& topicId,
-				std::shared_ptr<MessageObserver<hiero::ConsensusGetTopicInfoResponseMessage>> responseListener
+				const ::hiero::TopicId& topicId,
+				std::shared_ptr<MessageObserver<::hiero::ConsensusGetTopicInfoResponseMessage>> responseListener
 			);
 
 			inline std::shared_ptr<::grpc::Channel> getChannel() { return mChannel; }
 
 		protected:
-			Client(std::shared_ptr<::grpc::Channel> channel);
+			Client(std::shared_ptr<::grpc::Channel> channel, std::shared_ptr<::grpc::Channel> mirrorChannel);
 
 			static std::shared_ptr<::grpc::ChannelCredentials> getTlsChannelCredentials(memory::ConstBlockPtr certificateHash);
-			memory::Block serializeConsensusTopicQuery(const hiero::ConsensusTopicQuery& consensusTopicQuery);
-			memory::Block serializeQuery(const hiero::Query& query);
+			memory::Block serializeConsensusTopicQuery(const ::hiero::ConsensusTopicQuery& consensusTopicQuery);
+			memory::Block serializeQuery(const ::hiero::Query& query);
 			// grpc 
 			std::shared_ptr<::grpc::Channel> mChannel;
+			std::shared_ptr<::grpc::Channel> mMirrorChannel;
 		};
 	}
 }

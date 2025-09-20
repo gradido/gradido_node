@@ -49,13 +49,17 @@ namespace task {
 		orderingManager->init(mLastKnownSequenceNumber);
 		
 		// load transactions from mirror node
-		auto newTransactionCountPreviousTopic = loadTransactionsFromMirrorNode(mLastKnowTopicId, mLastKnownSequenceNumber + 1);
+		mConfirmedAtLastReadedTransaction = data::Timestamp();
+		if (LastTransactionState::IDENTICAL == lastTransactionIdentical) {
+			mConfirmedAtLastReadedTransaction = mBlockchain->findOne(Filter::LAST_TRANSACTION)->getConfirmedTransaction()->getConfirmedAt();
+		}
+		auto newTransactionCountPreviousTopic = loadTransactionsFromMirrorNode(mLastKnowTopicId);
 		auto newTransactionCountCurrentTopic = 0;
 
 		// was there a topic reset after our last run?
 		if (!topicInfo.getTopicId().empty() && topicInfo.getTopicId() != mLastKnowTopicId) {
 			// load transactions from mirror node
-			newTransactionCountCurrentTopic = loadTransactionsFromMirrorNode(topicInfo.getTopicId(), 0);
+			newTransactionCountCurrentTopic = loadTransactionsFromMirrorNode(topicInfo.getTopicId());
 			VLOG_SCOPE_F(0, "topic reset since our last run");
 			LOG_F(INFO, "communityId: %s, old topic id: %s, new topic id: %s",
 				mBlockchain->getCommunityId().data(),
@@ -72,11 +76,11 @@ namespace task {
 		}
 
 		// start listening
-		mBlockchain->startListening();
+		mBlockchain->startListening(mConfirmedAtLastReadedTransaction);
 		return 0;
 	}
 
-	bool SyncTopicOnStartup::checkLastTransaction() const
+	SyncTopicOnStartup::LastTransactionState SyncTopicOnStartup::checkLastTransaction() const
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 
@@ -84,10 +88,11 @@ namespace task {
 		auto lastTransaction = mBlockchain->findOne(Filter::LAST_TRANSACTION);
 		if (!lastTransaction) {
 			// blockchain is empty
-			return false;
+			return LastTransactionState::NONE;
 		}
-		
-		auto lastTransactionMirrorRaw = mirrorNode->getTopicMessageBySequenceNumber(mLastKnowTopicId, mLastKnownSequenceNumber).getMessageData();
+		auto confirmedAt = lastTransaction->getConfirmedTransaction()->getConfirmedAt();
+		auto transactionFromMirror = mirrorNode->getTopicMessageByConsensusTimestamp(confirmedAt);
+		auto lastTransactionMirrorRaw = transactionFromMirror.getMessageData();
 		if (!lastTransactionMirrorRaw) {
 			LOG_F(
 				WARNING, 
@@ -96,9 +101,9 @@ namespace task {
 				mLastKnowTopicId.toString().data(),
 				mLastKnownSequenceNumber, 
 				lastTransaction->getTransactionNr(),
-				DataTypeConverter::timePointToString(lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint())
+				DataTypeConverter::timePointToString(confirmedAt.getAsTimepoint()).data()
 			);
-			return false;
+			return LastTransactionState::NOT_FOUND;
 		}
 
 		deserialize::Context deserializer(lastTransactionMirrorRaw);
@@ -113,7 +118,7 @@ namespace task {
 				lastTransaction->getTransactionNr(),
 				DataTypeConverter::timePointToString(lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint())
 			);
-			return false;
+			return LastTransactionState::INVALID;
 		}
 		auto lastTransactionMirror = deserializer.getGradidoTransaction();
 		if (!lastTransaction->getConfirmedTransaction()->getGradidoTransaction()->getFingerprint()->isTheSame(lastTransactionMirror->getFingerprint())) {
@@ -129,12 +134,12 @@ namespace task {
 				mLastKnownSequenceNumber, 
 				lastTransactionMirrorJson.run(prettyJson).data()
 			);
-			return false;
+			return LastTransactionState::NOT_IDENTICAL;
 		}
-		return true;
+		return LastTransactionState::IDENTICAL;
 	}
 
-	uint32_t SyncTopicOnStartup::loadTransactionsFromMirrorNode(hiero::TopicId topicId, uint64_t startSequenceNumber)
+	uint32_t SyncTopicOnStartup::loadTransactionsFromMirrorNode(hiero::TopicId topicId)
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 		const auto& orderingManager = mBlockchain->getOrderingManager();
@@ -142,13 +147,12 @@ namespace task {
 		uint32_t limit = MAGIC_NUMBER_MIRROR_API_GET_TOPIC_MESSAGES_BULK_SIZE;
 		uint32_t responsesCount = 0;
 		uint32_t addedTransactionsSum = 0;
-		uint64_t sequenceNumber = startSequenceNumber;
 		do {
 			// load new transactions from mirror node
-			auto responses = mirrorNode->listTopicMessagesById(topicId, limit, sequenceNumber, "asc");
+			auto responses = mirrorNode->listTopicMessagesById(topicId, mConfirmedAtLastReadedTransaction, limit, "asc");
 			if (responses.empty()) break;
-			sequenceNumber += responses.size();
 			responsesCount = responses.size();
+			mConfirmedAtLastReadedTransaction = responses.back().getConsensusTimestamp();
 			addedTransactionsSum += responsesCount;
 			for (auto& response : responses) {
 				orderingManager->pushTransaction(std::move(response));

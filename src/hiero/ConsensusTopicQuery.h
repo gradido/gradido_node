@@ -24,7 +24,7 @@ namespace hiero {
         //! \param limit The maximum number of messages to receive before stopping. If not set or set to zero it will return messages indefinitely.
         ConsensusTopicQuery(
             const TopicId& topicId, 
-            const gradido::data::Timestamp& consensusStartTime = gradido::data::Timestamp(),
+            const gradido::data::Timestamp& consensusStartTime = gradido::data::Timestamp(0, 0),
             const gradido::data::Timestamp& consensusEndTime = gradido::data::Timestamp(0, 0),
             uint64_t limit = 0
         );

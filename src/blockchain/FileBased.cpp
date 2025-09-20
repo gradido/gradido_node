@@ -159,7 +159,7 @@ namespace gradido {
 			);
 		}
 
-		void FileBased::startListening()
+		void FileBased::startListening(data::Timestamp lastTransactionConfirmedAt)
 		{
 			if (mHieroMessageListeners.size()) {
 				LOG_F(WARNING, "called again, while listener where already existing");
@@ -167,7 +167,10 @@ namespace gradido {
 			mHieroMessageListeners.reserve(mHieroClients.size());
 			for (auto& hieroClient : mHieroClients) {
 				auto messageListener = std::make_shared<hiero::MessageListener>(mHieroTopicId, mCommunityId);
-				hieroClient->subscribeTopic({ mHieroTopicId }, messageListener);
+				auto now = std::chrono::system_clock::now();
+				// TODO: restart after connection was closed because of timeout
+				auto endTime = now + std::chrono::duration(std::chrono::years(10));
+				hieroClient->subscribeTopic({ mHieroTopicId, lastTransactionConfirmedAt, endTime }, messageListener);
 				mHieroMessageListeners.push_back(messageListener);
 			}
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
@@ -204,7 +207,7 @@ namespace gradido {
 		bool FileBased::createAndAddConfirmedTransaction(
 			data::ConstGradidoTransactionPtr gradidoTransaction,
 			memory::ConstBlockPtr messageId,
-			Timepoint confirmedAt
+			data::Timestamp confirmedAt
 		) {
 			if (!gradidoTransaction) {
 				throw GradidoNullPointerException("missing transaction", "GradidoTransactionPtr", __FUNCTION__);
@@ -217,6 +220,10 @@ namespace gradido {
 			confirmTransaction::Context confirmTransactionContext(getptr());
 			auto role = confirmTransactionContext.createRole(gradidoTransaction, messageId, confirmedAt);
 			auto confirmedTransaction = confirmTransactionContext.run(role);
+			// will occure if transaction already exist
+			if (!confirmedTransaction) {
+				return false;
+			}
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			auto& block = getBlock(blockNr);
 			auto nodeTransactionEntry = std::make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());

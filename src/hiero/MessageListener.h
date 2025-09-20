@@ -13,14 +13,14 @@ namespace hiero {
 	class MessageListener : public client::grpc::MessageObserver<ConsensusTopicResponseMessage>
 	{
 	public:
-		MessageListener(const TopicId& topicId, std::string_view communityId);
+		explicit MessageListener(const TopicId& topicId, std::string_view communityId);
 		~MessageListener();
 
 		// move message binary
-		virtual void onMessageArrived(const ConsensusTopicResponseMessage& consensusTopicResponse);
+		void onMessageArrived(const ConsensusTopicResponseMessage& consensusTopicResponse) override;
 
 		// will be called from grpc client if connection was closed
-		virtual void onConnectionClosed();
+		void onConnectionClosed() override;
 
 		inline bool isClosed() const { return mIsClosed; }
 		inline void cancelConnection() { mClientContext.TryCancel(); }
@@ -28,7 +28,6 @@ namespace hiero {
 		TopicId mTopicId;
 		std::string mCommunityId;
 		std::atomic<bool> mIsClosed;
-
 	};
 }
 
