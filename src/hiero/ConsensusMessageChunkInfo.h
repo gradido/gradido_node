@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_HIERO_CONSENSUS_MESSAGE_CHUNK_INFO_H
 #define __GRADIDO_NODE_HIERO_CONSENSUS_MESSAGE_CHUNK_INFO_H
 
-#include "gradido_blockchain/interaction/deserialize/protopuf.h"
+#include "gradido_blockchain/interaction/deserialize/Protopuf.h"
 #include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "rapidjson/document.h"
 
