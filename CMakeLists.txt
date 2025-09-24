@@ -36,6 +36,11 @@ include_directories(
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
+if(NOT WIN32) 
+	include_directories(${grpc_SOURCE_DIR}/include)
+	include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
+	message(${grpc_SOURCE_DIR})
+endif()
 
 FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
 FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
@@ -113,29 +118,29 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
-if (MSVC)
-	# Fetch Content Module
-	include(FetchContent)
+# Fetch Content Module
+include(FetchContent)
 
-	# gRPC
-	set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)
-	message(STATUS "Make gRPC Available for Windows")
-	FetchContent_Declare(
-		grpc
-		GIT_REPOSITORY https://github.com/grpc/grpc.git
-		GIT_TAG        v1.74.1
-	)
-	FetchContent_MakeAvailable(grpc)
+# gRPC
+set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)
+set(gRPC_INSTALL ON CACHE BOOL "" FORCE)
+set(gRPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
-	# Since FetchContent uses add_subdirectory under the hood, we can use
-	# the grpc targets directly from this build.
-	# set(_PROTOBUF_LIBPROTOBUF libprotobuf)
-	#set(_REFLECTION grpc++_reflection)
-	#set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
-	set(_GRPC_GRPCPP grpc++)
+message(STATUS "Make gRPC Available")
+FetchContent_Declare(
+	grpc
+	GIT_REPOSITORY https://github.com/grpc/grpc.git
+	GIT_TAG        v1.74.1
+)
+FetchContent_MakeAvailable(grpc)
+
+# Since FetchContent uses add_subdirectory under the hood, we can use
+# the grpc targets directly from this build.
+# set(_PROTOBUF_LIBPROTOBUF libprotobuf)
+#set(_REFLECTION grpc++_reflection)
+#set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+set(_GRPC_GRPCPP grpc++)
 	#message("grpc++: ${_GRPC_GRPCPP}")
-endif()
-
 
 SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 ############################## mqtt client ############################################
@@ -172,10 +177,10 @@ if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
 	#target_link_libraries(GradidoNode libsodium::libsodium)
-	target_link_libraries(GradidoNode ${_GRPC_GRPCPP})
 else()
   target_link_libraries(GradidoNode sodium)
 endif()
+target_link_libraries(GradidoNode ${_GRPC_GRPCPP})
 
 IF(WIN32)
   add_custom_command(TARGET GradidoNode POST_BUILD
