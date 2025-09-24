@@ -1,7 +1,7 @@
 #include "FileBasedProvider.h"
 #include "../SystemExceptions.h"
 #include "../client/JsonRPC.h"
-#include "../client/grpc/Client.h"
+#include "../client/hiero/ConsensusClient.h"
 #include "../client/GraphQL.h"
 #include "../ServerGlobals.h"
 #include "../task/SyncTopicOnStartup.h"
@@ -63,7 +63,7 @@ namespace gradido {
 		}
 		bool FileBasedProvider::init(
 			const std::string& communityConfigFile,
-			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients,
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 			uint8_t hieroClientsPerCommunity/* = 3 */
 		) {
 			std::lock_guard _lock(mWorkMutex);
@@ -148,7 +148,7 @@ namespace gradido {
 				auto folder = mGroupIndex->getFolder(communityId);
 
 				// with more hiero clients as per community needed, we make sure we not take always the first mHieroClientsPerCommunity from them
-				std::vector<std::shared_ptr<client::grpc::Client>> hieroClients = mHieroClients; // copy
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>> hieroClients = mHieroClients; // copy
 				if (hieroClients.size() > mHieroClientsPerCommunity) {
 					std::shuffle(hieroClients.begin(), hieroClients.end(), std::mt19937{ std::random_device{}() });
 					hieroClients.resize(mHieroClientsPerCommunity);

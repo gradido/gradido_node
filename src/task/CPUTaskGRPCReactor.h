@@ -2,13 +2,13 @@
 #define __GRADIDO_NODE_TASK_CPU_TASK_GRPC_REACTOR_H
 
 #include "CPUTask.h"
-#include "../client/grpc/MessageObserver.h"
+#include "../client/hiero/MessageObserver.h"
 
 #include <atomic>
 
 namespace task {
     template<class Object, class ObjectMessage>
-    class CPUTaskGRPCReactor : public CPUTask, public client::grpc::MessageObserver<ObjectMessage>
+    class CPUTaskGRPCReactor : public CPUTask, public client::hiero::MessageObserver<ObjectMessage>
     {
     public:
         using CPUTask::CPUTask;

@@ -1,7 +1,7 @@
 #include "Exceptions.h"
 
 namespace client {
-	namespace grpc {
+	namespace hiero {
 		std::string ChannelException::getFullString() const 
 		{
 			std::string result = what();

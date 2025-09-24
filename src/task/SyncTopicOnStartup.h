@@ -36,7 +36,7 @@ namespace task {
             INVALID,
             NOT_IDENTICAL         
         };
-        LastTransactionState checkLastTransaction() const;
+        LastTransactionState checkLastTransaction();
         uint32_t loadTransactionsFromMirrorNode(hiero::TopicId topicId);
 
         uint64_t mLastKnownSequenceNumber;

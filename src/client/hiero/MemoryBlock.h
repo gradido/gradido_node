@@ -1,11 +1,11 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_MEMORY_BLOCK_H_
-#define __GRADIDO_NODE_CLIENT_GRPC_MEMORY_BLOCK_H_
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_MEMORY_BLOCK_H_
+#define __GRADIDO_NODE_CLIENT_HIERO_MEMORY_BLOCK_H_
 
 #include "gradido_blockchain/memory/Block.h"
 #include <grpcpp/support/byte_buffer.h>
 
 namespace client {
-    namespace grpc {
+    namespace hiero {
         class MemoryBlock
         {
         public:
@@ -20,11 +20,12 @@ namespace client {
 
             inline operator memory::BlockPtr() { return mBuffer; }
             inline operator memory::ConstBlockPtr() const { return mBuffer; }
-            static memory::Block fromGrpc(const ::grpc::ByteBuffer& byteBufferRef);
+            inline memory::ConstBlockPtr get() const { return mBuffer; }
+            static memory::Block fromGrpc(const grpc::ByteBuffer& byteBufferRef);
 
             //! copy data into grpc byte buffer
             //! return empty ByteBuffer if mBuffer is empty
-            ::grpc::ByteBuffer createGrpcBuffer() const;
+            grpc::ByteBuffer createGrpcBuffer() const;
         protected:
             
             memory::BlockPtr mBuffer;
@@ -32,4 +33,4 @@ namespace client {
     }
 }
 
-#endif //__GRADIDO_NODE_CLIENT_GRPC_MEMORY_BLOCK_H_
+#endif //__GRADIDO_NODE_CLIENT_HIERO_MEMORY_BLOCK_H_

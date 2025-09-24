@@ -1,24 +1,44 @@
 #include "MirrorClient.h"
+#include "TopicMessageQuery.h"
 
 #include "gradido_blockchain/http/JsonRequest.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
 
+
 #include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
+#include "grpcpp/generic/generic_stub.h"
+#include "grpcpp/security/credentials.h"
+#include "grpcpp/support/channel_arguments.h"
+#include "grpcpp/support/stub_options.h"
+#include "grpcpp/channel.h"
+
+#include <chrono>
 
 using namespace rapidjson;
 using namespace rapidjson_helper;
+using namespace magic_enum;
+using namespace std::chrono;
 
 namespace client {
     namespace hiero {
         MirrorClient::MirrorClient(std::string_view networkType)
             : mNetworkType(networkType)
         {
-            
-        }
-        MirrorClient::~MirrorClient() 
-        {
+            // for grpc api
+            grpc::ChannelArguments channelArguments;
+            channelArguments.SetInt(GRPC_ARG_ENABLE_RETRIES, 0);
+            channelArguments.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 10000);
+            channelArguments.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
 
+            auto mirrorCredentials = ::grpc::experimental::TlsCredentials(::grpc::experimental::TlsChannelCredentialsOptions());
+            mChannel = ::grpc::CreateCustomChannel(getHost(), mirrorCredentials, channelArguments);
+        }
+
+        MirrorClient::~MirrorClient()
+        {
         }
 
         std::vector<::hiero::ConsensusTopicResponse> MirrorClient::listTopicMessagesById(
@@ -41,7 +61,7 @@ namespace client {
                 else if (order == "desc" || order == "DESC") {
                     requestPath += "lt:";
                 }
-                requestPath += timestampToString(confirmedAt);
+                requestPath += confirmedAt.toString();
             }
             auto resultJson = requestAndCatch(requestPath);
             if (resultJson.IsNull()) return results;
@@ -49,8 +69,8 @@ namespace client {
             
             auto messages = resultJson["messages"].GetArray();
             results.reserve(messages.Size());
-            for (Value::ConstValueIterator itr = messages.Begin(); itr != messages.End(); ++itr) {
-                results.push_back(::hiero::ConsensusTopicResponse(*itr));
+            for (auto& msg : resultJson["messages"].GetArray()) {
+                results.push_back(::hiero::ConsensusTopicResponse(msg));
             }
 
             return results;
@@ -73,7 +93,7 @@ namespace client {
         {
             // https://testnet.mirrornode.hedera.com/api/v1/topics/0.0.2/messages/1762812.121
             std::string requestPath = "/topics";
-            requestPath += "/messages/" + timestampToString(confirmedAt);
+            requestPath += "/messages/" + confirmedAt.toString();
             
             auto resultJson = requestAndCatch(requestPath);
             if (resultJson.IsNull()) {
@@ -82,9 +102,20 @@ namespace client {
             return ::hiero::ConsensusTopicResponse(resultJson);
         }
 
-        std::string MirrorClient::timestampToString(gradido::data::Timestamp timestamp)
-        {
-            return std::to_string(timestamp.getSeconds()) + '.' + std::to_string(timestamp.getNanos());
+        void MirrorClient::subscribeTopic(std::shared_ptr<TopicMessageQuery> responseListener) {
+            if (!responseListener) {
+                throw GradidoNullPointerException("missing response listener", "TopicMessageQuery", __FUNCTION__);
+            }
+
+            grpc::StubOptions options;
+            grpc::TemplatedGenericStub<grpc::ByteBuffer, grpc::ByteBuffer> mirrorStub(mChannel);
+            auto readerWriter = std::move(mirrorStub.PrepareCall(
+                responseListener->getClientContextPtr(),
+                "/com.hedera.mirror.api.proto.ConsensusService/subscribeTopic",
+                responseListener->getCompletionQueuePtr()
+            ));
+            readerWriter->StartCall(responseListener->getCallStatusPtr());
+            responseListener->setResponseReader(readerWriter);
         }
 
         Document MirrorClient::requestAndCatch(const std::string& requestPath)
@@ -95,7 +126,7 @@ namespace client {
 
             try {
                 LOG_F(1, "call: %s%s", getProtocolHost().data(), fullRequestPath.data());
-                auto resultJson = request.getRequest(requestPath.data());
+                auto resultJson = request.getRequest(fullRequestPath.data());
                 if (!isErrorInRequest(resultJson)) {
                     return resultJson;
                 }                

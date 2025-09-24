@@ -57,15 +57,17 @@ namespace controller {
                 return 0;
             }
             // only true if lastSequenceNumber is at least 1 and therefore already set once
-            if (lastSequenceNumber && lastSequenceNumber + 1 > currentSequenceNumber) {
+            if (lastSequenceNumber && lastSequenceNumber >= currentSequenceNumber) {
                 // the transaction after this transaction was already put into blockchain
                 // maybe we have an error
                 // or hiero has used the same sequence number twice?
-                LOG_F(ERROR, "transaction after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %llu, current sequence number: %llu",
+                LOG_F(
+                    ERROR, 
+                    "this transaction or after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %llu, current sequence number: %llu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );
                 it = mTransactions.erase(it);
-                return 0;
+                continue;
                 // throw GradidoNodeInvalidDataException("data set wasn't like expected, seem to be an error in code or hiero work not like expected");
             }
             auto gradidoTransaction = it->second.deserializeTask->getGradidoTransaction();
@@ -82,12 +84,14 @@ namespace controller {
                     // timeouted                    
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing not found)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 auto otherBlockchain = blockchainProvider->findBlockchain(body->getOtherGroup());
                 if (!otherBlockchain) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (target community unknown)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 deserialize::Context topicIdDeserializer(gradidoTransaction->getParingMessageId(), deserialize::Type::HIERO_TRANSACTION_ID);
@@ -95,6 +99,7 @@ namespace controller {
                 if (!topicIdDeserializer.isHieroTransactionId()) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing transactionId invalid)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 auto pairTask = static_cast<gradido::blockchain::FileBased*>(otherBlockchain.get())
@@ -109,14 +114,15 @@ namespace controller {
                 if (!pairTask->getGradidoTransaction()->isPairing(*gradidoTransaction)) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing invalid)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
             }
-            updateSequenceNumber(lastSequenceNumber + 1);
             if (task->isSuccess()) {
                 processTransaction(it->second);
             }            
             mTransactions.erase(it);
+            updateSequenceNumber(currentSequenceNumber);
             transactionsCount = mTransactions.size();
         } while (transactionsCount);
         return 0;
@@ -131,6 +137,7 @@ namespace controller {
         }
         auto transaction = gradidoTransactionWorkData.deserializeTask->getGradidoTransaction();
         const auto& transactionId = gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
+        const auto& confirmedAt = gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp();
         if (transactionId.empty()) {
             throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
         }
@@ -140,10 +147,13 @@ namespace controller {
             bool result = blockchain->createAndAddConfirmedTransaction(
                 transaction,
                 serializer.run(),
-                gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp().getAsTimepoint()
+                confirmedAt
             );
             fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
-            LOG_F(INFO, "Transaction confirmed, msgId: %s", transactionId.toString().data());
+            LOG_F(INFO, "Transaction confirmed, msgId: %s, confirmedAt: %s",
+                transactionId.toString().data(), confirmedAt.toString().data()
+            );
+            
         }
         catch (GradidoBlockchainException& ex) {
             auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
@@ -164,11 +174,12 @@ namespace controller {
         }
     }
 
-    SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse) {
+    SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse) 
+    {
         if (isExitCalled()) { return PushResult::IN_SHUTDOWN; }
 
         std::lock_guard _lock(mTransactionsMutex);
-        auto consensusTimestamp = consensusTopicResponse.getConsensusTimestamp();
+        const auto& consensusTimestamp = consensusTopicResponse.getConsensusTimestamp();
         const auto& transactionId = consensusTopicResponse.getChunkInfo().getInitialTransactionId();
 
         auto existingTransactionConsensusTimestamp = mLastTransactions.get(SignatureOctet(*consensusTopicResponse.getRunningHash()));
@@ -224,9 +235,11 @@ namespace controller {
                 }
             }
             else {
+                // TODO: make explicit exception for this
+                LOG_F(ERROR, "old sequence number: %llu, new sequence number: %llu", mLastSequenceNumber, newSequenceNumber);
                 throw GradidoNodeInvalidDataException("invalid value for newSequenceNumber");
             }
         }
-        LOG_F(2, "new sequenceNumber: %d", mLastSequenceNumber);
+        //LOG_F(2, "new sequenceNumber: %d", mLastSequenceNumber);
     }
 }

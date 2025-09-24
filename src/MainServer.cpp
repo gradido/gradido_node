@@ -1,4 +1,4 @@
-#include "client/grpc/Client.h"
+#include "client/hiero/ConsensusClient.h"
 #include "MainServer.h"
 #include "ServerGlobals.h"
 
@@ -75,7 +75,7 @@ bool MainServer::init()
 
 	// start cpu scheduler
 	// std::thread::hardware_concurrency() sometime return 0 if number couldn't be determined
-	uint8_t worker_count = std::min(2, (int)std::thread::hardware_concurrency() * 2);
+	uint8_t worker_count = 2; //  std::max(2, (int)std::thread::hardware_concurrency() * 2);
 	// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
 	uint8_t io_worker_count = config.getInt("io.worker_count", 2);
 	ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
@@ -88,7 +88,7 @@ bool MainServer::init()
 
 	uint8_t hieroNodeCount = config.getInt("clients.hiero.nodeCount", 3);
 	uint8_t hieroNodeCountPerCommunity = config.getInt("clients.hiero.nodeCountPerCommunity", 3);
-	std::vector<std::shared_ptr<client::grpc::Client>> hieroClients;
+	std::vector<std::shared_ptr<client::hiero::ConsensusClient>> hieroClients;
 
 	if (!ServerGlobals::g_isOfflineMode) {		
 		//iota::MqttClientWrapper::getInstance()->init();
@@ -108,7 +108,7 @@ bool MainServer::init()
 			const auto& hieroNode = addressbook.pickRandomNode();
 			const auto& endpoint = hieroNode.pickRandomEndpoint();
 			auto hieroServiceEndpointUrl = endpoint.getConnectionString();
-			auto hieroClient = client::grpc::Client::createForTarget(
+			auto hieroClient = client::hiero::ConsensusClient::createForTarget(
 				hieroServiceEndpointUrl, 
 				endpoint.getPort() == hiero::PORT_NODE_TLS,
 				hieroNode.getNodeCertHash()

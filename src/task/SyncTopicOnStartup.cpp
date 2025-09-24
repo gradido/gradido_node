@@ -80,7 +80,7 @@ namespace task {
 		return 0;
 	}
 
-	SyncTopicOnStartup::LastTransactionState SyncTopicOnStartup::checkLastTransaction() const
+	SyncTopicOnStartup::LastTransactionState SyncTopicOnStartup::checkLastTransaction()
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 
@@ -95,13 +95,13 @@ namespace task {
 		auto lastTransactionMirrorRaw = transactionFromMirror.getMessageData();
 		if (!lastTransactionMirrorRaw) {
 			LOG_F(
-				WARNING, 
+				WARNING,
 				"cannot find last transaction (any more) in hiero network. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %llu, transactionNr: %llu, confirmedAt: %s",
-				mBlockchain->getCommunityId().data(), 
+				mBlockchain->getCommunityId().data(),
 				mLastKnowTopicId.toString().data(),
-				mLastKnownSequenceNumber, 
+				mLastKnownSequenceNumber,
 				lastTransaction->getTransactionNr(),
-				DataTypeConverter::timePointToString(confirmedAt.getAsTimepoint()).data()
+				confirmedAt.toString().data()
 			);
 			return LastTransactionState::NOT_FOUND;
 		}
@@ -116,7 +116,7 @@ namespace task {
 				mLastKnowTopicId.toString().data(),
 				mLastKnownSequenceNumber,
 				lastTransaction->getTransactionNr(),
-				DataTypeConverter::timePointToString(lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint())
+				lastTransaction->getConfirmedTransaction()->getConfirmedAt().toString().data()
 			);
 			return LastTransactionState::INVALID;
 		}
@@ -136,6 +136,7 @@ namespace task {
 			);
 			return LastTransactionState::NOT_IDENTICAL;
 		}
+		mLastKnownSequenceNumber = transactionFromMirror.getSequenceNumber();
 		return LastTransactionState::IDENTICAL;
 	}
 

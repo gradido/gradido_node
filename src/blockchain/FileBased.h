@@ -28,13 +28,13 @@
 #include <mutex>
 
 namespace client {
-	namespace grpc {
-		class Client;
+	namespace hiero {
+		class ConsensusClient;
 	}
 }
 
 namespace hiero {
-	class MessageListener;
+	class MessageListenerQuery;
 }
 
 namespace controller {
@@ -66,7 +66,7 @@ namespace gradido {
 				const hiero::TopicId& topicId,
 				std::string_view alias, 
 				std::string_view folder,
-				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 			);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
 			static inline std::shared_ptr<FileBased> create(
@@ -74,7 +74,7 @@ namespace gradido {
 				const hiero::TopicId& topicId,
 				std::string_view alias,
 				std::string_view folder,
-				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 			);
 			inline std::shared_ptr<FileBased> getptr();
 			inline std::shared_ptr<const FileBased> getptr() const;
@@ -148,7 +148,7 @@ namespace gradido {
 			inline const std::string& getFolderPath() const { return mFolderPath; }
 			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
-			inline std::shared_ptr<client::grpc::Client> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
+			inline std::shared_ptr<client::hiero::ConsensusClient> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
 			std::shared_ptr<controller::SimpleOrderingManager> getOrderingManager() { return mOrderingManager; }
 
 		protected:
@@ -174,7 +174,7 @@ namespace gradido {
 			std::shared_ptr<controller::SimpleOrderingManager> mOrderingManager;
 			//! connect via mqtt to iota server and get new messages
 			//iota::MessageListener* mIotaMessageListener;
-			std::vector<std::shared_ptr<hiero::MessageListener>> mHieroMessageListeners;
+			std::shared_ptr<hiero::MessageListenerQuery> mHieroMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
 			mutable std::shared_ptr<cache::Dictionary> mPublicKeysIndex;
@@ -192,7 +192,7 @@ namespace gradido {
 			//! Community Server listening on new blocks for his group
 			//! TODO: replace with more abstract but simple event system and/or mqtt
 			std::shared_ptr<client::Base> mCommunityServer;
-			std::vector<std::shared_ptr<client::grpc::Client>> mHieroClients;
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;
 		};
 
 		std::shared_ptr<FileBased> FileBased::create(
@@ -200,7 +200,7 @@ namespace gradido {
 			const hiero::TopicId& topicId,
 			std::string_view alias,
 			std::string_view folder,
-			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 		) {
 			return std::make_shared<FileBased>(Private(), communityId, topicId, alias, folder, std::move(hieroClients));
 		}

@@ -32,6 +32,11 @@ namespace hiero {
 
         ConsensusTopicQueryMessage getMessage() const;
 
+        void setTopicId(const TopicId& topicId) { mTopicId = topicId; }
+        void setConsensusStartTime(const gradido::data::Timestamp& consensusStartTime) { mConsensusStartTime = consensusStartTime; }
+        void setConsensusEndTime(const gradido::data::Timestamp& consensusEndTime) { mConsensusEndTime = consensusEndTime; }
+        void setLimit(uint64_t limit) { mLimit = limit; }
+
         inline const TopicId& getTopicId() const { return mTopicId; }
         inline const gradido::data::Timestamp& getConsensusStartTime() const { return mConsensusStartTime; }
         inline const gradido::data::Timestamp& getConsensusEndTime() const { return mConsensusEndTime; }

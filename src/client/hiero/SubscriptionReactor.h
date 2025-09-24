@@ -1,5 +1,5 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
-#define __GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_TOPIC_MESSAGE_QUERY_REACTOR_H
+#define __GRADIDO_NODE_CLIENT_HIERO_TOPIC_MESSAGE_QUERY_REACTOR_H
 
 #include <string>
 #include <bit>
@@ -29,9 +29,9 @@ public:
 */
 
 namespace client {
-	namespace grpc {
+	namespace hiero {
 		template<class T>
-		class SubscriptionReactor : public ::grpc::ClientBidiReactor<::grpc::ByteBuffer, ::grpc::ByteBuffer>, public TimerCallback
+		class SubscriptionReactor : public grpc::ClientBidiReactor<grpc::ByteBuffer, grpc::ByteBuffer>, public TimerCallback
 		{
 		public:
 			SubscriptionReactor(std::shared_ptr<MessageObserver<T>> messageObserver, const MemoryBlock& rawRequest)
@@ -47,6 +47,7 @@ namespace client {
 				mBuffer = rawRequest.createGrpcBuffer();
 			}
 			virtual ~SubscriptionReactor() {
+				LOG_F(WARNING, "~SubscriptionReactor()");
 				// CacheManager::getInstance()->getFuzzyTimer()->removeTimer(std::to_string((long long)this));
 			}
 			const char* getResourceType() const override { return "SubscriptionReactor"; };
@@ -81,12 +82,10 @@ namespace client {
 					return;
 				}
 				Profiler timeUsed;
-				::grpc::Slice slice;
-				mBuffer.TrySingleSlice(&slice);
-				auto data = pp::bytes(const_cast<std::byte*>(reinterpret_cast<const std::byte*>(slice.begin())), slice.size());
-				auto result = pp::message_coder<T>::decode(data);
+				auto block = MemoryBlock(mBuffer);
+				auto result = pp::message_coder<T>::decode(block.get()->span());
 				if (!result.has_value()) {
-					LOG_F(ERROR, "result couldn't be deserialized");
+					LOG_F(ERROR, "couldn't be deserialized: echo \"%s\" | xxd -r -p | protoscope", block.get()->convertToHex().data());
 				}
 				else {
 					const auto& [message, bufferEnd2] = *result;
@@ -110,7 +109,7 @@ namespace client {
 			/// called concurrently with calls to the reactor from outside of reactions.)
 			///
 			/// \param[in] s The status outcome of this RPC
-			virtual void OnDone(const ::grpc::Status& s)
+			virtual void OnDone(const grpc::Status& s)
 			{
 				if (!s.ok()) {
 					/// Return the instance's error code.
@@ -129,13 +128,13 @@ namespace client {
 				mMessageObserver->onConnectionClosed();
 				delete this;
 			}
-			::grpc::ByteBuffer* getBuffer() { return &mBuffer; }
+			grpc::ByteBuffer* getBuffer() { return &mBuffer; }
 		protected:
 			std::shared_ptr<MessageObserver<T>> mMessageObserver;
-			::grpc::ByteBuffer mBuffer;
+			grpc::ByteBuffer mBuffer;
 		};
 
 	}
 }
 
-#endif //__GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
+#endif //__GRADIDO_NODE_CLIENT_HIERO_TOPIC_MESSAGE_QUERY_REACTOR_H

@@ -14,6 +14,10 @@ namespace hiero {
      * The default maximum duration of time to wait before retrying to submit a previously-failed request.
      */
     constexpr auto DEFAULT_MAX_BACKOFF = std::chrono::seconds(8);
+    /**
+     * The default maximum number of times a request will attempt to be submitted before considering the execution failed.
+     */
+    constexpr auto DEFAULT_MAX_ATTEMPTS = 10U;
 }
 
 #endif // __GRADIDO_NODE_CLIENT_HIERO_CONST_H_

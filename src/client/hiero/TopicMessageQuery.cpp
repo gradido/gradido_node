@@ -1,36 +1,76 @@
-#include "SubscriptionThread.h"
+#include "TopicMessageQuery.h"
 #include "const.h"
+#include "MemoryBlock.h"
+#include "../../hiero/ConsensusTopicQuery.h"
+#include "../../lib/protopuf.h"
+
+#include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/lib/DataTypeConverter.h"
+
+#include "grpcpp/support/async_stream.h"
+#include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
 #include <chrono>
+
+using namespace magic_enum;
 
 namespace client {
 	namespace hiero {
 
-        // Enum to track the status of the gRPC call.
-        enum class CallStatus
+        TopicMessageQuery::TopicMessageQuery(const char* name, ::hiero::ConsensusTopicQuery startQuery)
+            : mThread(&TopicMessageQuery::ThreadFunction, this), 
+            mThreadName(name), 
+            mExitCalled(false), 
+            mStartQuery(startQuery),
+            mCallStatus(CallStatus::STATUS_CREATE)
         {
-            STATUS_CREATE = 0,
-            STATUS_PROCESSING = 1,
-            STATUS_FINISH = 2
-        };
+        }
 
-        int SubscriptionThread::ThreadFunction() 
+        TopicMessageQuery::~TopicMessageQuery()
         {
-            /*
+            LOG_F(INFO, "TopicMessageQuery::~TopicMessageQuery");
+            mExitCalled = true;
+            mThread.join();
+        }
+
+        void TopicMessageQuery::setResponseReader(std::unique_ptr<::grpc::ClientAsyncReaderWriter<::grpc::ByteBuffer, ::grpc::ByteBuffer>>& responseReader) 
+        {
+            mResponseReader = std::move(responseReader);
+        }
+
+        int TopicMessageQuery::ThreadFunction() 
+        {
+            loguru::set_thread_name(mThreadName.data());
             // copied most of the code from hiero cpp sdk from startSubscription from TopicMessageQuery.cc
+            ::hiero::ConsensusTopicQuery query;
+            // Declare needed variables.
+            ::grpc::ByteBuffer grpcByteBuffer;
+            ::hiero::ConsensusTopicResponse response;
             std::chrono::system_clock::duration backoff = ::hiero::DEFAULT_MIN_BACKOFF;
             std::chrono::system_clock::duration maxBackoff = ::hiero::DEFAULT_MAX_BACKOFF;
-            auto callStatus = std::make_unique<CallStatus>(CallStatus::STATUS_CREATE);
+            ::grpc::Status grpcStatus;
+            uint64_t attempt = 0ULL;
+            bool complete = false;
             bool ok = false;
             void* tag = nullptr;
-            while (true) {
+
+            // serialize start query into grpc Byte Buffer
+            MemoryBlock memoryBuffer(protopuf::serialize<::hiero::ConsensusTopicQuery, ::hiero::ConsensusTopicQueryMessage>(mStartQuery));
+            grpcByteBuffer = memoryBuffer.createGrpcBuffer();
+
+            while (!mExitCalled) {
                 // Process based on the completion queue status.
                 auto backOffFromNow = std::chrono::system_clock::now() + std::chrono::duration_cast<std::chrono::milliseconds>(backoff);
-                switch (mCompletionQueue.AsyncNext(&tag, &ok, backOffFromNow))
+                auto nextStatus = mCompletionQueue.AsyncNext(&tag, &ok, backOffFromNow);
+                LOG_F(2, "next status: %s", enum_name(nextStatus).data());
+                switch (nextStatus)
                 {
                 case ::grpc::CompletionQueue::TIMEOUT:
                 {
                     // Backoff if the completion queue timed out.
                     backoff = (backoff * 2 > maxBackoff) ? maxBackoff : backoff * 2;
+                    LOG_F(2, "new timeout: %s", DataTypeConverter::timespanToString(backoff).data());
                     break;
                 }
                 case ::grpc::CompletionQueue::GOT_EVENT:
@@ -45,12 +85,20 @@ namespace client {
                     {
                         if (ok)
                         {
-                            // Update the call status to processing.
-                            *callStatus = CallStatus::STATUS_PROCESSING;
+                            ::grpc::WriteOptions writeOptions;
+                            mCallStatus = CallStatus::STATUS_WRITE;
+                            mResponseReader->WriteLast(grpcByteBuffer, writeOptions, &mCallStatus);
                         }
-
-                        // Let fall through to process message.
-                        [[fallthrough]];
+                        break;
+                    }
+                    case CallStatus::STATUS_WRITE:
+                    {
+                        if (ok)
+                        {
+                            mCallStatus = CallStatus::STATUS_PROCESSING;
+                            mResponseReader->Read(&grpcByteBuffer, &mCallStatus);
+                        }
+                        break;
                     }
                     case CallStatus::STATUS_PROCESSING:
                     {
@@ -58,30 +106,35 @@ namespace client {
                         if (ok)
                         {
                             // Read the response.
-                            // mResponseReader->
-                            reader->Read(&response, callStatus.get());
+                            auto block = MemoryBlock(grpcByteBuffer);
+                            LOG_F(INFO, "response: echo \"%s\" | xxd -r -p | protoscope", block.get()->convertToHex().data());
+                            response = protopuf::deserialize<::hiero::ConsensusTopicResponse, ::hiero::ConsensusTopicResponseMessage>(*block.get());
 
                             // Adjust the query timestamp and limit, in case a retry is triggered.
-                            if (response.has_consensustimestamp())
+                            auto consensusTimestamp = response.getConsensusTimestamp();
+                            if (!consensusTimestamp.empty())
                             {
-                                // Add one of the smallest denomination of time this machine can handle.
-                                query.set_allocated_consensusstarttime(internal::TimestampConverter::toProtobuf(
-                                    internal::TimestampConverter::fromProtobuf(response.consensustimestamp()) +
-                                    std::chrono::duration<int, std::ratio<1, std::chrono::system_clock::period::den>>()));
+                                // Add one of the smallest denomination of time
+                                query.setConsensusStartTime({
+                                    consensusTimestamp.getSeconds(), consensusTimestamp.getNanos() + 1
+                                });
                             }
 
-                            if (query.limit() > 0ULL)
+                            if (query.getLimit() > 0ULL)
                             {
-                                query.set_limit(query.limit() - 1ULL);
+                                query.setLimit(query.getLimit() - 1ULL);
                             }
 
                             // Process the received message.
-                            if (!response.has_chunkinfo() || response.chunkinfo().total() == 1)
+                            const auto& chunkInfo = response.getChunkInfo();
+                            if (chunkInfo.empty() || chunkInfo.getTotal() == 1)
                             {
-                                onNext(TopicMessage::ofSingle(response));
+                                onMessageArrived(std::move(response));
                             }
                             else
                             {
+                                LOG_F(FATAL, "Chunked Messages not implemented yet");
+                                /*
                                 const TransactionId transactionId =
                                     TransactionId::fromProtobuf(response.chunkinfo().initialtransactionid());
                                 pendingMessages[transactionId].push_back(response);
@@ -90,14 +143,16 @@ namespace client {
                                 {
                                     onNext(TopicMessage::ofMany(pendingMessages[transactionId]));
                                 }
+                                */
                             }
+                            mResponseReader->Read(&grpcByteBuffer, &mCallStatus);
                         }
 
                         // If the response shouldn't be processed (due to completion or error), finish the RPC.
                         else
                         {
-                            *callStatus = CallStatus::STATUS_FINISH;
-                            reader->Finish(&grpcStatus, callStatus.get());
+                            mCallStatus = CallStatus::STATUS_FINISH;
+                            mResponseReader->Finish(&grpcStatus, &mCallStatus);
                         }
 
                         break;
@@ -107,10 +162,11 @@ namespace client {
                         if (grpcStatus.ok())
                         {
                             // RPC completed successfully.
-                            completionHandler();
+                            // completionHandler();
+                            LOG_F(INFO, "RPC subscription complete!");
 
                             // Shutdown the completion queue.
-                            queues.back()->Shutdown();
+                            mCompletionQueue.Shutdown();
 
                             // Mark the RPC as complete.
                             complete = true;
@@ -119,13 +175,14 @@ namespace client {
                         else
                         {
                             // An error occurred. Whether retrying or not, cancel the call and close the queue.
-                            contexts.back()->TryCancel();
-                            queues.back()->Shutdown();
+                            mClientContext.TryCancel();
+                            mCompletionQueue.Shutdown();
 
-                            if (attempt >= maxAttempts || !retryHandler(grpcStatus))
+                            if (attempt >= ::hiero::DEFAULT_MAX_ATTEMPTS || !shouldRetry(grpcStatus))
                             {
                                 // This RPC call shouldn't be retried, handle the error and mark as complete to exit.
-                                errorHandler(grpcStatus);
+                                //errorHandler(grpcStatus);
+                                LOG_F(ERROR, "Subscription error: %s", grpcStatus.error_message().data());
                                 complete = true;
                             }
                         }
@@ -141,7 +198,7 @@ namespace client {
 
                     break;
                 }
-                case grpc::CompletionQueue::SHUTDOWN:
+                case ::grpc::CompletionQueue::SHUTDOWN:
                 {
                     // Getting here means the RPC is reached completion or encountered an un-retriable error, and the completion
                     // queue has been shut down. End the subscription.
@@ -149,7 +206,7 @@ namespace client {
                     {
                         // Give a second for the queue to finish its processing.
                         std::this_thread::sleep_for(std::chrono::seconds(1));
-                        return;
+                        return 0;
                     }
 
                     // If the completion queue has been shut down and the RPC hasn't completed, that means the RPC needs to be
@@ -159,27 +216,35 @@ namespace client {
                     ++attempt;
 
                     // Resend the query to a different node with a different completion queue and client context.
-                    contexts.push_back(std::make_unique<grpc::ClientContext>());
-                    queues.push_back(std::make_unique<grpc::CompletionQueue>());
+                    // contexts.push_back(std::make_unique<grpc::ClientContext>());
+                    // queues.push_back(std::make_unique<grpc::CompletionQueue>());
 
                     // Reset the call status and send the query.
+                    /*
                     *callStatus = CallStatus::STATUS_CREATE;
                     reader = getConnectedMirrorNode(network)->getConsensusServiceStub()->AsyncsubscribeTopic(
                         contexts.back().get(), query, queues.back().get(), callStatus.get());
-
+                        */
+                    onConnectionClosed();
                     break;
                 }
                 default:
                 {
                     // Not sure what to do here, just fail out.
                     std::cout << "Unknown gRPC completion queue event, failing.." << std::endl;
-                    return;
+                    return -1;
                 }
                 }
             }
-            */
             return 0;
         }
 
+        bool TopicMessageQuery::shouldRetry(::grpc::Status status)
+        {
+            return (status.error_code() == ::grpc::StatusCode::NOT_FOUND) ||
+                (status.error_code() == ::grpc::StatusCode::RESOURCE_EXHAUSTED) ||
+                (status.error_code() == ::grpc::StatusCode::UNAVAILABLE) ||
+                (status.error_code() == ::grpc::StatusCode::INTERNAL);
+        }
 	}
 }

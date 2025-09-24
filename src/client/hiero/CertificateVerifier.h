@@ -1,16 +1,15 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_CERTIFICATE_VERIFIER_H_
-#define __GRADIDO_NODE_CLIENT_GRPC_CERTIFICATE_VERIFIER_H_
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_CERTIFICATE_VERIFIER_H_
+#define __GRADIDO_NODE_CLIENT_HIERO_CERTIFICATE_VERIFIER_H_
 
 #include <grpcpp/security/credentials.h>
-#include <string>
 #include "gradido_blockchain/memory/Block.h"
 
 namespace client {
-    namespace grpc {
+    namespace hiero {
         /**
          * Custom TLS verifier which checks if node TLS cert chain matches the expected hash
          */
-        class CertificateVerifier : public ::grpc::experimental::ExternalCertificateVerifier
+        class CertificateVerifier : public grpc::experimental::ExternalCertificateVerifier
         {
         public:
             /**
@@ -36,9 +35,9 @@ namespace client {
              *                    check.
              * @return \c TRUE because all checks are done synchronously.
              */
-            bool Verify(::grpc::experimental::TlsCustomVerificationCheckRequest* request,
-                        std::function<void(::grpc::Status)> callback,
-                        ::grpc::Status* sync_status) override;
+            bool Verify(grpc::experimental::TlsCustomVerificationCheckRequest* request,
+                        std::function<void(grpc::Status)> callback,
+                        grpc::Status* sync_status) override;
 
             /**
              * Cancels a verification request previously started via Verify(). Used when the connection attempt times out or is
@@ -47,11 +46,11 @@ namespace client {
              *
              * @param request A pointer to the verification information associated with this request.
              */
-            [[maybe_unused]] void Cancel(::grpc::experimental::TlsCustomVerificationCheckRequest* request) override
+            [[maybe_unused]] void Cancel(grpc::experimental::TlsCustomVerificationCheckRequest* request) override
             { // Intentionally unimplemented
             }
         };
     }
 } 
 
-#endif // __GRADIDO_NODE_CLIENT_GRPC_CERTIFICATE_VERIFIER_H_
+#endif // __GRADIDO_NODE_CLIENT_HIERO_CERTIFICATE_VERIFIER_H_

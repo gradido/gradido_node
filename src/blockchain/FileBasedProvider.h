@@ -13,8 +13,8 @@ namespace hiero {
 }
 
 namespace client {
-	namespace grpc {
-		class Client;
+	namespace hiero {
+		class ConsensusClient;
 	}
 }
 
@@ -34,7 +34,7 @@ namespace gradido {
 			//! \return true if successfully else return false
 			bool init(
 				const std::string& communityConfigFile,
-				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients,
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 				uint8_t hieroClientsPerCommunity = 3
 			);
 			void exit();
@@ -71,7 +71,7 @@ namespace gradido {
 
 			cache::GroupIndex* mGroupIndex;
 			cache::Dictionary  mCommunityIdIndex;
-			std::vector<std::shared_ptr<client::grpc::Client>> mHieroClients;
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;
 			uint8_t mHieroClientsPerCommunity;
 			bool mInitalized;
 		};

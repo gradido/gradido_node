@@ -1,9 +1,9 @@
 #include "FileBased.h"
-#include "../client/grpc/Client.h"
+#include "../client/hiero/ConsensusClient.h"
 #include "FileBasedProvider.h"
 #include "NodeTransactionEntry.h"
 #include "../cache/Exceptions.h"
-#include "../hiero/MessageListener.h"
+#include "../hiero/MessageListenerQuery.h"
 #include "../model/files/Block.h"
 #include "../model/files/BlockIndex.h"
 #include "../ServerGlobals.h"
@@ -35,7 +35,7 @@ namespace gradido {
 			const hiero::TopicId& topicId,
 			std::string_view alias,
 			std::string_view folder,
-			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients)
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients)
 			: Abstract(communityId),
 			mExitCalled(false),
 			mHieroTopicId(topicId),
@@ -160,19 +160,20 @@ namespace gradido {
 		}
 
 		void FileBased::startListening(data::Timestamp lastTransactionConfirmedAt)
-		{
-			if (mHieroMessageListeners.size()) {
+		{			
+			if (mHieroMessageListener) {
 				LOG_F(WARNING, "called again, while listener where already existing");
 			}
-			mHieroMessageListeners.reserve(mHieroClients.size());
-			for (auto& hieroClient : mHieroClients) {
-				auto messageListener = std::make_shared<hiero::MessageListener>(mHieroTopicId, mCommunityId);
-				auto now = std::chrono::system_clock::now();
-				// TODO: restart after connection was closed because of timeout
-				auto endTime = now + std::chrono::duration(std::chrono::years(10));
-				hieroClient->subscribeTopic({ mHieroTopicId, lastTransactionConfirmedAt, endTime }, messageListener);
-				mHieroMessageListeners.push_back(messageListener);
-			}
+			data::Timestamp listenFrom = { lastTransactionConfirmedAt.getSeconds(), lastTransactionConfirmedAt.getNanos() + 1 };
+			auto now = std::chrono::system_clock::now();
+			// TODO: restart after connection was closed because of timeout
+			auto endTime = now + std::chrono::duration(std::chrono::years(10));
+			mHieroMessageListener = std::make_shared<hiero::MessageListenerQuery>(
+				mHieroTopicId, 
+				mCommunityId, 
+				hiero::ConsensusTopicQuery( mHieroTopicId, listenFrom, endTime )
+			);
+			ServerGlobals::g_HieroMirrorNode->subscribeTopic(mHieroMessageListener);
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
 		}
 
@@ -184,9 +185,7 @@ namespace gradido {
 				delete mIotaMessageListener;
 				mIotaMessageListener = nullptr;
 			}*/
-			for (const auto& messageListener : mHieroMessageListeners) {
-				messageListener->cancelConnection();
-			}
+			mHieroMessageListener->cancelConnection();
 
 			Profiler timeUsed;
 			// wait until all Task of TaskObeserver are finished, wait a second and check if number decreased,

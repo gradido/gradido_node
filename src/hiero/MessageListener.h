@@ -1,7 +1,7 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_H
-#define __GRADIDO_NODE_CLIENT_GRPC_H
+#ifndef __GRADIDO_NODE_HIERO_MESSAGE_LISTENER_H
+#define __GRADIDO_NODE_HIERO_MESSAGE_LISTENER_H
 
-#include "../client/grpc/MessageObserver.h"
+#include "../client/hiero/MessageObserver.h"
 #include "ConsensusTopicResponse.h"
 
 #include "gradido_blockchain/data/hiero/TopicId.h"
@@ -10,7 +10,7 @@
 
 namespace hiero {
 		
-	class MessageListener : public client::grpc::MessageObserver<ConsensusTopicResponseMessage>
+	class MessageListener : public client::hiero::MessageObserver<ConsensusTopicResponseMessage>
 	{
 	public:
 		explicit MessageListener(const TopicId& topicId, std::string_view communityId);
@@ -31,4 +31,4 @@ namespace hiero {
 	};
 }
 
-#endif //__GRADIDO_NODE_CLIENT_GRPC_H
+#endif //__GRADIDO_NODE_HIERO_MESSAGE_LISTENER_H

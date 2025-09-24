@@ -97,6 +97,7 @@ namespace controller {
         mutable std::mutex mTransactionsMutex;
         std::string mCommunityId;
 
+        // last sequence number from which transaction was checked
         uint64_t mLastSequenceNumber;
     };
 }

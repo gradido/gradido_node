@@ -4,10 +4,10 @@
 
 #include "loguru/loguru.hpp"
 
-using namespace ::grpc;
+using namespace grpc;
 
 namespace client {
-	namespace grpc {
+	namespace hiero {
 
 		CertificateVerifier::CertificateVerifier(memory::ConstBlockPtr certificateHash)
 			: mExpectedHash(certificateHash)

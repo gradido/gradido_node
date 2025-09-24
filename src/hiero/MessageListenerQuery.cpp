@@ -1,5 +1,5 @@
 
-#include "MessageListener.h"
+#include "MessageListenerQuery.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "../blockchain/FileBasedProvider.h"
 #include "ConsensusTopicResponse.h"
@@ -10,22 +10,20 @@
 
 namespace hiero {
 
-	MessageListener::MessageListener(const TopicId& topicId, std::string_view communityId)
-		: mTopicId(topicId), mCommunityId(communityId), mIsClosed(false)
+	MessageListenerQuery::MessageListenerQuery(const TopicId& topicId, std::string_view communityId, ConsensusTopicQuery startQuery)
+		: client::hiero::TopicMessageQuery("MsgLstQry", startQuery), mTopicId(topicId), mCommunityId(communityId), mIsClosed(false)
 	{
 
 	}
 
-	MessageListener::~MessageListener()
+	MessageListenerQuery::~MessageListenerQuery()
 	{
 
 	}
 
 	// move message binary
-	void MessageListener::onMessageArrived(const ConsensusTopicResponseMessage& consensusTopicResponse)
+	void MessageListenerQuery::onMessageArrived(ConsensusTopicResponse&& response)
 	{
-		ConsensusTopicResponse response(consensusTopicResponse);
-
 		// hiero::TransactionId startTransactionId;
 		if (!response.getChunkInfo().empty()) {
 			auto total = response.getChunkInfo().getTotal();
@@ -42,7 +40,7 @@ namespace hiero {
 	}
 
 	// will be called from grpc client if connection was closed
-	void MessageListener::onConnectionClosed()
+	void MessageListenerQuery::onConnectionClosed()
 	{		
 		mIsClosed = true;
 		LOG_F(WARNING, "connection closed on topic: %s", mTopicId.toString().data());

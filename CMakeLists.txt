@@ -43,7 +43,6 @@ FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
 FILE(GLOB HIERO "src/hiero/*.h" "src/hiero/*.cpp")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
-FILE(GLOB CLIENT_GRPC "src/client/grpc/*.cpp" "src/client/grpc/*.h")
 FILE(GLOB CLIENT_HIERO "src/client/hiero/*.cpp" "src/client/hiero/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
 FILE(GLOB SERVER "src/server/*.h" "src/server/*.cpp")
@@ -66,7 +65,7 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 SET(LOCAL_SRCS 
 	${BLOCKCHAIN}
 	${CACHE_SRC}
-	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_HIERO} ${CLIENT_GRPC}
+	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_HIERO}
 	${HIERO}
 	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
@@ -83,7 +82,6 @@ source_group("blockchain" FILES ${BLOCKCHAIN})
 source_group("cache" FILES ${CACHE_SRC})
 source_group("container" FILES ${CONTAINER})
 source_group("client\\hiero" FILES ${CLIENT_HIERO})
-source_group("client\\grpc" FILES ${CLIENT_GRPC})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
 source_group("hiero" FILES ${HIERO})
