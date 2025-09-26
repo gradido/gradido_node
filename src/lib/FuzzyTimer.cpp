@@ -87,10 +87,10 @@ bool FuzzyTimer::move()
 			try {
 				ret = it->second.callback->callFromTimer();
 			}
-			catch (MessageIdFormatException& ex) {
+			/*catch (MessageIdFormatException& ex) {
 				LOG_F(ERROR, "message id exception: %s", ex.getFullString().data());
 				ret = TimerReturn::EXCEPTION;
-			}
+			}*/
 			catch (GradidoBlockchainException& ex) {
 				LOG_F(ERROR, "Gradido Blockchain Exception: %s", ex.getFullString().data());
 				ret = TimerReturn::EXCEPTION;

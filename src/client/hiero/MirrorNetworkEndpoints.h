@@ -6,9 +6,9 @@
 namespace client {
     namespace hiero {
         namespace MirrorNetworkEndpoints {
-            static constexpr const char* TESTNET = "testnet.mirrornode.hedera.com:443";
-            static constexpr const char* PREVIEWNET = "previewnet.mirrornode.hedera.com:443";
-            static constexpr const char* MAINNET = "mainnet-public.mirrornode.hedera.com:443";
+            static constexpr const char* TESTNET = "testnet.mirrornode.hedera.com";
+            static constexpr const char* PREVIEWNET = "previewnet.mirrornode.hedera.com";
+            static constexpr const char* MAINNET = "mainnet-public.mirrornode.hedera.com";
 
             const char* getByEndpointName(const char* endpointName) noexcept;
         }

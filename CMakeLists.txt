@@ -31,16 +31,12 @@ include_directories(
 	"dependencies/gradido_blockchain/dependencies/date/include"
 	"dependencies/gradido_blockchain/dependencies/magic_enum/include"
 	"dependencies/gradido_blockchain/dependencies/protopuf/include"
+	"dependencies/gradido_blockchain/dependencies/cpp-httplib"
 
 	"dependencies/paho.mqtt.c/src"
 	#"dependencies/googletest/googletest/include"
 	#"dependencies/leveldb/third_party/googletest/googlemock/include"
 )
-if(NOT WIN32) 
-	include_directories(${grpc_SOURCE_DIR}/include)
-	include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
-	message(${grpc_SOURCE_DIR})
-endif()
 
 FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
 FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
@@ -107,11 +103,16 @@ endif(MSVC)
 
 ############################## add dependencies  #########################################
 set(ENABLE_HTTPS ON)
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
-set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
+find_package(OpenSSL REQUIRED)
+if(WIN32)
+	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
+	set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
+endif()
 add_subdirectory("dependencies/gradido_blockchain")
 # reuse cacert.pem from gradido_blockchain
-add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
+if(WIN32)
+	add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
+endif()
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
@@ -133,6 +134,12 @@ FetchContent_Declare(
 	GIT_TAG        v1.74.1
 )
 FetchContent_MakeAvailable(grpc)
+
+if(NOT WIN32) 
+	include_directories(${grpc_SOURCE_DIR}/include)
+	include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
+	message(${grpc_SOURCE_DIR})
+endif()
 
 # Since FetchContent uses add_subdirectory under the hood, we can use
 # the grpc targets directly from this build.
@@ -172,7 +179,7 @@ endif()
 add_executable(GradidoNode ${LOCAL_SRCS})
 #SUBDIRS("src/test")
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain)# paho-mqtt3a)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain OpenSSL::SSL OpenSSL::Crypto)# paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
