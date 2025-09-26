@@ -35,6 +35,13 @@ namespace server {
 		void ApiHandler::handle(Value& responseJson, std::string method, const Value& params)
 		{
 			auto alloc = mRootJson.GetAllocator();
+			Value resultJson(kObjectType);
+
+			if(method == "listcommunities") {
+				listCommunities(resultJson);
+				responseJson.AddMember("result", resultJson, alloc);
+				return;
+			}
 
 #ifdef _DEBUG
 			if (method != "puttransaction") {
@@ -84,7 +91,6 @@ namespace server {
 				pubkey = std::make_shared<memory::Block>(memory::Block::fromHex(pubkeyHex));
 			}
 
-			Value resultJson(kObjectType);
 			if (method == "getlasttransaction") {
 				Profiler timeUsed;
 				std::string format = "base64";
@@ -248,6 +254,20 @@ namespace server {
 				responseJson.AddMember("result", resultJson, alloc);
 			}
 		}
+
+		void ApiHandler::listCommunities(rapidjson::Value& resultJson)
+		{
+			Profiler timeUsed;
+			auto alloc = mRootJson.GetAllocator();
+			auto groups = FileBasedProvider::getInstance()->listCommunityIds();
+			Value groupsJson(kArrayType);
+			for (const auto& group : groups) {
+				groupsJson.PushBack(Value(group.data(), alloc), alloc);
+			}
+			resultJson.AddMember("communities", groupsJson, alloc);
+			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
+		}
+
 		void ApiHandler::findAllTransactions(
 			rapidjson::Value& resultJson,
 			const Filter& filter,

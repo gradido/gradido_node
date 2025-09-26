@@ -21,6 +21,7 @@ namespace server {
 			void handle(rapidjson::Value& responseJson, std::string method, const rapidjson::Value& params);
 
 		protected:
+		  void listCommunities(rapidjson::Value& resultJson);
 			/*
 			*
 			curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc": "2.0", "method": "getTransactions", "params": {"groupAlias": "e78c6a06f4efdde1a93d061fe2d89179e093d901a02379a8a2319822f4f3ce71","fromTransactionId": "1","format": "json"},"id":1 }' http://localhost:8340

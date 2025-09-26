@@ -61,7 +61,7 @@ namespace cache {
 		const CommunityIndexEntry& getCommunityDetails(const hiero::TopicId& topicId) const;
 		bool isCommunityInConfig(const std::string& communityId) const;
 
-		//! \brief collect all froup aliases from unordered map (not the fastest operation from unordered map)
+		//! \brief collect all group aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server
 		std::vector<std::string> listCommunitiesIds();		
 
