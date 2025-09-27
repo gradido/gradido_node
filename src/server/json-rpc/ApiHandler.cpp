@@ -37,7 +37,7 @@ namespace server {
 			auto alloc = mRootJson.GetAllocator();
 			Value resultJson(kObjectType);
 
-			if(method == "listcommunities") {
+			if(method == "listCommunities") {
 				listCommunities(resultJson);
 				responseJson.AddMember("result", resultJson, alloc);
 				return;
@@ -82,7 +82,7 @@ namespace server {
 			memory::BlockPtr pubkey;
 			std::string pubkeyHex;
 			std::set<std::string> noNeedForPubkey = {
-				"puttransaction", "getlasttransaction", "getTransactions", "gettransaction", "findUserByNameHash"
+				"getLastTransaction", "getTransactions","getTransaction", "findUserByNameHash"
 			};
 			if (noNeedForPubkey.find(method) == noNeedForPubkey.end()) {
 				if (!getStringParameter(responseJson, params, "pubkey", pubkeyHex)) {
@@ -91,7 +91,7 @@ namespace server {
 				pubkey = std::make_shared<memory::Block>(memory::Block::fromHex(pubkeyHex));
 			}
 
-			if (method == "getlasttransaction") {
+			if (method == "getLastTransaction") {
 				Profiler timeUsed;
 				std::string format = "base64";
 				getStringParameter(responseJson, params, "format", format);
@@ -134,7 +134,7 @@ namespace server {
 					.build();
 				findAllTransactions(resultJson, filter, blockchain, format);
 			}
-			else if (method == "getaddressbalance") {
+			else if (method == "getAddressBalance") {
 				std::string date_string;
 				if (!getStringParameter(responseJson, params, "date", date_string)) {
 					return;
@@ -148,29 +148,13 @@ namespace server {
 				getAddressBalance(resultJson, pubkey, date, blockchain, coinCommunityId);
 
 			}
-			else if (method == "getaddresstype") {
+			else if (method == "getAddressType") {
 				getAddressType(resultJson, pubkey, blockchain);
 			}
-			else if (method == "getaddresstxids") {
+			else if (method == "getAddressTxids") {
 				getAddressTxids(resultJson, pubkey, blockchain);
 			}
-			else if (method == "getblock") {
-				error(responseJson, JSON_RPC_ERROR_NOT_IMPLEMENTED, "getblock not implemented yet");
-				return;
-			}
-			else if (method == "getblockcount") {
-				error(responseJson, JSON_RPC_ERROR_NOT_IMPLEMENTED, "getblockcount not implemented yet");
-				return;
-			}
-			else if (method == "getblockhash") {
-				error(responseJson, JSON_RPC_ERROR_NOT_IMPLEMENTED, "getblockhash not implemented yet");
-				return;
-			}
-			else if (method == "getreceivedbyaddress") {
-				error(responseJson, JSON_RPC_ERROR_NOT_IMPLEMENTED, "getreceivedbyaddress not implemented yet");
-				return;
-			}
-			else if (method == "gettransaction") {
+			else if (method == "getTransaction") {
 				std::string format;
 				uint64_t transactionId = 0;
 				std::shared_ptr<memory::Block> iotaMessageId;
@@ -187,7 +171,7 @@ namespace server {
 
 				getTransaction(resultJson, responseJson, blockchain, format, transactionId, iotaMessageId);
 			}
-			else if (method == "getcreationsumformonth") {
+			else if (method == "getCreationSumForMonth") {
 				int month, year;
 				if (!getIntParameter(responseJson, params, "month", month) ||
 					!getIntParameter(responseJson, params, "year", year)) {
@@ -204,7 +188,8 @@ namespace server {
 				auto date = DataTypeConverter::dateTimeStringToTimePoint(date_string);
 				getCreationSumForMonth(resultJson, pubkey, targetDate, date, blockchain);
 			}
-			else if (method == "listtransactions") {
+			// TODO: think about better name, explain that this is extra formatted for the gradido frontend, to mimic current graphql backend response
+			else if (method == "listTransactions") {
 				Filter f;
 				f.pagination = Pagination(25, 1);
 				f.involvedPublicKey = pubkey;
@@ -224,7 +209,7 @@ namespace server {
 
 				listTransactions(resultJson, blockchain, f);
 			}
-			else if (method == "listtransactionsforaddress") {
+			else if (method == "getTransactionsForAddress") {
 				uint64_t firstTransactionNr = 1;
 				uint32_t maxResultCount = 0;
 				if (params.HasMember("maxResultCount") && params["maxResultCount"].IsUint()) {
@@ -233,7 +218,7 @@ namespace server {
 				if (params.HasMember("firstTransactionNr") && params["firstTransactionNr"].IsUint64()) {
 					firstTransactionNr = params["firstTransactionNr"].GetUint64();
 				}
-				listTransactionsForAddress(resultJson, pubkey, firstTransactionNr, maxResultCount, blockchain);
+				getTransactionsForAddress(resultJson, pubkey, firstTransactionNr, maxResultCount, blockchain);
 			}
 			else if (method == "findUserByNameHash") {
 				std::string nameHashHex;
@@ -315,6 +300,9 @@ namespace server {
 				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now);
 				resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
 				resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
+			} else {
+				resultJson.AddMember("gmwBalance", Value("0", alloc), alloc);
+				resultJson.AddMember("aufBalance", Value("0", alloc), alloc);
 			}
 
 			resultJson.AddMember("transactions", jsonTransactionArray, alloc);
@@ -467,7 +455,7 @@ namespace server {
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc), alloc);
 		}
 
-		void ApiHandler::listTransactionsForAddress(
+		void ApiHandler::getTransactionsForAddress(
 			Value& resultJson,
 			memory::ConstBlockPtr pubkey,
 			uint64_t firstTransactionNr,

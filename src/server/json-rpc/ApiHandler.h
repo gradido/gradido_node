@@ -78,7 +78,7 @@ namespace server {
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
 				const gradido::blockchain::Filter& filter
 			);
-			void listTransactionsForAddress(
+			void getTransactionsForAddress(
 				rapidjson::Value& resultJson,
 				memory::ConstBlockPtr pubkey,
 				uint64_t firstTransactionNr,
