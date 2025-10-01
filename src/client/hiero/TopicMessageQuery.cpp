@@ -19,12 +19,12 @@ namespace client {
 	namespace hiero {
 
         TopicMessageQuery::TopicMessageQuery(const char* name, ::hiero::ConsensusTopicQuery startQuery)
-            : mThread(&TopicMessageQuery::ThreadFunction, this), 
-            mThreadName(name), 
-            mExitCalled(false), 
+            : mThreadName(name),
+            mExitCalled(false),
             mStartQuery(startQuery),
             mCallStatus(CallStatus::STATUS_CREATE)
         {
+            mThread = std::thread(&TopicMessageQuery::ThreadFunction, this);
         }
 
         TopicMessageQuery::~TopicMessageQuery()
@@ -34,12 +34,12 @@ namespace client {
             mThread.join();
         }
 
-        void TopicMessageQuery::setResponseReader(std::unique_ptr<::grpc::ClientAsyncReaderWriter<::grpc::ByteBuffer, ::grpc::ByteBuffer>>& responseReader) 
+        void TopicMessageQuery::setResponseReader(std::unique_ptr<::grpc::ClientAsyncReaderWriter<::grpc::ByteBuffer, ::grpc::ByteBuffer>>& responseReader)
         {
             mResponseReader = std::move(responseReader);
         }
 
-        int TopicMessageQuery::ThreadFunction() 
+        int TopicMessageQuery::ThreadFunction()
         {
             loguru::set_thread_name(mThreadName.data());
             // copied most of the code from hiero cpp sdk from startSubscription from TopicMessageQuery.cc
