@@ -32,6 +32,7 @@ namespace server {
 
 		Value RequestHandler::handleOneRpcCall(const rapidjson::Value& jsonRpcRequest)
 		{
+			LOG_F(2, "handleOneRpcCall");
 			Value responseJson(kObjectType);
 			std::string method;
 			auto alloc = mRootJson.GetAllocator();
@@ -106,7 +107,7 @@ namespace server {
 				parseQueryParametersToRapidjson(request.params, rapidjson_params);
 
 				//rapid_json_result = handle(rapidjson_params);
-				printf("[%s] must be implemented\n", __FUNCTION__);
+				LOG_F(ERROR, "[%s:%d] must be implemented\n", __FUNCTION__, __LINE__);
 			}
 			else if (MethodType::OPTIONS == method)
 			{
@@ -154,6 +155,7 @@ namespace server {
 			if (data && !data->IsNull()) {
 				error.AddMember("data", *data, alloc);
 			}
+			LOG_F(2, "json rpc error %d: %s", code, message);
 			responseJson.AddMember("error", error, alloc);
 		}
 		void RequestHandler::error(Value& responseJson, JsonRPCErrorCodes code, GradidoBlockchainException& ex)

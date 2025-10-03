@@ -15,7 +15,7 @@
 	url = https://github.com/Tencent/rapidjson.git
 [submodule "dependencies/gradido_blockchain"]
 	path = dependencies/gradido_blockchain
-	url = git@github.com:gradido/gradido_blockchain.git
+	url = https://github.com/gradido/gradido_blockchain.git
 [submodule "dependencies/paho.mqtt.c"]
 	path = dependencies/paho.mqtt.c
 	url = https://github.com/eclipse/paho.mqtt.c
