@@ -159,7 +159,7 @@ namespace gradido {
 			void rescanForTransactionTriggerEvents();
 
 			//! \param func if function return false, stop iteration
-			void iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const;
+			void iterateBlocks(const SearchDirection& searchDir, std::function<bool(const cache::Block&)> func) const;
 
 			cache::Block& getBlock(uint32_t blockNr) const;
 

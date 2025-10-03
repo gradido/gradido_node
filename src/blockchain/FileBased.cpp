@@ -274,10 +274,15 @@ namespace gradido {
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
 		{
 			TransactionEntries result;
+			// if pagination is used, filterCopy contain count of still to find transactions
+			Filter filterCopy(filter);
 			bool stopped = false;
-			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex().findTransactions(filter, *mPublicKeysIndex);
+			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
+				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, *mPublicKeysIndex);
 				for (auto transactionNr : transactionNrs) {
+					if (!filter.pagination.hasCapacityLeft(result.size())) {
+						return false;
+					}
 					auto transaction = block.getTransaction(transactionNr);
 					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION, mCommunityId);
 					if ((filterResult & FilterResult::USE) == FilterResult::USE) {
@@ -288,6 +293,12 @@ namespace gradido {
 						break;
 					}
 				}
+				if (filter.pagination.size) {
+					filterCopy.pagination.size = filter.pagination.size - result.size();
+					// we have requested result count, let's exit here
+					LOG_F(WARNING, "should returned already, check code, unexpected state");
+					if (filterCopy.pagination.size <= 0) return false;
+				}
 				return !stopped;
 			});
 			return result;
@@ -296,9 +307,16 @@ namespace gradido {
 		std::vector<uint64_t> FileBased::findAllFast(const Filter& filter) const
 		{
 			std::vector<uint64_t> result;
-			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex().findTransactions(filter, *mPublicKeysIndex);
+			// if pagination is used, filterCopy contain count of still to find transactions
+			Filter filterCopy(filter);
+			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
+				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, *mPublicKeysIndex);
 				result.insert(result.end(), transactionNrs.begin(), transactionNrs.end());
+				if (filter.pagination.size) {
+					filterCopy.pagination.size = filter.pagination.size - result.size();
+					// we have requested result count, let's exit here
+					if (filterCopy.pagination.size <= 0) return false;
+				}
 				return true;
 			});
 			return result;
@@ -307,7 +325,7 @@ namespace gradido {
 		size_t FileBased::findAllResultCount(const Filter& filter) const
 		{
 			size_t count = 0;
-			iterateBlocks(filter, [&](const cache::Block& block) -> bool {
+			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
 				count += block.getBlockIndex().countTransactions(filter, *mPublicKeysIndex);
 				return true;
 			});
@@ -402,9 +420,9 @@ namespace gradido {
 			findAll(f);
 		}
 		
-		void FileBased::iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const
+		void FileBased::iterateBlocks(const SearchDirection& searchDir, std::function<bool(const cache::Block&)> func) const
 		{
-			bool orderDesc = filter.searchDirection == SearchDirection::DESC;
+			bool orderDesc = searchDir == SearchDirection::DESC;
 			auto lastBlockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			int blockNr = orderDesc ? lastBlockNr : 1;
 			do {

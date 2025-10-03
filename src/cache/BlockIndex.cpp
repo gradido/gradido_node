@@ -308,7 +308,7 @@ namespace cache {
 				return true;
 			}
 			result.push_back(blockIndexEntry.transactionNr);
-			if (result.size() >= filter.pagination.size) {
+			if (!filter.pagination.hasCapacityLeft(result.size())) {
 				return false; //break
 			}
 			entryCursor++;
@@ -345,6 +345,10 @@ namespace cache {
 				intervalIt--;
 			} else {
 				intervalIt++;
+			}
+			// if we already have enough results for the caller, let's stop here
+			if (!filter.pagination.hasCapacityLeft(result.size())) {
+				break;
 			}
 			
 		}

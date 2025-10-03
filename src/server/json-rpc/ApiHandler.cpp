@@ -4,10 +4,10 @@
 // TODO: fix the reason
 #include "../../model/Apollo/TransactionList.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/calculateCreationSum/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
+#include "gradido_blockchain/serialization/toJson.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
@@ -26,6 +26,7 @@ using namespace rapidjson;
 using namespace gradido;
 using namespace blockchain;
 using namespace interaction;
+using namespace serialization;
 using namespace data;
 using namespace magic_enum;
 
@@ -103,8 +104,7 @@ namespace server {
 						resultJson.AddMember("transaction", Value(base64Transaction.data(), base64Transaction.size(), alloc), alloc);
 					}
 					else if ("json" == format) {
-						toJson::Context toJson(*lastTransaction->getConfirmedTransaction());
-						resultJson.AddMember("transaction", toJson.run(mRootJson), alloc);
+						resultJson.AddMember("transaction", toJson(*lastTransaction->getConfirmedTransaction(), alloc), alloc);
 					}
 					else {
 						error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "unsupported format");
@@ -245,11 +245,7 @@ namespace server {
 			Profiler timeUsed;
 			auto alloc = mRootJson.GetAllocator();
 			auto groups = FileBasedProvider::getInstance()->listCommunityIds();
-			Value groupsJson(kArrayType);
-			for (const auto& group : groups) {
-				groupsJson.PushBack(Value(group.data(), alloc), alloc);
-			}
-			resultJson.AddMember("communities", groupsJson, alloc);
+			resultJson.AddMember("communities", toJson(groups, alloc), alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 		}
 
@@ -276,8 +272,7 @@ namespace server {
 				auto transactionSerialized = (*it)->getSerializedTransaction();
 				if (transactionSerialized->size() > 0) {
 					if (format == "json") {
-						toJson::Context toJson(*(*it)->getConfirmedTransaction());
-						jsonTransactionArray.PushBack(toJson.run(mRootJson), alloc);
+						jsonTransactionArray.PushBack(toJson(*(*it)->getConfirmedTransaction(), alloc), alloc);
 					}
 					else {
 						auto base64TransactionString = transactionSerialized->convertToBase64();
@@ -336,8 +331,7 @@ namespace server {
 			auto transactionSerialized = transactionEntry->getSerializedTransaction();
 			if (transactionSerialized->size() > 0) {
 				if (format == "json") {
-					toJson::Context toJson(*transactionEntry->getConfirmedTransaction());
-					resultJson.AddMember("transaction", toJson.run(mRootJson), alloc);
+					resultJson.AddMember("transaction", toJson(*transactionEntry->getConfirmedTransaction(), alloc), alloc);
 				}
 				else {
 					auto base64TransactionString = transactionSerialized->convertToBase64();
