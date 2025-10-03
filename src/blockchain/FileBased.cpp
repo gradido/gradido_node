@@ -296,8 +296,9 @@ namespace gradido {
 				if (filter.pagination.size) {
 					filterCopy.pagination.size = filter.pagination.size - result.size();
 					// we have requested result count, let's exit here
-					LOG_F(WARNING, "should returned already, check code, unexpected state");
-					if (filterCopy.pagination.size <= 0) return false;
+					if (filterCopy.pagination.size <= 0) {
+						return false;
+					}
 				}
 				return !stopped;
 			});
