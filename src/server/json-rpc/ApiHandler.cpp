@@ -64,7 +64,7 @@ namespace server {
 					break;
 				}
 			}
-			printf("groupAlias: %s\n", groupAlias.data());
+			// printf("groupAlias: %s\n", groupAlias.data());
 			if (groupAlias.length() == 0) {
 				error(
 					responseJson,
