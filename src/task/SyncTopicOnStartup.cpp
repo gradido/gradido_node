@@ -6,14 +6,15 @@
 
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 
 #include "loguru/loguru.hpp"
 
 using namespace gradido;
 using namespace blockchain;
 using namespace interaction;
+using namespace serialization;
 
 namespace task {
 	SyncTopicOnStartup::SyncTopicOnStartup(
@@ -123,16 +124,14 @@ namespace task {
 		auto lastTransactionMirror = deserializer.getGradidoTransaction();
 		if (!lastTransaction->getConfirmedTransaction()->getGradidoTransaction()->getFingerprint()->isTheSame(lastTransactionMirror->getFingerprint())) {
 			VLOG_SCOPE_F(-2, "last transaction on mirror is different");
-			toJson::Context lastTransactionJson(*lastTransaction->getConfirmedTransaction());
-			toJson::Context lastTransactionMirrorJson(*lastTransactionMirror);
 			bool prettyJson = true;
-			LOG_F(ERROR, "own transaction: %s", lastTransactionJson.run(prettyJson).data());
+			LOG_F(ERROR, "own transaction: %s", toJsonString(*lastTransaction->getConfirmedTransaction(), prettyJson).data());
 			LOG_F(
 				ERROR, 
 				"from topic: %s, sequenceNumber: %llu: %s", 
 				mLastKnowTopicId.toString().data(), 
 				mLastKnownSequenceNumber, 
-				lastTransactionMirrorJson.run(prettyJson).data()
+				toJsonString(*lastTransactionMirror, prettyJson).data()
 			);
 			return LastTransactionState::NOT_IDENTICAL;
 		}

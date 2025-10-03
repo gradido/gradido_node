@@ -12,8 +12,8 @@
 #include "../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/Application.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
 #include "loguru/loguru.hpp"
@@ -172,8 +172,7 @@ namespace cache {
 				deserialize::Context deserializer(blockLine, deserialize::Type::CONFIRMED_TRANSACTION);
 				deserializer.run();
 				if (deserializer.isConfirmedTransaction()) {
-					toJson::Context jsonSerializer(*deserializer.getConfirmedTransaction());
-					LOG_F(ERROR, "block: %s", jsonSerializer.run(true).data());
+					LOG_F(ERROR, "block: %s", serialization::toJsonString(*deserializer.getConfirmedTransaction(), true).data());
 				}
 				else {
 					LOG_F(ERROR, "block line isn't valid confirmed transaction");

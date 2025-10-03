@@ -3,9 +3,9 @@
 #include "../blockchain/FileBasedProvider.h"
 #include "../blockchain/Exceptions.h"
 #include "../task/HieroMessageToTransactionTask.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
 
 #include "loguru/loguru.hpp"
@@ -161,8 +161,7 @@ namespace controller {
                 communityServer->notificateFailedTransaction(*transaction, ex.what(), transactionId.toString());
             }
             try {
-                toJson::Context toJson(*transaction);
-                LOG_F(INFO, "transaction not added:\n%s\n%s", ex.getFullString().data(), toJson.run(true).data());
+                LOG_F(INFO, "transaction not added:\n%s\n%s", ex.getFullString().data(), serialization::toJsonString(*transaction, true).data());
                 fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
             }
             catch (GradidoBlockchainException& ex) {

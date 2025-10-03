@@ -7,9 +7,9 @@
 #include "gradido_blockchain/blockchain/Filter.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
 #include "../ServerGlobals.h"
 
@@ -72,13 +72,11 @@ namespace task {
 
         // log transaction in json format with low verbosity level 1 = debug
         if (loguru::g_stderr_verbosity >= 2) {
-            toJson::Context toJson(*mTransaction);
-            auto transactionAsJson = toJson.run(true);
             LOG_F(
                 2,
                 "%s\n%s",
                 mConsensusTimestamp.toString().data(),
-                transactionAsJson.data()
+                serialization::toJsonString(*mTransaction, true).data()
             );
         }
 
