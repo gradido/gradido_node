@@ -4,3 +4,6 @@ doc
 !doc/html/GradidoCoin_300x.png
 Doxyfile.bak
 /html
+*.kdev4
+.cache
+build_*

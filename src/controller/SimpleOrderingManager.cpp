@@ -51,7 +51,7 @@ namespace controller {
             auto lastSequenceNumber = getLastSequenceNumber();
             if (lastSequenceNumber + 1 < currentSequenceNumber) {
                 // the transaction before is missing so we wait
-                LOG_F(2, "transactions arrived out of order from hiero, communityId: %s, last sequence number: %llu, current sequence number: %llu",
+                LOG_F(2, "transactions arrived out of order from hiero, communityId: %s, last sequence number: %lu, current sequence number: %lu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );
                 return 0;
@@ -63,7 +63,7 @@ namespace controller {
                 // or hiero has used the same sequence number twice?
                 LOG_F(
                     ERROR, 
-                    "this transaction or after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %llu, current sequence number: %llu",
+                    "this transaction or after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %lu, current sequence number: %lu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );
                 it = mTransactions.erase(it);
@@ -235,7 +235,7 @@ namespace controller {
             }
             else {
                 // TODO: make explicit exception for this
-                LOG_F(ERROR, "old sequence number: %llu, new sequence number: %llu", mLastSequenceNumber, newSequenceNumber);
+                LOG_F(ERROR, "old sequence number: %lu, new sequence number: %lu", mLastSequenceNumber, newSequenceNumber);
                 throw GradidoNodeInvalidDataException("invalid value for newSequenceNumber");
             }
         }

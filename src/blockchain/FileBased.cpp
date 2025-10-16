@@ -185,7 +185,9 @@ namespace gradido {
 				delete mIotaMessageListener;
 				mIotaMessageListener = nullptr;
 			}*/
-			mHieroMessageListener->cancelConnection();
+			if (mHieroMessageListener) {
+				mHieroMessageListener->cancelConnection();
+			}
 
 			Profiler timeUsed;
 			// wait until all Task of TaskObeserver are finished, wait a second and check if number decreased,
@@ -228,7 +230,7 @@ namespace gradido {
 			auto nodeTransactionEntry = std::make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
 			if (!block.pushTransaction(nodeTransactionEntry)) {
 				// block was already stopped, so we can  stop here also 
-				LOG_F(WARNING, "couldn't push transaction: %llu to block: %d", confirmedTransaction->getId(), blockNr);
+				LOG_F(WARNING, "couldn't push transaction: %lu to block: %d", confirmedTransaction->getId(), blockNr);
 				return false;
 			}
 			role->runPastAddToBlockchain(confirmedTransaction, getptr());

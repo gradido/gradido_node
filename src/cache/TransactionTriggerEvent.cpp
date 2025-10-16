@@ -73,7 +73,7 @@ namespace cache {
 				return;
 			}
 		}		
-		LOG_F(WARNING, "couldn't find transactionTriggerEvent for removal for transaction: %llu", transactionTriggerEvent.getLinkedTransactionId());
+		LOG_F(WARNING, "couldn't find transactionTriggerEvent for removal for transaction: %lu", transactionTriggerEvent.getLinkedTransactionId());
 	}
 
 	std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> TransactionTriggerEvent::findTransactionTriggerEventsInRange(TimepointInterval range)

@@ -142,7 +142,7 @@ bool MainServer::init()
 
 void MainServer::exit()
 {
-	LOG_F(INFO, "Running Tasks Count on shutdown: %llu", ServerGlobals::g_NumberExistingTasks.load());
+	LOG_F(INFO, "Running Tasks Count on shutdown: %lu", ServerGlobals::g_NumberExistingTasks.load());
 
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage

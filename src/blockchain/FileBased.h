@@ -111,18 +111,18 @@ namespace gradido {
 				data::Timestamp confirmedAt
 		 	) override;
 			void updateLastKnownSequenceNumber(uint64_t newSequenceNumber);
-			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent);
-			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent);
+			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent) override;
+			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent) override;
 
-			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction) const {
+			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction) const override {
 				return mTransactionHashCache.has(*gradidoTransaction);
 			}
 
 			//! return events in asc order of targetDate
-			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range);
+			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range) override;
 
 			//! main search function, do all the work, reference from other functions
-			virtual TransactionEntries findAll(const Filter& filter) const;
+			virtual TransactionEntries findAll(const Filter& filter) const override;
 
 			//! use only index for searching, ignore filter function
 			//! \return vector with transaction nrs
@@ -131,12 +131,12 @@ namespace gradido {
 			//! count results for a specific filter, using only the index, ignore filter function 
 			size_t findAllResultCount(const Filter& filter) const;
 
-			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const;
+			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
 			virtual std::shared_ptr<const TransactionEntry> findByMessageId(
 				memory::ConstBlockPtr messageId,
 				const Filter& filter = Filter::ALL_TRANSACTIONS
-			) const;
-			virtual AbstractProvider* getProvider() const;
+			) const override;
+			virtual AbstractProvider* getProvider() const override;
 
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;

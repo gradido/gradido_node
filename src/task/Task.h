@@ -45,6 +45,7 @@ namespace task {
 
 	class Command {
 	public:
+		virtual ~Command() = default;
 		virtual int taskFinished(Task* task) = 0;
 	};
 

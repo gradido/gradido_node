@@ -21,6 +21,8 @@ namespace model {
       public:
         AbstractTransactionRole(std::shared_ptr<const gradido::blockchain::Abstract> blockchain)
         : mBlockchain(blockchain) {}
+        virtual ~AbstractTransactionRole() = default;
+
         virtual Transaction createTransaction(
           const gradido::data::ConfirmedTransaction& confirmedTransaction, 
           memory::ConstBlockPtr pubkey

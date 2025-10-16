@@ -56,10 +56,10 @@ namespace client {
                             mMessageObserver->onMessageArrived(message);
                         }
                         catch (GradidoBlockchainException& ex) {
-                            LOG_F(ERROR, ex.getFullString().data());
+                            LOG_F(ERROR, "%s", ex.getFullString().data());
                         }
                         catch (std::exception& ex) {
-                            LOG_F(ERROR, ex.what());
+                            LOG_F(ERROR, "%s", ex.what());
                         }
                     }
                 }

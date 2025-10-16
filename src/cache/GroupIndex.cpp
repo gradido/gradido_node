@@ -60,7 +60,7 @@ namespace cache {
 			}
 		}
 		catch (GradidoBlockchainException& ex) {
-			LOG_F(ERROR, ex.getFullString().data());
+			LOG_F(ERROR, "%s", ex.getFullString().data());
 			LOG_F(WARNING, "start without communities");
 		}
 		

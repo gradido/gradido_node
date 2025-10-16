@@ -63,7 +63,7 @@ int FuzzyTimer::removeTimer(std::string name)
 			it++;
 		}
 	}
-	LOG_F(1, "removed %llu timer with name : %s", eraseCount, name.data());
+	LOG_F(1, "removed %lu timer with name : %s", eraseCount, name.data());
 	return eraseCount;
 }
 

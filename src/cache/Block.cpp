@@ -161,7 +161,7 @@ namespace cache {
 				addTransaction(blockLine, fileCursor);
 			}
 			catch (model::files::EndReachingException& ex) {
-				LOG_F(ERROR, ex.getFullString().data());
+				LOG_F(ERROR, "%s", ex.getFullString().data());
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in file").setTransactionId(transactionNr);
 			}
 

@@ -126,7 +126,7 @@ namespace cache {
 		uint64_t transactionNr, 
 		int32_t fileCursor, 
 		const uint32_t* addressIndices, 
-		uint8_t addressIndiceCount
+		uint16_t addressIndiceCount
 	)
 	{
 		std::lock_guard _lock(mRecursiveMutex);
@@ -201,7 +201,7 @@ namespace cache {
 			transactionNr,
 			transactionEntry->getFileCursor(),
 			publicKeyIndices.data(),
-			static_cast<uint8_t>(publicKeyIndices.size())
+			static_cast<uint16_t>(publicKeyIndices.size())
 		);
 		
 	}

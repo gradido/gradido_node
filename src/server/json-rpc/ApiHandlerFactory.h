@@ -18,8 +18,8 @@ namespace server {
 				case MethodType::GET:
 				case MethodType::POST:
 				case MethodType::OPTIONS: return true;
+				default: return false;
 				}
-				return false;
 			};
 		};
 	}

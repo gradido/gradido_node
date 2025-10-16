@@ -248,7 +248,7 @@ namespace model {
 			auto fl = FileLockManager::getInstance();
 
 			if (!fl->tryLockTimeout(mBlockPath, 100)) {
-				LOG_F(ERROR, "error locking file: %s", mBlockPath);
+				LOG_F(ERROR, "error locking file: %s", mBlockPath.data());
 				return false;
 			}
 			auto fileStream = getOpenFile();

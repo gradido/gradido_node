@@ -46,7 +46,7 @@ namespace server {
 					error(responseJson, JSON_RPC_ERROR_GRADIDO_NODE_ERROR, "gradido node intern exception");
 				}
 				catch (std::exception& ex) {
-					LOG_F(ERROR, "exception in Json RPC handle : % s", ex.what());
+					LOG_F(ERROR, "exception in Json RPC handle : %s", ex.what());
 					error(responseJson, JSON_RPC_ERROR_GRADIDO_NODE_ERROR, "gradido node intern exception");
 				}
 			}

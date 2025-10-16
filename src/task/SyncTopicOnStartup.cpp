@@ -97,7 +97,7 @@ namespace task {
 		if (!lastTransactionMirrorRaw) {
 			LOG_F(
 				WARNING,
-				"cannot find last transaction (any more) in hiero network. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %llu, transactionNr: %llu, confirmedAt: %s",
+				"cannot find last transaction (any more) in hiero network. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %lu, transactionNr: %lu, confirmedAt: %s",
 				mBlockchain->getCommunityId().data(),
 				mLastKnowTopicId.toString().data(),
 				mLastKnownSequenceNumber,
@@ -112,7 +112,7 @@ namespace task {
 		if (!deserializer.isGradidoTransaction()) {
 			LOG_F(
 				ERROR, 
-				"last transaction on mirrors is invalid Gradido Transaction. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %llu, transactionNr: %llu, confirmedAt: %s",
+				"last transaction on mirrors is invalid Gradido Transaction. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %lu, transactionNr: %lu, confirmedAt: %s",
 				mBlockchain->getCommunityId().data(),
 				mLastKnowTopicId.toString().data(),
 				mLastKnownSequenceNumber,
@@ -128,7 +128,7 @@ namespace task {
 			LOG_F(ERROR, "own transaction: %s", toJsonString(*lastTransaction->getConfirmedTransaction(), prettyJson).data());
 			LOG_F(
 				ERROR, 
-				"from topic: %s, sequenceNumber: %llu: %s", 
+				"from topic: %s, sequenceNumber: %lu: %s", 
 				mLastKnowTopicId.toString().data(), 
 				mLastKnownSequenceNumber, 
 				toJsonString(*lastTransactionMirror, prettyJson).data()

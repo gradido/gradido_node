@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.18.2)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain.cmake")
 project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
@@ -18,6 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
+
 # needed for protopuf
 add_definitions(-DNOMINMAX)
 
@@ -178,6 +180,7 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 add_executable(GradidoNode ${LOCAL_SRCS})
+target_compile_options(GradidoNode PRIVATE -Wno-error=deprecated-literal-operator)
 #SUBDIRS("src/test")
 
 target_link_libraries(GradidoNode leveldb GradidoBlockchain OpenSSL::SSL OpenSSL::Crypto)# paho-mqtt3a)

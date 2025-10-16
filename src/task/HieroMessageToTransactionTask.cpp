@@ -96,7 +96,7 @@ namespace task {
             validator.run(validate::Type::SINGLE);
         }
         catch (GradidoBlockchainException& e) {
-            LOG_F(ERROR, e.getFullString().data());
+            LOG_F(ERROR, "%s", e.getFullString().data());
             notificateFailedTransaction(blockchain, e.what());
             return 0;
         }
