@@ -1,0 +1,4 @@
+build
+build_*
+.git
+dependencies/gradido_blockchain/dependencies/vcpkg

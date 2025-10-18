@@ -26,7 +26,6 @@ add_definitions(-DNOMINMAX)
 include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"
-	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
@@ -34,6 +33,7 @@ include_directories(
 	"dependencies/gradido_blockchain/dependencies/date/include"
 	"dependencies/gradido_blockchain/dependencies/magic_enum/include"
 	"dependencies/gradido_blockchain/dependencies/protopuf/include"
+	"dependencies/gradido_blockchain/dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/dependencies/cpp-httplib"
 
 	"dependencies/paho.mqtt.c/src"
@@ -106,16 +106,17 @@ endif(MSVC)
 
 ############################## add dependencies  #########################################
 set(ENABLE_HTTPS ON)
-find_package(OpenSSL REQUIRED)
-if(WIN32)
-	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
-	set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
-endif()
+#find_package(OpenSSL REQUIRED)
+#if(WIN32)
+#	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
+#	set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
+#endif()
 add_subdirectory("dependencies/gradido_blockchain")
 # reuse cacert.pem from gradido_blockchain
 if(WIN32)
 	add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
 endif()
+find_package(OpenSSL REQUIRED)
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
@@ -138,7 +139,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(grpc)
 
-if(NOT WIN32) 
+if(NOT WIN32)
 	include_directories(${grpc_SOURCE_DIR}/include)
 	include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
 	message(${grpc_SOURCE_DIR})
@@ -200,7 +201,7 @@ IF(WIN32)
   )
 ENDIF()
 
-# install 
+# install
 if(UNIX)
 install(TARGETS GradidoNode RUNTIME DESTINATION /usr/local/bin)
 endif(UNIX)

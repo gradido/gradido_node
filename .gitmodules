@@ -10,9 +10,6 @@
 [submodule "dependencies/googletest"]
 	path = dependencies/googletest
 	url = https://github.com/google/googletest.git
-[submodule "dependencies/rapidjson"]
-	path = dependencies/rapidjson
-	url = https://github.com/Tencent/rapidjson.git
 [submodule "dependencies/gradido_blockchain"]
 	path = dependencies/gradido_blockchain
 	url = https://github.com/gradido/gradido_blockchain.git
