@@ -42,7 +42,7 @@ namespace model {
 			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
 			transactionList.AddMember("count", countTransactions, alloc);
 			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
-			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);			
+			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
 
 			Filter filterCopy = filter;
 			filterCopy.filterFunction = [filter](const TransactionEntry& entry) -> FilterResult
@@ -61,14 +61,14 @@ namespace model {
 				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
 			}
-			
+
 			// copy into vector to make reversing and loop through faster (cache-hit)
 			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());
 			allTransactions.clear();
 			if (filter.searchDirection == SearchDirection::DESC) {
 				std::reverse(allTransactionsVector.begin(), allTransactionsVector.end());
 			}
-			
+
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
 			GradidoUnit previousBalance(GradidoUnit::zero());
 			Timepoint previousDate = mBlockchain->getStartDate();
@@ -87,7 +87,7 @@ namespace model {
 					}
 					previousDate = confirmedTransaction->getConfirmedAt();
 					previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
-				}				
+				}
 			}
 			allTransactionsVector.clear();
 			if (transactionsVector.empty()) {
@@ -114,7 +114,7 @@ namespace model {
 				// reverse order of transactions in vector
 				std::reverse(transactionsVector.begin(), transactionsVector.end());
 			}
-			
+
 			// add transactions to array
 			for (auto it = transactionsVector.begin(); it != transactionsVector.end(); it++) {
 				transactions.PushBack(it->toJson(alloc), alloc);

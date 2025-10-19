@@ -18,16 +18,16 @@ COPY . .
 RUN mkdir build
 WORKDIR ${DOCKER_WORKDIR}/build
 RUN cmake .. -DENABLE_TEST=On -DENABLE_HTTPS=On -DUSE_INSTALLED_SSL=On -DCMAKE_EXE_LINKER_FLAGS="-static" -DBUILD_SHARED_LIBS=Off
-RUN make -j$(nproc) GradidoBlockchainTest
+RUN make -j$(nproc) GradidoNode
 
-ENTRYPOINT ["/code/build/test/GradidoBlockchainTest"]
+ENTRYPOINT []
 
 ##### run tests #######
 FROM test_run AS test_build_run
 
 COPY --from=debug_build /code/build/test/GradidoBlockchainTest ./
 
-ENTRYPOINT ["/GradidoBlockchainTest"]
+ENTRYPOINT []
 
 ##### BUILD release #######
 FROM zig_build AS release_build
