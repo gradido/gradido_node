@@ -2,15 +2,14 @@
 
 #include "gradido_blockchain/lib/Profiler.h"
 
-#include "../client/grpc/Client.h"
 #include "../blockchain/FileBasedProvider.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
 #include "../ServerGlobals.h"
 
@@ -44,7 +43,7 @@ namespace task {
     int HieroMessageToTransactionTask::run()
     {
         if (loguru::g_stderr_verbosity >= 1) {
-            LOG_F(1, "start processing transaction: %s", DataTypeConverter::timePointToString(mConsensusTimestamp.getAsTimepoint()).data());
+            LOG_F(1, "start processing transaction: %s", mConsensusTimestamp.toString().data());
         }
 
         auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
@@ -63,7 +62,7 @@ namespace task {
         }
         else {
             if (loguru::g_stderr_verbosity >= 0) {
-                LOG_F(INFO, "Transaction skipped (invalid): %s", DataTypeConverter::timePointToString(mConsensusTimestamp.getAsTimepoint()).data());
+                LOG_F(INFO, "Transaction skipped (invalid): %s", mConsensusTimestamp.toString().data());
                 if (loguru::g_stderr_verbosity >= 2) {
                     LOG_F(2, "serialized: %s", mTransactionRaw->convertToHex().data());
                 }
@@ -73,13 +72,11 @@ namespace task {
 
         // log transaction in json format with low verbosity level 1 = debug
         if (loguru::g_stderr_verbosity >= 2) {
-            toJson::Context toJson(*mTransaction);
-            auto transactionAsJson = toJson.run(true);
             LOG_F(
                 2,
                 "%s\n%s",
-                DataTypeConverter::timePointToString(mConsensusTimestamp).data(),
-                transactionAsJson.data()
+                mConsensusTimestamp.toString().data(),
+                serialization::toJsonString(*mTransaction, true).data()
             );
         }
 
@@ -89,9 +86,7 @@ namespace task {
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         assert(fileBasedBlockchain);
         if (fileBasedBlockchain->isTransactionExist(mTransaction)) {
-            LOG_F(INFO, "Transaction skipped (cached): %s",
-                DataTypeConverter::timePointToString(mConsensusTimestamp).data()
-            );
+            LOG_F(INFO, "Transaction skipped (cached): %s", mConsensusTimestamp.toString().data());
             return 0;
         }
 
@@ -101,13 +96,13 @@ namespace task {
             validator.run(validate::Type::SINGLE);
         }
         catch (GradidoBlockchainException& e) {
-            LOG_F(ERROR, e.getFullString().data());
+            LOG_F(ERROR, "%s", e.getFullString().data());
             notificateFailedTransaction(blockchain, e.what());
             return 0;
         }
 
         auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
-        if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint() > mConsensusTimestamp.getAsTimepoint()) {
+        if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt() > mConsensusTimestamp) {
             // this transaction seems to be from the past, a transaction which happen after this was already added
             notificateFailedTransaction(blockchain, "Transaction skipped (from past)");
             return 0;
@@ -127,11 +122,11 @@ namespace task {
         const std::string& errorMessage
     )
     {
-        LOG_F(INFO, "%s: %s", errorMessage.data(), DataTypeConverter::timePointToString(mConsensusTimestamp).data());
+        LOG_F(INFO, "%s: %s", errorMessage.data(), mConsensusTimestamp.toString().data());
         if (blockchain) {
             auto communityServer = std::dynamic_pointer_cast<gradido::blockchain::FileBased>(blockchain)->getListeningCommunityServer();
             if (communityServer) {
-                communityServer->notificateFailedTransaction(*mTransaction, errorMessage, DataTypeConverter::timePointToString(mConsensusTimestamp));
+                communityServer->notificateFailedTransaction(*mTransaction, errorMessage, mConsensusTimestamp.toString());
             }
         }
     }

@@ -13,8 +13,8 @@ namespace hiero {
 }
 
 namespace client {
-	namespace grpc {
-		class Client;
+	namespace hiero {
+		class ConsensusClient;
 	}
 }
 
@@ -34,7 +34,7 @@ namespace gradido {
 			//! \return true if successfully else return false
 			bool init(
 				const std::string& communityConfigFile,
-				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients,
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 				uint8_t hieroClientsPerCommunity = 3
 			);
 			void exit();
@@ -47,6 +47,9 @@ namespace gradido {
 			inline uint32_t getCommunityIdIndex(const std::string& communityId);
 			inline uint32_t getCommunityIdIndex(std::string_view communityId);
 			inline const std::string getCommunityIdString(uint32_t index);
+
+			//! list all known communities
+			inline std::vector<std::string> listCommunityIds() const;
 		protected:
 
 			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
@@ -71,7 +74,7 @@ namespace gradido {
 
 			cache::GroupIndex* mGroupIndex;
 			cache::Dictionary  mCommunityIdIndex;
-			std::vector<std::shared_ptr<client::grpc::Client>> mHieroClients;
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;
 			uint8_t mHieroClientsPerCommunity;
 			bool mInitalized;
 		};
@@ -88,6 +91,12 @@ namespace gradido {
 		{
 			return mCommunityIdIndex.getStringForIndex(index);
 		}
+
+		std::vector<std::string> FileBasedProvider::listCommunityIds() const
+		{
+			return mGroupIndex->listCommunitiesIds();
+		}
+		
 	}
 }
 

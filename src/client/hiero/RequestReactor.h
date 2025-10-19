@@ -1,5 +1,5 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_REQUEST_REACTOR_H
-#define __GRADIDO_NODE_CLIENT_GRPC_REQUEST_REACTOR_H
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_REQUEST_REACTOR_H
+#define __GRADIDO_NODE_CLIENT_HIERO_REQUEST_REACTOR_H
 
 #include <string>
 #include <bit>
@@ -18,11 +18,12 @@
 #include "magic_enum/magic_enum.hpp"
 
 namespace client {
-	namespace grpc {
+	namespace hiero {
         template<class T>
-        class RequestReactor : public ::grpc::ClientUnaryReactor {
+        class RequestReactor : public grpc::ClientUnaryReactor {
         public:
             RequestReactor(std::shared_ptr<MessageObserver<T>> messageObserver)
+                : mMessageObserver(messageObserver)
             {
                 if (!messageObserver) {
                     throw GradidoNullPointerException(
@@ -33,37 +34,44 @@ namespace client {
                 }
             }
 
-            void OnDone(const ::grpc::Status& s) {
+            void OnDone(const grpc::Status& s) {
                 if (!s.ok()) {
-                    LOG_F(ERROR, "onDone called from grpc with status: %s, error: %s",
+                    LOG_F(ERROR, "onDone called from grpc with status: %s, error: %s, details: %s",
                         magic_enum::enum_name<::grpc::StatusCode>(s.error_code()).data(),
-                        s.error_message().data()
+                        s.error_message().data(),
+                        s.error_details().data()
                     );
                 }
                 else {
                     Profiler timeUsed;
-                    ::grpc::Slice slice;
-                    mBuffer.TrySingleSlice(&slice);
-                    auto data = pp::bytes(const_cast<std::byte*>(reinterpret_cast<const std::byte*>(slice.begin())), slice.size());
-                    auto result = pp::message_coder<T>::decode(data);
+                    auto block = MemoryBlock(mBuffer);
+                    auto result = pp::message_coder<T>::decode(block.get()->span());
                     if (!result.has_value()) {
-                        LOG_F(ERROR, "on_completion result couldn't be deserialized");
+                        LOG_F(ERROR, "couldn't be deserialized: echo \"%s\" | xxd -r -p | protoscope", block.get()->convertToHex().data());
                     }
                     else {
                         const auto& [message, bufferEnd2] = *result;
                         LOG_F(1, "timeUsed for deserialize: %s", timeUsed.string().data());
-                        mMessageObserver->onMessageArrived(message);
+                        try {
+                            mMessageObserver->onMessageArrived(message);
+                        }
+                        catch (GradidoBlockchainException& ex) {
+                            LOG_F(ERROR, "%s", ex.getFullString().data());
+                        }
+                        catch (std::exception& ex) {
+                            LOG_F(ERROR, "%s", ex.what());
+                        }
                     }
                 }
                 mMessageObserver->onConnectionClosed();
                 delete this;
             }
-            ::grpc::ByteBuffer* getBuffer() { return &mBuffer; }
+            grpc::ByteBuffer* getBuffer() { return &mBuffer; }
         protected:
             std::shared_ptr<MessageObserver<T>> mMessageObserver;
-            ::grpc::ByteBuffer mBuffer;
+            grpc::ByteBuffer mBuffer;
         };
     }
 }
 
-#endif //__GRADIDO_NODE_CLIENT_GRPC_REQUEST_REACTOR_H
+#endif //__GRADIDO_NODE_CLIENT_HIERO_REQUEST_REACTOR_H

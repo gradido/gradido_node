@@ -12,8 +12,8 @@
 #include "../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/Application.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
 #include "loguru/loguru.hpp"
@@ -161,7 +161,7 @@ namespace cache {
 				addTransaction(blockLine, fileCursor);
 			}
 			catch (model::files::EndReachingException& ex) {
-				LOG_F(ERROR, ex.getFullString().data());
+				LOG_F(ERROR, "%s", ex.getFullString().data());
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in file").setTransactionId(transactionNr);
 			}
 
@@ -172,8 +172,7 @@ namespace cache {
 				deserialize::Context deserializer(blockLine, deserialize::Type::CONFIRMED_TRANSACTION);
 				deserializer.run();
 				if (deserializer.isConfirmedTransaction()) {
-					toJson::Context jsonSerializer(*deserializer.getConfirmedTransaction());
-					LOG_F(ERROR, "block: %s", jsonSerializer.run(true).data());
+					LOG_F(ERROR, "block: %s", serialization::toJsonString(*deserializer.getConfirmedTransaction(), true).data());
 				}
 				else {
 					LOG_F(ERROR, "block line isn't valid confirmed transaction");
@@ -203,7 +202,7 @@ namespace cache {
 		}
 
 		if (mTransactionWriteTask) {
-			Timepoint now;
+			Timepoint now = std::chrono::system_clock::now();
 			if (now - mTransactionWriteTask->getCreationDate() > ServerGlobals::g_WriteToDiskTimeout) 
 			{
 				auto copyTask = mTransactionWriteTask;

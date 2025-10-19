@@ -8,6 +8,10 @@
 #include <mutex>
 #include <vector>
 
+namespace hiero {
+	class TopicId;
+}
+
 namespace cache {
 
 	struct CommunityIndexEntry
@@ -54,9 +58,10 @@ namespace cache {
 		std::string getFolder(const std::string& communityId);
 		//! throw GroupNotFoundException Exception of community don't exist in config
 		const CommunityIndexEntry& getCommunityDetails(const std::string& communityId) const;
+		const CommunityIndexEntry& getCommunityDetails(const hiero::TopicId& topicId) const;
 		bool isCommunityInConfig(const std::string& communityId) const;
 
-		//! \brief collect all froup aliases from unordered map (not the fastest operation from unordered map)
+		//! \brief collect all group aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server
 		std::vector<std::string> listCommunitiesIds();		
 

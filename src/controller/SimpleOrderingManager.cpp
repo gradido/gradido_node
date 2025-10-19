@@ -3,10 +3,9 @@
 #include "../blockchain/FileBasedProvider.h"
 #include "../blockchain/Exceptions.h"
 #include "../task/HieroMessageToTransactionTask.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
-#include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
 
 #include "loguru/loguru.hpp"
@@ -31,6 +30,12 @@ namespace controller {
     {
     }
 
+    void SimpleOrderingManager::init(uint64_t lastKnownSequenceNumber) 
+    {
+        mLastSequenceNumber = lastKnownSequenceNumber;
+        Thread::init();
+    }
+
     int SimpleOrderingManager::ThreadFunction()
     {
         size_t transactionsCount = 0;
@@ -46,40 +51,47 @@ namespace controller {
             auto lastSequenceNumber = getLastSequenceNumber();
             if (lastSequenceNumber + 1 < currentSequenceNumber) {
                 // the transaction before is missing so we wait
-                LOG_F(2, "transactions arrived out of order from hiero, communityId: %s, last sequence number: %llu, current sequence number: %llu",
+                LOG_F(2, "transactions arrived out of order from hiero, communityId: %s, last sequence number: %lu, current sequence number: %lu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );
                 return 0;
             }
             // only true if lastSequenceNumber is at least 1 and therefore already set once
-            if (lastSequenceNumber && lastSequenceNumber + 1 > currentSequenceNumber) {
+            if (lastSequenceNumber && lastSequenceNumber >= currentSequenceNumber) {
                 // the transaction after this transaction was already put into blockchain
                 // maybe we have an error
                 // or hiero has used the same sequence number twice?
-                LOG_F(FATAL, "transaction after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %llu, current sequence number: %llu",
+                LOG_F(
+                    ERROR, 
+                    "this transaction or after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %lu, current sequence number: %lu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );
-                throw GradidoNodeInvalidDataException("data set wasn't like expected, seem to be an error in code or hiero work not like expected");
+                it = mTransactions.erase(it);
+                continue;
+                // throw GradidoNodeInvalidDataException("data set wasn't like expected, seem to be an error in code or hiero work not like expected");
             }
             auto gradidoTransaction = it->second.deserializeTask->getGradidoTransaction();
-            auto task = it->second.deserializeTask;
+            auto& task = it->second.deserializeTask;
             auto body = gradidoTransaction->getTransactionBody();
             // on cross group transaction inbound check if we can found outbound on this gradido node
             // TODO: ask other gradido node(s) if we don't capture the otherGroup (community)
             if (gradido::data::CrossGroupType::INBOUND == body->getType()) {
-                auto& transactionId = it->second.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
                 auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
                 auto blockchain = blockchainProvider->findBlockchain(mCommunityId);
-                if (transactionId.getTransactionValidStart().getAsTimepoint() + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION < Timepoint()) {
+                Timepoint now = std::chrono::system_clock::now();
+
+                if (it->second.putIntoListTime + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION < now) {
                     // timeouted                    
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing not found)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 auto otherBlockchain = blockchainProvider->findBlockchain(body->getOtherGroup());
                 if (!otherBlockchain) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (target community unknown)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 deserialize::Context topicIdDeserializer(gradidoTransaction->getParingMessageId(), deserialize::Type::HIERO_TRANSACTION_ID);
@@ -87,6 +99,7 @@ namespace controller {
                 if (!topicIdDeserializer.isHieroTransactionId()) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing transactionId invalid)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 auto pairTask = static_cast<gradido::blockchain::FileBased*>(otherBlockchain.get())
@@ -101,14 +114,15 @@ namespace controller {
                 if (!pairTask->getGradidoTransaction()->isPairing(*gradidoTransaction)) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing invalid)");
                     mTransactions.erase(it);
+                    updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
             }
             if (task->isSuccess()) {
                 processTransaction(it->second);
-            }
-            updateSequenceNumber(lastSequenceNumber + 1);
+            }            
             mTransactions.erase(it);
+            updateSequenceNumber(currentSequenceNumber);
             transactionsCount = mTransactions.size();
         } while (transactionsCount);
         return 0;
@@ -123,27 +137,32 @@ namespace controller {
         }
         auto transaction = gradidoTransactionWorkData.deserializeTask->getGradidoTransaction();
         const auto& transactionId = gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
-        if (!transactionId.empty()) {
+        const auto& confirmedAt = gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp();
+        if (transactionId.empty()) {
             throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
         }
+        auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         try {
             serialize::Context serializer(transactionId);
             bool result = blockchain->createAndAddConfirmedTransaction(
                 transaction,
                 serializer.run(),
-                gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp().getAsTimepoint()
+                confirmedAt
             );
-            LOG_F(INFO, "Transaction added, msgId: %s", transactionId.toString().data());
+            fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
+            LOG_F(INFO, "Transaction confirmed, msgId: %s, confirmedAt: %s",
+                transactionId.toString().data(), confirmedAt.toString().data()
+            );
+            
         }
         catch (GradidoBlockchainException& ex) {
-            auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
             auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
             if (communityServer) {
                 communityServer->notificateFailedTransaction(*transaction, ex.what(), transactionId.toString());
             }
             try {
-                toJson::Context toJson(*transaction);
-                LOG_F(INFO, "transaction not added:\n%s\n%s", ex.getFullString().data(), toJson.run(true).data());
+                LOG_F(INFO, "transaction not added:\n%s\n%s", ex.getFullString().data(), serialization::toJsonString(*transaction, true).data());
+                fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
             }
             catch (GradidoBlockchainException& ex) {
                 LOG_F(ERROR, "gradido blockchain exception on parsing transaction\n%s", ex.getFullString().data());
@@ -154,31 +173,36 @@ namespace controller {
         }
     }
 
-    SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse) {
+    SimpleOrderingManager::PushResult SimpleOrderingManager::pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse) 
+    {
         if (isExitCalled()) { return PushResult::IN_SHUTDOWN; }
-        auto consensusTimestamp = consensusTopicResponse.getConsensusTimestamp();
+
+        std::lock_guard _lock(mTransactionsMutex);
+        const auto& consensusTimestamp = consensusTopicResponse.getConsensusTimestamp();
+        const auto& transactionId = consensusTopicResponse.getChunkInfo().getInitialTransactionId();
 
         auto existingTransactionConsensusTimestamp = mLastTransactions.get(SignatureOctet(*consensusTopicResponse.getRunningHash()));
         if (existingTransactionConsensusTimestamp) {
             if (existingTransactionConsensusTimestamp.value() == consensusTimestamp) {
-                LOG_F(2, "skip: %s", DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
+                LOG_F(2, "skip: %s", transactionId.toString().data());
                 return PushResult::FOUND_IN_LAST_TRANSACTIONS;
             }
         }
-        std::lock_guard _lock(mTransactionsMutex);
+        
         auto range = mTransactions.equal_range(consensusTimestamp);
         for (auto& it = range.first; it != range.second; ++it) {
             if (it->second.consensusTopicResponse.isMessageSame(consensusTopicResponse)) {
-                LOG_F(2, "unexpected skip: %s", DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
+                LOG_F(2, "unexpected skip: %s", transactionId.toString().data());
                 return PushResult::FOUND_IN_TRANSACTIONS;
             }
         }
         auto task = std::make_shared<task::HieroMessageToTransactionTask>(consensusTimestamp, consensusTopicResponse.getMessageData(), mCommunityId);
+        mLastTransactions.add(SignatureOctet(*consensusTopicResponse.getRunningHash()), consensusTimestamp);
         mTransactions.insert({ consensusTimestamp, TopicResponseDeserializer(std::move(consensusTopicResponse), task) });
 
         task->scheduleTask(task);
         if (loguru::g_stderr_verbosity >= 0) {
-            LOG_F(INFO, "add: %s", DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
+            LOG_F(INFO, "push: %s", transactionId.toString().data());
         }
         return PushResult::ADDED;
     }
@@ -210,9 +234,11 @@ namespace controller {
                 }
             }
             else {
+                // TODO: make explicit exception for this
+                LOG_F(ERROR, "old sequence number: %lu, new sequence number: %lu", mLastSequenceNumber, newSequenceNumber);
                 throw GradidoNodeInvalidDataException("invalid value for newSequenceNumber");
             }
         }
-
+        //LOG_F(2, "new sequenceNumber: %d", mLastSequenceNumber);
     }
 }

@@ -32,7 +32,7 @@ namespace task {
 
         inline void setName(const char* threadName) { mThreadName = threadName; }
         inline const std::string& getName() const { return mThreadName; }
-        inline bool isExitCalled() const { std::unique_lock lock(mMutex); return mExitCalled; }
+        inline bool isExitCalled() const { return mExitCalled; }
     protected:
         //! \brief will be called every time from thread, when condSignal was called
         //! will be called from thread with locked working mutex,<br>
@@ -44,7 +44,7 @@ namespace task {
         mutable std::mutex      mMutex;
         std::thread*            mThread;
         std::condition_variable mCondition;
-        bool                    mExitCalled;
+        std::atomic<bool>       mExitCalled;
         std::string             mThreadName;
     };
 }

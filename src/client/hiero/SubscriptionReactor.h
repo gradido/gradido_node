@@ -1,5 +1,5 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
-#define __GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_TOPIC_MESSAGE_QUERY_REACTOR_H
+#define __GRADIDO_NODE_CLIENT_HIERO_TOPIC_MESSAGE_QUERY_REACTOR_H
 
 #include <string>
 #include <bit>
@@ -7,6 +7,8 @@
 
 #include "../Exceptions.h"
 #include "MessageObserver.h"
+#include "../../lib/FuzzyTimer.h"
+#include "../../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -17,24 +19,41 @@
 #include "loguru/loguru.hpp"
 #include "magic_enum/magic_enum.hpp"
 
+/*
+* class TimerCallback
+{
+public:
+	virtual TimerReturn callFromTimer() = 0;
+	virtual const char* getResourceType() const { return "TimerCallback"; };
+};
+*/
+
 namespace client {
-	namespace grpc {
+	namespace hiero {
 		template<class T>
-		class SubscriptionReactor : public ::grpc::ClientBidiReactor<::grpc::ByteBuffer, ::grpc::ByteBuffer>
+		class SubscriptionReactor : public grpc::ClientBidiReactor<grpc::ByteBuffer, grpc::ByteBuffer>, public TimerCallback
 		{
 		public:
-			SubscriptionReactor(std::shared_ptr<MessageObserver<T>> messageObserver, const memory::Block& rawRequest)
+			SubscriptionReactor(std::shared_ptr<MessageObserver<T>> messageObserver, const MemoryBlock& rawRequest)
 				: mMessageObserver(messageObserver)
 			{
 				if (!messageObserver) {
 					throw GradidoNullPointerException(
 						"empty messageObserver", 
 						"MessageObserver", 
-						"client::grpc::TopicMessageQueryReactor"
+						"client::grpc::SubscriptionReactor"
 					);
 				}
-				::grpc::Slice slice(rawRequest.data(), rawRequest.size());
-				mBuffer = ::grpc::ByteBuffer(&slice, 1);
+				mBuffer = rawRequest.createGrpcBuffer();
+			}
+			virtual ~SubscriptionReactor() {
+				LOG_F(WARNING, "~SubscriptionReactor()");
+				// CacheManager::getInstance()->getFuzzyTimer()->removeTimer(std::to_string((long long)this));
+			}
+			const char* getResourceType() const override { return "SubscriptionReactor"; };
+			TimerReturn callFromTimer() override {
+				StartRead(&mBuffer);
+				return TimerReturn::REMOVE_ME;
 			}
 			/// Notifies the application that a StartWrite or StartWriteLast operation
 			/// completed.
@@ -56,16 +75,17 @@ namespace client {
 			///               will succeed.
 			virtual void OnReadDone(bool ok) {
 				if (!ok) {
-					LOG_F(ERROR, "read operation failed, need to restart subscription");
-					mMessageObserver->onConnectionClosed();
+					LOG_F(WARNING, "read done with ok = false");
+					// LOG_F(ERROR, "read operation failed, need to restart subscription");
+					// mMessageObserver->onConnectionClosed();
+					// CacheManager::getInstance()->getFuzzyTimer()->addTimer(std::to_string((long long)this), this, std::chrono::milliseconds(250), 1);
+					return;
 				}
 				Profiler timeUsed;
-				::grpc::Slice slice;
-				mBuffer.TrySingleSlice(&slice);
-				auto data = pp::bytes(const_cast<std::byte*>(reinterpret_cast<const std::byte*>(slice.begin())), slice.size());
-				auto result = pp::message_coder<T>::decode(data);
+				auto block = MemoryBlock(mBuffer);
+				auto result = pp::message_coder<T>::decode(block.get()->span());
 				if (!result.has_value()) {
-					LOG_F(ERROR, "result couldn't be deserialized");
+					LOG_F(ERROR, "couldn't be deserialized: echo \"%s\" | xxd -r -p | protoscope", block.get()->convertToHex().data());
 				}
 				else {
 					const auto& [message, bufferEnd2] = *result;
@@ -73,7 +93,7 @@ namespace client {
 					mMessageObserver->onMessageArrived(message);
 					LOG_F(1, "OnReadDone");
 				}
-
+				
 				// after on read was successful we await the next
 				StartRead(&mBuffer);
 			}
@@ -89,7 +109,7 @@ namespace client {
 			/// called concurrently with calls to the reactor from outside of reactions.)
 			///
 			/// \param[in] s The status outcome of this RPC
-			virtual void OnDone(const ::grpc::Status& s)
+			virtual void OnDone(const grpc::Status& s)
 			{
 				if (!s.ok()) {
 					/// Return the instance's error code.
@@ -108,13 +128,13 @@ namespace client {
 				mMessageObserver->onConnectionClosed();
 				delete this;
 			}
-			::grpc::ByteBuffer* getBuffer() { return &mBuffer; }
+			grpc::ByteBuffer* getBuffer() { return &mBuffer; }
 		protected:
 			std::shared_ptr<MessageObserver<T>> mMessageObserver;
-			::grpc::ByteBuffer mBuffer;
+			grpc::ByteBuffer mBuffer;
 		};
 
 	}
 }
 
-#endif //__GRADIDO_NODE_CLIENT_GRPC_TOPIC_MESSAGE_QUERY_REACTOR_H
+#endif //__GRADIDO_NODE_CLIENT_HIERO_TOPIC_MESSAGE_QUERY_REACTOR_H

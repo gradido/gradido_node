@@ -3,7 +3,7 @@
 
 #include "../cache/Block.h"
 #include "../cache/Dictionary.h"
-#include "../cache/MessageId.h"
+#include "../cache/HieroTransactionId.h"
 #include "../cache/State.h"
 #include "../cache/TransactionHash.h"
 #include "../cache/TransactionTriggerEvent.h"
@@ -28,17 +28,21 @@
 #include <mutex>
 
 namespace client {
-	namespace grpc {
-		class Client;
+	namespace hiero {
+		class ConsensusClient;
 	}
 }
 
 namespace hiero {
-	class MessageListener;
+	class MessageListenerQuery;
 }
 
 namespace controller {
 	class SimpleOrderingManager;
+}
+
+namespace task {
+	class SyncTopicOnStartup;
 }
 
 namespace gradido {
@@ -62,7 +66,7 @@ namespace gradido {
 				const hiero::TopicId& topicId,
 				std::string_view alias, 
 				std::string_view folder,
-				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 			);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
 			static inline std::shared_ptr<FileBased> create(
@@ -70,19 +74,29 @@ namespace gradido {
 				const hiero::TopicId& topicId,
 				std::string_view alias,
 				std::string_view folder,
-				std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 			);
 			inline std::shared_ptr<FileBased> getptr();
 			inline std::shared_ptr<const FileBased> getptr() const;
 
 			virtual ~FileBased();
 
+			//! init 1
 			//! load blockchain from files and check if index and states seems ok
 			//! if address index or block index is corrupt, remove address index and block index files, they will rebuild automatic on get block calls
 			//! if state leveldb file is corrupt, reconstruct values from block cache
 			//! \param resetBlockIndices will be set to true if community id index was corrupted which invalidate block index
 			//! \return true on success, else false
 			bool init(bool resetBlockIndices);
+
+			//! init 2
+			//! prepare task for syncronize with hiero topic
+			//! all SyncTopicOnStartup for all communities should be started/scheduled at the same time because there could need each other for new cross group transactions
+			std::shared_ptr<task::SyncTopicOnStartup> initOnline();
+
+			//! init 3
+			//! start listening to topic, will be called from SyncTopicOnStartup at the end, will update last known TopicId 
+			void startListening(data::Timestamp lastTransactionConfirmedAt);
 
 			// clean up group, stopp all running processes
 			void exit();
@@ -94,20 +108,21 @@ namespace gradido {
 			virtual bool createAndAddConfirmedTransaction(
 				data::ConstGradidoTransactionPtr gradidoTransaction,
 				memory::ConstBlockPtr messageId,
-				Timepoint confirmedAt
-			);
-			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent);
-			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent);
+				data::Timestamp confirmedAt
+		 	) override;
+			void updateLastKnownSequenceNumber(uint64_t newSequenceNumber);
+			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent) override;
+			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent) override;
 
-			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction) const {
+			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction) const override {
 				return mTransactionHashCache.has(*gradidoTransaction);
 			}
 
 			//! return events in asc order of targetDate
-			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range);
+			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range) override;
 
 			//! main search function, do all the work, reference from other functions
-			virtual TransactionEntries findAll(const Filter& filter) const;
+			virtual TransactionEntries findAll(const Filter& filter) const override;
 
 			//! use only index for searching, ignore filter function
 			//! \return vector with transaction nrs
@@ -116,12 +131,12 @@ namespace gradido {
 			//! count results for a specific filter, using only the index, ignore filter function 
 			size_t findAllResultCount(const Filter& filter) const;
 
-			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const;
+			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
 			virtual std::shared_ptr<const TransactionEntry> findByMessageId(
 				memory::ConstBlockPtr messageId,
 				const Filter& filter = Filter::ALL_TRANSACTIONS
-			) const;
-			virtual AbstractProvider* getProvider() const;
+			) const override;
+			virtual AbstractProvider* getProvider() const override;
 
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
@@ -129,10 +144,11 @@ namespace gradido {
 			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) const {
 				return mPublicKeysIndex->getOrAddIndexForString(publicKey->copyAsString());
 			}
+			inline const hiero::TopicId& getHieroTopicId() const { return mHieroTopicId; }
 			inline const std::string& getFolderPath() const { return mFolderPath; }
 			inline const std::string& getAlias() const { return mAlias; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
-			inline std::shared_ptr<client::grpc::Client> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
+			inline std::shared_ptr<client::hiero::ConsensusClient> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
 			std::shared_ptr<controller::SimpleOrderingManager> getOrderingManager() { return mOrderingManager; }
 
 		protected:
@@ -143,7 +159,7 @@ namespace gradido {
 			void rescanForTransactionTriggerEvents();
 
 			//! \param func if function return false, stop iteration
-			void iterateBlocks(const Filter& filter, std::function<bool(const cache::Block&)> func) const;
+			void iterateBlocks(const SearchDirection& searchDir, std::function<bool(const cache::Block&)> func) const;
 
 			cache::Block& getBlock(uint32_t blockNr) const;
 
@@ -158,14 +174,14 @@ namespace gradido {
 			std::shared_ptr<controller::SimpleOrderingManager> mOrderingManager;
 			//! connect via mqtt to iota server and get new messages
 			//iota::MessageListener* mIotaMessageListener;
-			std::vector<std::shared_ptr<hiero::MessageListener>> mHieroMessageListeners;
+			std::shared_ptr<hiero::MessageListenerQuery> mHieroMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
 			mutable std::shared_ptr<cache::Dictionary> mPublicKeysIndex;
 			// level db to store state values like last transaction
 			mutable cache::State mBlockchainState;
 
-			mutable cache::MessageId mMessageIdsCache;
+			mutable cache::HieroTransactionId mMessageIdsCache;
 
 			cache::TransactionTriggerEvent mTransactionTriggerEventsCache;
 
@@ -176,7 +192,7 @@ namespace gradido {
 			//! Community Server listening on new blocks for his group
 			//! TODO: replace with more abstract but simple event system and/or mqtt
 			std::shared_ptr<client::Base> mCommunityServer;
-			std::vector<std::shared_ptr<client::grpc::Client>> mHieroClients;
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;
 		};
 
 		std::shared_ptr<FileBased> FileBased::create(
@@ -184,7 +200,7 @@ namespace gradido {
 			const hiero::TopicId& topicId,
 			std::string_view alias,
 			std::string_view folder,
-			std::vector<std::shared_ptr<client::grpc::Client>>&& hieroClients
+			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 		) {
 			return std::make_shared<FileBased>(Private(), communityId, topicId, alias, folder, std::move(hieroClients));
 		}

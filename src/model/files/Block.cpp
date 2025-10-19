@@ -66,14 +66,14 @@ namespace model {
 					mCurrentFileSize = (uint32_t)mBlockFile->tellg() - crypto_generichash_KEYBYTES;
 				}
 			}
-			mLastUsed = Timepoint();
+			mLastUsed = std::chrono::system_clock::now();
 			return mBlockFile;
 		}
 
 		TimerReturn Block::callFromTimer()
 		{
 			if (!mFastMutex.try_lock()) return TimerReturn::GO_ON;
-			if (Timepoint() - mLastUsed > ServerGlobals::g_CacheTimeout) {
+			if (std::chrono::system_clock::now() - mLastUsed > ServerGlobals::g_CacheTimeout) {
 				mBlockFile = nullptr;
 			}
 			mFastMutex.unlock();
@@ -248,7 +248,7 @@ namespace model {
 			auto fl = FileLockManager::getInstance();
 
 			if (!fl->tryLockTimeout(mBlockPath, 100)) {
-				LOG_F(ERROR, "error locking file: %s", mBlockPath);
+				LOG_F(ERROR, "error locking file: %s", mBlockPath.data());
 				return false;
 			}
 			auto fileStream = getOpenFile();

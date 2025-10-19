@@ -1,6 +1,7 @@
 #include "TaskObserver.h"
 #include "../task/WriteTransactionsToBlockTask.h"
-#include "../blockchain/FileBased.h"
+#include "../blockchain/FileBased.h" // IWYU pragma: keep
+
 
 #include <cstring>
 
@@ -77,12 +78,12 @@ std::shared_ptr<NodeTransactionEntry> TaskObserver::getTransaction(uint64_t tran
 			return transactionEntry;
 		}
 	}
-	LOG_F(1, "cannot find transaction: %llu in write task", transactionNr);
+	LOG_F(1, "cannot find transaction: %lu in write task", transactionNr);
 	auto it = mTransactionsFromPendingTasks.find(transactionNr);
 	if (it != mTransactionsFromPendingTasks.end()) {
 		return it->second;
 	}
-	LOG_F(1, "cannot find transaction: %llu in map", transactionNr);
+	LOG_F(1, "cannot find transaction: %lu in map", transactionNr);
 	return nullptr;
 }
 

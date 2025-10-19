@@ -5,7 +5,6 @@
 
 #include "gradido_blockchain/data/GradidoTransaction.h"
 #include "gradido_blockchain/data/hiero/TransactionId.h"
-#include "../client/grpc/MessageObserver.h"
 
 /*!
  * @author: einhornimmond

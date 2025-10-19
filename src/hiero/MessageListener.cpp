@@ -1,3 +1,4 @@
+
 #include "MessageListener.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "../blockchain/FileBasedProvider.h"
@@ -24,17 +25,15 @@ namespace hiero {
 	void MessageListener::onMessageArrived(const ConsensusTopicResponseMessage& consensusTopicResponse)
 	{
 		ConsensusTopicResponse response(consensusTopicResponse);
-		LOG_F(1, "sequence number: %llu", response.getSequenceNumber());
-		LOG_F(1, "consensus: %s", DataTypeConverter::timePointToString(response.getConsensusTimestamp().getAsTimepoint()).data());
 
-		hiero::TransactionId startTransactionId;
+		// hiero::TransactionId startTransactionId;
 		if (!response.getChunkInfo().empty()) {
 			auto total = response.getChunkInfo().getTotal();
 			if (total > 1) {
 				LOG_F(FATAL, "grpc Message contain more than one chunks: %d", total);
 				throw GradidoNotImplementedException("Chunked Message processing");
 			}
-			startTransactionId = response.getChunkInfo().getInitialTransactionId();
+			// startTransactionId = response.getChunkInfo().getInitialTransactionId();
 		}
 		auto blockchain = gradido::blockchain::FileBasedProvider::getInstance()->findBlockchain(mCommunityId);
 		auto fileBasedBlockchain = static_cast<gradido::blockchain::FileBased*>(blockchain.get());
@@ -44,7 +43,7 @@ namespace hiero {
 
 	// will be called from grpc client if connection was closed
 	void MessageListener::onConnectionClosed()
-	{
+	{		
 		mIsClosed = true;
 		LOG_F(WARNING, "connection closed on topic: %s", mTopicId.toString().data());
 	}

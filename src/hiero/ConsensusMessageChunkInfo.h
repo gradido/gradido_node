@@ -1,8 +1,9 @@
 #ifndef __GRADIDO_NODE_HIERO_CONSENSUS_MESSAGE_CHUNK_INFO_H
 #define __GRADIDO_NODE_HIERO_CONSENSUS_MESSAGE_CHUNK_INFO_H
 
-#include "gradido_blockchain/interaction/deserialize/protopuf.h"
+#include "gradido_blockchain/interaction/deserialize/Protopuf.h"
 #include "gradido_blockchain/data/hiero/TransactionId.h"
+#include "rapidjson/document.h"
 
 namespace hiero {
 	using ConsensusMessageChunkInfoMessage = message<
@@ -17,6 +18,7 @@ namespace hiero {
 		ConsensusMessageChunkInfo();
 		ConsensusMessageChunkInfo(const ConsensusMessageChunkInfoMessage& message);
 		ConsensusMessageChunkInfo(const TransactionId& initialTransactionId, int32_t total, int32_t number);
+		ConsensusMessageChunkInfo(const rapidjson::Value& json);
 		~ConsensusMessageChunkInfo();
 
 		ConsensusMessageChunkInfoMessage getMessage() const;

@@ -1,10 +1,10 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_EXCEPTIONS_H
-#define __GRADIDO_NODE_CLIENT_GRPC_EXCEPTIONS_H
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_EXCEPTIONS_H
+#define __GRADIDO_NODE_CLIENT_HIERO_EXCEPTIONS_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
 
 namespace client {
-	namespace grpc {
+	namespace hiero {
 		class Exception : public GradidoBlockchainException 
 		{
 		public:
@@ -32,4 +32,4 @@ namespace client {
 	}
 }
 
-#endif // __GRADIDO_NODE_CLIENT_GRPC_EXCEPTIONS_H
+#endif // __GRADIDO_NODE_CLIENT_HIERO_EXCEPTIONS_H

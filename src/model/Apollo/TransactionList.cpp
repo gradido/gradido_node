@@ -44,6 +44,17 @@ namespace model {
 			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);			
 
 			Filter filterCopy = filter;
+			filterCopy.filterFunction = [filter](const TransactionEntry& entry) -> FilterResult
+			{
+				// filter out creation transactions which this user has signed as moderator, and isn't the benefitor
+				if (entry.isCreation()) {
+					auto creation = entry.getTransactionBody()->getCreation();
+					if (!creation->getRecipient().getPublicKey()->isTheSame(filter.involvedPublicKey)) {
+						return FilterResult::DISMISS;
+					}
+				}
+				return FilterResult::USE;
+			};
 			auto allTransactions = mBlockchain->findAll(filterCopy);
 			if (!allTransactions.size()) {
 				transactionList.AddMember("transactions", transactions, alloc);

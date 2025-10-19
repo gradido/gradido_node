@@ -2,6 +2,7 @@
 
 namespace hiero {
 	ResponseHeader::ResponseHeader()
+		: mNodeTransactionPrecheckCode(ResponseCodeEnum::OK), mResponseType(ResponseType::ANSWER_ONLY), mCost(0)
 	{
 
 	}

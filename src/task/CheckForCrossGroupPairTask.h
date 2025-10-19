@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_TASK_CHECK_FOR_CROSS_GROUP_PAIR_TASK_H
 
 #include "CPUTask.h"
-#include "../client/grpc/MessageObserver.h"
+#include "../client/hiero/MessageObserver.h"
 #include "../hiero/TransactionGetReceiptResponse.h"
 
 #include <atomic>
@@ -14,7 +14,7 @@ namespace gradido {
 }
 
 namespace task {
-    class CheckForCrossGroupPairTask : public CPUTask, public client::grpc::MessageObserver<hiero::TransactionGetReceiptResponseMessage>
+    class CheckForCrossGroupPairTask : public CPUTask, public client::hiero::MessageObserver<hiero::TransactionGetReceiptResponseMessage>
     {
     public:
         CheckForCrossGroupPairTask(std::shared_ptr<const gradido::data::GradidoTransaction> transaction);

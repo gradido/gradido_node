@@ -10,11 +10,12 @@ namespace hiero {
         
     }
 
-    ConsensusTopicQuery::ConsensusTopicQuery(const ConsensusTopicQueryMessage& message) {
-        mTopicId = deserialize::HieroTopicIdRole(message["topicID"_f].value());
-        mConsensusStartTime = deserialize::TimestampRole(message["consensusStartTime"_f].value());
-        mConsensusEndTime = deserialize::TimestampRole(message["consensusEndTime"_f].value());
-        mLimit = message["limit"_f].value();
+    ConsensusTopicQuery::ConsensusTopicQuery(const ConsensusTopicQueryMessage& message) 
+        : mTopicId(deserialize::HieroTopicIdRole(message["topicID"_f].value())),
+        mConsensusStartTime(deserialize::TimestampRole(message["consensusStartTime"_f].value())),
+        mConsensusEndTime(deserialize::TimestampRole(message["consensusEndTime"_f].value())),
+        mLimit(message["limit"_f].value())
+    {
     }
 
     ConsensusTopicQuery::ConsensusTopicQuery(

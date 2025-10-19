@@ -1,5 +1,6 @@
+#ifdef _USING_IOTA
+
 #include "OrderingManager.h"
-#include "GlobalStateManager.h"
 #include "../blockchain/FileBased.h"
 #include "../blockchain/FileBasedProvider.h"
 #include "../blockchain/Exceptions.h"
@@ -93,7 +94,7 @@ int OrderingManager::ThreadFunction()
 		// make sure MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER time was passed since milestone was created 
         // for more information see MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER
 		MilestoneTransactions* mt = workSetIt->second;
-		Timepoint now;
+		Timepoint now = std::chrono::system_clock::now();
 		Duration sleepDuration = MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER - (now - mt->entryCreationTime);
 
         if (sleepDuration > std::chrono::milliseconds(0) && sleepDuration < MAGIC_NUMBER_MILESTONE_EXTRA_BUFFER) {
@@ -187,3 +188,4 @@ int OrderingManager::pushTransaction(
 
     return 0;
 }
+#endif //#ifdef _USING_IOTA

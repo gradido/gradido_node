@@ -1,21 +1,21 @@
-#ifndef __GRADIDO_NODE_CLIENT_GRPC_MESSAGE_OBSERVER_H
-#define __GRADIDO_NODE_CLIENT_GRPC_MESSAGE_OBSERVER_H
+#ifndef __GRADIDO_NODE_CLIENT_HIERO_MESSAGE_OBSERVER_H
+#define __GRADIDO_NODE_CLIENT_HIERO_MESSAGE_OBSERVER_H
 
 #include "gradido_blockchain/memory/Block.h"
 #include <grpcpp/client_context.h>
 
 namespace client {
-    namespace grpc {
+    namespace hiero {
 
         //! Base Class for derivation to receive messages from grpc-server
-        template<class T>
+        template<class Message>
         class MessageObserver
         {
         public:
             virtual ~MessageObserver() = default;
             
             // move message binary
-            virtual void onMessageArrived(const T& message) = 0;
+            virtual void onMessageArrived(const Message& obj) = 0;
 
             // will be called from grpc client if connection was closed
             // so no more messageArrived calls
@@ -30,4 +30,4 @@ namespace client {
     }
 }
 
-#endif //__GRADIDO_NODE_CLIENT_GRPC_MESSAGE_OBSERVER_H
+#endif //__GRADIDO_NODE_CLIENT_HIERO_MESSAGE_OBSERVER_H

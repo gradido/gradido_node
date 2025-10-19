@@ -34,6 +34,8 @@ namespace controller {
         SimpleOrderingManager(std::string_view communityId);
         ~SimpleOrderingManager();
 
+        void init(uint64_t lastKnownSequenceNumber);
+
         enum class PushResult {
             FOUND_IN_LAST_TRANSACTIONS,
             FOUND_IN_TRANSACTIONS,
@@ -56,17 +58,23 @@ namespace controller {
             TopicResponseDeserializer(
                 hiero::ConsensusTopicResponse&& _consensusTopicResponse,
                 std::shared_ptr<task::HieroMessageToTransactionTask> _deserializeTask
-            ) : consensusTopicResponse(std::move(_consensusTopicResponse)), deserializeTask(_deserializeTask)
+            ) : consensusTopicResponse(std::move(_consensusTopicResponse)), 
+                deserializeTask(_deserializeTask), 
+                putIntoListTime(std::chrono::system_clock::now())
             {
             }
 
             TopicResponseDeserializer(TopicResponseDeserializer&& move) noexcept
-                : consensusTopicResponse(std::move(move.consensusTopicResponse)), deserializeTask(std::move(move.deserializeTask))
+                : consensusTopicResponse(std::move(move.consensusTopicResponse)), 
+                deserializeTask(std::move(move.deserializeTask)),
+                putIntoListTime(std::move(move.putIntoListTime))
             {
             }
 
             TopicResponseDeserializer(const TopicResponseDeserializer& other) noexcept
-                : consensusTopicResponse(other.consensusTopicResponse), deserializeTask(other.deserializeTask)
+                : consensusTopicResponse(other.consensusTopicResponse), 
+                deserializeTask(other.deserializeTask),
+                putIntoListTime(other.putIntoListTime)
             {
 
             }
@@ -75,6 +83,7 @@ namespace controller {
 
             hiero::ConsensusTopicResponse consensusTopicResponse;
             std::shared_ptr<task::HieroMessageToTransactionTask> deserializeTask;
+            Timepoint putIntoListTime;
         };
 
         void processTransaction(const TopicResponseDeserializer& gradidoTransactionWorkData);
@@ -88,6 +97,7 @@ namespace controller {
         mutable std::mutex mTransactionsMutex;
         std::string mCommunityId;
 
+        // last sequence number from which transaction was checked
         uint64_t mLastSequenceNumber;
     };
 }
