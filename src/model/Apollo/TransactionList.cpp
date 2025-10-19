@@ -1,7 +1,6 @@
 #include "TransactionList.h"
 #include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
-#include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/NodeTransactionEntry.h"
@@ -86,7 +85,15 @@ namespace model {
 						transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
 					}
 					previousDate = confirmedTransaction->getConfirmedAt();
-					previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
+					auto& balances = confirmedTransaction->getAccountBalances();
+					previousBalance = GradidoUnit::zero();
+					for (auto& balance : balances) {
+						// calculate sum of all balances belonging to this user, of all coin color
+						// TODO: choose correct coin color
+						if (balance.getPublicKey()->isTheSame(mPubkey)) {
+							previousBalance += balance.getBalance();
+						}
+					}
 				}
 			}
 			allTransactionsVector.clear();
@@ -103,12 +110,12 @@ namespace model {
 				) {
 				auto& lastTransaction = transactionsVector.back();
 				transactionsVector.push_back(model::Apollo::Transaction(
-					lastTransaction.getDate(), 
-					std::chrono::system_clock::now(), 
+					lastTransaction.getDate(),
+					std::chrono::system_clock::now(),
 					lastTransaction.getBalance())
 				);
 			}
-			// last decay 
+			// last decay
 			// last decay if ordered DESC
 			if (transactionsVector.size() && filter.searchDirection == SearchDirection::DESC) {
 				// reverse order of transactions in vector

@@ -14,7 +14,6 @@
 
 #include "gradido_blockchain/const.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
-#include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/confirmTransaction/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/lib/Profiler.h"
