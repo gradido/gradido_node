@@ -1,7 +1,6 @@
 #include "TransactionList.h"
 #include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
-#include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/NodeTransactionEntry.h"
