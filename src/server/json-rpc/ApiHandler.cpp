@@ -292,8 +292,8 @@ namespace server {
 				auto communityRoot = communityRootBody->getCommunityRoot();
 				auto gmwAddress = communityRoot->getGmwPubkey();
 				auto aufAddress = communityRoot->getAufPubkey();
-				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now);
-				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now);
+				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now, "");
+				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now, "");
 				resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
 				resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
 			} else {
@@ -443,7 +443,8 @@ namespace server {
 			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
 
 			calculateAccountBalance::Context calculateAddressBalance(blockchain);
-			auto balance = calculateAddressBalance.fromEnd(filter.involvedPublicKey, now);
+			// TODO: add balances from another communities
+			auto balance = calculateAddressBalance.fromEnd(filter.involvedPublicKey, now, "");
 			std::string balanceString = balance.toString();
 			transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 			resultJson.AddMember("transactionList", transactionListValue, alloc);

@@ -47,20 +47,20 @@ namespace model {
           uint64_t transactionNr,
           Timepoint targetDate
       ) {
-				if(!transactionNr) {
-					throw GradidoNullPointerException("transactionNr is zero", "transactionNr", __FUNCTION__);
-				}
-				auto deferredTransferEntry = mBlockchain->getTransactionForId(transactionNr);
-				auto deferredTransferBody = deferredTransferEntry->getTransactionBody();
-				assert(deferredTransferBody->isDeferredTransfer());
-				auto deferredTransfer = deferredTransferBody->getDeferredTransfer();
-        auto transferAmount = deferredTransferBody->getTransferAmount();
-				GradidoUnit decayed = transferAmount.getAmount().calculateDecay(
-					deferredTransferEntry->getConfirmedTransaction()->getConfirmedAt(),
-					targetDate
-				);
+			if(!transactionNr) {
+				throw GradidoNullPointerException("transactionNr is zero", "transactionNr", __FUNCTION__);
+			}
+			auto deferredTransferEntry = mBlockchain->getTransactionForId(transactionNr);
+			auto deferredTransferBody = deferredTransferEntry->getTransactionBody();
+			assert(deferredTransferBody->isDeferredTransfer());
+			auto deferredTransfer = deferredTransferBody->getDeferredTransfer();
+            auto& transferAmount = deferredTransferBody->getTransferAmount();
+			GradidoUnit decayed = transferAmount.getAmount().calculateDecay(
+				deferredTransferEntry->getConfirmedTransaction()->getConfirmedAt(),
+				targetDate
+			);
 
-				return data::AccountBalance(transferAmount.getPublicKey(), decayed);
+			return data::AccountBalance(transferAmount.getPublicKey(), decayed, transferAmount.getCommunityId());
       }
     }
   }

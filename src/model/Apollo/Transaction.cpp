@@ -13,8 +13,6 @@ using namespace magic_enum;
 
 namespace model {
 	namespace Apollo {
-
-
 		Transaction::Transaction(
 				const data::ConfirmedTransaction& confirmedTransaction, 
 				memory::ConstBlockPtr pubkey
@@ -37,7 +35,7 @@ namespace model {
 			}
 			mId = confirmedTransaction.getId();
 			mDate = confirmedTransaction.getConfirmedAt();
-			mBalance = confirmedTransaction.getAccountBalance(pubkey).getBalance();
+			mBalance = confirmedTransaction.getAccountBalance(pubkey, "").getBalance();
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)

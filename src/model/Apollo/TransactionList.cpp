@@ -85,7 +85,15 @@ namespace model {
 						transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
 					}
 					previousDate = confirmedTransaction->getConfirmedAt();
-					previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
+					auto& balances = confirmedTransaction->getAccountBalances();
+					previousBalance = GradidoUnit::zero();
+					for (auto& balance : balances) {
+						// calculate sum of all balances belonging to this user, of all coin color
+						// TODO: choose correct coin color
+						if (balance.getPublicKey()->isTheSame(mPubkey)) {
+							previousBalance += balance.getBalance();
+						}
+					}
 				}				
 			}
 			allTransactionsVector.clear();

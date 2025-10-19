@@ -106,12 +106,12 @@ endif(MSVC)
 
 ############################## add dependencies  #########################################
 set(ENABLE_HTTPS ON)
-find_package(OpenSSL REQUIRED)
 if(WIN32)
 	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
 	set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
 endif()
 add_subdirectory("dependencies/gradido_blockchain")
+find_package(OpenSSL REQUIRED)
 # reuse cacert.pem from gradido_blockchain
 if(WIN32)
 	add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
@@ -179,8 +179,13 @@ if(NOT BUILD_SHARED_LIBS)
 	#add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf/cmake")
 endif()
 
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 add_executable(GradidoNode ${LOCAL_SRCS})
-target_compile_options(GradidoNode PRIVATE -Wno-error=deprecated-literal-operator)
+
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+	# needed for clang/zig
+	target_compile_options(GradidoNode PRIVATE -Wno-error=deprecated-literal-operator)
+endif()
 #SUBDIRS("src/test")
 
 target_link_libraries(GradidoNode leveldb GradidoBlockchain OpenSSL::SSL OpenSSL::Crypto)# paho-mqtt3a)
