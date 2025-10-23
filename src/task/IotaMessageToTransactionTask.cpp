@@ -1,3 +1,4 @@
+#ifdef _USING_IOTA
 #include "IotaMessageToTransactionTask.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
@@ -185,7 +186,7 @@ int IotaMessageToTransactionTask::run()
         return 0;
     }       
     auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
-    if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt() > mTimestamp) {
+    if (lastTransaction && lastTransaction->getConfirmedTransaction()->getConfirmedAt().getAsTimepoint() > mTimestamp) {
         // this transaction seems to be from the past, a transaction which happen after this was already added
         std::string message = "Transaction skipped (from past)";
         notificateFailedTransaction(blockchain, *transaction, message);
@@ -229,3 +230,4 @@ void IotaMessageToTransactionTask::notificateFailedTransaction(
 		}
 	}
 }
+#endif //_USING_IOTA

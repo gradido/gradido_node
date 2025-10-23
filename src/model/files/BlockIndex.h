@@ -34,7 +34,7 @@ namespace model {
 				uint64_t transactionNr, 
 				int32_t fileCursor, 
 				const uint32_t* addressIndices, 
-				uint8_t addressIndiceCount
+				uint16_t addressIndiceCount
 			) = 0;
 		};
 

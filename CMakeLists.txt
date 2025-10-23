@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.18.2)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain.cmake")
 project(GradidoNode C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
@@ -9,6 +11,7 @@ IF(WIN32)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 ELSE()
 	SET(CMAKE_CXX_FLAGS "-std=c++20" )
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 ENDIF()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,13 +19,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(INSTALL_BINDIR "bin")
 set(INSTALL_PLUGINDIR "bin")
+
 # needed for protopuf
 add_definitions(-DNOMINMAX)
 
 include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"
-	"dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain"
 	"dependencies/gradido_blockchain/include"
 	"dependencies/gradido_blockchain/build"
@@ -30,6 +33,8 @@ include_directories(
 	"dependencies/gradido_blockchain/dependencies/date/include"
 	"dependencies/gradido_blockchain/dependencies/magic_enum/include"
 	"dependencies/gradido_blockchain/dependencies/protopuf/include"
+	"dependencies/gradido_blockchain/dependencies/rapidjson/include"
+	"dependencies/gradido_blockchain/dependencies/cpp-httplib"
 
 	"dependencies/paho.mqtt.c/src"
 	#"dependencies/googletest/googletest/include"
@@ -40,7 +45,9 @@ FILE(GLOB BLOCKCHAIN "src/blockchain/*.h" "src/blockchain/*.cpp")
 FILE(GLOB CACHE_SRC "src/cache/*.h" "src/cache/*.cpp")
 FILE(GLOB CONTAINER, "src/container/*.h" "src/container/*.cpp")
 FILE(GLOB CONTROLLER "src/controller/*.cpp" "src/controller/*.h")
+FILE(GLOB HIERO "src/hiero/*.h" "src/hiero/*.cpp")
 FILE(GLOB CLIENT "src/client/*.cpp" "src/client/*.h")
+FILE(GLOB CLIENT_HIERO "src/client/hiero/*.cpp" "src/client/hiero/*.h")
 FILE(GLOB IOTA "src/iota/*.cpp" "src/iota/*.h")
 FILE(GLOB SERVER "src/server/*.h" "src/server/*.cpp")
 FILE(GLOB SERVER_JSON_RPC "src/server/json-rpc/*.h" "src/server/json-rpc/*.cpp")
@@ -62,7 +69,8 @@ FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 SET(LOCAL_SRCS 
 	${BLOCKCHAIN}
 	${CACHE_SRC}
-	${CONTAINER} ${CONTROLLER} ${CLIENT} ${IOTA}
+	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_HIERO}
+	${HIERO}
 	${SERVER} ${SERVER_JSON_RPC}
 	${LIB_SRC}
 	${MODEL}  ${MODEL_APOLLO} ${MODEL_APOLLO_CREATE_TRANSACTION} ${MODEL_FILES} ${MODEL_JSON}
@@ -77,8 +85,10 @@ if(MSVC)
 source_group("blockchain" FILES ${BLOCKCHAIN})
 source_group("cache" FILES ${CACHE_SRC})
 source_group("container" FILES ${CONTAINER})
+source_group("client\\hiero" FILES ${CLIENT_HIERO})
 source_group("client" FILES ${CLIENT})
 source_group("controller" FILES ${CONTROLLER})
+source_group("hiero" FILES ${HIERO})
 source_group("iota" FILES ${IOTA})
 source_group("Json-rpc-Interface" FILES ${JSONRPCInterface})
 source_group("lib" FILES ${LIB_SRC})
@@ -95,22 +105,61 @@ source_group("task" FILES ${TASK})
 endif(MSVC)
 
 ############################## add dependencies  #########################################
-
+set(ENABLE_HTTPS ON)
+#find_package(OpenSSL REQUIRED)
+#if(WIN32)
+#	set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/dependencies/gradido_blockchain/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE FILEPATH "" FORCE)
+#	set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
+#endif()
 add_subdirectory("dependencies/gradido_blockchain")
-SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
+find_package(OpenSSL REQUIRED)
+# reuse cacert.pem from gradido_blockchain
+if(WIN32)
+	add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
+endif()
+find_package(OpenSSL REQUIRED)
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
+# Fetch Content Module
+include(FetchContent)
 
+# gRPC
+set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)
+set(gRPC_INSTALL ON CACHE BOOL "" FORCE)
+set(gRPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 
+message(STATUS "Make gRPC Available")
+FetchContent_Declare(
+	grpc
+	GIT_REPOSITORY https://github.com/grpc/grpc.git
+	GIT_TAG        v1.74.1
+)
+FetchContent_MakeAvailable(grpc)
+
+if(NOT WIN32)
+	include_directories(${grpc_SOURCE_DIR}/include)
+	include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
+	message(${grpc_SOURCE_DIR})
+endif()
+
+# Since FetchContent uses add_subdirectory under the hood, we can use
+# the grpc targets directly from this build.
+# set(_PROTOBUF_LIBPROTOBUF libprotobuf)
+#set(_REFLECTION grpc++_reflection)
+#set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
+set(_GRPC_GRPCPP grpc++)
+	#message("grpc++: ${_GRPC_GRPCPP}")
+
+SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})
 ############################## mqtt client ############################################
-add_subdirectory("dependencies/paho.mqtt.c")
+#add_subdirectory("dependencies/paho.mqtt.c")
 
 if(WIN32)
-find_package(libsodium REQUIRED)
+#find_package(libsodium REQUIRED)
 include_directories(${libsodium_INCLUDE_DIR})
 else()
 #find_package(Sodium REQUIRED)
@@ -132,17 +181,24 @@ if(NOT BUILD_SHARED_LIBS)
 	#add_subdirectory("dependencies/gradido_blockchain/dependencies/protobuf/cmake")
 endif()
 
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 add_executable(GradidoNode ${LOCAL_SRCS})
+
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+	# needed for clang/zig
+	target_compile_options(GradidoNode PRIVATE -Wno-error=deprecated-literal-operator)
+endif()
 #SUBDIRS("src/test")
 
-target_link_libraries(GradidoNode leveldb GradidoBlockchain paho-mqtt3a)
+target_link_libraries(GradidoNode leveldb GradidoBlockchain OpenSSL::SSL OpenSSL::Crypto)# paho-mqtt3a)
 if(WIN32)
 	target_link_libraries(GradidoNode optimized Shlwapi)
 	target_link_libraries(GradidoNode debug Shlwapi)
-	target_link_libraries(GradidoNode libsodium::libsodium)
+	#target_link_libraries(GradidoNode libsodium::libsodium)
 else()
   target_link_libraries(GradidoNode sodium)
 endif()
+target_link_libraries(GradidoNode ${_GRPC_GRPCPP})
 
 IF(WIN32)
   add_custom_command(TARGET GradidoNode POST_BUILD
@@ -151,7 +207,7 @@ IF(WIN32)
   )
 ENDIF()
 
-# install 
+# install
 if(UNIX)
 install(TARGETS GradidoNode RUNTIME DESTINATION /usr/local/bin)
 endif(UNIX)

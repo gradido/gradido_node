@@ -40,7 +40,9 @@ namespace model {
 			decay.AddMember("decay", Value(mDecayAmount.toString(2).data(), alloc), alloc);
 			decay.AddMember("start", Value(formatJsCompatible(mDecayStart).data(), alloc), alloc);
 			decay.AddMember("end", Value(formatJsCompatible(mDecayEnd).data(), alloc), alloc);
-			decay.AddMember("duration", duration_cast<seconds>(mDecayEnd - mDecayStart).count(), alloc);
+			decay.AddMember("duration", static_cast<int64_t>(
+				duration_cast<seconds>(mDecayEnd - mDecayStart).count()
+			), alloc);
 			decay.AddMember("__typename", "Decay", alloc);
 			return std::move(decay);
 		}

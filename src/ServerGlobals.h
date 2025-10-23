@@ -9,6 +9,12 @@
 #include <chrono>
 #include <atomic>
 
+namespace client {
+	namespace hiero {
+		class MirrorClient;
+	}
+}
+
 namespace ServerGlobals {
 
 	extern task::CPUSheduler*				g_CPUScheduler;
@@ -28,9 +34,11 @@ namespace ServerGlobals {
 	extern bool								g_LogTransactions;
 	// if true serve only stored transactions, for example debug without internet connection
 	extern bool								g_isOfflineMode;
+	extern client::hiero::MirrorClient*		g_HieroMirrorNode;
 
 	void clearMemory();
-	bool initIota(const MapEnvironmentToConfig& cfg);
+	// bool initIota(const MapEnvironmentToConfig& cfg);
+	bool initHiero(std::string_view hieroNetworkType);
 	void loadTimeouts(const MapEnvironmentToConfig& cfg);
 };
 

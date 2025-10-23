@@ -49,13 +49,15 @@ namespace task {
 		} // scoped lock end
 		CPUShedulerThread* t = NULL;
 		// look at free worker threads
-		if(task->isAllParentsReady() && mFreeWorkerThreads.pop(t)) {
+		if(task->isReady() && mFreeWorkerThreads.pop(t)) {
 			// gave him the new task
 			t->setNewTask(task);
 		} else {
 			// else put task to pending queue
 			// printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
-			LOG_F(INFO, "sheduleTask in %s all %u threads in use, add to pending task list", mName.data(), getThreadCount());
+			if (mFreeWorkerThreads.empty()) {
+				LOG_F(INFO, "sheduleTask in %s all %u threads in use, add to pending task list", mName.data(), getThreadCount());
+			}
 			{
 				std::lock_guard _lock(mPendingTasksMutex);
 				mPendingTasks.push_back(task);
@@ -80,7 +82,7 @@ namespace task {
 		TaskPtr task;
 		mPendingTasksMutex.lock();
 		for (std::list<TaskPtr>::iterator it = mPendingTasks.begin(); it != mPendingTasks.end(); it++) {
-			if ((*it)->isAllParentsReady()) {
+			if ((*it)->isReady()) {
 				task = *it;
 				mPendingTasks.erase(it);
 				mPendingTasksMutex.unlock();
@@ -93,7 +95,7 @@ namespace task {
 			mFreeWorkerThreads.push(Me);
 		}
 			
-		return TaskPtr();
+		return nullptr;
 	}
 	void CPUSheduler::checkPendingTasks()
 	{

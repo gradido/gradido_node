@@ -32,7 +32,9 @@ enum class TaskObserverType {
  * to check if a specific transaction was already insert and waiting to be written
  */
 
-class WriteTransactionsToBlockTask;
+namespace task {
+	class WriteTransactionsToBlockTask;
+}
 
 namespace gradido {
 	namespace blockchain {
@@ -49,11 +51,11 @@ public:
 	
 	//! \brief adding WriteTransactionsToBlockTask to map and read transactions
 	//! \return false if tasks already exist
-	bool addBlockWriteTask(std::shared_ptr<WriteTransactionsToBlockTask> blockWriteTask);
+	bool addBlockWriteTask(std::shared_ptr<task::WriteTransactionsToBlockTask> blockWriteTask);
 
 	//! \brief remove WriteTransactionsToBlockTask from map and transactions
 	//! \return false if entry not found, else return true
-	bool removeBlockWriteTask(WriteTransactionsToBlockTask* blockWriteTask);
+	bool removeBlockWriteTask(task::WriteTransactionsToBlockTask* blockWriteTask);
 
 	//! \brief remove Tasks
 	//! \return return false if task not found or unknown type, else true
@@ -71,9 +73,9 @@ public:
 
 protected:
 	mutable std::mutex mFastMutex;
-	typedef std::pair<WriteTransactionsToBlockTask*, std::shared_ptr<WriteTransactionsToBlockTask>> BlockWriteMapPair;
-	std::map<WriteTransactionsToBlockTask*, std::shared_ptr<WriteTransactionsToBlockTask>> mBlockWriteTasks;
-	typedef std::pair<uint64_t, std::shared_ptr<WriteTransactionsToBlockTask>> TransactionsForTasksPair;
+	typedef std::pair<task::WriteTransactionsToBlockTask*, std::shared_ptr<task::WriteTransactionsToBlockTask>> BlockWriteMapPair;
+	std::map<task::WriteTransactionsToBlockTask*, std::shared_ptr<task::WriteTransactionsToBlockTask>> mBlockWriteTasks;
+	typedef std::pair<uint64_t, std::shared_ptr<task::WriteTransactionsToBlockTask>> TransactionsForTasksPair;
 	std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactionsFromPendingTasks;
 	
 };

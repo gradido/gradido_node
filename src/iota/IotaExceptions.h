@@ -8,6 +8,7 @@ class MessageIdFormatException : public GradidoBlockchainException
 {
 public: 
 	explicit MessageIdFormatException(const char* what, const std::string& messageIdHex) noexcept;
+	virtual ~MessageIdFormatException() = default;
 	std::string getFullString() const;
 
 protected:

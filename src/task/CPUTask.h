@@ -50,12 +50,12 @@ namespace task {
 		CPUTask(size_t taskDependenceCount = 0);
         virtual ~CPUTask();
 
-		virtual const char* getResourceType() const {return "CPUTask";};
+		virtual const char* getResourceType() const override {return "CPUTask";};
 		//! \brief return true if task has finished, else false
 		//! automatic scheduling of task if he isn't finished and sheduled yet
 			
 
-		virtual void scheduleTask(TaskPtr own);
+		virtual void scheduleTask(TaskPtr own) override;
     protected:
 		void triggerSheduler() { mScheduler->checkPendingTasks(); }
 			

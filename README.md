@@ -32,9 +32,9 @@ cmake .. -DCMAKE_TOOLCHAIN_FILE="conan_toolchain.cmake" -DCMAKE_BUILD_TYPE=Relea
 Code doc: https://gradido.github.io/gradido_node/html/index.html
 
 ## Install Linux
-On my Debian 12
+On Debian 12
 ```bash 
-sudo apt install libsodium-dev libmpfr-dev libssl-dev
+sudo apt install libsodium-dev libmpfr-dev libssl-dev libbsd-dev gcc-multilib libc++-dev
 ``` 
 install rust compiler
 ```bash

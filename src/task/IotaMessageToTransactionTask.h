@@ -1,3 +1,4 @@
+#ifdef _USING_IOTA
 #ifndef __GRADIDO_NODE_TASK_IOTA_MESSAGE_TO_TRANSACTION_TASK
 #define __GRADIDO_NODE_TASK_IOTA_MESSAGE_TO_TRANSACTION_TASK
 
@@ -28,8 +29,8 @@ class IotaMessageToTransactionTask : public task::CPUTask
 public:
     IotaMessageToTransactionTask(uint32_t milestoneIndex, Timepoint timestamp, iota::MessageId message);
 
-    const char* getResourceType() const {return "IotaMessageToTransactionTask";};
-    int run();
+    const char* getResourceType() const override {return "IotaMessageToTransactionTask";};
+    int run() override;
 
     ~IotaMessageToTransactionTask();
     inline uint32_t getMilestoneIndex() const { return mMilestoneIndex; }
@@ -48,3 +49,4 @@ protected:
 };
 
 #endif //__GRADIDO_NODE_TASK_IOTA_MESSAGE_TO_TRANSACTION_TASK
+#endif //_USING_IOTA

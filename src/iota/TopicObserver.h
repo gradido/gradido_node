@@ -51,8 +51,6 @@ namespace iota {
         static void logResponseError(MQTTAsync_failureData* response);
 
     protected:
-        
-
         std::string mTopicString;
         TopicType mType;
         std::list<IMessageObserver*> mObservers;

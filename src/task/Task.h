@@ -45,6 +45,7 @@ namespace task {
 
 	class Command {
 	public:
+		virtual ~Command() = default;
 		virtual int taskFinished(Task* task) = 0;
 	};
 
@@ -62,12 +63,10 @@ namespace task {
 		bool isAllParentsReady();
 		//! \brief return true if task has finished, else false
 		//! automatic scheduling of task if he isn't finished and sheduled yet
-		virtual bool isTaskFinished() { lock(); bool ret = mFinished; unlock(); return ret; }
+		virtual bool isTaskFinished() { std::lock_guard _lock(mWorkingMutex); return mFinished; }
 		//! \brief called from task scheduler, maybe from another thread
 		//! \return if return 0, mark task as finished
 		virtual int run() = 0;
-
-
 
 		void lock();
 		inline void unlock() { mWorkingMutex.unlock(); }

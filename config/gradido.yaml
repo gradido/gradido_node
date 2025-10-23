@@ -9,6 +9,9 @@ clients:
       host: api.lb-0.h.chrysalis-devnet.iota.cafe
       port: 1883
     
+  hiero:
+    networkType: testnet
+    
 # Server Configuration, which services are served on which ports
 server:
   json_rpc: 8340 # Port for JSON RPC 2.0 Requests

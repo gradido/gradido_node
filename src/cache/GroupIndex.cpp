@@ -3,6 +3,7 @@
 
 #include "../ServerGlobals.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
+#include "gradido_blockchain/data/hiero/TopicId.h"
 
 #include "loguru/loguru.hpp"
 
@@ -40,8 +41,10 @@ namespace cache {
 					rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "communityId", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
+					rapidjson_helper::checkMember(communityEntry, "hieroTopicId", rapidjson_helper::MemberType::STRING);
 					entry.alias = communityEntry["alias"].GetString();
 					entry.communityId = communityEntry["communityId"].GetString();
+					entry.topicId = communityEntry["hieroTopicId"].GetString();
 					entry.folderName = communityEntry["folder"].GetString();
 					if (communityEntry.HasMember("newBlockUri")) {
 						entry.newBlockUri = communityEntry["newBlockUri"].GetString();
@@ -57,7 +60,7 @@ namespace cache {
 			}
 		}
 		catch (GradidoBlockchainException& ex) {
-			LOG_F(ERROR, ex.getFullString().data());
+			LOG_F(ERROR, "%s", ex.getFullString().data());
 			LOG_F(WARNING, "start without communities");
 		}
 		
@@ -88,6 +91,16 @@ namespace cache {
 			return it->second;
 		}
 		throw controller::GroupNotFoundException("couldn't found config details for community", communityId);
+	}
+	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const hiero::TopicId& topicId) const
+	{
+		std::scoped_lock _lock(mWorkMutex);
+		for (auto& it : mCommunities) {
+			if (topicId == hiero::TopicId(it.second.topicId)) {
+				return it.second;
+			}
+		}
+		throw controller::GroupNotFoundException("couldn't found config details for community by topic id", topicId.toString());
 	}
 	bool GroupIndex::isCommunityInConfig(const std::string& communityId) const
 	{

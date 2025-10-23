@@ -27,8 +27,8 @@ namespace task {
 		SerializeToVFileTask(std::shared_ptr<ISerializeToVFile> dataProvider);
 		~SerializeToVFileTask();
 
-		const char* getResourceType() const { return "SerializeToVFileTask"; };
-		int run();
+		const char* getResourceType() const override { return "SerializeToVFileTask"; };
+		int run() override;
 
 	protected:
 		std::shared_ptr<ISerializeToVFile> mDataProvider;

@@ -1,6 +1,7 @@
 #include "TaskObserver.h"
 #include "../task/WriteTransactionsToBlockTask.h"
-#include "../blockchain/FileBased.h"
+#include "../blockchain/FileBased.h" // IWYU pragma: keep
+
 
 #include <cstring>
 
@@ -19,7 +20,7 @@ TaskObserver::~TaskObserver()
 
 }
 
-bool TaskObserver::addBlockWriteTask(std::shared_ptr<WriteTransactionsToBlockTask> blockWriteTask)
+bool TaskObserver::addBlockWriteTask(std::shared_ptr<task::WriteTransactionsToBlockTask> blockWriteTask)
 {
 	std::lock_guard _lock(mFastMutex);
 	auto result = mBlockWriteTasks.insert(BlockWriteMapPair(blockWriteTask.get(), blockWriteTask));
@@ -36,13 +37,13 @@ bool TaskObserver::removeTask(task::Task* task)
 {
 	auto ressourceType = task->getResourceType();
 	if (strcmp("WriteTransactionsToBlockTask", ressourceType) == 0) {
-		auto blockWriteTask = (WriteTransactionsToBlockTask*)task;
+		auto blockWriteTask = (task::WriteTransactionsToBlockTask*)task;
 		return removeBlockWriteTask(blockWriteTask);
 	}
 	return false;
 }
 
-bool TaskObserver::removeBlockWriteTask(WriteTransactionsToBlockTask* blockWriteTask)
+bool TaskObserver::removeBlockWriteTask(task::WriteTransactionsToBlockTask* blockWriteTask)
 {
 	std::lock_guard _lock(mFastMutex);
 	auto entry = mBlockWriteTasks.find(blockWriteTask);
@@ -77,12 +78,12 @@ std::shared_ptr<NodeTransactionEntry> TaskObserver::getTransaction(uint64_t tran
 			return transactionEntry;
 		}
 	}
-	LOG_F(1, "cannot find transaction: %llu in write task", transactionNr);
+	LOG_F(1, "cannot find transaction: %lu in write task", transactionNr);
 	auto it = mTransactionsFromPendingTasks.find(transactionNr);
 	if (it != mTransactionsFromPendingTasks.end()) {
 		return it->second;
 	}
-	LOG_F(1, "cannot find transaction: %llu in map", transactionNr);
+	LOG_F(1, "cannot find transaction: %lu in map", transactionNr);
 	return nullptr;
 }
 

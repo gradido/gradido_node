@@ -73,7 +73,7 @@ namespace cache {
 				return;
 			}
 		}		
-		LOG_F(WARNING, "couldn't find transactionTriggerEvent for removal for transaction: %llu", transactionTriggerEvent.getLinkedTransactionId());
+		LOG_F(WARNING, "couldn't find transactionTriggerEvent for removal for transaction: %lu", transactionTriggerEvent.getLinkedTransactionId());
 	}
 
 	std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> TransactionTriggerEvent::findTransactionTriggerEventsInRange(TimepointInterval range)
@@ -88,7 +88,7 @@ namespace cache {
 		return result;
 	}
 
-	void TransactionTriggerEvent::updateState(gradido::data::TimestampSeconds targetDate)
+	void TransactionTriggerEvent::updateState(gradido::data::Timestamp targetDate)
 	{
 		auto range = mTransactionTriggerEvents.equal_range(targetDate);
 		auto key = std::to_string(targetDate.getSeconds());

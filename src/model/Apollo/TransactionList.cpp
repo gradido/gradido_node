@@ -1,7 +1,6 @@
 #include "TransactionList.h"
 #include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
-#include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/NodeTransactionEntry.h"
@@ -42,22 +41,33 @@ namespace model {
 			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
 			transactionList.AddMember("count", countTransactions, alloc);
 			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
-			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);			
+			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
 
 			Filter filterCopy = filter;
+			filterCopy.filterFunction = [filter](const TransactionEntry& entry) -> FilterResult
+			{
+				// filter out creation transactions which this user has signed as moderator, and isn't the benefitor
+				if (entry.isCreation()) {
+					auto creation = entry.getTransactionBody()->getCreation();
+					if (!creation->getRecipient().getPublicKey()->isTheSame(filter.involvedPublicKey)) {
+						return FilterResult::DISMISS;
+					}
+				}
+				return FilterResult::USE;
+			};
 			auto allTransactions = mBlockchain->findAll(filterCopy);
 			if (!allTransactions.size()) {
 				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
 			}
-			
+
 			// copy into vector to make reversing and loop through faster (cache-hit)
 			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());
 			allTransactions.clear();
 			if (filter.searchDirection == SearchDirection::DESC) {
 				std::reverse(allTransactionsVector.begin(), allTransactionsVector.end());
 			}
-			
+
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
 			GradidoUnit previousBalance(GradidoUnit::zero());
 			Timepoint previousDate = mBlockchain->getStartDate();
@@ -75,8 +85,16 @@ namespace model {
 						transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
 					}
 					previousDate = confirmedTransaction->getConfirmedAt();
-					previousBalance = confirmedTransaction->getAccountBalance(mPubkey).getBalance();
-				}				
+					auto& balances = confirmedTransaction->getAccountBalances();
+					previousBalance = GradidoUnit::zero();
+					for (auto& balance : balances) {
+						// calculate sum of all balances belonging to this user, of all coin color
+						// TODO: choose correct coin color
+						if (balance.getPublicKey()->isTheSame(mPubkey)) {
+							previousBalance += balance.getBalance();
+						}
+					}
+				}
 			}
 			allTransactionsVector.clear();
 			if (transactionsVector.empty()) {
@@ -92,18 +110,18 @@ namespace model {
 				) {
 				auto& lastTransaction = transactionsVector.back();
 				transactionsVector.push_back(model::Apollo::Transaction(
-					lastTransaction.getDate(), 
-					std::chrono::system_clock::now(), 
+					lastTransaction.getDate(),
+					std::chrono::system_clock::now(),
 					lastTransaction.getBalance())
 				);
 			}
-			// last decay 
+			// last decay
 			// last decay if ordered DESC
 			if (transactionsVector.size() && filter.searchDirection == SearchDirection::DESC) {
 				// reverse order of transactions in vector
 				std::reverse(transactionsVector.begin(), transactionsVector.end());
 			}
-			
+
 			// add transactions to array
 			for (auto it = transactionsVector.begin(); it != transactionsVector.end(); it++) {
 				transactions.PushBack(it->toJson(alloc), alloc);

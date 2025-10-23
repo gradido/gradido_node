@@ -13,8 +13,6 @@ using namespace magic_enum;
 
 namespace model {
 	namespace Apollo {
-
-
 		Transaction::Transaction(
 				const data::ConfirmedTransaction& confirmedTransaction, 
 				memory::ConstBlockPtr pubkey
@@ -26,7 +24,7 @@ namespace model {
 			auto& memos = transactionBody->getMemos();
 			for (auto& memo : memos) {
 				if (memo.getKeyType() == gradido::data::MemoKeyType::PLAIN) {
-					mMemo = memo.getMemo()->copyAsString();
+					mMemo = memo.getMemo().copyAsString();
 					return;
 				}
 			}
@@ -37,13 +35,12 @@ namespace model {
 			}
 			mId = confirmedTransaction.getId();
 			mDate = confirmedTransaction.getConfirmedAt();
-			mBalance = confirmedTransaction.getAccountBalance(pubkey).getBalance();
+			mBalance = confirmedTransaction.getAccountBalance(pubkey, "").getBalance();
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
 			: mType(TransactionType::DECAY), mId(-1), mDate(decayEnd), mDecay(nullptr)
 		{
-		
 			calculateDecay(decayStart, decayEnd, startBalance);
 			mAmount = mDecay->getDecayAmount();
 			mBalance = startBalance + mDecay->getDecayAmount();
@@ -90,7 +87,7 @@ namespace model {
 			mId(parent.mId),
 			mDate(parent.mDate),
 			mDecay(nullptr),
-			mHasChange(parent.mHasChange)	
+			mHasChange(parent.mHasChange)
 		{
 			if (parent.mDecay) {
 				mDecay = new Decay(parent.mDecay);
@@ -162,13 +159,17 @@ namespace model {
 			transaction.AddMember("balance", Value(mBalance.toString(2).data(), alloc), alloc);
 			transaction.AddMember("previousBalance", Value(mPreviousBalance.toString(2).data(), alloc), alloc);
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
-			
-			Value linkedUser(kObjectType);
-			linkedUser.AddMember("pubkey", Value(mPubkey.data(), alloc), alloc);
-			linkedUser.AddMember("firstName", Value(mFirstName.data(), alloc), alloc);
-			linkedUser.AddMember("lastName", Value(mLastName.data(), alloc), alloc);
-			linkedUser.AddMember("__typename", "User", alloc);
-			transaction.AddMember("linkedUser", linkedUser, alloc);
+
+			if (!mPubkey.empty() || !mFirstName.empty() || !mLastName.empty()) {
+				Value linkedUser(kObjectType);
+				linkedUser.AddMember("pubkey", Value(mPubkey.data(), alloc), alloc);
+				linkedUser.AddMember("firstName", Value(mFirstName.data(), alloc), alloc);
+				linkedUser.AddMember("lastName", Value(mLastName.data(), alloc), alloc);
+				linkedUser.AddMember("__typename", "User", alloc);
+				transaction.AddMember("linkedUser", linkedUser, alloc);
+			} else {
+				transaction.AddMember("linkedUser", Value(kNullType), alloc);
+			}
 
 			transaction.AddMember("balanceDate", Value(formatJsCompatible(mDate).data(), alloc), alloc);
 			if (mDecay) {

@@ -1,11 +1,14 @@
+#include "client/hiero/ConsensusClient.h"
 #include "MainServer.h"
 #include "ServerGlobals.h"
 
 #include "blockchain/FileBasedProvider.h"
-#include "iota/MqttClientWrapper.h"
+// #include "iota/MqttClientWrapper.h"
 #include "server/json-rpc/ApiHandlerFactory.h"
-#include "SingletonManager/OrderingManager.h"
 #include "SingletonManager/CacheManager.h"
+
+#include "hiero/Addressbook.h"
+#include "client/hiero/const.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/ServerConfig.h"
@@ -67,26 +70,64 @@ bool MainServer::init()
 	// timeouts
 	ServerGlobals::loadTimeouts(config);
 	ServerGlobals::g_LogTransactions = config.getBool("logging.log_transactions", ServerGlobals::g_LogTransactions);
-	ServerGlobals::initIota(config);
+	// ServerGlobals::initIota(config);
 	ServerConfig::readUnsecureFlags(config);
 
 	// start cpu scheduler
 	// std::thread::hardware_concurrency() sometime return 0 if number couldn't be determined
-	uint8_t worker_count = std::min(2, (int)std::thread::hardware_concurrency() * 2);
+	uint8_t worker_count = 2; //  std::max(2, (int)std::thread::hardware_concurrency() * 2);
 	// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
 	uint8_t io_worker_count = config.getInt("io.worker_count", 2);
 	ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");
+	// let scheduler check if one of the pending tasks is now ready
+	CacheManager::getInstance()->getFuzzyTimer()->addTimer("mainCPUScheduler", ServerGlobals::g_CPUScheduler, std::chrono::milliseconds(100));
 	ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
-	ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
-	if(!ServerGlobals::g_isOfflineMode) {
-		iota::MqttClientWrapper::getInstance()->init();
-	}
+	// ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
+	std::string hieroNetworkType = config.getString("clients.hiero.networkType", "testnet");
+	ServerGlobals::initHiero(hieroNetworkType);
 
-	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json")) {
+	uint8_t hieroNodeCount = config.getInt("clients.hiero.nodeCount", 3);
+	uint8_t hieroNodeCountPerCommunity = config.getInt("clients.hiero.nodeCountPerCommunity", 3);
+	std::vector<std::shared_ptr<client::hiero::ConsensusClient>> hieroClients;
+
+	if (!ServerGlobals::g_isOfflineMode) {		
+		//iota::MqttClientWrapper::getInstance()->init();
+		std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + hieroNetworkType + ".pb";
+		
+		if (!hieroNodeCount || !hieroNodeCountPerCommunity) {
+			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity and clients.hiero.nodeCount need to be both >0");
+		}
+		if (hieroNodeCountPerCommunity > hieroNodeCount) {
+			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity (%d) mustn't be greate than clients.hiero.nodeCount (%d)", hieroNodeCount, hieroNodeCountPerCommunity);
+		}
+		hiero::Addressbook addressbook(grpcAddressesFile.data());
+		addressbook.load();
+		
+		hieroClients.reserve(hieroNodeCount);
+		for (int i = 0; i < hieroNodeCount; i++) {
+			const auto& hieroNode = addressbook.pickRandomNode();
+			const auto& endpoint = hieroNode.pickRandomEndpoint();
+			auto hieroServiceEndpointUrl = endpoint.getConnectionString();
+			auto hieroClient = client::hiero::ConsensusClient::createForTarget(
+				hieroServiceEndpointUrl, 
+				endpoint.getPort() == hiero::PORT_NODE_TLS,
+				hieroNode.getNodeCertHash()
+			);
+			if (!hieroClient) {
+				LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
+				return false;
+			}
+			LOG_F(INFO, "Hiero endpoint: %s (%s)",
+				hieroServiceEndpointUrl.data(),
+				hieroNode.getDescription().data()
+			);
+			hieroClients.push_back(hieroClient);
+		}
+	}
+	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json", std::move(hieroClients), hieroNodeCountPerCommunity)) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
-	OrderingManager::getInstance()->init();
 
 	// JSON Interface Server
 	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
@@ -101,7 +142,7 @@ bool MainServer::init()
 
 void MainServer::exit()
 {
-	LOG_F(INFO, "Running Tasks Count on shutdown: %llu", ServerGlobals::g_NumberExistingTasks.load());
+	LOG_F(INFO, "Running Tasks Count on shutdown: %lu", ServerGlobals::g_NumberExistingTasks.load());
 
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage
@@ -111,11 +152,11 @@ void MainServer::exit()
 		mHttpServer = nullptr;
 	}
 
-	iota::MqttClientWrapper::getInstance()->exit();
+	// iota::MqttClientWrapper::getInstance()->exit();
 	CacheManager::getInstance()->getFuzzyTimer()->stop();
 	ServerGlobals::g_CPUScheduler->stop();
 	ServerGlobals::g_WriteFileCPUScheduler->stop();
-	ServerGlobals::g_IotaRequestCPUScheduler->stop();
+	// ServerGlobals::g_IotaRequestCPUScheduler->stop();
 	FileBasedProvider::getInstance()->exit();
 }
 

@@ -32,7 +32,7 @@ bool FuzzyTimer::addTimer(std::string name, TimerCallback* callbackObject, std::
 	std::lock_guard _lock(mMutex);
 	if (exit) return false;
 
-	Timepoint now;
+	Timepoint now = std::chrono::system_clock::now();
 	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 	mRegisteredAtTimer.insert(TIMER_TIMER_ENTRY(nowMilliseconds + timeInterval, TimerEntry(callbackObject, timeInterval, loopCount, name)));
 
@@ -63,7 +63,7 @@ int FuzzyTimer::removeTimer(std::string name)
 			it++;
 		}
 	}
-	LOG_F(1, "removed %llu timer with name : %s", eraseCount, name.data());
+	LOG_F(1, "removed %lu timer with name : %s", eraseCount, name.data());
 	return eraseCount;
 }
 
@@ -75,7 +75,7 @@ bool FuzzyTimer::move()
 	auto it = mRegisteredAtTimer.begin();
 	if (it == mRegisteredAtTimer.end()) return true;
 
-	Timepoint now;
+	Timepoint now = std::chrono::system_clock::now();
 	auto nowMilliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
 
 	if (it->first <= nowMilliseconds) {
@@ -87,10 +87,10 @@ bool FuzzyTimer::move()
 			try {
 				ret = it->second.callback->callFromTimer();
 			}
-			catch (MessageIdFormatException& ex) {
+			/*catch (MessageIdFormatException& ex) {
 				LOG_F(ERROR, "message id exception: %s", ex.getFullString().data());
 				ret = TimerReturn::EXCEPTION;
-			}
+			}*/
 			catch (GradidoBlockchainException& ex) {
 				LOG_F(ERROR, "Gradido Blockchain Exception: %s", ex.getFullString().data());
 				ret = TimerReturn::EXCEPTION;

@@ -69,7 +69,6 @@ namespace task {
 #endif
 				Application::terminate();
 			}
-			ServerGlobals::g_NumberExistingTasks;
 			mWaitingTask = mParent->getNextUndoneTask(this);
 		}
 		return 0;

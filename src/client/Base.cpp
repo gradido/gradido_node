@@ -3,13 +3,13 @@
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
-#include "gradido_blockchain/interaction/toJson/Context.h"
-
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "magic_enum/magic_enum.hpp"
 #include "loguru/loguru.hpp"
 
 using namespace gradido::data;
 using namespace gradido::interaction;
+using namespace serialization;
 using namespace magic_enum::bitwise_operators;
 using namespace rapidjson;
 
@@ -41,7 +41,7 @@ namespace client {
 			params.insert({ "transactionBase64", serializer.run()->convertToBase64() });
 		}
 		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
-			auto transactionJson = toJson::Context(confirmedTransaction).run();
+			auto transactionJson = toJsonString(confirmedTransaction);
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\'');
 			params.insert({ "transactionJson", transactionJson });
 		}
@@ -57,7 +57,7 @@ namespace client {
 			params.insert({ "transactionBase64", serializer.run()->convertToBase64() });
 		}
 		if ((mFormat & NotificationFormat::JSON) == NotificationFormat::JSON) {
-			auto transactionJson = toJson::Context(gradidoTransaction).run();
+			auto transactionJson = toJsonString(gradidoTransaction);
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\''); // replace all 'x' to 'y'
 			params.insert({ "transactionJson", transactionJson });
 		}

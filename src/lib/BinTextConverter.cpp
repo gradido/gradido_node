@@ -1,9 +1,11 @@
 #include "BinTextConverter.h"
+#include "gradido_blockchain/GradidoBlockchainException.h"
 
 #include "gradido_blockchain/memory/Block.h"
 
 #include "sodium.h"
 #include "libbase58.h"
+#include "magic_enum/magic_enum.hpp"
 
 // additional header for linux
 #include <cstring>
@@ -38,6 +40,12 @@ std::string convertBinTransportStringToBin(const std::string& input)
 	case STRING_TRANSPORT_TYPE_BASE58: return convertBase58ToBin(input);
 	case STRING_TRANSPORT_TYPE_BASE64: return convertBase64ToBin(input);
 	case STRING_TRANSPORT_TYPE_HEX: return convertHexToBin(input);
+	default: 
+		throw GradidoUnhandledEnum(
+			"getStringTransportType detect unhandled enum", 
+			"StringTransportType", 
+			magic_enum::enum_name(type).data()
+		);
 	}
 	return "";
 }

@@ -31,36 +31,37 @@ namespace gradido {
  * @date 202-03-11
  * @brief Task for collecting new transactions for block and write down to disk after timeout
  */
+namespace task {
 
-class WriteTransactionsToBlockTask : public task::CPUTask
-{
-public:
-	WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<cache::BlockIndex> blockIndex);
-	~WriteTransactionsToBlockTask();
+	class WriteTransactionsToBlockTask : public CPUTask
+	{
+	public:
+		WriteTransactionsToBlockTask(std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<cache::BlockIndex> blockIndex);
+		~WriteTransactionsToBlockTask();
 
-	const char* getResourceType() const { return "WriteTransactionsToBlockTask"; };
-	int run();
+		const char* getResourceType() const override { return "WriteTransactionsToBlockTask"; };
+		int run() override;
 
-	//! \brief return creation date of object
-	//! 
-	//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
-	inline Timepoint getCreationDate() { return mCreationDate; }
+		//! \brief return creation date of object
+		//! 
+		//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
+		inline Timepoint getCreationDate() { return mCreationDate; }
 
-	void addSerializedTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction);
+		void addSerializedTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction);
 
-	//! return transaction by nr
-	std::shared_ptr<gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t nr);
+		//! return transaction by nr
+		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t nr);
 
-	inline const std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>>* getTransactionEntriesList() const {
-		return &mTransactions;
-	}
+		inline const std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>>* getTransactionEntriesList() const {
+			return &mTransactions;
+		}
 
-protected:
-	std::shared_ptr<model::files::Block> mBlockFile;
-	std::shared_ptr<cache::BlockIndex> mBlockIndex;
-	Timepoint mCreationDate;
-	std::mutex mFastMutex;
-	std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactions;
-};
-
+	protected:
+		std::shared_ptr<model::files::Block> mBlockFile;
+		std::shared_ptr<cache::BlockIndex> mBlockIndex;
+		Timepoint mCreationDate;
+		std::mutex mFastMutex;
+		std::map<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactions;
+	};
+}
 #endif 

@@ -56,7 +56,7 @@ namespace cache {
 			uint64_t transactionNr, 
 			int32_t fileCursor, 
 			const uint32_t* addressIndices,
-			uint8_t addressIndiceCount
+			uint16_t addressIndiceCount
 		);
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
@@ -66,6 +66,8 @@ namespace cache {
 		//! \brief search transaction nrs for search criteria in filter, ignore filter function
 		//! \return transaction nrs
 		std::vector<uint64_t> findTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const;
+
+		//! count all, ignore pagination
 		size_t countTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const;
 
 		//! \brief find transaction nrs from specific month and year

@@ -1,7 +1,8 @@
 #include "ServerGlobals.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
-#include "gradido_blockchain/http/IotaRequest.h"
+// #include "gradido_blockchain/http/IotaRequest.h"
+#include "client/hiero/MirrorClient.h"
 
 using namespace std::chrono;
 
@@ -20,6 +21,7 @@ namespace ServerGlobals {
 	std::atomic<size_t>		            g_NumberExistingTasks;
 	bool								g_LogTransactions = false;
 	bool								g_isOfflineMode = false;
+	client::hiero::MirrorClient*		g_HieroMirrorNode = nullptr;
 
 	void clearMemory()
 	{
@@ -43,10 +45,14 @@ namespace ServerGlobals {
 			delete g_IotaRequestHandler;
 			g_IotaRequestHandler = nullptr;
 		}
+		if (g_HieroMirrorNode) {
+			delete g_HieroMirrorNode;
+			g_HieroMirrorNode = nullptr;
+		}
 	}
 
 
-	bool initIota(const MapEnvironmentToConfig& cfg)
+	/*bool initIota(const MapEnvironmentToConfig& cfg)
 	{
 		// testnet
 		// api.lb-0.h.chrysalis-devnet.iota.cafe
@@ -62,6 +68,11 @@ namespace ServerGlobals {
 
 		g_isOfflineMode = cfg.getBool("clients.isOfflineMode", false);
 	    return true;	
+	}*/
+
+	bool initHiero(std::string_view hieroNetworkType) {
+		g_HieroMirrorNode = new client::hiero::MirrorClient(hieroNetworkType);
+		return true;
 	}
 
 	void loadTimeouts(const MapEnvironmentToConfig& cfg)
