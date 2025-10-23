@@ -379,7 +379,7 @@ namespace server {
 			auto& alloc = mRootJson.GetAllocator();
 			calculateAccountBalance::Context calculateAccountBalance(blockchain);
 			// TODO: add coinCommunity�d Filter to calculateAccountBalance Context
-			auto balanceString = calculateAccountBalance.fromEnd(pubkey, date, 0).toString();
+			auto balanceString = calculateAccountBalance.fromEnd(pubkey, date, coinCommunityId, 0).toString();
 
 			resultJson.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 		}
