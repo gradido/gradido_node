@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_CACHE_TRANSACTION_TRIGGER_EVENT_H
 
 #include "gradido_blockchain/lib/TimepointInterval.h"
-#include "gradido_blockchain/data/TimestampSeconds.h"
+#include "gradido_blockchain/data/Timestamp.h"
 
 #include "State.h"
 
@@ -30,8 +30,8 @@ namespace cache {
 	protected:
 		// store all transaction trigger events, belonging to the same target date as key,value pair in level db
 		// key = targetDate, value = base64(serialized(data::TransactionTriggerEvent)), base64(serialized(data::TransactionTriggerEvent))
-		void updateState(gradido::data::TimestampSeconds targetDate);
-		std::multimap<gradido::data::TimestampSeconds, std::shared_ptr<const gradido::data::TransactionTriggerEvent>> mTransactionTriggerEvents;
+		void updateState(gradido::data::Timestamp targetDate);
+		std::multimap<gradido::data::Timestamp, std::shared_ptr<const gradido::data::TransactionTriggerEvent>> mTransactionTriggerEvents;
 
 	};
 }

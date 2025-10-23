@@ -88,7 +88,7 @@ namespace cache {
 		return result;
 	}
 
-	void TransactionTriggerEvent::updateState(gradido::data::TimestampSeconds targetDate)
+	void TransactionTriggerEvent::updateState(gradido::data::Timestamp targetDate)
 	{
 		auto range = mTransactionTriggerEvents.equal_range(targetDate);
 		auto key = std::to_string(targetDate.getSeconds());
