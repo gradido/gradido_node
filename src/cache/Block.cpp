@@ -71,8 +71,13 @@ namespace cache {
 				}
 				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
 				mBlockIndex->reset();
+				uint64_t prevId = 0;
 				std::for_each(transactionEntries.begin(), transactionEntries.end(),
 					[&](const std::shared_ptr<NodeTransactionEntry>& transactionEntry) {
+						if (transactionEntry->getTransactionNr() <= prevId) {
+							throw BlockchainOrderException("transaction nrs aren't in ascending order");
+						}
+						prevId = transactionEntry->getTransactionNr();
 						mBlockIndex->addIndicesForTransaction(transactionEntry);
 					}
 				);
