@@ -285,7 +285,7 @@ namespace gradido {
 						return false;
 					}
 					auto transaction = block.getTransaction(transactionNr);
-					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION, mCommunityId);
+					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION);
 					if ((filterResult & FilterResult::USE) == FilterResult::USE) {
 						result.push_back(transaction);
 					}

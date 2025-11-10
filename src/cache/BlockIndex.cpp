@@ -4,6 +4,7 @@
 #include "../task/HddWriteBufferTask.h"
 #include "../ServerGlobals.h"
 #include "../blockchain/FileBasedProvider.h"
+#include "gradido_blockchain/blockchain/RangeUtils.h"
 
 #include "loguru/loguru.hpp"
 
@@ -247,210 +248,83 @@ namespace cache {
 		if ((filter.minTransactionNr && filter.minTransactionNr > mMaxTransactionNr) ||
 			(filter.maxTransactionNr && filter.maxTransactionNr < mMinTransactionNr)) {
 			return {};
-		}
-		uint32_t publicKeyIndex = 0;
-		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
-			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
-			if (!publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
-				return {};
-			}
-			publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
-		}
-		uint32_t coinCommunityKeyIndex = 0;
-		if (!filter.coinCommunityId.empty()) {
-			coinCommunityKeyIndex = FileBasedProvider::getInstance()->getCommunityIdIndex(filter.coinCommunityId);
-		}
-		TimepointInterval interval(getOldestYearMonth(), getNewestYearMonth());
-		if (!filter.timepointInterval.isEmpty()) {
-			if (interval.getStartDate() < filter.timepointInterval.getStartDate()) {
-				interval.setStartDate(filter.timepointInterval.getStartDate());
-			}
-			if (interval.getEndDate() > filter.timepointInterval.getEndDate()) {
-				interval.setEndDate(std::max(interval.getStartDate(), filter.timepointInterval.getEndDate()));
-			}
-		} 
+		}		
+		
 		std::vector<uint64_t> result;
 		if (filter.pagination.size) {
 			result.reserve(filter.pagination.size);
 		}
-		unsigned int entryCursor = 0;
-		auto matchingFunction = [&](const BlockIndexEntry& blockIndexEntry) -> bool 
-		{
-			if (filter.transactionType != TransactionType::NONE
-				&& filter.transactionType != blockIndexEntry.transactionType) {
-				return true;
-			}
-			if (coinCommunityKeyIndex
-				&& coinCommunityKeyIndex != blockIndexEntry.coinCommunityIdIndex) {
-				return true;
-			}
-			if (filter.minTransactionNr
-				&& filter.minTransactionNr > blockIndexEntry.transactionNr) {
-				return true;
-			}
-			if (filter.maxTransactionNr
-				&& filter.maxTransactionNr < blockIndexEntry.transactionNr) {
-				return true;
-			}
-			if (publicKeyIndex) {
-				bool found = false;
-				for (int iPublicKeyIndices = 0; iPublicKeyIndices < blockIndexEntry.addressIndiceCount; iPublicKeyIndices++) {
-					if (publicKeyIndex == blockIndexEntry.addressIndices[iPublicKeyIndices]) {
-						found = true;
-						break;
-					}
-				}
-				if (!found) {
+		
+		auto interval = filteredTimepointInterval(filter);
+		iterateRangeInOrder(interval.begin(), interval.end(), filter.searchDirection,
+			[&](const date::year_month& timepoint) -> bool
+			{
+				// if for a year/month combination no entries exist, return true, so continue the loop
+				auto yearIt = mYearMonthAddressIndexEntrys.find(timepoint.year());
+				if (yearIt == mYearMonthAddressIndexEntrys.end()) {
 					return true;
 				}
-			}
-			if (entryCursor < filter.pagination.skipEntriesCount()) {
+				auto monthIt = yearIt->second.find(timepoint.month());
+				if (monthIt == yearIt->second.end()) {
+					return true;
+				}
+				auto partResult = iterateRangeInOrderCollectFiltered<std::list<BlockIndexEntry>::const_iterator, std::vector<uint64_t>>(
+					monthIt->second.begin(),
+					monthIt->second.end(),
+					filter,
+					[&filter, &publicKeysDictionary](const BlockIndexEntry& entry, uint64_t& transactionNr)
+					{
+						transactionNr = entry.transactionNr;
+						return entry.isMatchingFilter(filter, publicKeysDictionary);
+					}
+				);
+				// copy resulting transaction nrs into result vector
+				result.insert(result.end(), partResult.begin(), partResult.end());
+				if (!filter.pagination.hasCapacityLeft(result.size())) {
+					return false;
+				}
 				return true;
 			}
-			result.push_back(blockIndexEntry.transactionNr);
-			if (!filter.pagination.hasCapacityLeft(result.size())) {
-				return false; //break
-			}
-			entryCursor++;
-			return true;
-		};
-		/*
-		LOG_F(1, "startDate: %s, endDate: %s",
-			DataTypeConverter::timePointToString(interval.getStartDate()).data(),
-			DataTypeConverter::timePointToString(interval.getEndDate()).data()
 		);
-		*/
-		bool revert = filter.searchDirection == SearchDirection::DESC;
-		auto intervalIt = revert ? std::prev(interval.end()) : interval.begin();
-		auto intervalEnd = revert ? std::prev(interval.begin()) : interval.end();		
-		
-		while (intervalIt != intervalEnd) 
-		{
-			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
-			assert(yearIt != mYearMonthAddressIndexEntrys.end());
-			auto monthIt = yearIt->second.find(intervalIt->month());
-			assert(monthIt != yearIt->second.end());			
-
-			if (revert) {
-				for (auto it = monthIt->second.rbegin(); it != monthIt->second.rend(); ++it) {
-					if (!matchingFunction(*it)) break;
-				}
-			}
-			else {
-				for (auto it = monthIt->second.begin(); it != monthIt->second.end(); ++it) {
-					if (!matchingFunction(*it)) break;
-				}
-			}
-			if (revert) {
-				intervalIt--;
-			} else {
-				intervalIt++;
-			}
-			// if we already have enough results for the caller, let's stop here
-			if (!filter.pagination.hasCapacityLeft(result.size())) {
-				break;
-			}
-			
-		}
-		// TODO: check if neccessary, shouldn't be
-		if (revert) {
-			// sort in descending order
-			std::sort(result.begin(), result.end(), std::greater<>());
-		} else {
-			// sort in ascending order
-			std::sort(result.begin(), result.end());
-		}
 		return result;
 	}
-	// TODO: reduce double code
+
 	size_t BlockIndex::countTransactions(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
-		// prefilter
+		// prefilter, early exit
 		if ((filter.minTransactionNr && filter.minTransactionNr > mMaxTransactionNr) ||
 			(filter.maxTransactionNr && filter.maxTransactionNr < mMinTransactionNr)) {
 			return 0;
 		}
-		uint32_t publicKeyIndex = 0;
-		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
-			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
-			if (publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
-				publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
-			}
-		}
-		uint32_t coinCommunityKeyIndex = 0;
-		if (!filter.coinCommunityId.empty()) {
-			coinCommunityKeyIndex = FileBasedProvider::getInstance()->getCommunityIdIndex(filter.coinCommunityId);
-		}
-		TimepointInterval interval(getOldestYearMonth(), getNewestYearMonth());
-		if (!filter.timepointInterval.isEmpty()) {
-			if (interval.getStartDate() < filter.timepointInterval.getStartDate()) {
-				interval.setStartDate(filter.timepointInterval.getStartDate());
-			}
-			if (interval.getEndDate() > filter.timepointInterval.getEndDate()) {
-				interval.setEndDate(filter.timepointInterval.getEndDate());
-			}
-		}
-		bool revert = filter.searchDirection == SearchDirection::DESC;
-		auto intervalIt = revert ? std::prev(interval.end()) : interval.begin();
-		auto intervalEnd = revert ? std::prev(interval.begin()) : interval.end();
-		size_t result = 0;
-		unsigned int entryCursor = 0;
-		while (intervalIt != intervalEnd)
-		{
-			auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt->year());
-			// assert(yearIt != mYearMonthAddressIndexEntrys.end());
-			if (yearIt == mYearMonthAddressIndexEntrys.end()) {
-				LOG_F(ERROR, "yearIt goes beyond array borders, tried to find: %d", (int)intervalIt->year());
-				break;
-			}
-			auto monthIt = yearIt->second.find(intervalIt->month());
-			//assert(monthIt != yearIt->second.end());
-			if (monthIt == yearIt->second.end()) {
-				LOG_F(ERROR, "monthIt goes beyond array borders, tried to find: %u", (unsigned)intervalIt->month());
-				break;
-			}
-			assert(monthIt != yearIt->second.end());
 
-			for (const auto& blockIndexEntry : monthIt->second) {
-				if (filter.transactionType != TransactionType::NONE
-					&& filter.transactionType != blockIndexEntry.transactionType) {
-					continue;
+		auto interval = filteredTimepointInterval(filter);
+		size_t result = 0;
+		iterateRangeInOrder(interval.begin(), interval.end(), filter.searchDirection,
+			[&](const date::year_month& intervalIt) -> bool
+			{
+				auto yearIt = mYearMonthAddressIndexEntrys.find(intervalIt.year());
+				if (yearIt == mYearMonthAddressIndexEntrys.end()) {
+					return true;
 				}
-				if (coinCommunityKeyIndex
-					&& coinCommunityKeyIndex != blockIndexEntry.coinCommunityIdIndex) {
-					continue;
+				auto monthIt = yearIt->second.find(intervalIt.month());
+				if (monthIt == yearIt->second.end()) {
+					return true;
 				}
-				if (filter.minTransactionNr
-					&& filter.minTransactionNr > blockIndexEntry.transactionNr) {
-					continue;
-				}
-				if (filter.maxTransactionNr
-					&& filter.maxTransactionNr < blockIndexEntry.transactionNr) {
-					continue;
-				}
-				if (publicKeyIndex) {
-					bool found = false;
-					for (int iPublicKeyIndices = 0; iPublicKeyIndices < blockIndexEntry.addressIndiceCount; iPublicKeyIndices++) {
-						if (publicKeyIndex == blockIndexEntry.addressIndices[iPublicKeyIndices]) {
-							found = true;
-							break;
+				// iterate over entries in the month
+				iterateRangeInOrder(monthIt->second.begin(), monthIt->second.end(), SearchDirection::ASC,
+					[&](const BlockIndexEntry& entry) -> bool
+					{
+						auto filterResult = entry.isMatchingFilter(filter, publicKeysDictionary);
+						if ((filterResult & FilterResult::USE) == FilterResult::USE) {
+							++result;
 						}
+						return true; // keep going
 					}
-					if (!found) {
-						continue;
-					}
-				}
-				result++;
-				entryCursor++;
+				);
+				return true;
 			}
-			if (revert) {
-				intervalIt--;
-			}
-			else {
-				intervalIt++;
-			}
-		}
+		);
 		return result;
 	}
 
@@ -538,6 +412,47 @@ namespace cache {
 			}
 		}
 		mYearMonthAddressIndexEntrys.clear();
+	}
+
+	FilterResult BlockIndex::BlockIndexEntry::isMatchingFilter(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const
+	{
+		if (filter.transactionType != TransactionType::NONE
+			&& filter.transactionType != transactionType) {
+			return FilterResult::DISMISS;
+		}
+		uint32_t coinCommunityKeyIndex = 0;
+		if (!filter.coinCommunityId.empty()) {
+			coinCommunityKeyIndex = FileBasedProvider::getInstance()->getCommunityIdIndex(filter.coinCommunityId);
+		}
+		if (coinCommunityKeyIndex && coinCommunityKeyIndex != coinCommunityIdIndex) {
+			return FilterResult::DISMISS;
+		}
+		if (filter.minTransactionNr && filter.minTransactionNr > transactionNr) {
+			return FilterResult::DISMISS;
+		}
+		if (filter.maxTransactionNr && filter.maxTransactionNr < transactionNr) {
+			return FilterResult::DISMISS;
+		}
+		uint32_t publicKeyIndex = 0;
+		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
+			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
+			if (publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
+				publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
+			}
+		}
+		if (publicKeyIndex) {
+			bool found = false;
+			for (int iPublicKeyIndices = 0; iPublicKeyIndices < addressIndiceCount; iPublicKeyIndices++) {
+				if (publicKeyIndex == addressIndices[iPublicKeyIndices]) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				return FilterResult::DISMISS;
+			}
+		}
+		return FilterResult::USE;
 	}
 
 }

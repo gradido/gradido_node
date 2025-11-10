@@ -85,9 +85,11 @@ namespace cache {
 
 		date::year_month getOldestYearMonth() const;
 		date::year_month getNewestYearMonth() const;
+		inline TimepointInterval filteredTimepointInterval(const gradido::blockchain::Filter& filter) const;
 
 	protected:
 		void clearIndexEntries(); 
+			
 
 		//! \brief called from model::files::BlockIndex while reading file
 		std::string				 mFolderPath;
@@ -105,6 +107,7 @@ namespace cache {
 			uint32_t						coinCommunityIdIndex;
 			gradido::data::TransactionType	transactionType;
 			uint8_t							addressIndiceCount;
+			gradido::blockchain::FilterResult isMatchingFilter(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const;
 		};
 
 		std::map<date::year, std::map<date::month, std::list<BlockIndexEntry>>> mYearMonthAddressIndexEntrys;
@@ -125,6 +128,20 @@ namespace cache {
 		std::lock_guard _lock(mRecursiveMutex);
 		if (!mMaxTransactionNr && !mMinTransactionNr) return 0;
 		return mMaxTransactionNr - mMinTransactionNr + 1; 
+	}
+
+	TimepointInterval BlockIndex::filteredTimepointInterval(const gradido::blockchain::Filter& filter) const 
+	{
+		TimepointInterval interval(getOldestYearMonth(), getNewestYearMonth());
+		if (!filter.timepointInterval.isEmpty()) {
+			if (interval.getStartDate() < filter.timepointInterval.getStartDate()) {
+				interval.setStartDate(filter.timepointInterval.getStartDate());
+			}
+			if (interval.getEndDate() > filter.timepointInterval.getEndDate()) {
+				interval.setEndDate(std::max(interval.getStartDate(), filter.timepointInterval.getEndDate()));
+			}
+		}
+		return interval;
 	}
 }
 
