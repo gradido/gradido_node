@@ -38,13 +38,7 @@ namespace model {
 			std::vector<model::Apollo::Transaction> transactionsVector;
 			transactionsVector.reserve(filter.pagination.size);
 
-			int countTransactions = fileBasedBlockchain->findAllResultCount(filter);
-			transactionList.AddMember("count", countTransactions, alloc);
-			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
-			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
-
-			Filter filterCopy = filter;
-			filterCopy.filterFunction = [filter](const TransactionEntry& entry) -> FilterResult
+			auto filterOutNotForWallet = [&filter](const TransactionEntry& entry) -> FilterResult
 			{
 				// filter out creation transactions which this user has signed as moderator, and isn't the benefitor
 				if (entry.isCreation()) {
@@ -53,13 +47,39 @@ namespace model {
 						return FilterResult::DISMISS;
 					}
 				}
+				// filter out register address transaction, because this won't show in wallet view
+				if (entry.isRegisterAddress()) {
+					return FilterResult::DISMISS;
+				}
 				return FilterResult::USE;
 			};
+
+			int countTransactions = 0;
+			Filter countFilter = filter;
+			countFilter.pagination = Pagination(0, 0);
+			countFilter.filterFunction = [&filterOutNotForWallet, &countTransactions](const TransactionEntry& entry) -> FilterResult
+			{
+				auto result = filterOutNotForWallet(entry);
+				if ((result & FilterResult::USE) == FilterResult::USE) {
+					countTransactions++;
+					return FilterResult::DISMISS;
+				}
+				return result;
+			};			
+			fileBasedBlockchain->findAll(countFilter);
+			
+			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
+			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
+
+			Filter filterCopy = filter;
+			filterCopy.filterFunction = filterOutNotForWallet;
 			auto allTransactions = mBlockchain->findAll(filterCopy);
+
+			transactionList.AddMember("count", countTransactions, alloc);
 			if (!allTransactions.size()) {
 				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
-			}
+			}			
 
 			// copy into vector to make reversing and loop through faster (cache-hit)
 			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());

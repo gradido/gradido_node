@@ -9,6 +9,8 @@
 
 #include "Dictionary.h"
 
+#include "rapidjson/document.h"
+
 #include <vector>
 #include <map>
 
@@ -41,6 +43,7 @@ namespace cache {
 
 		//! \brief write block index into files
 		std::unique_ptr<model::files::BlockIndex> serialize();
+		rapidjson::Value serializeToJson(rapidjson::Document::AllocatorType& alloc) const;
 		//! \brief
 		//! \return true if there was something to write into file, after writing it to file
 		bool writeIntoFile();
@@ -107,10 +110,10 @@ namespace cache {
 			uint32_t						coinCommunityIdIndex;
 			gradido::data::TransactionType	transactionType;
 			uint8_t							addressIndiceCount;
-			gradido::blockchain::FilterResult isMatchingFilter(const gradido::blockchain::Filter& filter, const Dictionary& publicKeysDictionary) const;
+			gradido::blockchain::FilterResult isMatchingFilter(const gradido::blockchain::Filter& filter, const uint32_t publicKeyIndex) const;
 		};
 
-		std::map<date::year, std::map<date::month, std::list<BlockIndexEntry>>> mYearMonthAddressIndexEntrys;
+		std::map<date::year, std::map<date::month, std::list<BlockIndexEntry>>> mYearMonthAddressIndexEntries;
 
 		mutable std::recursive_mutex mRecursiveMutex;
 		bool mDirty;
