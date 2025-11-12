@@ -1,7 +1,6 @@
 #include "BlockIndex.h"
 #include "FileExceptions.h"
 
-#include "gradido_blockchain/serialization/toJson.h"
 #include "../../blockchain/NodeTransactionEntry.h"
 #include "../../blockchain/FileBasedProvider.h"
 #include "../../cache/BlockIndex.h"
@@ -13,13 +12,11 @@
 #include <fstream>
 #include <filesystem>
 #include <regex>
-#include "rapidjson/document.h"
 
 using namespace gradido;
 using namespace blockchain;
 using namespace data;
 using namespace magic_enum;
-using namespace rapidjson;
 
 namespace model {
 	namespace files {
@@ -302,20 +299,5 @@ namespace model {
 
 			return std::move(vFile);
 		}
-	}
-}
-
-
-namespace serialization {
-	template<>
-	Value toJson(const memory::Block& block, Document::AllocatorType& alloc)
-	{
-		if (!block.size()) {
-			return Value("");
-		}
-		uint32_t hexSize = block.size() * 2 + 1;
-		memory::Block hexMem(hexSize);
-		sodium_bin2hex((char*)hexMem.data(), hexSize, block, block.size());
-		return Value((char*)hexMem.data(), hexMem.size() - 1, alloc);
 	}
 }
