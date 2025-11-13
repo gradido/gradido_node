@@ -258,7 +258,7 @@ namespace server {
 			rapidjson::Value& responseJson,
 			const rapidjson::Value& params,
 			const char* fieldName,
-			std::shared_ptr<memory::Block> binaryParameter,
+			std::shared_ptr<const memory::Block> binaryParameter,
 			bool optional /*= false*/
 		) {
 			Value::ConstMemberIterator itr = params.FindMember(fieldName);

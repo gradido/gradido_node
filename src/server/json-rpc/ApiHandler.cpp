@@ -6,11 +6,13 @@
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/calculateCreationSum/Context.h"
+#include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/serialization/toJson.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain/data/hiero/TransactionId.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/FileBasedProvider.h"
@@ -159,15 +161,23 @@ namespace server {
 			else if (method == "getTransaction") {
 				std::string format;
 				uint64_t transactionId = 0;
-				std::shared_ptr<memory::Block> iotaMessageId;
+				std::string hieroTransactionIdString;
+				hiero::TransactionId hieroTransactionId;
+				std::shared_ptr<const memory::Block> iotaMessageId;
 
 				if (!getStringParameter(responseJson, params, "format", format)) {
 					return;
 				}
 				getUInt64Parameter(responseJson, params, "transactionId", transactionId, true);
+				getStringParameter(responseJson, params, "hieroTransactionId", hieroTransactionIdString, true);
 				getBinaryFromHexStringParameter(responseJson, params, "iotaMessageId", iotaMessageId, true);
-				if (!transactionId && !iotaMessageId) {
-					error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "transactionId or iotaMessageId needed");
+				if (!iotaMessageId && !hieroTransactionIdString.empty()) {
+					hieroTransactionId = hiero::TransactionId(hieroTransactionIdString);
+					serialize::Context serializeContext(hieroTransactionId);
+					iotaMessageId = serializeContext.run();
+				}
+				if (!transactionId && !iotaMessageId && hieroTransactionId.empty()) {
+					error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "transactionId, hieroTransactionId or iotaMessageId needed");
 					return;
 				}
 
@@ -325,7 +335,7 @@ namespace server {
 			std::shared_ptr<Abstract> blockchain,
 			const std::string& format,
 			uint64_t transactionId/* = 0*/,
-			std::shared_ptr<memory::Block> iotaMessageId /* = nullptr */
+			std::shared_ptr<const memory::Block> iotaMessageId /* = nullptr */
 		)
 		{
 			Profiler timeUsed;

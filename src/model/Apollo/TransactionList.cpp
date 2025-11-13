@@ -65,9 +65,9 @@ namespace model {
 					return FilterResult::DISMISS;
 				}
 				return result;
-			};			
+			};
 			fileBasedBlockchain->findAll(countFilter);
-			
+
 			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
 			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
 
@@ -79,7 +79,7 @@ namespace model {
 			if (!allTransactions.size()) {
 				transactionList.AddMember("transactions", transactions, alloc);
 				return std::move(transactionList);
-			}			
+			}
 
 			// copy into vector to make reversing and loop through faster (cache-hit)
 			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());

@@ -46,7 +46,7 @@ namespace server {
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
 				const std::string& format,
 				uint64_t transactionId = 0,
-				std::shared_ptr<memory::Block> iotaMessageId = nullptr
+				std::shared_ptr<const memory::Block> iotaMessageId = nullptr
 			);
 			//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
 			void getCreationSumForMonth(
