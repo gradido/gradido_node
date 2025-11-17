@@ -31,7 +31,6 @@ namespace model {
 				}
 
 				result.setAmount(amount);
-				result.setPubkey(gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey());
         return result;
       }
     }

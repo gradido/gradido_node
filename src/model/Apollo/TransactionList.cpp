@@ -126,7 +126,7 @@ namespace model {
 			auto& page = filter.pagination;
 			if (countTransactions <= page.size || // less entries than possible on a page
 				(filter.searchDirection == SearchDirection::ASC && page.skipEntriesCount() + page.size >= countTransactions) || // asc and on last page
-				(filter.searchDirection == SearchDirection::DESC && !page.page) // desc and on first page
+				(filter.searchDirection == SearchDirection::DESC && page.page <= 1) // desc and on first page
 				) {
 				auto& lastTransaction = transactionsVector.back();
 				transactionsVector.push_back(model::Apollo::Transaction(

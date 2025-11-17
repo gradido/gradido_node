@@ -28,9 +28,7 @@ namespace model {
 				} else { 
           throw GradidoNodeInvalidDataException("unhandled case in model::Apollo::createTransaction::TransferTransactionRole if pubkey is neither sender or recipient");
 				}
-
 				result.setAmount(amount);
-				result.setPubkey(gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey());
         return result;
       }
     }

@@ -14,14 +14,14 @@ namespace model {
 				memory::ConstBlockPtr pubkey
       ) {
         auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
-			  auto transactionBody = gradidoTransaction->getTransactionBody();
+        auto transactionBody = gradidoTransaction->getTransactionBody();
         assert(transactionBody->isRedeemDeferredTransfer());
 
         Transaction result(confirmedTransaction, pubkey);
         auto redeemDeferredTransfer = transactionBody->getRedeemDeferredTransfer();
         auto transfer = redeemDeferredTransfer->getTransfer();
         auto changeAccountBalance = calculateDecayedDeferredTransferAmount(
-          redeemDeferredTransfer->getDeferredTransferTransactionNr(), 
+          redeemDeferredTransfer->getDeferredTransferTransactionNr(),
           confirmedTransaction.getConfirmedAt()
         );
 
