@@ -52,6 +52,7 @@ namespace model {
 			void setBalance(GradidoUnit balance);
 			inline GradidoUnit getBalance() const {return mBalance;}
 			inline void setPreviousBalance(GradidoUnit previousBalance) {mPreviousBalance = previousBalance;}
+			inline void setChange(const GradidoUnit& changeAmount, memory::ConstBlockPtr changePubkey);
 
 			rapidjson::Value toJson(rapidjson::Document::AllocatorType& alloc);
 
@@ -79,10 +80,20 @@ namespace model {
 			int64_t			    mId;
 			Timepoint       mDate;
 			Decay*			    mDecay;
+			// change
 			bool	     			mHasChange;
+			GradidoUnit     mChangeAmount;
+			std::string 		mChangePubkey;
+
 		private:
 			
 		};
+
+		void Transaction::setChange(const GradidoUnit& changeAmount, memory::ConstBlockPtr changePubkey) {
+				mHasChange = true;
+				mChangeAmount = changeAmount;
+				mChangePubkey = changePubkey->convertToHex();
+			}
 	}
 }
 

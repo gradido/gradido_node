@@ -31,22 +31,52 @@ namespace model {
           result.setPubkey(transfer.getRecipient());
 					amount.negate();
 				} else {
-          auto changeAccountBalance = calculateDecayedDeferredTransferAmount(
+          amount = calculateChange(
             redeemDeferredTransfer->getDeferredTransferTransactionNr(),
-            confirmedTransaction.getConfirmedAt()
-          );
+            confirmedTransaction.getConfirmedAt(),
+            transfer.getSender()
+          ).getBalance();
           result.setType(TransactionType::LINK_CHANGE);
           result.setPubkey(transfer.getSender().getPublicKey());
-          amount = changeAccountBalance.getBalance() - transfer.getSender().getAmount();
 				}
+        if (data::AddressType::DEFERRED_TRANSFER == mAddressType) {
+          auto change = calculateChange(
+            redeemDeferredTransfer->getDeferredTransferTransactionNr(),
+            confirmedTransaction.getConfirmedAt(),
+            transfer.getSender()
+          );
+          printf(
+            "RedeemDeferredTransferTransactionRole::createTransaction setting change amount: %s, negated: %s, pubkey: %s\n",
+            change.getBalance().toString().data(),
+            change.getBalance().negated().toString().data(),
+            change.getPublicKey()->convertToHex().data()
+          );
+          result.setChange(change.getBalance().negated(), change.getPublicKey());
+        }
 				result.setAmount(amount);
         return result;
+      }
+
+      gradido::data::AccountBalance RedeemDeferredTransferTransactionRole::calculateChange(
+        uint64_t deferredTransferTransactionNr,
+        Timepoint targetDate,
+        const gradido::data::TransferAmount& transferAmount
+      ) const {
+        auto decayedAccountBalance = calculateDecayedDeferredTransferAmount(
+          deferredTransferTransactionNr,
+          targetDate
+        );
+        return {
+          decayedAccountBalance.getPublicKey(),
+          decayedAccountBalance.getBalance() - transferAmount.getAmount(),
+          decayedAccountBalance.getCommunityId()
+        };
       }
 
       data::AccountBalance RedeemDeferredTransferTransactionRole::calculateDecayedDeferredTransferAmount(
         uint64_t transactionNr,
         Timepoint targetDate
-      ) {
+      ) const {
         if(!transactionNr) {
           throw GradidoNullPointerException("transactionNr is zero", "transactionNr", __FUNCTION__);
         }

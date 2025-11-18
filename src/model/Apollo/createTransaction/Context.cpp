@@ -3,7 +3,6 @@
 #include "Context.h"
 
 #include "CreationTransactionRole.h"
-#include "ChangeRedeemDeferredTransferTransactionRole.h"
 #include "DeferredTransferTransactionRole.h"
 #include "RedeemDeferredTransferTransactionRole.h"
 #include "TimeoutDeferredTransferTransactionRole.h"
@@ -24,6 +23,7 @@ namespace model {
       ) {
         auto body = confirmedTransaction.getGradidoTransaction()->getTransactionBody();
         std::vector<std::unique_ptr<AbstractTransactionRole>> roles;
+        std::unique_ptr<RedeemDeferredTransferTransactionRole> redeemRole;
         roles.reserve(2);
         switch(body->getTransactionType()) {
           case data::TransactionType::CREATION:
@@ -36,23 +36,22 @@ namespace model {
             roles.push_back(std::make_unique<DeferredTransferTransactionRole>(mBlockchain));
             break;
           case data::TransactionType::REDEEM_DEFERRED_TRANSFER:
-            roles.push_back(std::make_unique<RedeemDeferredTransferTransactionRole>(mBlockchain));
-            if (data::AddressType::DEFERRED_TRANSFER == mAddressType) {
-              roles.push_back(std::make_unique<ChangeRedeemDeferredTransferTransactionRole>(mBlockchain));
-            }
+            redeemRole = std::make_unique<RedeemDeferredTransferTransactionRole>(mBlockchain);
+            redeemRole->setAddressType(mAddressType);
+            roles.push_back(std::move(redeemRole));
             break;
           case data::TransactionType::TIMEOUT_DEFERRED_TRANSFER:
             roles.push_back(std::make_unique<TimeoutDeferredTransferTransactionRole>(mBlockchain));
             break;
           case data::TransactionType::COMMUNITY_ROOT:
-          case data::TransactionType::REGISTER_ADDRESS: 
+          case data::TransactionType::REGISTER_ADDRESS:
             return {};
           default:
             auto type = body->getTransactionType();
             throw GradidoUnhandledEnum(
               "unhandles transaction type in model::Apollo::createTransaction::Context",
               enum_type_name<decltype(type)>().data(),
-						  enum_name(type).data()
+              enum_name(type).data()
             );
 
         }

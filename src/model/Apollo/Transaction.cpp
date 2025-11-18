@@ -14,13 +14,13 @@ using namespace magic_enum;
 namespace model {
 	namespace Apollo {
 		Transaction::Transaction(
-				const data::ConfirmedTransaction& confirmedTransaction, 
+				const data::ConfirmedTransaction& confirmedTransaction,
 				memory::ConstBlockPtr pubkey
 				) : mType(TransactionType::NONE), mId(0), mDecay(nullptr), mHasChange(false)
-		{			
+		{
 			auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
 			auto transactionBody = gradidoTransaction->getTransactionBody();
-			
+
 			auto& memos = transactionBody->getMemos();
 			for (auto& memo : memos) {
 				if (memo.getKeyType() == gradido::data::MemoKeyType::PLAIN) {
@@ -36,6 +36,7 @@ namespace model {
 			mId = confirmedTransaction.getId();
 			mDate = confirmedTransaction.getConfirmedAt();
 			mBalance = confirmedTransaction.getAccountBalance(pubkey, "").getBalance();
+			printf("getBalance: %s for id: %lu\n", mBalance.toString().data(), mId);
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
@@ -70,8 +71,9 @@ namespace model {
 			mId(parent.mId),
 			mDate(parent.mDate),
 			mDecay(parent.mDecay),
-			mHasChange(parent.mHasChange)
-
+			mHasChange(parent.mHasChange),
+			mChangeAmount(parent.mChangeAmount),
+			mChangePubkey(std::move(parent.mChangePubkey))
 		{
 			parent.mDecay = nullptr;
 		}
@@ -87,7 +89,9 @@ namespace model {
 			mId(parent.mId),
 			mDate(parent.mDate),
 			mDecay(nullptr),
-			mHasChange(parent.mHasChange)
+			mHasChange(parent.mHasChange),
+			mChangeAmount(parent.mChangeAmount),
+			mChangePubkey(parent.mChangePubkey)
 		{
 			if (parent.mDecay) {
 				mDecay = new Decay(parent.mDecay);
@@ -121,6 +125,8 @@ namespace model {
 			mId = other.mId;
 			mDate = other.mDate;
 			mHasChange = other.mHasChange;
+			mChangeAmount = other.mChangeAmount;
+			mChangePubkey = other.mChangePubkey;
 
 			// Speicher von mDecay richtig verwalten
 			if (mDecay) {
@@ -169,6 +175,16 @@ namespace model {
 				transaction.AddMember("linkedUser", linkedUser, alloc);
 			} else {
 				transaction.AddMember("linkedUser", Value(kNullType), alloc);
+			}
+			if(mHasChange) {
+				Value changeObj(kObjectType);
+				printf("Transaction::toJson adding change amount: %s, pubkey: %s\n", mChangeAmount.toString().data(), mChangePubkey.data());
+				changeObj.AddMember("amount", Value(mChangeAmount.toString(2).data(), alloc), alloc);
+				changeObj.AddMember("pubkey", Value(mChangePubkey.data(), alloc), alloc);
+				changeObj.AddMember("__typename", "Change", alloc);
+				transaction.AddMember("change", changeObj, alloc);
+			} else {
+				transaction.AddMember("change", Value(kNullType), alloc);
 			}
 
 			transaction.AddMember("balanceDate", Value(formatJsCompatible(mDate).data(), alloc), alloc);

@@ -7,14 +7,14 @@
 namespace model {
   namespace Apollo {
     namespace createTransaction {
-      class Context 
+      class Context
       {
       public:
         Context(std::shared_ptr<const gradido::blockchain::Abstract> blockchain, gradido::data::AddressType addressType)
         : mBlockchain(blockchain), mAddressType(addressType) {}
 
       std::vector<Transaction> run(
-        const gradido::data::ConfirmedTransaction& confirmedTransaction, 
+        const gradido::data::ConfirmedTransaction& confirmedTransaction,
 				memory::ConstBlockPtr pubkey
       );
 
