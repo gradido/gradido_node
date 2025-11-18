@@ -292,21 +292,24 @@ namespace cache {
 		if ((filter.minTransactionNr && filter.minTransactionNr > mMaxTransactionNr) ||
 			(filter.maxTransactionNr && filter.maxTransactionNr < mMinTransactionNr)) {
 			return {};
-		}		
+		}
 
 		uint32_t publicKeyIndex = 0;
 		if (filter.involvedPublicKey && !filter.involvedPublicKey->isEmpty()) {
 			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
 			if (publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
 				publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
+			} else {
+				// if public key not exist, no transaction can match
+				return {};
 			}
 		}
-		
+
 		std::vector<uint64_t> result;
 		if (filter.pagination.size) {
 			result.reserve(filter.pagination.size);
 		}
-		
+
 		auto interval = filteredTimepointInterval(filter);
 		int paginationCursor = 0;
 		iterateRangeInOrder(interval.begin(), interval.end(), filter.searchDirection,
@@ -360,6 +363,9 @@ namespace cache {
 			auto involvedPublicKeyCopy = filter.involvedPublicKey->copyAsString();
 			if (publicKeysDictionary.hasString(involvedPublicKeyCopy)) {
 				publicKeyIndex = publicKeysDictionary.getIndexForString(involvedPublicKeyCopy);
+			} else {
+				// if public key not exist, no transaction can match
+				return 0;
 			}
 		}
 
