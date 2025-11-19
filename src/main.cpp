@@ -5,8 +5,10 @@
 #include "MQTTAsync.h"
 #endif //_USING_IOTA
 #include "ServerGlobals.h"
+#include "generated/version.h"
 
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/version.h"
 
 #include "sodium.h"
 #include "loguru/loguru.hpp"
@@ -16,8 +18,27 @@
 
 #ifndef _TEST_BUILD
 
+//! \return 0 if ok, -1 for error, 1 for abort
+int parseParameter(int argc, char** argv)
+{
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "--version") == 0) {
+			printf("%s\n", GRADIDO_NODE_VERSION);
+			return 1;
+		}
+	}
+	return 0;
+};
+
 int main(int argc, char** argv)
 {
+	auto parseResult = parseParameter(argc, argv);
+	if (parseResult == 1) {
+		return 0;
+	}
+	if (parseResult == -1) {
+		return -1;
+	}
 	std::srand(std::time({}));
 	// libsodium
 	if (sodium_init() < 0) {
@@ -34,6 +55,8 @@ int main(int argc, char** argv)
 
 	// loguru 
 	loguru::init(argc, argv);
+	LOG_F(INFO, "Gradido Blockchain Library Version: %s", GRADIDO_BLOCKCHAIN_VERSION);
+	LOG_F(INFO, "Gradido Node Version: %s", GRADIDO_NODE_VERSION);
 	
 	MainServer app;
 	try {

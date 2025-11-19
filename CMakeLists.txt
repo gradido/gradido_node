@@ -1,7 +1,14 @@
 cmake_minimum_required(VERSION 3.18.2)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain.cmake")
-project(GradidoNode C CXX)
+execute_process(
+    COMMAND git describe --tags --dirty --always
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE GRADIDO_NODE_GIT_VER
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" GRADIDO_NODE_CLEAN_VERSION "${GRADIDO_NODE_GIT_VER}")
+project(GradidoNode VERSION ${GRADIDO_NODE_CLEAN_VERSION} LANGUAGES C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
@@ -23,6 +30,15 @@ set(INSTALL_PLUGINDIR "bin")
 # needed for protopuf
 add_definitions(-DNOMINMAX)
 
+# version
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/version.h
+    @ONLY
+)
+
+set(GRADIDO_NODE_VERSION "@PROJECT_VERSION@")
+
 include_directories(
 	"dependencies" 
 	"dependencies/jsonrpcpp/include"
@@ -35,6 +51,7 @@ include_directories(
 	"dependencies/gradido_blockchain/dependencies/protopuf/include"
 	"dependencies/gradido_blockchain/dependencies/rapidjson/include"
 	"dependencies/gradido_blockchain/dependencies/cpp-httplib"
+	${CMAKE_CURRENT_BINARY_DIR}
 
 	"dependencies/paho.mqtt.c/src"
 	#"dependencies/googletest/googletest/include"

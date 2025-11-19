@@ -36,7 +36,6 @@ namespace model {
 			mId = confirmedTransaction.getId();
 			mDate = confirmedTransaction.getConfirmedAt();
 			mBalance = confirmedTransaction.getAccountBalance(pubkey, "").getBalance();
-			printf("getBalance: %s for id: %lu\n", mBalance.toString().data(), mId);
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
