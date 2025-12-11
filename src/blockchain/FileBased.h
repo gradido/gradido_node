@@ -120,6 +120,7 @@ namespace gradido {
 
 			//! return events in asc order of targetDate
 			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range) override;
+			virtual std::shared_ptr<const data::TransactionTriggerEvent> findNextTransactionTriggerEventInRange(TimepointInterval range) override;
 
 			//! main search function, do all the work, reference from other functions
 			virtual TransactionEntries findAll(const Filter& filter) const override;

@@ -1,5 +1,6 @@
 #include "TransactionTriggerEvent.h"
 #include "gradido_blockchain/data/TransactionTriggerEvent.h"
+#include "gradido_blockchain/data/Timestamp.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 
@@ -9,6 +10,7 @@
 using namespace gradido;
 using namespace interaction;
 using namespace leveldb;
+using gradido::data::Timestamp;
 
 namespace cache {
 
@@ -86,6 +88,15 @@ namespace cache {
 			result.push_back(it->second);
 		}
 		return result;
+	}
+
+	std::shared_ptr<const gradido::data::TransactionTriggerEvent> TransactionTriggerEvent::findNextTransactionTriggerEventInRange(TimepointInterval range)
+	{
+		auto startIt = mTransactionTriggerEvents.lower_bound(range.getStartDate());
+		if (startIt != mTransactionTriggerEvents.end() && startIt->first.getAsTimepoint() <= range.getEndDate()) {
+			return startIt->second;
+		}
+		return nullptr;
 	}
 
 	void TransactionTriggerEvent::updateState(gradido::data::Timestamp targetDate)

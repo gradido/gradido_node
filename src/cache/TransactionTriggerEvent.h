@@ -26,6 +26,7 @@ namespace cache {
 		void addTransactionTriggerEvent(std::shared_ptr<const gradido::data::TransactionTriggerEvent> transactionTriggerEvent);
 		void removeTransactionTriggerEvent(const gradido::data::TransactionTriggerEvent& transactionTriggerEvent);
 		std::vector<std::shared_ptr<const gradido::data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range);
+		std::shared_ptr<const gradido::data::TransactionTriggerEvent> findNextTransactionTriggerEventInRange(TimepointInterval range);
 
 	protected:
 		// store all transaction trigger events, belonging to the same target date as key,value pair in level db

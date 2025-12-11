@@ -272,6 +272,12 @@ namespace gradido {
 			return mTransactionTriggerEventsCache.findTransactionTriggerEventsInRange(range);
 		}
 
+		std::shared_ptr<const data::TransactionTriggerEvent> FileBased::findNextTransactionTriggerEventInRange(TimepointInterval range)
+		{
+			std::lock_guard _lock(mWorkMutex);
+			return mTransactionTriggerEventsCache.findNextTransactionTriggerEventInRange(range);
+		}
+
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
 		{
 			TransactionEntries result;
