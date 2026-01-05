@@ -2,7 +2,6 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_FILE_BASED_H
 
 #include "../cache/Block.h"
-#include "../cache/Dictionary.h"
 #include "../cache/HieroTransactionId.h"
 #include "../cache/State.h"
 #include "../cache/TransactionHash.h"
@@ -10,6 +9,7 @@
 #include "../client/Base.h"
 #include "../controller/TaskObserver.h"
 #include "../controller/SimpleOrderingManager.h"
+#include "../lib/PersistentDictionary.h"
 
 #include "gradido_blockchain/blockchain/Abstract.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
@@ -107,7 +107,7 @@ namespace gradido {
 			//! \return false if transaction already exist
 			virtual bool createAndAddConfirmedTransaction(
 				data::ConstGradidoTransactionPtr gradidoTransaction,
-				memory::ConstBlockPtr messageId,
+				const data::LedgerAnchor& ledgerAnchor,
 				data::Timestamp confirmedAt
 		 	) override;
 			void updateLastKnownSequenceNumber(uint64_t newSequenceNumber);
@@ -133,8 +133,9 @@ namespace gradido {
 			size_t findAllResultCount(const Filter& filter) const;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
-			virtual std::shared_ptr<const TransactionEntry> findByMessageId(
-				memory::ConstBlockPtr messageId,
+			//! \param filter use to speed up search if infos exist to narrow down search transactions range
+			virtual ConstTransactionEntryPtr findByLedgerAnchor(
+				const data::LedgerAnchor& ledgerAnchor,
 				const Filter& filter = Filter::ALL_TRANSACTIONS
 			) const override;
 			virtual AbstractProvider* getProvider() const override;
@@ -143,7 +144,7 @@ namespace gradido {
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
 
 			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) const {
-				return mPublicKeysIndex->getOrAddIndexForString(publicKey->copyAsString());
+				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
 			}
 			inline const hiero::TopicId& getHieroTopicId() const { return mHieroTopicId; }
 			inline const std::string& getFolderPath() const { return mFolderPath; }
@@ -178,7 +179,7 @@ namespace gradido {
 			std::shared_ptr<hiero::MessageListenerQuery> mHieroMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
-			mutable std::shared_ptr<cache::Dictionary> mPublicKeysIndex;
+			mutable PersistentDictionary<memory::ConstBlockPtr> mPublicKeysIndex;
 			// level db to store state values like last transaction
 			mutable cache::State mBlockchainState;
 

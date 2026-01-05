@@ -15,7 +15,7 @@
 namespace gradido {
 	namespace blockchain {
 		FileBasedProvider::FileBasedProvider()
-			:mGroupIndex(nullptr), mCommunityIdIndex(ServerGlobals::g_FilesPath + "/communityIdsCache"), mInitalized(false)
+			:mGroupIndex(nullptr), mInitalized(false)
 		{
 
 		}
@@ -75,10 +75,6 @@ namespace gradido {
 				LOG_F(ERROR, "more hiero clients per community as hiero clients");
 				return false;
 			}
-			if (!mCommunityIdIndex.init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE * 1024 * 1024)) {
-				mCommunityIdIndex.reset();
-				resetAllCommunityIndices = true;
-			}
 			mGroupIndex = new cache::GroupIndex(communityConfigFile);
 			mGroupIndex->update();
 			auto communitiesIds = mGroupIndex->listCommunitiesIds();
@@ -88,7 +84,7 @@ namespace gradido {
 				// exit if at least one blockchain from config couldn't be loaded
 				// should only occure with invalid config
 				const auto& details = mGroupIndex->getCommunityDetails(communityId);
-				if (!addCommunity(communityId, hiero::TopicId(details.topicId), details.alias, resetAllCommunityIndices)) {
+				if (!addCommunity(communityId, hiero::TopicId(details.topicId), details.alias)) {
 					LOG_F(ERROR, "error adding community %s in folder: %s", details.alias.data(), details.folderName.data());
 					return false;
 				}
@@ -111,7 +107,6 @@ namespace gradido {
 				blockchain.second->exit();
 			}
 			mBlockchainsPerGroup.clear();
-			mCommunityIdIndex.exit();
 		}
 
 		int FileBasedProvider::reloadConfig()
@@ -127,7 +122,7 @@ namespace gradido {
 				const auto& details = mGroupIndex->getCommunityDetails(communityId);
 				auto it = mBlockchainsPerGroup.find(communityId);
 				if (it == mBlockchainsPerGroup.end()) {
-					if(addCommunity(communityId, hiero::TopicId(details.topicId), details.alias, false)) {
+					if(addCommunity(communityId, hiero::TopicId(details.topicId), details.alias)) {
 						addedBlockchainsCount++;
 					}
 				}
@@ -141,8 +136,7 @@ namespace gradido {
 		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(
 			const std::string& communityId, 
 			const hiero::TopicId& topicId,
-			const std::string& alias, 
-			bool resetIndices
+			const std::string& alias
 		) {
 			try {
 				auto folder = mGroupIndex->getFolder(communityId);
@@ -164,7 +158,7 @@ namespace gradido {
 					mBlockchainsPerGroup.erase(communityId);
 					return nullptr;
 				}
-				mCommunityIdIndex.getOrAddIndexForString(communityId);
+				mCommunityIdDicitionary.getIndexForData(communityId);
 				return blockchain;
 			}
 			catch (GradidoBlockchainException& ex) {

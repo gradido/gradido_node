@@ -30,7 +30,12 @@ namespace model {
 			vFile->write(&transactionNr, sizeof(uint64_t));
 			vFile->write(&fileCursor, sizeof(int32_t));
 			vFile->write(&transactionType, sizeof(TransactionType));
-			vFile->write(&coinCommunityIdIndex, sizeof(uint32_t));
+			uint8_t hasValue = coinCommunityIdIndex.has_value();
+			vFile->write(&hasValue, sizeof(uint8_t));
+			if (hasValue) {
+				vFile->write(&coinCommunityIdIndex.value(), sizeof(uint32_t));
+			}
+			vFile->write(&isBalanceChanging, sizeof(uint8_t));
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			
@@ -52,8 +57,13 @@ namespace model {
 					std::to_string((uint8_t)transactionType).data()
 				);
 			}
-			if(!vFile->read(&coinCommunityIdIndex, sizeof(uint32_t))) return false;
-			if(!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
+			uint8_t hasValue = 0;
+			if (!vFile->read(&hasValue, sizeof(uint8_t))) return false;
+			if (hasValue) {
+				if (!vFile->read(&coinCommunityIdIndex.value(), sizeof(uint32_t))) return false;
+			}
+			if (!vFile->read(&isBalanceChanging, sizeof(uint8_t))) return false;
+			if (!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
 			auto addressIndexSize = sizeof(uint32_t) * addressIndicesCount;
 			addressIndices = (uint32_t*)malloc(addressIndexSize);
@@ -78,10 +88,15 @@ namespace model {
 
 		std::shared_ptr<blockchain::NodeTransactionEntry> BlockIndex::DataBlock::createTransactionEntry(date::month month, date::year year)
 		{
-			auto coinCommunityId = FileBasedProvider::getInstance()->getCommunityIdString(coinCommunityIdIndex);
-			// TransactionEntry(uint64_t transactionNr, int32_t fileCursor, uint8_t month, uint16_t year, uint32_t* addressIndices, uint8_t addressIndiceCount);
+			std::string coinCommunityString = "";
+			if (coinCommunityIdIndex.has_value()) {
+				auto res = FileBasedProvider::getInstance()->getCommunityIdString(coinCommunityIdIndex.value());
+				if (res.has_value()) {
+					coinCommunityString = res.value();
+				}
+			}
 			auto transactionEntry = std::make_shared<blockchain::NodeTransactionEntry>(
-				transactionNr, month, year, transactionType, coinCommunityId, addressIndices, addressIndicesCount
+				transactionNr, month, year, transactionType, coinCommunityString, addressIndices, addressIndicesCount
 			);
 			transactionEntry->setFileCursor(fileCursor);
 			return transactionEntry;
@@ -249,7 +264,8 @@ namespace model {
 							dataBlock->coinCommunityIdIndex,
 							yearCursor, monthCursor, 
 							dataBlock->transactionNr, dataBlock->fileCursor, 
-							dataBlock->addressIndices, dataBlock->addressIndicesCount
+							dataBlock->addressIndices, dataBlock->addressIndicesCount,
+							dataBlock->isBalanceChanging
 						);
 					}
 

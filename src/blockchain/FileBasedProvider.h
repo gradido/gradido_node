@@ -43,11 +43,6 @@ namespace gradido {
 			//! \return count of added blockchain
 			int reloadConfig();
 
-			// access community id index
-			inline uint32_t getCommunityIdIndex(const std::string& communityId);
-			inline uint32_t getCommunityIdIndex(std::string_view communityId);
-			inline const std::string getCommunityIdString(uint32_t index);
-
 			//! list all known communities
 			inline std::vector<std::string> listCommunityIds() const;
 		protected:
@@ -67,30 +62,15 @@ namespace gradido {
 			std::shared_ptr<FileBased> addCommunity(
 				const std::string& communityId,
 				const hiero::TopicId& topicId,
-				const std::string&  alias,
-				bool resetIndices
+				const std::string&  alias
 			);
 			void updateListenerCommunity(const std::string& communityId, const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
 			cache::GroupIndex* mGroupIndex;
-			cache::Dictionary  mCommunityIdIndex;
 			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;
 			uint8_t mHieroClientsPerCommunity;
 			bool mInitalized;
 		};
-
-		uint32_t FileBasedProvider::getCommunityIdIndex(const std::string& communityId)
-		{
-			return mCommunityIdIndex.getIndexForString(communityId);
-		}
-		uint32_t FileBasedProvider::getCommunityIdIndex(std::string_view communityId)
-		{
-			return getCommunityIdIndex(std::string(communityId));
-		}
-		const std::string FileBasedProvider::getCommunityIdString(uint32_t index)
-		{
-			return mCommunityIdIndex.getStringForIndex(index);
-		}
 
 		std::vector<std::string> FileBasedProvider::listCommunityIds() const
 		{

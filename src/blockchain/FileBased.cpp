@@ -24,28 +24,34 @@
 #include <chrono>
 
 using namespace cache;
+using std::string, std::string_view, std::vector;
+using std::shared_ptr, std::make_shared;
+using client::hiero::ConsensusClient;
+using controller::SimpleOrderingManager;
 
 namespace gradido {
+	using data::LedgerAnchor;
+
 	using namespace interaction;
 	namespace blockchain {
 		FileBased::FileBased(
 			Private,
-			std::string_view communityId,
+			string_view communityId,
 			const hiero::TopicId& topicId,
-			std::string_view alias,
-			std::string_view folder,
-			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients)
+			string_view alias,
+			string_view folder,
+			vector<shared_ptr<ConsensusClient>>&& hieroClients)
 			: Abstract(communityId),
 			mExitCalled(false),
 			mHieroTopicId(topicId),
 			mAlias(alias),
 			mFolderPath(folder),			
 			mTaskObserver(std::make_shared<TaskObserver>()),
-			mOrderingManager(std::make_shared<controller::SimpleOrderingManager>(communityId)),
+			mOrderingManager(std::make_shared<SimpleOrderingManager>(communityId)),
 			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
-			mPublicKeysIndex(std::make_shared<Dictionary>(std::string(folder).append("/pubkeysCache"))),
-			mBlockchainState(std::string(folder).append("/.state")),
-			mMessageIdsCache(std::string(folder).append("/messageIdCache")),
+			mPublicKeysIndex((string(folder).append("/pubkeysCache"))),
+			mBlockchainState(string(folder).append("/.state")),
+			mMessageIdsCache(string(folder).append("/messageIdCache")),
 			mTransactionTriggerEventsCache(std::string(folder).append("/transactionTriggerEventCache")),
 			mCachedBlocks(ServerGlobals::g_CacheTimeout),
 			mTransactionHashCache(communityId),
@@ -66,11 +72,11 @@ namespace gradido {
 		{
 			assert(!mExitCalled);
 			std::lock_guard _lock(mWorkMutex);
-			if (!mPublicKeysIndex->init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES * 1024 * 1024)) {
+			if (!mPublicKeysIndex.init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES * 1024 * 1024)) {
 				// remove index files for regenration
 				LOG_F(WARNING, "reset the public key index file");
 				// mCachedBlocks.clear();
-				mPublicKeysIndex->reset();
+				mPublicKeysIndex.reset();
 				resetBlockIndices = true;
 			}
 			
@@ -200,13 +206,13 @@ namespace gradido {
 			mOrderingManager->exit();
 			mCachedBlocks.clear();
 			mBlockchainState.exit();
-			mPublicKeysIndex->exit();
+			mPublicKeysIndex.exit();
 			mMessageIdsCache.exit();
 			mTransactionTriggerEventsCache.exit();
 		}
 		bool FileBased::createAndAddConfirmedTransaction(
 			data::ConstGradidoTransactionPtr gradidoTransaction,
-			memory::ConstBlockPtr messageId,
+			const data::LedgerAnchor& ledgerAnchor,
 			data::Timestamp confirmedAt
 		) {
 			if (!gradidoTransaction) {
@@ -234,13 +240,13 @@ namespace gradido {
 			}
 			role->runPastAddToBlockchain(confirmedTransaction, getptr());
 			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, confirmedTransaction->getId());
-			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
+			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex.getLastIndex());
 			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
 			mMessageIdsCache.add(confirmedTransaction->getMessageId(), confirmedTransaction->getId());
 			// add public keys to index
 			auto involvedAddresses = confirmedTransaction->getInvolvedAddresses();
 			for (const auto& address : involvedAddresses) {
-				mPublicKeysIndex->getOrAddIndexForString(address->copyAsString());
+				mPublicKeysIndex.getOrAddIndexForData(address);
 			}
 			if (mCommunityServer) {
 				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
@@ -285,7 +291,7 @@ namespace gradido {
 			Filter filterCopy(filter);
 			bool stopped = false;
 			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, *mPublicKeysIndex);
+				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, mPublicKeysIndex);
 				for (auto transactionNr : transactionNrs) {
 					if (!filter.pagination.hasCapacityLeft(result.size())) {
 						return false;
@@ -318,7 +324,7 @@ namespace gradido {
 			// if pagination is used, filterCopy contain count of still to find transactions
 			Filter filterCopy(filter);
 			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, *mPublicKeysIndex);
+				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, mPublicKeysIndex);
 				result.insert(result.end(), transactionNrs.begin(), transactionNrs.end());
 				if (filter.pagination.size) {
 					filterCopy.pagination.size = filter.pagination.size - result.size();
@@ -334,7 +340,7 @@ namespace gradido {
 		{
 			size_t count = 0;
 			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				count += block.getBlockIndex().countTransactions(filter, *mPublicKeysIndex);
+				count += block.getBlockIndex().countTransactions(filter, mPublicKeysIndex);
 				return true;
 			});
 			return count;
@@ -354,9 +360,9 @@ namespace gradido {
 			} while (blockNr > 0);
 			return nullptr;
 		}
-		std::shared_ptr<const TransactionEntry> FileBased::findByMessageId(
-			memory::ConstBlockPtr messageId,
-			const Filter& filter/* = Filter::ALL_TRANSACTIONS */
+		std::shared_ptr<const TransactionEntry> FileBased::findByLedgerAnchor(
+			const data::LedgerAnchor& ledgerAnchor,
+			const Filter& filter = Filter::ALL_TRANSACTIONS
 		) const
 		{
 			auto transactionNr = mMessageIdsCache.has(messageId);
@@ -374,7 +380,7 @@ namespace gradido {
 		void FileBased::loadStateFromBlockCache()
 		{
 			Profiler timeUsed;
-			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex->getLastIndex());
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex.getLastIndex());
 			auto lastBlockNr = model::files::Block::findLastBlockFileInFolder(mFolderPath);
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_BLOCK_NR, lastBlockNr);
 			auto& block = getBlock(lastBlockNr);

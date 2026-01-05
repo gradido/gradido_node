@@ -9,6 +9,7 @@
 
 #include <queue>
 #include <string>
+#include <optional>
 
 namespace cache {
 	class BlockIndex;
@@ -28,13 +29,14 @@ namespace model {
 		public:
 			virtual bool addIndicesForTransaction(
 				gradido::data::TransactionType transactionType,
-				uint32_t coinCommunityIdIndex, 
+				std::optional<uint32_t> coinCommunityIdIndex, 
 				date::year year,
 				date::month month,
 				uint64_t transactionNr, 
 				int32_t fileCursor, 
 				const uint32_t* addressIndices, 
-				uint16_t addressIndiceCount
+				uint16_t addressIndiceCount,
+				uint8_t isBalanceChanging
 			) = 0;
 		};
 
@@ -70,10 +72,11 @@ namespace model {
 				uint64_t transactionNr,
 				int32_t fileCursor,
 				gradido::data::TransactionType transactionType,
-				uint32_t coinCommunityIdIndex,
+				std::optional<uint32_t> coinCommunityIdIndex,
+				uint8_t isBalanceChanging,
 				const std::vector<uint32_t>& addressIndices
 			) {
-				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, transactionType, coinCommunityIdIndex, addressIndices));
+				mDataBlocks.push(new DataBlock(transactionNr, fileCursor, transactionType, coinCommunityIdIndex, isBalanceChanging, addressIndices));
 				mDataBlockSumSize += mDataBlocks.back()->size();
 			}
 	
@@ -99,9 +102,6 @@ namespace model {
 
 		protected:
 			//! \brief replace Index File with new one, clear blocks after writing into file
-			
-			
-
 			enum BlockTypes {
 				YEAR_BLOCK = 0xad,
 				MONTH_BLOCK = 0x50,
@@ -177,16 +177,18 @@ namespace model {
 					uint64_t _transactionNr, 
 					int32_t _fileCursor, 
 					gradido::data::TransactionType _transactionType,
-					uint32_t _coinCommunityIdIndex,
-					const std::vector<uint32_t>& _addressIndices
+					std::optional<uint32_t> _coinCommunityIdIndex,
+					uint8_t _isBalanceChanging,
+					const std::vector<uint32_t>& _addressIndices					
 				) : 
 					Block(DATA_BLOCK), 
 					transactionNr(_transactionNr), 
 					fileCursor(_fileCursor), 
 					transactionType(_transactionType),
 					coinCommunityIdIndex(_coinCommunityIdIndex),
+					isBalanceChanging(_isBalanceChanging),
 					addressIndices(nullptr), 
-					addressIndicesCount(_addressIndices.size())
+					addressIndicesCount(_addressIndices.size())					
 				{
 					addressIndices = (uint32_t*)malloc(addressIndicesCount * sizeof(uint32_t));
 					assert(addressIndices);
@@ -198,9 +200,10 @@ namespace model {
 					transactionNr(0), 
 					fileCursor(-10), 
 					transactionType(gradido::data::TransactionType::NONE), 
-					coinCommunityIdIndex(0),
+					coinCommunityIdIndex(std::nullopt),
+					isBalanceChanging(0),
 					addressIndices(nullptr), 
-					addressIndicesCount(0)
+					addressIndicesCount(0)					
 				{
 
 				}
@@ -211,13 +214,15 @@ namespace model {
 					addressIndices = nullptr;
 					addressIndicesCount = 0;
 					fileCursor = 0;
+					isBalanceChanging = 0;
 				}
 				uint64_t transactionNr;
 				int32_t fileCursor;
 				gradido::data::TransactionType transactionType;
-				uint32_t coinCommunityIdIndex;
+				std::optional<uint32_t> coinCommunityIdIndex;
+				uint8_t isBalanceChanging;
 				uint8_t  addressIndicesCount;
-				uint32_t* addressIndices;
+				uint32_t* addressIndices;				
 				size_t size() { 
 					return 
 						  sizeof(uint8_t)  // Block Type
@@ -225,7 +230,9 @@ namespace model {
 						+ sizeof(int32_t)  // fileCursor
 						+ sizeof(gradido::data::TransactionType) // transaction type
 						+ sizeof(uint32_t) // coin community id index size
-						+ sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount; // address index count, address indices array
+						+ sizeof(uint8_t) // isBalanceChanging
+						+ sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount // address index count, address indices array
+						; 
 				}
 
 				virtual void writeIntoFile(VirtualFile* vFile);
