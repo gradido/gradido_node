@@ -2,7 +2,6 @@
 #define __GRADIDO_NODE_SINGLETON_MANAGER_ORDERING_MANAGER
 
 #include "gradido_blockchain/data/GradidoTransaction.h"
-#include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/crypto/SignatureOctet.h"
 #include "gradido_blockchain/lib/ExpireCache.h"
 #include "../task/Thread.h"
@@ -14,6 +13,12 @@
 
 namespace task {
     class HieroMessageToTransactionTask;
+}
+
+namespace gradido {
+    namespace data {
+        class LedgerAnchor;
+    }
 }
 
 namespace controller {
@@ -43,7 +48,7 @@ namespace controller {
             IN_SHUTDOWN
         };
         PushResult pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse);
-        std::shared_ptr<task::HieroMessageToTransactionTask> findCrossGroupTransactionPair(const hiero::TransactionId& transactionId) const;
+        std::shared_ptr<task::HieroMessageToTransactionTask> findCrossGroupTransactionPair(const gradido::data::LedgerAnchor& transactionId) const;
 
     protected:        
 

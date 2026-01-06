@@ -6,6 +6,7 @@
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/calculateCreationSum/Context.h"
+#include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/serialization/toJson.h"
@@ -346,7 +347,11 @@ namespace server {
 				transactionEntry = blockchain->getTransactionForId(transactionId);
 			}
 			else {
-				transactionEntry = blockchain->findByMessageId(iotaMessageId);
+				deserialize::Context deserializer(iotaMessageId);
+				deserializer.run();
+				if (deserializer.isLedgerAnchor()) {
+					transactionEntry = blockchain->findByLedgerAnchor(deserializer.getLedgerAnchor());
+				}
 			}
 			if (!transactionEntry) {
 				error(responseJson, JSON_RPC_ERROR_TRANSACTION_NOT_FOUND, "transaction not found");

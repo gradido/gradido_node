@@ -6,6 +6,7 @@
 #include "../../ServerGlobals.h"
 #include "../../SingletonManager/FileLockManager.h"
 #include "../../SingletonManager/CacheManager.h"
+#include "../../task/RebuildBlockIndexTask.h"
 
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
@@ -268,11 +269,10 @@ namespace model {
 			return result;
 		}
 
-		std::shared_ptr<RebuildBlockIndexTask> Block::rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
-		{			
+		void Block::fillRebuildBlockIndexTask(std::shared_ptr<task::RebuildBlockIndexTask> rebuildTask)
+		{
+			Profiler timeUsed;
 			auto fl = FileLockManager::getInstance();
-			std::shared_ptr<RebuildBlockIndexTask> rebuildTask = std::make_shared<RebuildBlockIndexTask>(blockchain);
-			
 			int32_t fileCursor = 0;
 			std::shared_ptr<memory::Block> readBuffer;
 			unsigned char hash[crypto_generichash_KEYBYTES];
@@ -281,10 +281,12 @@ namespace model {
 			// read in every line
 			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
 				auto lineSize = readLine(fileCursor, &readBuffer);
-				rebuildTask->pushLine(fileCursor, readBuffer);
+				rebuildTask->pushLine(fileCursor, readBuffer, rebuildTask);
 				calculateOneHashStep(hash, (const unsigned char*)readBuffer->data(), readBuffer->size());
 				fileCursor += lineSize + sizeof(uint16_t);
 			}		
+			rebuildTask->flush(rebuildTask);
+			LOG_F(INFO, "%s time for read block file (%u) into rebuild task", timeUsed.string().c_str(), mCurrentFileSize);
 
 			unsigned char hash2[crypto_generichash_KEYBYTES];
 			if (!fl->tryLockTimeout(mBlockPath, 100)) {
@@ -299,10 +301,8 @@ namespace model {
 				result = true;
 			}
 
-			if (result) {
-				return rebuildTask;
-			}
-			else {
+			if (!result) 
+			{
 				throw HashMismatchException(
 					"block hash mismatch",
 					memory::Block(sizeof hash, hash),
@@ -357,44 +357,6 @@ namespace model {
 			mCursorPositions = mTargetBlock->appendLines(mLines);
 
 			return 0;
-		}
-
-
-		RebuildBlockIndexTask::RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
-			: task::CPUTask(ServerGlobals::g_CPUScheduler), mBlockchain(blockchain)
-		{
-
-		}
-
-		int RebuildBlockIndexTask::run()
-		{
-			while (!mPendingFileCursorLine.empty()) 
-			{
-				std::pair<int32_t, std::shared_ptr<memory::Block>> fileCursorLine;
-				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
-					throw std::runtime_error("don't get next file cursor line");
-				}
-				auto& serializedTransaction = fileCursorLine.second;
-				deserialize::Context deserializer(serializedTransaction, deserialize::Type::CONFIRMED_TRANSACTION);
-				deserializer.run();
-				if (!deserializer.isConfirmedTransaction()) {
-					throw InvalidGradidoTransaction("invalid transaction from block file while rebuilding block index", serializedTransaction);
-				}
-				lock();
-				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry = std::make_shared<gradido::blockchain::NodeTransactionEntry>(
-					deserializer.getConfirmedTransaction(),
-					mBlockchain,
-					fileCursorLine.first
-				);
-				mTransactionEntries.push_back(transactionEntry);
-				unlock();
-			}
-			return 0;
-		}
-
-		void RebuildBlockIndexTask::pushLine(int32_t fileCursor, std::shared_ptr<memory::Block> line)
-		{
-			mPendingFileCursorLine.push({ fileCursor, line });
 		}
 	}
 }

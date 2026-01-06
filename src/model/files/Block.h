@@ -23,6 +23,10 @@ namespace gradido {
 	}
 }
 
+namespace task {
+	class RebuildBlockIndexTask;
+}
+
 namespace model {
 	namespace files {
 		class RebuildBlockIndexTask;
@@ -59,7 +63,9 @@ namespace model {
 			bool validateHash();
 
 			// read whole file, validate hash
-			std::shared_ptr<RebuildBlockIndexTask> rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
+			// put lines of serialized transactions into task
+			// TODO: maybe make it more abstract so different tasks can use this
+			void fillRebuildBlockIndexTask(std::shared_ptr<task::RebuildBlockIndexTask> rebuildTask);
 
 			static uint32_t findLastBlockFileInFolder(std::string_view groupFolderPath);
 
@@ -100,27 +106,7 @@ namespace model {
 			std::vector<uint32_t> mCursorPositions;
 		};
 
-		//! TODO: update for able to start with first line, while calling function is still loading more and more lines from file
-		//! gives the additional option to prevent task for storing to many lines at once
-		//! use ability of Task Object for resheduling
-		class RebuildBlockIndexTask : public task::CPUTask
-		{
-		public:
-			RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
-			const char* getResourceType() const { return "RebuildBlockIndexTask"; };
-
-			int run();
-			//! \param line will be moved
-			void pushLine(int32_t fileCursor, std::shared_ptr<memory::Block> line);
-			const std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
-
-			inline bool isPendingQueueEmpty() { return mPendingFileCursorLine.empty(); }
-
-		protected:
-			std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
-			std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactionEntries;
-			MultithreadQueue<std::pair<int32_t, std::shared_ptr<memory::Block>>> mPendingFileCursorLine;
-		};
+		
 	}
 }
 

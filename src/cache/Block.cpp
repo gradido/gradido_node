@@ -8,11 +8,13 @@
 #include "../controller/TaskObserver.h"
 #include "../model/files/Block.h"
 #include "../model/files/FileExceptions.h"
+#include "../task/RebuildBlockIndexTask.h"
 
 #include "../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/Application.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
@@ -23,12 +25,13 @@
 
 using namespace gradido::blockchain;
 using namespace gradido::interaction;
+using task::RebuildBlockIndexTask;
 
 namespace cache {
 	Block::Block(uint32_t blockNr, std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
 		: mBlockNr(blockNr),
 		mSerializedTransactions(ServerGlobals::g_CacheTimeout),
-		mBlockIndex(std::make_shared<BlockIndex>(blockchain->getFolderPath(), blockNr)),
+		mBlockIndex(std::make_shared<BlockIndex>(blockchain->getProvider(), blockchain->getFolderPath(), blockNr)),
 		mBlockFile(std::make_shared<model::files::Block>(blockchain->getFolderPath(), blockNr)),
 		mBlockchain(blockchain),
 		mExitCalled(false)
@@ -48,39 +51,32 @@ namespace cache {
 		mSerializedTransactions.clear();
 	}
 
-	bool Block::init()
+	bool Block::init(IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary)
 	{
 		std::lock_guard lock(mFastMutex);
 		if (!mBlockIndex->loadFromFile()) {
 			// check if Block exist
 			if (mBlockFile->getCurrentFileSize()) {
 				Profiler timeUsed;
-				auto rebuildBlockIndexTask = mBlockFile->rebuildBlockIndex(mBlockchain);
+				mBlockIndex->reset();
+				std::shared_ptr<task::RebuildBlockIndexTask> rebuildBlockIndexTask = std::make_shared<task::RebuildBlockIndexTask>(
+					mBlockchain,
+					mBlockIndex,
+					publicKeyDictionary
+				);
+				mBlockFile->fillRebuildBlockIndexTask(rebuildBlockIndexTask);
 				if (!rebuildBlockIndexTask) {
 					throw GradidoNullPointerException("missing rebuild block index task", "RebuildBlockIndexTask", __FUNCTION__);
 				}
-				rebuildBlockIndexTask->scheduleTask(rebuildBlockIndexTask);
 				int sumWaited = 0;
-				while (!rebuildBlockIndexTask->isPendingQueueEmpty() && sumWaited < 1000) {
+				while (!rebuildBlockIndexTask->isPendingQueueEmpty() && sumWaited < GRADIDO_NODE_CACHE_BLOCK_MAX_WAIT_TIME_FOR_BLOCK_INDEX_REBUILD_MILLISECONDS) {
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 					sumWaited += 100;
 				}
 				if (!rebuildBlockIndexTask->isPendingQueueEmpty()) {
-					LOG_F(FATAL, "rebuildBlockIndex Task isn't finished after waiting a whole second");
+					LOG_F(FATAL, "rebuildBlockIndex Task isn't finished after waiting a whole minute");
 					Application::terminate();
 				}
-				auto transactionEntries = rebuildBlockIndexTask->getTransactionEntries();
-				mBlockIndex->reset();
-				uint64_t prevId = 0;
-				std::for_each(transactionEntries.begin(), transactionEntries.end(),
-					[&](const std::shared_ptr<NodeTransactionEntry>& transactionEntry) {
-						if (transactionEntry->getTransactionNr() <= prevId) {
-							throw BlockchainOrderException("transaction nrs aren't in ascending order");
-						}
-						prevId = transactionEntry->getTransactionNr();
-						mBlockIndex->addIndicesForTransaction(transactionEntry);
-					}
-				);
 				LOG_F(INFO, "time for rebuilding block index for block %s: %s", mBlockFile->getBlockPath().data(), timeUsed.string().data());
 			}
 			else {
@@ -101,7 +97,10 @@ namespace cache {
 	}
 
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
-	bool Block::pushTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction)
+	bool Block::pushTransaction(
+		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
+		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+	)
 	{
 		std::lock_guard lock(mFastMutex);
 		if (mExitCalled) return false;
@@ -110,7 +109,7 @@ namespace cache {
 			// std::shared_ptr<model::files::Block> blockFile, std::shared_ptr<cache::BlockIndex> blockIndex
 			mTransactionWriteTask = std::make_shared<task::WriteTransactionsToBlockTask>(mBlockFile, mBlockIndex);
 		}
-		mTransactionWriteTask->addSerializedTransaction(transaction);
+		mTransactionWriteTask->addSerializedTransaction(transaction, publicKeyDictionary);
 		mSerializedTransactions.add(transaction->getTransactionNr(), transaction);
 		return true;
 

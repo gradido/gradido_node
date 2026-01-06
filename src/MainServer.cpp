@@ -75,7 +75,7 @@ bool MainServer::init()
 
 	// start cpu scheduler
 	// std::thread::hardware_concurrency() sometime return 0 if number couldn't be determined
-	uint8_t worker_count = 2; //  std::max(2, (int)std::thread::hardware_concurrency() * 2);
+	uint8_t worker_count = std::max(2, (int)std::thread::hardware_concurrency() * 2);
 	// I think 1 or 2 by HDD is ok, more by SSD, but should be profiled on work load
 	uint8_t io_worker_count = config.getInt("io.worker_count", 2);
 	ServerGlobals::g_CPUScheduler = new task::CPUSheduler(worker_count, "Default Worker");

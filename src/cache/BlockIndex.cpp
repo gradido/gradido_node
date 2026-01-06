@@ -100,8 +100,8 @@ namespace cache {
 							fileCursorIt->second,
 							blockIndexEntry.transactionType,
 							blockIndexEntry.coinCommunityIdIndex,
-							publicKeyIndicesTemp,
-							blockIndexEntry.isBalanceChanging
+							blockIndexEntry.isBalanceChanging,
+							publicKeyIndicesTemp
 						);
 					}
 				}

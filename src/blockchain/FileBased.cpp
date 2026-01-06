@@ -51,7 +51,7 @@ namespace gradido {
 			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex((string(folder).append("/pubkeysCache"))),
 			mBlockchainState(string(folder).append("/.state")),
-			mMessageIdsCache(string(folder).append("/messageIdCache")),
+			mLedgerAnchorCache(string(folder).append("/messageIdCache")),
 			mTransactionTriggerEventsCache(std::string(folder).append("/transactionTriggerEventCache")),
 			mCachedBlocks(ServerGlobals::g_CacheTimeout),
 			mTransactionHashCache(communityId),
@@ -95,16 +95,16 @@ namespace gradido {
 			mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0);
 			mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
 
-			if (!mMessageIdsCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
-				mMessageIdsCache.reset();
-				if (!mMessageIdsCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
+			if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
+				mLedgerAnchorCache.reset();
+				if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 					throw ClassNotInitalizedException("cannot initalize message id cache", "cache::MessageId");
 				}
 				// load last 20 message ids into cache
 				FilterBuilder filterBuilder;
 				auto transactions = findAll(filterBuilder.setPagination({20}).setSearchDirection(SearchDirection::DESC).build());
 				for (auto& transaction : transactions) {
-					mMessageIdsCache.add(transaction->getConfirmedTransaction()->getMessageId(), transaction->getTransactionNr());
+					mLedgerAnchorCache.add(transaction->getConfirmedTransaction()->getLedgerAnchor(), transaction->getTransactionNr());
 				}
 			}
 
@@ -207,7 +207,7 @@ namespace gradido {
 			mCachedBlocks.clear();
 			mBlockchainState.exit();
 			mPublicKeysIndex.exit();
-			mMessageIdsCache.exit();
+			mLedgerAnchorCache.exit();
 			mTransactionTriggerEventsCache.exit();
 		}
 		bool FileBased::createAndAddConfirmedTransaction(
@@ -218,13 +218,13 @@ namespace gradido {
 			if (!gradidoTransaction) {
 				throw GradidoNullPointerException("missing transaction", "GradidoTransactionPtr", __FUNCTION__);
 			}
-			if (!messageId) {
-				throw GradidoNullPointerException("missing messageId", "memory::ConstBlockPtr", __FUNCTION__);
+			if (ledgerAnchor.empty()) {
+				throw GradidoNullPointerException("empty ledger anchor", "gradido::data::LedgerAnchor", __FUNCTION__);
 			}
 			std::lock_guard _lock(mWorkMutex);
 			if (mExitCalled) { return false;}
 			confirmTransaction::Context confirmTransactionContext(getptr());
-			auto role = confirmTransactionContext.createRole(gradidoTransaction, messageId, confirmedAt);
+			auto role = confirmTransactionContext.createRole(gradidoTransaction, ledgerAnchor, confirmedAt);
 			auto confirmedTransaction = confirmTransactionContext.run(role);
 			// will occure if transaction already exist
 			if (!confirmedTransaction) {
@@ -233,7 +233,7 @@ namespace gradido {
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			auto& block = getBlock(blockNr);
 			auto nodeTransactionEntry = std::make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
-			if (!block.pushTransaction(nodeTransactionEntry)) {
+			if (!block.pushTransaction(nodeTransactionEntry, mPublicKeysIndex)) {
 				// block was already stopped, so we can  stop here also 
 				LOG_F(WARNING, "couldn't push transaction: %lu to block: %d", confirmedTransaction->getId(), blockNr);
 				return false;
@@ -242,7 +242,7 @@ namespace gradido {
 			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, confirmedTransaction->getId());
 			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex.getLastIndex());
 			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
-			mMessageIdsCache.add(confirmedTransaction->getMessageId(), confirmedTransaction->getId());
+			mLedgerAnchorCache.add(confirmedTransaction->getLedgerAnchor(), confirmedTransaction->getId());
 			// add public keys to index
 			auto involvedAddresses = confirmedTransaction->getInvolvedAddresses();
 			for (const auto& address : involvedAddresses) {
@@ -362,14 +362,14 @@ namespace gradido {
 		}
 		std::shared_ptr<const TransactionEntry> FileBased::findByLedgerAnchor(
 			const data::LedgerAnchor& ledgerAnchor,
-			const Filter& filter = Filter::ALL_TRANSACTIONS
+			const Filter& filter/* = Filter::ALL_TRANSACTIONS*/
 		) const
 		{
-			auto transactionNr = mMessageIdsCache.has(messageId);
+			auto transactionNr = mLedgerAnchorCache.has(ledgerAnchor);
 			if (transactionNr) {
 				return getTransactionForId(transactionNr);
 			}
-			return Abstract::findByMessageId(messageId, filter);
+			return Abstract::findByLedgerAnchor(ledgerAnchor, filter);
 		}
 		AbstractProvider* FileBased::getProvider() const
 		{
@@ -463,7 +463,7 @@ namespace gradido {
 			if (!block) {
 				auto block = std::make_shared<cache::Block>(blockNr, getptr());
 				// return false if block not exist and will be created
-				if (!block->init()) {
+				if (!block->init(mPublicKeysIndex)) {
 					if (blockNr > mBlockchainState.readInt32State(DefaultStateKeys::LAST_BLOCK_NR, 1)) {
 						mBlockchainState.updateState(DefaultStateKeys::LAST_BLOCK_NR, blockNr);
 					}

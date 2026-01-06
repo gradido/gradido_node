@@ -92,7 +92,7 @@ namespace model {
 		void LevelDBWrapper::setKeyValue(const std::string& key, const std::string& value)
 		{
 			WriteOptions writeOptions;
-			writeOptions.sync = true;
+			writeOptions.sync = false;
 			Status s = mLevelDB->Put(writeOptions, key, value);
 			if (!s.ok()) {
 				throw LevelDBStatusException("cannot put to level db", s);

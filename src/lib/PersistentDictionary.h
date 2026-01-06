@@ -80,7 +80,7 @@ requires serialization::HasString<DataType>
 uint32_t PersistentDictionary<DataType>::getLastIndex()
 {
     std::unique_lock _lock(mWorkingMutex);
-    mIndexDataReverseLookup.size() - 1;
+    return mIndexDataReverseLookup.size() - 1;
 }
 
 template<typename DataType>
@@ -88,7 +88,7 @@ requires serialization::HasString<DataType>
 std::optional<uint32_t> PersistentDictionary<DataType>::getIndexForData(const DataType& data) const
 {
     std::shared_lock _lock(mWorkingMutex);
-    auto result = mDictionaryFile.getValueForKey(serialization::toString(data).c_str());
+    auto result = mDictionaryFile.getValueForKey(serialization::toString<DataType>(data));
     if (result.has_value()) {
         const auto& value = result.value();
         return serialization::fromString<uint32_t>(value.data(), value.size());

@@ -3,8 +3,7 @@
 #include "../blockchain/FileBasedProvider.h"
 #include "../blockchain/Exceptions.h"
 #include "../task/HieroMessageToTransactionTask.h"
-#include "gradido_blockchain/interaction/serialize/Context.h"
-#include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/data/LedgerAnchor.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
 
@@ -14,7 +13,8 @@
 
 using namespace gradido;
 using namespace blockchain;
-using namespace interaction;
+
+using gradido::data::LedgerAnchor;
 
 namespace controller {
 
@@ -94,17 +94,15 @@ namespace controller {
                     updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
-                deserialize::Context topicIdDeserializer(gradidoTransaction->getParingMessageId(), deserialize::Type::HIERO_TRANSACTION_ID);
-                topicIdDeserializer.run();
-                if (!topicIdDeserializer.isHieroTransactionId()) {
-                    task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing transactionId invalid)");
+                if (gradidoTransaction->getPairingLedgerAnchor().empty()) {
+                    task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing ledger anchor empty)");
                     mTransactions.erase(it);
                     updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 auto pairTask = static_cast<gradido::blockchain::FileBased*>(otherBlockchain.get())
                     ->getOrderingManager()
-                    ->findCrossGroupTransactionPair(topicIdDeserializer.getHieroTransactionId())
+                    ->findCrossGroupTransactionPair(gradidoTransaction->getPairingLedgerAnchor())
                 ;
                 if (!pairTask || !pairTask->isTaskFinished()) {
                     // not found? maybe it need some more time?
@@ -136,17 +134,16 @@ namespace controller {
             throw CommunityNotFoundExceptions("couldn't find group", mCommunityId);
         }
         auto transaction = gradidoTransactionWorkData.deserializeTask->getGradidoTransaction();
-        const auto& transactionId = gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
+        auto transactionId = LedgerAnchor(gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId());
         const auto& confirmedAt = gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp();
         if (transactionId.empty()) {
             throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
         }
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         try {
-            serialize::Context serializer(transactionId);
             bool result = blockchain->createAndAddConfirmedTransaction(
                 transaction,
-                serializer.run(),
+                transactionId,
                 confirmedAt
             );
             fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
@@ -207,13 +204,20 @@ namespace controller {
         return PushResult::ADDED;
     }
 
-    std::shared_ptr<task::HieroMessageToTransactionTask> SimpleOrderingManager::findCrossGroupTransactionPair(const hiero::TransactionId& transactionId) const
+    std::shared_ptr<task::HieroMessageToTransactionTask> SimpleOrderingManager::findCrossGroupTransactionPair(const LedgerAnchor& transactionId) const
     {
         if (isExitCalled()) { return nullptr; }
         std::lock_guard _lock(mTransactionsMutex);
         for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
-            if (it->second.consensusTopicResponse.getChunkInfo().getInitialTransactionId() == transactionId) {
-                return it->second.deserializeTask;
+            if (transactionId.isHieroTransactionId()) {
+                if (it->second.consensusTopicResponse.getChunkInfo().getInitialTransactionId() == transactionId.getHieroTransactionId()) {
+                    return it->second.deserializeTask;
+                }
+            }
+            else {
+                if (it->second.deserializeTask->isSuccess() && it->second.deserializeTask->getGradidoTransaction()->getPairingLedgerAnchor() == transactionId) {
+                    return it->second.deserializeTask;
+                }
             }
         }
         return nullptr;

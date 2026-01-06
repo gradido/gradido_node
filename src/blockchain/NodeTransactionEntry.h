@@ -36,6 +36,13 @@ namespace gradido {
 				int32_t fileCursor = -10
 			);
 
+			NodeTransactionEntry(
+				gradido::data::ConstConfirmedTransactionPtr transaction,
+				memory::ConstBlockPtr serializedTransaction,
+				std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
+				int32_t fileCursor = -10
+			);
+
 			//! \brief init entry object from details e.g. by loading from file
 			NodeTransactionEntry(
 				uint64_t transactionNr,

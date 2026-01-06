@@ -86,7 +86,7 @@ namespace cache {
 
 		//! \brief find transaction nrs from specific month and year
 		//! \return {0, 0} if nothing found
-		std::pair<uint64_t, uint64_t> findTransactionsForMonthYear(date::year year, date::month month) const;
+		inline std::pair<uint64_t, uint64_t> findTransactionsForMonthYear(date::year year, date::month month) const;
 
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false

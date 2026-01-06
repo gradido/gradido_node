@@ -15,7 +15,7 @@ namespace gradido {
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
 			for (auto& publicKey : involvedPublicKeys) {
 				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(publicKey));
-			}
+			}			
 		}
 
 
@@ -47,6 +47,16 @@ namespace gradido {
 			for (auto& publicKey : involvedPublicKeys) {
 				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(publicKey));
 			}
+		}
+
+		NodeTransactionEntry::NodeTransactionEntry(
+			gradido::data::ConstConfirmedTransactionPtr transaction,
+			memory::ConstBlockPtr serializedTransaction,
+			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
+			int32_t fileCursor/* = -10 */
+		) : TransactionEntry(serializedTransaction, transaction), mFileCursor(fileCursor)
+		{
+
 		}
 
 	}

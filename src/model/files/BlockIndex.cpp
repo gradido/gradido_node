@@ -60,7 +60,12 @@ namespace model {
 			uint8_t hasValue = 0;
 			if (!vFile->read(&hasValue, sizeof(uint8_t))) return false;
 			if (hasValue) {
-				if (!vFile->read(&coinCommunityIdIndex.value(), sizeof(uint32_t))) return false;
+				uint32_t coinCommnityIdIndexRaw = 0;
+				if (!vFile->read(&coinCommnityIdIndexRaw, sizeof(uint32_t))) return false;
+				coinCommunityIdIndex = coinCommnityIdIndexRaw;
+			}
+			else {
+				coinCommunityIdIndex = nullopt;
 			}
 			if (!vFile->read(&isBalanceChanging, sizeof(uint8_t))) return false;
 			if (!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
@@ -79,8 +84,11 @@ namespace model {
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));		
 			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(int32_t));
-			crypto_generichash_update(state, (const unsigned char*)&coinCommunityIdIndex, sizeof(uint32_t));
+			if (coinCommunityIdIndex.has_value()) {
+				crypto_generichash_update(state, (const unsigned char*)&coinCommunityIdIndex.value(), sizeof(uint32_t));
+			}
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
+			crypto_generichash_update(state, (const unsigned char*)&isBalanceChanging, sizeof(uint8_t));
 
 			// second part
 			crypto_generichash_update(state, (const unsigned char*)addressIndices, sizeof(uint32_t) * addressIndicesCount);
@@ -210,8 +218,8 @@ namespace model {
 				return false;
 			}
 
-			unsigned char hashFromFile[crypto_generichash_BYTES];
-			unsigned char hashCalculated[crypto_generichash_BYTES];
+			unsigned char hashFromFile[crypto_generichash_BYTES]; memset(hashFromFile, 0, crypto_generichash_BYTES);
+			unsigned char hashCalculated[crypto_generichash_BYTES]; memset(hashCalculated, 0, crypto_generichash_BYTES);
 			crypto_generichash_state state;
 
 			crypto_generichash_init(&state, nullptr, 0, crypto_generichash_BYTES);

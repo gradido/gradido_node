@@ -101,9 +101,9 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
 			return defaultValue;
 		}
-		std::string tmp;
-		if (mStateFile.getValueForKey(key, &tmp)) {
-			return tmp;
+		auto result = mStateFile.getValueForKey(key);
+		if (result.has_value()) {
+			return result.value();
 		}
 		return defaultValue;
 	}
@@ -114,9 +114,9 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
 			return defaultValue;
 		}
-		std::string tmp;
-		if (mStateFile.getValueForKey(key, &tmp)) {
-			return atoi(tmp.data());
+		auto result = mStateFile.getValueForKey(key);
+		if (result.has_value()) {
+			return atoi(result.value().data());
 		}
 		return defaultValue;
 	}
@@ -127,9 +127,9 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
 			return defaultValue;
 		}
-		std::string tmp;
-		if (mStateFile.getValueForKey(key, &tmp)) {
-			return strtoll(tmp.data(), nullptr, 10);
+		auto result = mStateFile.getValueForKey(key);
+		if (result.has_value()) {
+			return strtoll(result.value().data(), nullptr, 10);
 		}
 		return defaultValue;
 	}

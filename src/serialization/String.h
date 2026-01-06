@@ -3,7 +3,6 @@
 
 #include <string>
 #include <cstdlib>
-#include "gradido_blockchain/memory/Block.h"
 
 namespace serialization {
     template<typename T>
@@ -48,18 +47,6 @@ namespace serialization {
     template<>
     inline size_t fromString<size_t>(const char* data, size_t size) {
         return strtoull(data, nullptr, 0);
-    }
-
-    template<>
-    inline std::string toString<memory::ConstBlockPtr>(const memory::ConstBlockPtr& ptr) 
-    {
-        return ptr->copyAsString();
-    }
-
-    template<>
-    inline memory::ConstBlockPtr fromString<memory::ConstBlockPtr>(const char* data, size_t size)
-    {
-        return std::make_shared<const memory::Block>(data, size);
     }
 }
 

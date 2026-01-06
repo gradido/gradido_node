@@ -8,9 +8,11 @@
 #include "../task/WriteTransactionsToBlockTask.h"
 
 #include "gradido_blockchain/lib/AccessExpireCache.h"
+#include "gradido_blockchain/lib/DictionaryInterface.h"
 #include "gradido_blockchain/blockchain/TransactionEntry.h"
 
 #include <map>
+#include <memory>
 
 namespace model {
 	namespace files {
@@ -25,8 +27,14 @@ namespace gradido {
 	}
 }
 
+namespace memory {
+	class Block;
+	using ConstBlockPtr = std::shared_ptr<const Block>;
+}
+
 // TODO: move into config
 #define GRADIDO_NODE_CACHE_BLOCK_MAX_FILE_SIZE_BYTE 128 * 1024 * 1024
+#define GRADIDO_NODE_CACHE_BLOCK_MAX_WAIT_TIME_FOR_BLOCK_INDEX_REBUILD_MILLISECONDS 1000 * 60
 
 namespace cache {
 	class Group;
@@ -44,11 +52,14 @@ namespace cache {
 		~Block();
 
 		//! \return false if block not exist
-		bool init();
+		bool init(IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary);
 		void exit();
 
 		//! \brief put new transaction to cache and file system
-		bool pushTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction);
+		bool pushTransaction(
+			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
+			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		);
 		
 		//! \brief load transaction from cache or file system
 		std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t transactionNr) const;
