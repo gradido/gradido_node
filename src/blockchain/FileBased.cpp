@@ -120,7 +120,7 @@ namespace gradido {
 			int count = 0;
 			findAll(builder
 				.setSearchDirection(SearchDirection::DESC)
-				//.setPagination({ GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE })
+				.setPagination({ GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE })
 				.setFilterFunction([this, &count](const TransactionEntry& transactionEntry) -> FilterResult {
 					auto previousTransactionNr = transactionEntry.getTransactionNr() - 1;
 					data::ConstConfirmedTransactionPtr previousConfirmedTransaction;
@@ -143,7 +143,6 @@ namespace gradido {
 					validator.run(validationLevel, getptr());
 					mTransactionHashCache.push(*transactionEntry.getConfirmedTransaction());
 					count++;
-					printf("\r%d", count);
 					return FilterResult::DISMISS;
 				})
 				.build()
