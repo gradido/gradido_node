@@ -83,7 +83,8 @@ namespace task {
 				mFileCursorsQueue.pop_front();
 			}			
 			mBulkDeserializerTasks.pop();
-		}		
+		}
+		int zahl = 0;
 	}
 
 	bool RebuildBlockIndexTask::isPendingQueueEmpty()

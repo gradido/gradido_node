@@ -2,10 +2,12 @@
 #define __GRADIDO_NODE_CACHE_TRANSACTION_HASH_H
 
 #include "gradido_blockchain/crypto/SignatureOctet.h"
-#include "gradido_blockchain/lib/ExpireCache.h"
+//#include "gradido_blockchain/lib/AccessExpireCache.h"
 #include "gradido_blockchain/const.h"
+#include "gradido_blockchain/memory/Block.h"
 
 #include <unordered_map>
+#include <memory>
 
 namespace gradido {
 	namespace data {
@@ -31,9 +33,11 @@ namespace cache {
 		void push(const gradido::data::ConfirmedTransaction& confirmedTransaction);
 		bool has(const gradido::data::GradidoTransaction& gradidoTransaction) const;
 	protected:
+		SignatureOctet deriveHash(const gradido::data::GradidoTransaction& transaction) const;
 		//! key is first 8 Byte from Transaction Signature, the distribution on ed25519 signatures should be good enough even by using only the first 8 Bytes
 		//! data are transaction nr
-		ExpireCache<SignatureOctet, uint64_t> mSignaturePartTransactionNrs;
+		// AccessExpireCache<SignatureOctet, uint64_t> mSignaturePartTransactionNrs;
+		std::unordered_map<memory::ConstBlockPtr, uint64_t, memory::ConstBlockPtrHash, memory::ConstBlockPtrEqual> mBodyBytesTransactionNrs;
 		std::string mCommunityId;
 	};
 }
