@@ -45,12 +45,6 @@ namespace model {
             confirmedTransaction.getConfirmedAt(),
             transfer.getSender()
           );
-          printf(
-            "RedeemDeferredTransferTransactionRole::createTransaction setting change amount: %s, negated: %s, pubkey: %s\n",
-            change.getBalance().toString().data(),
-            change.getBalance().negated().toString().data(),
-            change.getPublicKey()->convertToHex().data()
-          );
           result.setChange(change.getBalance().negated(), change.getPublicKey());
         }
 				result.setAmount(amount);

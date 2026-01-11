@@ -25,7 +25,7 @@ public:
 
     bool init(size_t cacheInBytes);
     void exit();
-    void reset();
+    void reset() override;
     uint32_t getLastIndex();
 
     virtual std::optional<uint32_t> getIndexForData(const DataType& data) const override;

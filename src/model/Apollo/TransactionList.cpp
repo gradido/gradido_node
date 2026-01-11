@@ -1,6 +1,8 @@
 #include "TransactionList.h"
 #include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
+#include "gradido_blockchain/data/Timestamp.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/NodeTransactionEntry.h"
@@ -11,7 +13,8 @@ using namespace rapidjson;
 using namespace gradido::interaction;
 using namespace gradido::blockchain;
 using namespace magic_enum;
-
+using gradido::data::Timestamp;
+using serialization::toJsonString;
 namespace model {
 	namespace Apollo {
 
@@ -41,12 +44,13 @@ namespace model {
 			auto filterOutNotForWallet = [&filter](const TransactionEntry& entry) -> FilterResult
 			{
 				// filter out creation transactions which this user has signed as moderator, and isn't the benefitor
-				if (entry.isCreation()) {
+				// shouldn't be needed any longer, because of Transaction Index change, using updatedBalancePublicKey instead of involvedPublicKey
+				/*if (entry.isCreation()) {
 					auto creation = entry.getTransactionBody()->getCreation();
 					if (!creation->getRecipient().getPublicKey()->isTheSame(filter.involvedPublicKey)) {
 						return FilterResult::DISMISS;
 					}
-				}
+				}*/
 				// filter out register address transaction, because this won't show in wallet view
 				if (entry.isRegisterAddress()) {
 					return FilterResult::DISMISS;
@@ -68,7 +72,7 @@ namespace model {
 			};
 			fileBasedBlockchain->findAll(countFilter);
 
-			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.involvedPublicKey));
+			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.updatedBalancePublicKey));
 			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
 
 			Filter filterCopy = filter;
@@ -81,18 +85,43 @@ namespace model {
 				return std::move(transactionList);
 			}
 
-			// copy into vector to make reversing and loop through faster (cache-hit)
-			std::vector<std::shared_ptr<const gradido::blockchain::TransactionEntry>> allTransactionsVector(allTransactions.begin(), allTransactions.end());
-			allTransactions.clear();
 			if (filter.searchDirection == SearchDirection::DESC) {
-				std::reverse(allTransactionsVector.begin(), allTransactionsVector.end());
+				std::reverse(allTransactions.begin(), allTransactions.end());
 			}
 
 			// all transaction is always sorted ASC, regardless of filter.searchDirection value
 			GradidoUnit previousBalance(GradidoUnit::zero());
+			// load previous balance before first transaction for decay
 			Timepoint previousDate = mBlockchain->getStartDate();
+			auto firstTransactionNr = allTransactions.front()->getTransactionNr();
+			if (firstTransactionNr > 1) {
+				const auto& previousTransactionDate = allTransactions.front()->getConfirmedTransaction()->getConfirmedAt();
+				auto beforePreviousTransactionDate = Timestamp(
+					previousTransactionDate.getSeconds(),
+					previousTransactionDate.getNanos() - 1000
+				);
+
+				Filter previousTransactionFilter = Filter::LAST_TRANSACTION;
+				previousTransactionFilter.maxTransactionNr = firstTransactionNr - 1;
+				previousTransactionFilter.updatedBalancePublicKey = filter.updatedBalancePublicKey;
+				previousTransactionFilter.timepointInterval = TimepointInterval(previousDate, beforePreviousTransactionDate);
+				auto previousTransaction = mBlockchain->findOne(previousTransactionFilter);
+				if (previousTransaction) {
+					auto accountBalance = previousTransaction->getConfirmedTransaction()->getAccountBalance(
+						mPubkey,
+						filter.coinCommunityId
+					);
+					printf("filter: %s\n", toJsonString(previousTransactionFilter, true).c_str());
+					printf("previous transaction: %s\n", toJsonString(*previousTransaction->getConfirmedTransaction(), true).c_str());
+					if (accountBalance.getBalance() > GradidoUnit::zero()) {
+						previousBalance = accountBalance.getBalance();
+						previousDate = previousTransaction->getConfirmedTransaction()->getConfirmedAt();
+					}
+				}
+			}
+
 			createTransaction::Context createTransactionContext(mBlockchain, addressType);
-			for (auto& entry: allTransactionsVector)
+			for (auto& entry: allTransactions)
 			{
 				auto confirmedTransaction = entry->getConfirmedTransaction();
 				auto transactions = createTransactionContext.run(*confirmedTransaction, mPubkey);
@@ -116,7 +145,7 @@ namespace model {
 					}
 				}
 			}
-			allTransactionsVector.clear();
+			allTransactions.clear();
 			if (transactionsVector.empty()) {
 				transactionList.AddMember("transactions", Value(kArrayType), alloc);
 				return std::move(transactionList);

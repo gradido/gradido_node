@@ -205,7 +205,7 @@ namespace server {
 			else if (method == "listTransactions") {
 				Filter f;
 				f.pagination = Pagination(25, 1);
-				f.involvedPublicKey = pubkey;
+				f.updatedBalancePublicKey = pubkey;
 				if (params.HasMember("currentPage") && params["currentPage"].IsInt()) {
 					f.pagination.page = params["currentPage"].GetInt();
 				}
@@ -466,14 +466,14 @@ namespace server {
 			Profiler timeUsed;
 			auto& alloc = mRootJson.GetAllocator();
 
-			model::Apollo::TransactionList transactionList(blockchain, filter.involvedPublicKey);
+			model::Apollo::TransactionList transactionList(blockchain, filter.updatedBalancePublicKey);
 			Timepoint now = std::chrono::system_clock::now();
 
 			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
 
 			calculateAccountBalance::Context calculateAddressBalance(blockchain);
 			// TODO: add balances from another communities
-			auto balance = calculateAddressBalance.fromEnd(filter.involvedPublicKey, now, "");
+			auto balance = calculateAddressBalance.fromEnd(filter.updatedBalancePublicKey, now, "");
 			std::string balanceString = balance.toString();
 			transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 			resultJson.AddMember("transactionList", transactionListValue, alloc);
