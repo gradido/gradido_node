@@ -273,16 +273,11 @@ namespace server {
 			auto alloc = mRootJson.GetAllocator();
 
 			// count for pagination
-			uint64_t totalCount = 0;
 			Filter countFilter = filter;
 			countFilter.pagination = Pagination(); // remove pagination for count
 			countFilter.minTransactionNr = 0; // remove minTransactionNr for count
 			countFilter.maxTransactionNr = 0; // remove maxTransactionNr for count
-			countFilter.filterFunction = [&totalCount](const TransactionEntry& transactionEntry) {
-				totalCount++;
-				return FilterResult::DISMISS;
-			};
-			blockchain->findAll(countFilter);
+			auto totalCount = blockchain->countAll(countFilter);
 			resultJson.AddMember("totalCount", totalCount, alloc);
 
 			auto transactions = blockchain->findAll(filter);

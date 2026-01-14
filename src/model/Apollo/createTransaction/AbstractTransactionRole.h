@@ -29,6 +29,7 @@ namespace model {
         ) = 0;      
 
       protected:
+        
         std::shared_ptr<const gradido::blockchain::Abstract> mBlockchain;
       };
     }

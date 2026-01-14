@@ -125,12 +125,14 @@ namespace gradido {
 			//! main search function, do all the work, reference from other functions
 			virtual TransactionEntries findAll(const Filter& filter) const override;
 
+			// find all optimized for counting transaction nrs, better not use the filter.function for that, because this would slow down
+			virtual size_t countAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const override;
+
 			//! use only index for searching, ignore filter function
 			//! \return vector with transaction nrs
 			std::vector<uint64_t> findAllFast(const Filter& filter) const;
 
-			//! count results for a specific filter, using only the index, ignore filter function 
-			size_t findAllResultCount(const Filter& filter) const;
+			virtual data::AddressType getAddressType(const Filter& filter = Filter::LAST_TRANSACTION) const override;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
 			//! \param filter use to speed up search if infos exist to narrow down search transactions range

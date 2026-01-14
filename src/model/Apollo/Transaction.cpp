@@ -39,14 +39,14 @@ namespace model {
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
-			: mType(TransactionType::DECAY), mId(-1), mDate(decayEnd), mDecay(nullptr)
+			: mType(TransactionType::DECAY), mId(-1), mDate(decayEnd), mDecay(nullptr), mHasChange(false)
 		{
 			calculateDecay(decayStart, decayEnd, startBalance);
 			mAmount = mDecay->getDecayAmount();
 			mBalance = startBalance + mDecay->getDecayAmount();
 			mPreviousBalance = startBalance;
 		}
-
+		
 		/*
 		* TransactionType mType;
 			mpfr_ptr        mAmount;
@@ -141,28 +141,38 @@ namespace model {
 			return *this;
 		}
 
+		void Transaction::setDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
+		{
+			if (mDecay) {
+				delete mDecay;
+				mDecay = nullptr;
+			}
+			
+			mDecay = new Decay(decayStart, decayEnd, startBalance, (startBalance - mBalance + mAmount).negate());
+		}
 		void Transaction::calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)
 		{
 			if (mDecay) {
 				delete mDecay;
 				mDecay = nullptr;
 			}
-			mDecay = new Decay(decayStart, decayEnd, startBalance);
+			mDecay = new Decay(decayStart, decayEnd, startBalance, startBalance.calculateDecay(decayStart, decayEnd) - startBalance);
 		}
 
-		void Transaction::setBalance(GradidoUnit balance)
+		/* void Transaction::setBalance(GradidoUnit balance)
 		{
 			mBalance = balance;
 		}
+		*/
 
 		Value Transaction::toJson(Document::AllocatorType& alloc)
 		{
 			Value transaction(kObjectType);
 			transaction.AddMember("id", mId, alloc);
 			transaction.AddMember("typeId", Value(enum_name(mType).data(), alloc), alloc);
-			transaction.AddMember("amount", Value(mAmount.toString(2).data(), alloc), alloc);
-			transaction.AddMember("balance", Value(mBalance.toString(2).data(), alloc), alloc);
-			transaction.AddMember("previousBalance", Value(mPreviousBalance.toString(2).data(), alloc), alloc);
+			transaction.AddMember("amount", Value(mAmount.toString().data(), alloc), alloc);
+			transaction.AddMember("balance", Value(mBalance.toString().data(), alloc), alloc);
+			transaction.AddMember("previousBalance", Value(mPreviousBalance.toString().data(), alloc), alloc);
 			transaction.AddMember("memo", Value(mMemo.data(), alloc), alloc);
 
 			if (!mPubkey.empty() || !mFirstName.empty() || !mLastName.empty()) {
@@ -178,7 +188,7 @@ namespace model {
 			if(mHasChange) {
 				Value changeObj(kObjectType);
 				printf("Transaction::toJson adding change amount: %s, pubkey: %s\n", mChangeAmount.toString().data(), mChangePubkey.data());
-				changeObj.AddMember("amount", Value(mChangeAmount.toString(2).data(), alloc), alloc);
+				changeObj.AddMember("amount", Value(mChangeAmount.toString().data(), alloc), alloc);
 				changeObj.AddMember("pubkey", Value(mChangePubkey.data(), alloc), alloc);
 				changeObj.AddMember("__typename", "Change", alloc);
 				transaction.AddMember("change", changeObj, alloc);

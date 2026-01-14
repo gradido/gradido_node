@@ -115,14 +115,22 @@ namespace cache {
 
 	}
 
-	void Block::addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor) const
+	void Block::addTransaction(
+		memory::ConstBlockPtr serializedTransaction, 
+		int32_t fileCursor,
+		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+	) const
 	{
 		auto transactionEntry = std::make_shared<NodeTransactionEntry>(serializedTransaction, mBlockchain, fileCursor);
 		if (mExitCalled) return;
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
+		// mBlockIndex->updateAddressIndex(transactionEntry, publicKeyDictionary);
 	}
 
-	std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr) const
+	std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(
+		uint64_t transactionNr,
+		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+	) const
 	{
 		assert(transactionNr);
 		std::lock_guard lock(mFastMutex);
@@ -162,7 +170,7 @@ namespace cache {
 			}
 			try {
 				auto blockLine = mBlockFile->readLine(fileCursor);
-				addTransaction(blockLine, fileCursor);
+				addTransaction(blockLine, fileCursor, publicKeyDictionary);
 			}
 			catch (model::files::EndReachingException& ex) {
 				LOG_F(ERROR, "%s", ex.getFullString().data());

@@ -10,10 +10,10 @@ namespace model {
 
       Transaction TimeoutDeferredTransferTransactionRole::createTransaction(
         const data::ConfirmedTransaction& confirmedTransaction, 
-				memory::ConstBlockPtr pubkey
+		memory::ConstBlockPtr pubkey
       ) {
         auto gradidoTransaction = confirmedTransaction.getGradidoTransaction();
-			  auto transactionBody = gradidoTransaction->getTransactionBody();
+		auto transactionBody = gradidoTransaction->getTransactionBody();
         assert(transactionBody->isTimeoutDeferredTransfer());
 
         Transaction result(confirmedTransaction, pubkey);
@@ -32,8 +32,8 @@ namespace model {
         if (pubkey->isTheSame(deferredTransfer->getRecipientPublicKey())) {
           balance.negate();
         }
-				result.setAmount(balance);
-				result.setPubkey(changeAccountBalance.getPublicKey());
+		result.setAmount(balance);
+		result.setPubkey(changeAccountBalance.getPublicKey());
         return result;
       }
     }

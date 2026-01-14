@@ -62,7 +62,10 @@ namespace cache {
 		);
 		
 		//! \brief load transaction from cache or file system
-		std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t transactionNr) const;
+		std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> getTransaction(
+			uint64_t transactionNr,
+			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		) const;
 
 		inline BlockIndex& getBlockIndex() { return *mBlockIndex; }
 		inline const BlockIndex& getBlockIndex() const { return *mBlockIndex; }
@@ -76,7 +79,11 @@ namespace cache {
 	protected:
 		//! \brief add transaction from Block File, called by Block File, adding to cache and index
 		//! not locking mutex!
-		void addTransaction(memory::ConstBlockPtr serializedTransaction, int32_t fileCursor) const;
+		void addTransaction(
+			memory::ConstBlockPtr serializedTransaction, 
+			int32_t fileCursor,
+			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		) const;
 		
 		mutable std::mutex mFastMutex;
 		uint32_t mBlockNr;		

@@ -15,22 +15,21 @@ namespace model {
 
         Transaction result(confirmedTransaction, pubkey);
         auto deferredTransfer = transactionBody->getDeferredTransfer();
-        auto transfer = deferredTransfer->getTransfer();
+        const auto& transfer = deferredTransfer->getTransfer();
         auto amount = transfer.getSender().getAmount();
 
         if (transfer.getRecipient()->isTheSame(pubkey)) {
-          result.setType(TransactionType::LINK_CHARGE);
-          result.setPubkey(transfer.getSender().getPublicKey());
-        }
-				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
-          result.setType(TransactionType::LINK_SEND);
-          result.setPubkey(transfer.getRecipient());
-					amount.negate();
-				} else {
+            result.setType(TransactionType::LINK_CHARGE);
+            result.setPubkey(transfer.getSender().getPublicKey());
+        } else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
+            result.setType(TransactionType::LINK_SEND);
+            result.setPubkey(transfer.getRecipient());
+		    amount.negate();
+		} else {
           throw GradidoNodeInvalidDataException("unhandled case in model::Apollo::createTransaction::DeferredTransferTransactionRole if pubkey is neither sender or recipient");
-				}
+		}
 
-				result.setAmount(amount);
+		result.setAmount(amount);
         return result;
       }
     }

@@ -2,6 +2,7 @@
 #include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/data/Timestamp.h"
+#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 
 #include "../../blockchain/FileBased.h"
@@ -15,6 +16,7 @@ using namespace gradido::blockchain;
 using namespace magic_enum;
 using gradido::data::Timestamp;
 using serialization::toJsonString;
+
 namespace model {
 	namespace Apollo {
 
@@ -58,19 +60,15 @@ namespace model {
 				return FilterResult::USE;
 			};
 
-			int countTransactions = 0;
+			size_t countTransactions = 0;
 			Filter countFilter = filter;
 			countFilter.pagination = Pagination(0, 0);
-			countFilter.filterFunction = [&filterOutNotForWallet, &countTransactions](const TransactionEntry& entry) -> FilterResult
-			{
-				auto result = filterOutNotForWallet(entry);
-				if ((result & FilterResult::USE) == FilterResult::USE) {
-					countTransactions++;
-					return FilterResult::DISMISS;
-				}
-				return result;
-			};
-			fileBasedBlockchain->findAll(countFilter);
+			auto allTransactionsCount = mBlockchain->countAll(countFilter);
+			countFilter.transactionType = gradido::data::TransactionType::REGISTER_ADDRESS;
+			auto registerAddressTransactionsCount = mBlockchain->countAll(countFilter);
+			if (registerAddressTransactionsCount < allTransactionsCount) {
+				countTransactions = allTransactionsCount - registerAddressTransactionsCount;
+			}
 
 			auto addressType = mBlockchain->getAddressType(Filter(0,0,filter.updatedBalancePublicKey));
 			transactionList.AddMember("addressType", Value(enum_name(addressType).data(), alloc), alloc);
@@ -111,8 +109,6 @@ namespace model {
 						mPubkey,
 						filter.coinCommunityId
 					);
-					printf("filter: %s\n", toJsonString(previousTransactionFilter, true).c_str());
-					printf("previous transaction: %s\n", toJsonString(*previousTransaction->getConfirmedTransaction(), true).c_str());
 					if (accountBalance.getBalance() > GradidoUnit::zero()) {
 						previousBalance = accountBalance.getBalance();
 						previousDate = previousTransaction->getConfirmedTransaction()->getConfirmedAt();
@@ -127,22 +123,16 @@ namespace model {
 				auto transactions = createTransactionContext.run(*confirmedTransaction, mPubkey);
 				for (auto& transaction: transactions) {
 					transactionsVector.push_back(transaction);
+					// TODO: choose correct coin color
+					auto balance = confirmedTransaction->getAccountBalance(mPubkey, "");
 					transactionsVector.back().setPreviousBalance(
 						previousBalance
 					);
 					if (previousBalance > GradidoUnit::zero()) {
-						transactionsVector.back().calculateDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
+						transactionsVector.back().setDecay(previousDate, confirmedTransaction->getConfirmedAt(), previousBalance);
 					}
 					previousDate = confirmedTransaction->getConfirmedAt();
-					auto& balances = confirmedTransaction->getAccountBalances();
-					previousBalance = GradidoUnit::zero();
-					for (auto& balance : balances) {
-						// calculate sum of all balances belonging to this user, of all coin color
-						// TODO: choose correct coin color
-						if (balance.getPublicKey()->isTheSame(mPubkey)) {
-							previousBalance += balance.getBalance();
-						}
-					}
+					previousBalance = transactionsVector.back().getBalance();
 				}
 			}
 			allTransactions.clear();

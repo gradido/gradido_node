@@ -16,11 +16,11 @@ namespace model {
         Transaction result(confirmedTransaction, pubkey);
         result.setType(TransactionType::CREATE);
         
-				auto creation = transactionBody->getCreation();
-				result.setAmount(creation->getRecipient().getAmount());
-				result.setFirstName("Gradido");
-				result.setLastName("Akademie");
-				result.setPubkey(gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey());
+	    auto creation = transactionBody->getCreation();
+	    result.setAmount(creation->getRecipient().getAmount());
+	    result.setFirstName("Gradido");
+	    result.setLastName("Akademie");
+	    result.setPubkey(gradidoTransaction->getSignatureMap().getSignaturePairs().front().getPublicKey());
         return result;
       }
     }

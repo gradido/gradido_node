@@ -38,6 +38,7 @@ namespace model {
 				const gradido::data::ConfirmedTransaction& confirmedTransaction, 
 				memory::ConstBlockPtr pubkey
 			);
+			// constructor for last decay to now transaction
 			Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 
 			// Move constrcutor
@@ -48,8 +49,9 @@ namespace model {
 
 			Transaction& operator=(const Transaction& other);  // copy
 
+			void setDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
 			void calculateDecay(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance);
-			void setBalance(GradidoUnit balance);
+			// void setBalance(GradidoUnit balance);
 			inline GradidoUnit getBalance() const {return mBalance;}
 			inline void setPreviousBalance(GradidoUnit previousBalance) {mPreviousBalance = previousBalance;}
 			inline void setChange(const GradidoUnit& changeAmount, memory::ConstBlockPtr changePubkey);
@@ -90,10 +92,10 @@ namespace model {
 		};
 
 		void Transaction::setChange(const GradidoUnit& changeAmount, memory::ConstBlockPtr changePubkey) {
-				mHasChange = true;
-				mChangeAmount = changeAmount;
-				mChangePubkey = changePubkey->convertToHex();
-			}
+			mHasChange = true;
+			mChangeAmount = changeAmount;
+			mChangePubkey = changePubkey->convertToHex();
+		}
 	}
 }
 

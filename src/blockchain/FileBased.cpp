@@ -16,6 +16,7 @@
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/interaction/confirmTransaction/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
+#include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/Profiler.h"
 
 #include "loguru/loguru.hpp"
@@ -28,6 +29,7 @@ using std::string, std::string_view, std::vector;
 using std::shared_ptr, std::make_shared;
 using client::hiero::ConsensusClient;
 using controller::SimpleOrderingManager;
+using serialization::toJsonString;
 
 namespace gradido {
 	using data::LedgerAnchor, data::AddressType;
@@ -296,7 +298,7 @@ namespace gradido {
 					if (!filter.pagination.hasCapacityLeft(result.size())) {
 						return false;
 					}
-					auto transaction = block.getTransaction(transactionNr);
+					auto transaction = block.getTransaction(transactionNr, mPublicKeysIndex);
 					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION);
 					if ((filterResult & FilterResult::USE) == FilterResult::USE) {
 						result.push_back(transaction);
@@ -318,8 +320,36 @@ namespace gradido {
 			return result;
 		}
 
+		size_t FileBased::countAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS*/) const
+		{
+			size_t count = 0;
+			// check if filter has fields which aren't checked by index
+			if (!gradido::blockchain::TransactionsIndex::canMatchWithoutDeserialize(filter)) {
+				LOG_F(
+					WARNING,
+					"slow count, detect fields in Filter which aren't covered by index: %s",
+					toJsonString(filter).c_str()
+				);
+				return findAll(filter).size();
+			}
+			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
+				count += block.getBlockIndex().countTransactions(filter, mPublicKeysIndex);
+				return true;
+			});
+			return count;
+		}
+
 		std::vector<uint64_t> FileBased::findAllFast(const Filter& filter) const
 		{
+			// check if filter has fields which aren't checked by index
+			if (!gradido::blockchain::TransactionsIndex::canMatchWithoutDeserialize(filter)) {
+				LOG_F(
+					ERROR,
+					"findAllFast call with invalid filter not covered by index: %s",
+					toJsonString(filter).c_str()
+				);
+				return {};
+			}
 			std::vector<uint64_t> result;
 			// if pagination is used, filterCopy contain count of still to find transactions
 			Filter filterCopy(filter);
@@ -336,16 +366,21 @@ namespace gradido {
 			return result;
 		}
 
-		size_t FileBased::findAllResultCount(const Filter& filter) const
+		data::AddressType FileBased::getAddressType(const Filter& filter/* = Filter::LAST_TRANSACTION*/) const
 		{
-			size_t count = 0;
+			data::AddressType result = data::AddressType::NONE;
 			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				count += block.getBlockIndex().countTransactions(filter, mPublicKeysIndex);
-				return true;
+				result = block.getBlockIndex().getAddressType(filter.involvedPublicKey, mPublicKeysIndex);
+				if (data::AddressType::NONE == result) {
+					return true;
+				}
+				return false;
 			});
-			return count;
+			if (data::AddressType::NONE == result) {
+				result = getAddressTypeSlow(filter);
+			}
+			return result;
 		}
-
 
 		std::shared_ptr<const TransactionEntry> FileBased::getTransactionForId(uint64_t transactionId) const
 		{
@@ -354,7 +389,7 @@ namespace gradido {
 			do {
 				auto& block = getBlock(blockNr);
 				if (block.getBlockIndex().hasTransactionNr(transactionId)) {
-					return block.getTransaction(transactionId);
+					return block.getTransaction(transactionId, mPublicKeysIndex);
 				}
 				blockNr--;
 			} while (blockNr > 0);

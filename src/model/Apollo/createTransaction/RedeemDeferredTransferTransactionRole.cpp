@@ -19,18 +19,17 @@ namespace model {
 
         Transaction result(confirmedTransaction, pubkey);
         auto redeemDeferredTransfer = transactionBody->getRedeemDeferredTransfer();
-        auto transfer = redeemDeferredTransfer->getTransfer();
+        const auto& transfer = redeemDeferredTransfer->getTransfer();
         auto amount = transfer.getSender().getAmount();
 
         if (transfer.getRecipient()->isTheSame(pubkey)) {
           result.setType(TransactionType::LINK_RECEIVE);
           result.setPubkey(transfer.getSender().getPublicKey());
-        }
-				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
-          result.setType(TransactionType::SEND);
-          result.setPubkey(transfer.getRecipient());
-					amount.negate();
-				} else {
+        } else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
+            result.setType(TransactionType::SEND);
+            result.setPubkey(transfer.getRecipient());
+            amount.negate();
+        } else {
           amount = calculateChange(
             redeemDeferredTransfer->getDeferredTransferTransactionNr(),
             confirmedTransaction.getConfirmedAt(),
@@ -38,7 +37,7 @@ namespace model {
           ).getBalance();
           result.setType(TransactionType::LINK_CHANGE);
           result.setPubkey(transfer.getSender().getPublicKey());
-				}
+		}
         if (data::AddressType::DEFERRED_TRANSFER == mAddressType) {
           auto change = calculateChange(
             redeemDeferredTransfer->getDeferredTransferTransactionNr(),
@@ -47,7 +46,7 @@ namespace model {
           );
           result.setChange(change.getBalance().negated(), change.getPublicKey());
         }
-				result.setAmount(amount);
+        result.setAmount(amount);
         return result;
       }
 
