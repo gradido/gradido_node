@@ -4,8 +4,10 @@
 #include "gradido_blockchain/lib/DRHash.h"
 #include "../model/files/JsonFile.h"
 
+#include <functional>
 #include <unordered_map>
 #include <mutex>
+#include <shared_mutex>
 #include <vector>
 
 namespace hiero {
@@ -22,6 +24,7 @@ namespace cache {
 		std::string folderName;
 		std::string newBlockUri;
 		std::string blockUriType;
+		uint32_t    communityIdIndex;
 
 		DHASH makeHash() {
 			return DRMakeStringHash(alias.data(), alias.size());
@@ -55,21 +58,26 @@ namespace cache {
 		//! \brief get full folder path for group public key
 		//! if the hash from groupPublicKey exist multiple time, getting folder from mConfig, else from mHashList (faster)
 		//! \return complete path to group folder or empty path if not group not found
-		std::string getFolder(const std::string& communityId);
+		std::string getFolder(uint32_t communityIdIndex) const;
 		//! throw GroupNotFoundException Exception of community don't exist in config
 		const CommunityIndexEntry& getCommunityDetails(const std::string& communityId) const;
 		const CommunityIndexEntry& getCommunityDetails(const hiero::TopicId& topicId) const;
-		bool isCommunityInConfig(const std::string& communityId) const;
+		const CommunityIndexEntry& getCommunityDetails(uint32_t communityIdIndex) const;
+		bool isCommunityInConfig(uint32_t communityIdIndex) const;
+
+		// callback for each community, stop if return false
+		void iterate(std::function<bool(const CommunityIndexEntry&)> callback) const;
 
 		//! \brief collect all group aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server
-		std::vector<std::string> listCommunitiesIds();		
-
+		std::vector<std::string> listCommunitiesIds() const;	
+		std::vector<uint32_t> listCommunitiesIdIndices() const;
+		
 	protected:
-		mutable std::mutex mWorkMutex;
+		mutable std::shared_mutex mWorkMutex;
 		model::files::JsonFile mConfig;
 
-		std::unordered_map<std::string, CommunityIndexEntry> mCommunities;
+		std::unordered_map<uint32_t, CommunityIndexEntry> mCommunities;
 
 		//! \brief clear hash list and doublet's vector
 		void clear();

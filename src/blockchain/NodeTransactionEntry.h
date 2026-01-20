@@ -49,8 +49,9 @@ namespace gradido {
 				date::month month,
 				date::year year,
 				gradido::data::TransactionType transactionType,
-				const std::string& coinGroupId,
+				std::optional<uint32_t> coinCommunityIdIndex,
 				const uint32_t* addressIndices, uint8_t addressIndiceCount,
+				uint32_t blockchainCommunityIdIndex,
 				int32_t fileCursor = -10
 			);
 

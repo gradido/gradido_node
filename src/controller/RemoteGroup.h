@@ -16,7 +16,7 @@ namespace controller {
 	class RemoteGroup : public gradido::blockchain::Abstract
 	{
 	public:
-		RemoteGroup(const std::string& groupAlias);
+		RemoteGroup(uint32_t communityIdIndex);
 
 		//! validate and generate confirmed transaction
 		//! throw if gradido transaction isn't valid

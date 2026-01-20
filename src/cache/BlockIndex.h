@@ -38,7 +38,7 @@ namespace cache {
 	{
 		// friend model::files::BlockIndex;
 	public:
-		BlockIndex(gradido::blockchain::AbstractProvider* blockchainProvider, std::string_view groupFolderPath, uint32_t blockNr);
+		BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex);
 		~BlockIndex();
 
 		bool init();
@@ -63,7 +63,7 @@ namespace cache {
 		//! implement from model::files::IBlockIndexReceiver, called by loading block index from file
 		bool addIndicesForTransaction(
 			gradido::data::TransactionType transactionType,
-			std::optional<uint32_t> coinCommunityIdIndex,
+			uint32_t coinCommunityIdIndex,
 			date::year year,
 			date::month month,
 			uint64_t transactionNr, 
@@ -105,13 +105,15 @@ namespace cache {
 
 		//! \brief called from model::files::BlockIndex while reading file
 		std::string				 mFolderPath;
-		uint32_t				 mBlockNr;
+		uint32_t					 mBlockNr;
+		uint32_t					 mBlockchainCommunityIdIndex;
 		
 		std::map<uint64_t, int32_t> mTransactionNrsFileCursors;
 		typedef std::pair<uint64_t, int32_t> TransactionNrsFileCursorsPair;
 
 		mutable std::recursive_mutex mRecursiveMutex;
 		bool mDirty;
+		
 	};
 
 	rapidjson::Value BlockIndex::serializeToJson(rapidjson::Document::AllocatorType& alloc) const

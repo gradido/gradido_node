@@ -4,6 +4,7 @@
 #include "../client/hiero/MirrorClient.h"
 #include "../ServerGlobals.h"
 
+#include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
@@ -11,16 +12,23 @@
 
 #include "loguru/loguru.hpp"
 
+#include <memory>
+#include <string>
+
 using namespace gradido;
 using namespace blockchain;
 using namespace interaction;
 using namespace serialization;
 
+using gradido::blockchain::FileBased;
+using std::shared_ptr;
+using std::string, std::to_string;
+
 namespace task {
 	SyncTopicOnStartup::SyncTopicOnStartup(
 		uint64_t lastKnownSequenceNumber,
 		hiero::TopicId lastKnowTopicId,
-		std::shared_ptr<gradido::blockchain::FileBased> blockchain
+		shared_ptr<FileBased> blockchain
 	) : CPUTaskGRPCReactor(ServerGlobals::g_CPUScheduler),
 		mLastKnownSequenceNumber(lastKnownSequenceNumber),
 		mLastKnowTopicId(lastKnowTopicId),

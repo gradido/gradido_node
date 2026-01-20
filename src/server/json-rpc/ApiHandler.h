@@ -61,7 +61,7 @@ namespace server {
 				memory::ConstBlockPtr pubkey,
 				Timepoint date,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-				const std::string& coinCommunityId = ""
+				std::optional<uint32_t> coinCommunityIdIndex = std::nullopt
 			);
 			void getAddressType(
 				rapidjson::Value& resultJson,

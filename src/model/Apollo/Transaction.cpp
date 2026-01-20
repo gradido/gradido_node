@@ -35,7 +35,7 @@ namespace model {
 			}
 			mId = confirmedTransaction.getId();
 			mDate = confirmedTransaction.getConfirmedAt();
-			mBalance = confirmedTransaction.getAccountBalance(pubkey, "").getBalance();
+			mBalance = confirmedTransaction.getAccountBalance(pubkey, std::nullopt).getBalance();
 		}
 
 		Transaction::Transaction(Timepoint decayStart, Timepoint decayEnd, GradidoUnit startBalance)

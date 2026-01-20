@@ -9,21 +9,29 @@
 
 #include "hiero/Addressbook.h"
 #include "client/hiero/const.h"
+#include "lib/PersistentDictionary.h"
 
+#include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/http/ServerConfig.h"
 
 #include <algorithm>
-#include <sodium.h>
-#include <iostream>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <sodium.h>
+#include <string>
+#include <vector>
 
 #include "loguru.hpp"
 
-using namespace gradido;
-using namespace blockchain;
-namespace fs = std::filesystem;
+using gradido::blockchain::FileBasedProvider;
+using gradido::g_appContext, gradido::AppContext;
+using std::filesystem::create_directories, std::filesystem::exists, std::filesystem::is_regular_file, std::filesystem::path;
+using std::shared_ptr, std::make_unique;
+using std::string;
+using std::vector;
 
 MainServer::MainServer()
 	: mHttpServer(nullptr)
@@ -38,21 +46,21 @@ bool MainServer::init()
 {
 	Profiler usedTime;
 	ServerGlobals::g_FilesPath = getHomeDir() + "/.gradido";
-	fs::create_directories(ServerGlobals::g_FilesPath);
-
+	create_directories(ServerGlobals::g_FilesPath);
+	
 	// ********** logging ************************************
-	std::string logPath = ServerGlobals::g_FilesPath + "/logs";
-	fs::create_directories(logPath);
+	string logPath = ServerGlobals::g_FilesPath + "/logs";
+	create_directories(logPath);
 	// beware, no logrotation in loguru
 	// TODO: add config options to choose which to use
 	// TODO: check switching to https://github.com/gabime/spdlog
-	std::string errorLogFile = logPath + "/errors.log";
+	string errorLogFile = logPath + "/errors.log";
 	loguru::add_file(errorLogFile.data(), loguru::Append, loguru::Verbosity_WARNING);
 	// info 
-	std::string infoLogFile = logPath + "/infos.log";
+	string infoLogFile = logPath + "/infos.log";
 	loguru::add_file(infoLogFile.data(), loguru::Append, loguru::Verbosity_INFO);
 	// infos and above
-	std::string debugLogFile = logPath + "/debug.log";
+	string debugLogFile = logPath + "/debug.log";
 	loguru::add_file(debugLogFile.data(), loguru::Truncate, loguru::Verbosity_MAX);
 #if defined(__linux__) || defined(__unix__)
 	// use syslog on linux, this has logrotation build in
@@ -66,6 +74,10 @@ bool MainServer::init()
 	MapEnvironmentToConfig config(configFile);
 
 	unsigned short jsonrpc_port = (unsigned short)config.getInt("server.json_rpc", 8340);
+
+	auto communityDictionary = make_unique<PersistentDictionary<std::string>>(ServerGlobals::g_FilesPath + "/communityIdsCache");
+	communityDictionary->init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES);
+	g_appContext = make_unique<AppContext>(std::move(communityDictionary));
 
 	// timeouts
 	ServerGlobals::loadTimeouts(config);
@@ -83,16 +95,16 @@ bool MainServer::init()
 	CacheManager::getInstance()->getFuzzyTimer()->addTimer("mainCPUScheduler", ServerGlobals::g_CPUScheduler, std::chrono::milliseconds(100));
 	ServerGlobals::g_WriteFileCPUScheduler = new task::CPUSheduler(io_worker_count, "IO Worker");
 	// ServerGlobals::g_IotaRequestCPUScheduler = new task::CPUSheduler(2, "Iota Worker");
-	std::string hieroNetworkType = config.getString("clients.hiero.networkType", "testnet");
+	string hieroNetworkType = config.getString("clients.hiero.networkType", "testnet");
 	ServerGlobals::initHiero(hieroNetworkType);
 
 	uint8_t hieroNodeCount = config.getInt("clients.hiero.nodeCount", 3);
 	uint8_t hieroNodeCountPerCommunity = config.getInt("clients.hiero.nodeCountPerCommunity", 3);
-	std::vector<std::shared_ptr<client::hiero::ConsensusClient>> hieroClients;
+	vector<shared_ptr<client::hiero::ConsensusClient>> hieroClients;
 
 	if (!ServerGlobals::g_isOfflineMode) {		
 		//iota::MqttClientWrapper::getInstance()->init();
-		std::string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + hieroNetworkType + ".pb";
+		string grpcAddressesFile = ServerGlobals::g_FilesPath + "/addressbook/" + hieroNetworkType + ".pb";
 		
 		if (!hieroNodeCount || !hieroNodeCountPerCommunity) {
 			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity and clients.hiero.nodeCount need to be both >0");
@@ -124,6 +136,7 @@ bool MainServer::init()
 			hieroClients.push_back(hieroClient);
 		}
 	}
+
 	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json", std::move(hieroClients), hieroNodeCountPerCommunity)) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
@@ -160,15 +173,15 @@ void MainServer::exit()
 	FileBasedProvider::getInstance()->exit();
 }
 
-bool MainServer::configExists(const std::string& fileName) {
-	return fs::exists(fileName) && fs::is_regular_file(fileName);
+bool MainServer::configExists(const string& fileName) {
+	return exists(fileName) && is_regular_file(fileName);
 }
 
-std::string MainServer::findConfigFile()
+string MainServer::findConfigFile()
 {
 	// possible paths
-	fs::path currentPath = "gradido.yaml"; // current location
-	fs::path homePath = fs::path(getHomeDir()) / ".gradido" / "gradido.yaml";
+	path currentPath = "gradido.yaml"; // current location
+	path homePath = path(getHomeDir()) / ".gradido" / "gradido.yaml";
 	
 	// check paths
 	if (configExists(currentPath.string())) {
@@ -183,12 +196,12 @@ std::string MainServer::findConfigFile()
 	return "";
 }
 
-std::string MainServer::getHomeDir()
+string MainServer::getHomeDir()
 {
 #if defined(_WIN32) || defined(_WIN64)
-	return fs::path(getenv("USERPROFILE")).string(); // windows
+	return path(getenv("USERPROFILE")).string(); // windows
 #else 
-	return fs::path(getenv("HOME")).string(); // linux
+	return path(getenv("HOME")).string(); // linux
 #endif
 }
 

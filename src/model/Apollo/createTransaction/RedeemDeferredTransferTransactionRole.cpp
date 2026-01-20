@@ -62,7 +62,7 @@ namespace model {
         return {
           decayedAccountBalance.getPublicKey(),
           decayedAccountBalance.getBalance() - transferAmount.getAmount(),
-          decayedAccountBalance.getCommunityId()
+          decayedAccountBalance.getCoinCommunityIdIndex()
         };
       }
 
@@ -83,7 +83,7 @@ namespace model {
           targetDate
         );
 
-        return data::AccountBalance(transferAmount.getPublicKey(), decayed, transferAmount.getCommunityId());
+        return data::AccountBalance(transferAmount.getPublicKey(), decayed, transferAmount.getCoinCommunityIdIndex());
       }
     }
   }

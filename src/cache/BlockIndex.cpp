@@ -15,9 +15,8 @@ using gradido::blockchain::TransactionsIndex, gradido::blockchain::AbstractProvi
 namespace cache {
 
 
-	BlockIndex::BlockIndex(AbstractProvider* blockchainProvider, std::string_view groupFolderPath, uint32_t blockNr)
-		: TransactionsIndex(blockchainProvider), mFolderPath(groupFolderPath), mBlockNr(blockNr),
-		mDirty(false)
+	BlockIndex::BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex)
+		: mFolderPath(groupFolderPath), mBlockNr(blockNr), mBlockchainCommunityIdIndex(blockchainCommunityIdIndex), mDirty(false)
 	{
 
 	}
@@ -49,7 +48,7 @@ namespace cache {
 		std::lock_guard _lock(mRecursiveMutex);
 		clearIndexEntries();
 		mTransactionNrsFileCursors.clear();		
-		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr);
+		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr, mBlockchainCommunityIdIndex);
 		LOG_F(WARNING, "BlockIndex: %s was corrupted and must be rebuild", blockIndexFile.getFileName().c_str());
 		blockIndexFile.reset();
 		mMaxTransactionNr = 0;
@@ -61,7 +60,7 @@ namespace cache {
 		std::lock_guard _lock(mRecursiveMutex);
 		assert(!mYearMonthAddressIndexEntries.size() && !mTransactionNrsFileCursors.size());
 
-		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr);
+		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr, mBlockchainCommunityIdIndex);
 		return blockIndexFile.readFromFile(this);
 	}
 
@@ -73,7 +72,7 @@ namespace cache {
 		}
 		
 		assert(mYearMonthAddressIndexEntries.size() && mTransactionNrsFileCursors.size());
-		auto blockIndexFile = std::make_unique<model::files::BlockIndex>(mFolderPath, mBlockNr);
+		auto blockIndexFile = std::make_unique<model::files::BlockIndex>(mFolderPath, mBlockNr, mBlockchainCommunityIdIndex);
 
 		std::vector<uint32_t> publicKeyIndicesTemp;
 		publicKeyIndicesTemp.reserve(10);
@@ -123,7 +122,7 @@ namespace cache {
 
 	bool BlockIndex::addIndicesForTransaction(
 		gradido::data::TransactionType transactionType,
-		std::optional<uint32_t> coinCommunityIdIndex,
+		uint32_t coinCommunityIdIndex,
 		date::year year,
 		date::month month,
 		uint64_t transactionNr,

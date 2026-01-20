@@ -23,6 +23,7 @@
 //! TODO: Test and Profile different values, or create dynamic algorithmus
 #define GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES 10
 #define GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES 1
+#define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES 400
 #define GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES 1
 
 #include <mutex>
@@ -62,7 +63,7 @@ namespace gradido {
 			// Constructor is only usable by this class
 			FileBased(
 				Private, 
-				std::string_view communityId,
+				const std::string& communityId,
 				const hiero::TopicId& topicId,
 				std::string_view alias, 
 				std::string_view folder,
@@ -70,7 +71,7 @@ namespace gradido {
 			);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
 			static inline std::shared_ptr<FileBased> create(
-				std::string_view communityId,
+				const std::string& communityId,
 				const hiero::TopicId& topicId,
 				std::string_view alias,
 				std::string_view folder,
@@ -149,8 +150,9 @@ namespace gradido {
 				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
 			}
 			inline const hiero::TopicId& getHieroTopicId() const { return mHieroTopicId; }
-			inline const std::string& getFolderPath() const { return mFolderPath; }
 			inline const std::string& getAlias() const { return mAlias; }
+			inline const std::string& getFolderPath() const { return mFolderPath; }
+			inline const std::string& getCommunityId() const { return mCommunityId; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
 			inline std::shared_ptr<client::hiero::ConsensusClient> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
 			std::shared_ptr<controller::SimpleOrderingManager> getOrderingManager() { return mOrderingManager; }
@@ -172,6 +174,7 @@ namespace gradido {
 			hiero::TopicId mHieroTopicId;
 			std::string mAlias;
 			std::string mFolderPath;
+			std::string mCommunityId;
 
 			//! observe write to file tasks from block, mayber later more
 			mutable std::shared_ptr<TaskObserver> mTaskObserver;
@@ -200,7 +203,7 @@ namespace gradido {
 		};
 
 		std::shared_ptr<FileBased> FileBased::create(
-			std::string_view communityId,
+			const std::string& communityId,
 			const hiero::TopicId& topicId,
 			std::string_view alias,
 			std::string_view folder,

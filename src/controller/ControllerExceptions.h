@@ -10,6 +10,7 @@ namespace controller {
 	{
 	public:
 		explicit GroupNotFoundException(const char* what, const std::string& groupAlias) noexcept;
+		explicit GroupNotFoundException(const char* what, uint32_t communityIdIndex) noexcept;
 		std::string getFullString() const;
 	protected:
 		std::string mGroupAlias;

@@ -1,3 +1,4 @@
+#include "gradido_blockchain/AppContext.h"
 #include "FileBased.h"
 #include "../client/hiero/ConsensusClient.h"
 #include "FileBasedProvider.h"
@@ -38,16 +39,17 @@ namespace gradido {
 	namespace blockchain {
 		FileBased::FileBased(
 			Private,
-			string_view communityId,
+			const string& communityId,
 			const hiero::TopicId& topicId,
 			string_view alias,
 			string_view folder,
 			vector<shared_ptr<ConsensusClient>>&& hieroClients)
-			: Abstract(communityId),
+			: Abstract(g_appContext->getOrAddCommunityIdIndex(communityId)),
 			mExitCalled(false),
 			mHieroTopicId(topicId),
 			mAlias(alias),
-			mFolderPath(folder),			
+			mFolderPath(folder),		
+			mCommunityId(communityId),
 			mTaskObserver(std::make_shared<TaskObserver>()),
 			mOrderingManager(std::make_shared<SimpleOrderingManager>(communityId)),
 			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
@@ -234,7 +236,7 @@ namespace gradido {
 			}
 			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
 			auto& block = getBlock(blockNr);
-			auto nodeTransactionEntry = std::make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
+			auto nodeTransactionEntry = make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
 			if (!block.pushTransaction(nodeTransactionEntry, mPublicKeysIndex)) {
 				// block was already stopped, so we can  stop here also 
 				LOG_F(WARNING, "couldn't push transaction: %lu to block: %d", confirmedTransaction->getId(), blockNr);

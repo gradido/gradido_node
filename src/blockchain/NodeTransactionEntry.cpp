@@ -9,7 +9,7 @@ namespace gradido {
 			gradido::data::ConstConfirmedTransactionPtr transaction,
 			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 			int32_t fileCursor /*= -10*/
-		) : TransactionEntry(transaction), mFileCursor(fileCursor)
+		) : TransactionEntry(transaction, blockchain->getCommunityIdIndex()), mFileCursor(fileCursor)
 		{
 			auto involvedPublicKeys = transaction->getInvolvedAddresses();
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
@@ -24,11 +24,12 @@ namespace gradido {
 			date::month month,
 			date::year year,
 			gradido::data::TransactionType transactionType,
-			const std::string& coinGroupId,
+			std::optional<uint32_t> coinCommunityIdIndex,
 			const uint32_t* addressIndices,
 			uint8_t addressIndiceCount,
+			uint32_t blockchainCommunityIdIndex,
 			int32_t fileCursor /*= -10*/
-		) : TransactionEntry(transactionNr, month, year, transactionType, coinGroupId), mFileCursor(fileCursor)
+		) : TransactionEntry(transactionNr, month, year, transactionType, coinCommunityIdIndex, blockchainCommunityIdIndex), mFileCursor(fileCursor)
 		{
 			mPublicKeyIndices.reserve(addressIndiceCount);
 			for (int i = 0; i < addressIndiceCount; i++) {
@@ -40,7 +41,7 @@ namespace gradido {
 			memory::ConstBlockPtr serializedTransaction,
 			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 			int32_t fileCursor/* = -10 */
-		) : TransactionEntry(serializedTransaction), mFileCursor(fileCursor)
+		) : TransactionEntry(serializedTransaction, blockchain->getCommunityIdIndex()), mFileCursor(fileCursor)
 		{
 			auto involvedPublicKeys = getConfirmedTransaction()->getInvolvedAddresses();
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
@@ -54,10 +55,9 @@ namespace gradido {
 			memory::ConstBlockPtr serializedTransaction,
 			std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 			int32_t fileCursor/* = -10 */
-		) : TransactionEntry(serializedTransaction, transaction), mFileCursor(fileCursor)
+		) : TransactionEntry(serializedTransaction, transaction, blockchain->getCommunityIdIndex()), mFileCursor(fileCursor)
 		{
 
 		}
-
 	}
 }

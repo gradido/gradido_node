@@ -9,7 +9,6 @@
 
 #include <queue>
 #include <string>
-#include <optional>
 
 namespace cache {
 	class BlockIndex;
@@ -29,7 +28,7 @@ namespace model {
 		public:
 			virtual bool addIndicesForTransaction(
 				gradido::data::TransactionType transactionType,
-				std::optional<uint32_t> coinCommunityIdIndex, 
+				uint32_t coinCommunityIdIndex, 
 				date::year year,
 				date::month month,
 				uint64_t transactionNr, 
@@ -55,7 +54,7 @@ namespace model {
 		{
 		public:
 			//! create filename from path and blocknr
-			BlockIndex(std::string_view groupFolderPath, uint32_t blockNr);
+			BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex);
 			//! use full filename which includes also the block nr
 			BlockIndex(std::string_view filename);
 			~BlockIndex();
@@ -72,7 +71,7 @@ namespace model {
 				uint64_t transactionNr,
 				int32_t fileCursor,
 				gradido::data::TransactionType transactionType,
-				std::optional<uint32_t> coinCommunityIdIndex,
+				uint32_t coinCommunityIdIndex,
 				uint8_t isBalanceChanging,
 				const std::vector<uint32_t>& addressIndices
 			) {
@@ -177,7 +176,7 @@ namespace model {
 					uint64_t _transactionNr, 
 					int32_t _fileCursor, 
 					gradido::data::TransactionType _transactionType,
-					std::optional<uint32_t> _coinCommunityIdIndex,
+					uint32_t _coinCommunityIdIndex,
 					uint8_t _isBalanceChanging,
 					const std::vector<uint32_t>& _addressIndices					
 				) : 
@@ -200,7 +199,7 @@ namespace model {
 					transactionNr(0), 
 					fileCursor(-10), 
 					transactionType(gradido::data::TransactionType::NONE), 
-					coinCommunityIdIndex(std::nullopt),
+					coinCommunityIdIndex(0),
 					isBalanceChanging(0),
 					addressIndices(nullptr), 
 					addressIndicesCount(0)					
@@ -219,7 +218,7 @@ namespace model {
 				uint64_t transactionNr;
 				int32_t fileCursor;
 				gradido::data::TransactionType transactionType;
-				std::optional<uint32_t> coinCommunityIdIndex;
+				uint32_t coinCommunityIdIndex;
 				uint8_t isBalanceChanging;
 				uint8_t  addressIndicesCount;
 				uint32_t* addressIndices;				
@@ -239,10 +238,11 @@ namespace model {
 				virtual bool readFromFile(VirtualFile* vFile);
 				virtual void updateHash(crypto_generichash_state* state);
 
-				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> createTransactionEntry(date::month month, date::year year);
+				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> createTransactionEntry(date::month month, date::year year, uint32_t blockchainCommunityIdIndex);
 			};
 
 			std::string mFileName;
+			uint32_t mBlockchainCommunityIdIndex;
 			std::queue<Block*> mDataBlocks;
 			size_t mDataBlockSumSize;
 		};

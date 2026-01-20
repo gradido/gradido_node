@@ -30,11 +30,7 @@ namespace model {
 			vFile->write(&transactionNr, sizeof(uint64_t));
 			vFile->write(&fileCursor, sizeof(int32_t));
 			vFile->write(&transactionType, sizeof(TransactionType));
-			uint8_t hasValue = coinCommunityIdIndex.has_value();
-			vFile->write(&hasValue, sizeof(uint8_t));
-			if (hasValue) {
-				vFile->write(&coinCommunityIdIndex.value(), sizeof(uint32_t));
-			}
+			vFile->write(&coinCommunityIdIndex, sizeof(uint32_t));
 			vFile->write(&isBalanceChanging, sizeof(uint8_t));
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
 			//vFile->write(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
@@ -56,17 +52,8 @@ namespace model {
 					"gradido::data::TransactionType", 
 					std::to_string((uint8_t)transactionType).data()
 				);
-			}
-			uint8_t hasValue = 0;
-			if (!vFile->read(&hasValue, sizeof(uint8_t))) return false;
-			if (hasValue) {
-				uint32_t coinCommnityIdIndexRaw = 0;
-				if (!vFile->read(&coinCommnityIdIndexRaw, sizeof(uint32_t))) return false;
-				coinCommunityIdIndex = coinCommnityIdIndexRaw;
-			}
-			else {
-				coinCommunityIdIndex = nullopt;
-			}
+			}	
+			if (!vFile->read(&coinCommunityIdIndex, sizeof(uint32_t))) return false;
 			if (!vFile->read(&isBalanceChanging, sizeof(uint8_t))) return false;
 			if (!vFile->read(&addressIndicesCount, sizeof(uint8_t))) return false;
 
@@ -84,9 +71,7 @@ namespace model {
 			//crypto_generichash_update(state, (const unsigned char*)this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t));
 			crypto_generichash_update(state, (const unsigned char*)&transactionNr, sizeof(uint64_t));		
 			crypto_generichash_update(state, (const unsigned char*)&fileCursor, sizeof(int32_t));
-			if (coinCommunityIdIndex.has_value()) {
-				crypto_generichash_update(state, (const unsigned char*)&coinCommunityIdIndex.value(), sizeof(uint32_t));
-			}
+			crypto_generichash_update(state, (const unsigned char*)&coinCommunityIdIndex, sizeof(uint32_t));
 			crypto_generichash_update(state, (const unsigned char*)&addressIndicesCount, sizeof(uint8_t));
 			crypto_generichash_update(state, (const unsigned char*)&isBalanceChanging, sizeof(uint8_t));
 
@@ -94,17 +79,10 @@ namespace model {
 			crypto_generichash_update(state, (const unsigned char*)addressIndices, sizeof(uint32_t) * addressIndicesCount);
 		}
 
-		std::shared_ptr<blockchain::NodeTransactionEntry> BlockIndex::DataBlock::createTransactionEntry(date::month month, date::year year)
+		std::shared_ptr<blockchain::NodeTransactionEntry> BlockIndex::DataBlock::createTransactionEntry(date::month month, date::year year, uint32_t blockchainCommunityIdIndex)
 		{
-			std::string coinCommunityString = "";
-			if (coinCommunityIdIndex.has_value()) {
-				auto res = FileBasedProvider::getInstance()->getCommunityIdString(coinCommunityIdIndex.value());
-				if (res.has_value()) {
-					coinCommunityString = res.value();
-				}
-			}
 			auto transactionEntry = std::make_shared<blockchain::NodeTransactionEntry>(
-				transactionNr, month, year, transactionType, coinCommunityString, addressIndices, addressIndicesCount
+				transactionNr, month, year, transactionType, coinCommunityIdIndex, addressIndices, addressIndicesCount, blockchainCommunityIdIndex
 			);
 			transactionEntry->setFileCursor(fileCursor);
 			return transactionEntry;
@@ -112,8 +90,8 @@ namespace model {
 
 		// **************************************************************************
 
-		BlockIndex::BlockIndex(std::string_view groupFolderPath, uint32_t blockNr)
-			: mDataBlockSumSize(0), mFileName(groupFolderPath)
+		BlockIndex::BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex)
+			: mDataBlockSumSize(0), mFileName(groupFolderPath), mBlockchainCommunityIdIndex(blockchainCommunityIdIndex)
 		{
 			std::stringstream fileNameStream;
 			fileNameStream << "/blk" << std::setw(8) << std::setfill('0') << blockNr << ".index";

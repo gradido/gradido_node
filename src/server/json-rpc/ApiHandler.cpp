@@ -3,6 +3,7 @@
 // need to be here, else it produce a linker error, or more precisly the member function generateList
 // TODO: fix the reason
 #include "../../model/Apollo/TransactionList.h"
+#include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/calculateCreationSum/Context.h"
@@ -23,6 +24,7 @@
 #include "magic_enum/magic_enum.hpp"
 #include "loguru/loguru.hpp"
 
+#include <optional>
 #include <set>
 
 using namespace rapidjson;
@@ -32,6 +34,9 @@ using namespace interaction;
 using namespace serialization;
 using namespace data;
 using namespace magic_enum;
+
+using std::optional, std::nullopt;
+using gradido::g_appContext;
 
 namespace server {
 	namespace json_rpc {
@@ -146,12 +151,11 @@ namespace server {
 				}
 
 				auto date = DataTypeConverter::dateTimeStringToTimePoint(date_string);
-				std::string coinCommunityId = "";
+				optional<uint32_t> coinCommunityId = nullopt;
 				if (params.HasMember("coinCommunityId") && params["coinCommunityId"].IsString()) {
-					coinCommunityId = params["coinCommunityId"].GetString();
+					coinCommunityId = g_appContext->getCommunityIds().getIndexForData(params["coinCommunityId"].GetString());
 				}
 				getAddressBalance(resultJson, pubkey, date, blockchain, coinCommunityId);
-
 			}
 			else if (method == "getAddressType") {
 				getAddressType(resultJson, pubkey, blockchain);
@@ -312,8 +316,8 @@ namespace server {
 				auto communityRoot = communityRootBody->getCommunityRoot();
 				auto gmwAddress = communityRoot->getGmwPubkey();
 				auto aufAddress = communityRoot->getAufPubkey();
-				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now, "");
-				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now, "");
+				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now, blockchain->getCommunityIdIndex());
+				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now, blockchain->getCommunityIdIndex());
 				resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
 				resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
 			} else {
@@ -396,14 +400,13 @@ namespace server {
 			memory::ConstBlockPtr pubkey,
 			Timepoint date,
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-			const std::string& coinCommunityId /* = "" */
+			optional<uint32_t> coinCommunityIdIndex /* = nullopt */
 		)
 		{
 			assert(blockchain);
 			auto& alloc = mRootJson.GetAllocator();
 			calculateAccountBalance::Context calculateAccountBalance(blockchain);
-			// TODO: add coinCommunity�d Filter to calculateAccountBalance Context
-			auto balanceString = calculateAccountBalance.fromEnd(pubkey, date, coinCommunityId, 0).toString();
+			auto balanceString = calculateAccountBalance.fromEnd(pubkey, date, coinCommunityIdIndex).toString();
 
 			resultJson.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 		}
@@ -467,8 +470,7 @@ namespace server {
 			auto transactionListValue = transactionList.generateList(now, filter, mRootJson);
 
 			calculateAccountBalance::Context calculateAddressBalance(blockchain);
-			// TODO: add balances from another communities
-			auto balance = calculateAddressBalance.fromEnd(filter.updatedBalancePublicKey, now, "");
+			auto balance = calculateAddressBalance.fromEnd(filter.updatedBalancePublicKey, now, filter.coinCommunityIdIndex);
 			std::string balanceString = balance.toString();
 			transactionListValue.AddMember("balance", Value(balanceString.data(), balanceString.size(), alloc), alloc);
 			resultJson.AddMember("transactionList", transactionListValue, alloc);

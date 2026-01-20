@@ -6,6 +6,9 @@
 #include "FileBased.h"
 #include "../cache/GroupIndex.h"
 
+#include <unordered_map>
+#include <shared_mutex>
+
 #define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE 1
 
 namespace hiero {
@@ -30,7 +33,10 @@ namespace gradido {
 		public:
 			static FileBasedProvider* getInstance();
 
-			std::shared_ptr<Abstract> findBlockchain(std::string_view communityId);
+			std::shared_ptr<Abstract> findBlockchain(uint32_t communityIdIndex) override;
+			std::shared_ptr<Abstract> findBlockchain(const std::string& communityId) override;
+			
+			std::shared_ptr<Abstract> findBlockchain(hiero::TopicId& topicId);
 			//! \return true if successfully else return false
 			bool init(
 				const std::string& communityConfigFile,
@@ -47,8 +53,8 @@ namespace gradido {
 			inline std::vector<std::string> listCommunityIds() const;
 		protected:
 
-			std::map<std::string, std::shared_ptr<FileBased>, StringViewCompare> mBlockchainsPerGroup;
-			std::recursive_mutex mWorkMutex;
+			std::unordered_map<uint32_t, std::shared_ptr<FileBased>> mBlockchainsPerGroup;
+			std::shared_mutex mWorkMutex;
 
 		private:
 			FileBasedProvider();
@@ -64,7 +70,7 @@ namespace gradido {
 				const hiero::TopicId& topicId,
 				const std::string&  alias
 			);
-			void updateListenerCommunity(const std::string& communityId, const std::string& alias, std::shared_ptr<FileBased> blockchain);
+			void updateListenerCommunity(uint32_t communityIdIndex, const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
 			cache::GroupIndex* mGroupIndex;
 			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;

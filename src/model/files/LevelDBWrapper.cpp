@@ -56,6 +56,7 @@ namespace model {
 			}
 			return status.ok();
 		}
+
 		void LevelDBWrapper::exit()
 		{
 			auto fm = FileLockManager::getInstance();

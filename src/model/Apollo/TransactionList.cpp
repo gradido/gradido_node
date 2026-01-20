@@ -31,6 +31,10 @@ namespace model {
 		Value TransactionList::generateList(Timepoint now, const Filter& filter, Document& root)
 		{
 			auto fileBasedBlockchain = std::dynamic_pointer_cast<const gradido::blockchain::FileBased>(mBlockchain);
+			uint32_t coinCommunityId = mBlockchain->getCommunityIdIndex();
+			if (filter.coinCommunityIdIndex.has_value()) {
+				coinCommunityId = filter.coinCommunityIdIndex.value();
+			}
 			assert(fileBasedBlockchain);
 			auto& alloc = root.GetAllocator();
 
@@ -104,11 +108,9 @@ namespace model {
 				previousTransactionFilter.updatedBalancePublicKey = filter.updatedBalancePublicKey;
 				previousTransactionFilter.timepointInterval = TimepointInterval(previousDate, beforePreviousTransactionDate);
 				auto previousTransaction = mBlockchain->findOne(previousTransactionFilter);
+				
 				if (previousTransaction) {
-					auto accountBalance = previousTransaction->getConfirmedTransaction()->getAccountBalance(
-						mPubkey,
-						filter.coinCommunityId
-					);
+					auto accountBalance = previousTransaction->getConfirmedTransaction()->getAccountBalance(mPubkey, coinCommunityId);
 					if (accountBalance.getBalance() > GradidoUnit::zero()) {
 						previousBalance = accountBalance.getBalance();
 						previousDate = previousTransaction->getConfirmedTransaction()->getConfirmedAt();
@@ -124,7 +126,7 @@ namespace model {
 				for (auto& transaction: transactions) {
 					transactionsVector.push_back(transaction);
 					// TODO: choose correct coin color
-					auto balance = confirmedTransaction->getAccountBalance(mPubkey, "");
+					auto balance = confirmedTransaction->getAccountBalance(mPubkey, coinCommunityId);
 					transactionsVector.back().setPreviousBalance(
 						previousBalance
 					);

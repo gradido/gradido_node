@@ -87,7 +87,7 @@ namespace controller {
                     updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
-                auto otherBlockchain = blockchainProvider->findBlockchain(body->getOtherGroup());
+                auto otherBlockchain = blockchainProvider->findBlockchain(body->getOtherCommunityIdIndex().value());
                 if (!otherBlockchain) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (target community unknown)");
                     mTransactions.erase(it);
