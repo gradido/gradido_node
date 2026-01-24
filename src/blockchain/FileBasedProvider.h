@@ -35,7 +35,7 @@ namespace gradido {
 
 			std::shared_ptr<Abstract> findBlockchain(uint32_t communityIdIndex) override;
 			std::shared_ptr<Abstract> findBlockchain(const std::string& communityId) override;
-			
+
 			std::shared_ptr<Abstract> findBlockchain(hiero::TopicId& topicId);
 			//! \return true if successfully else return false
 			bool init(

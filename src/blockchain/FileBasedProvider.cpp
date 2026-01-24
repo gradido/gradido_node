@@ -38,7 +38,7 @@ namespace gradido {
 				delete mGroupIndex;
 				mGroupIndex = nullptr;
 			}
-		}		
+		}
 
 		FileBasedProvider* FileBasedProvider::getInstance()
 		{
@@ -56,7 +56,7 @@ namespace gradido {
 			if (it != mBlockchainsPerGroup.end()) {
 				return it->second;
 			}
-			
+
 
 			return nullptr;
 		}
@@ -84,7 +84,7 @@ namespace gradido {
 				else {
 					return findBlockchain(communityIdIndex.value());
 				}
-			} 
+			}
 			catch (GradidoBlockchainException& ex) {
 				LOG_F(WARNING, "%s", ex.getFullString().data());
 			}

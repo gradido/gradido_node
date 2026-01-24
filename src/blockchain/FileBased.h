@@ -110,7 +110,14 @@ namespace gradido {
 				data::ConstGradidoTransactionPtr gradidoTransaction,
 				const data::LedgerAnchor& ledgerAnchor,
 				data::Timestamp confirmedAt
-		 	) override;
+			) override;
+
+			virtual bool createAndAddConfirmedTransactionExtern(
+				data::ConstGradidoTransactionPtr gradidoTransaction,
+				const data::LedgerAnchor& ledgerAnchor,
+				std::vector<data::AccountBalance> accountBalances
+			) override;
+
 			void updateLastKnownSequenceNumber(uint64_t newSequenceNumber);
 			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent) override;
 			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent) override;

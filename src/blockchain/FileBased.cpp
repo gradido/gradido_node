@@ -214,6 +214,7 @@ namespace gradido {
 			mLedgerAnchorCache.exit();
 			mTransactionTriggerEventsCache.exit();
 		}
+
 		bool FileBased::createAndAddConfirmedTransaction(
 			data::ConstGradidoTransactionPtr gradidoTransaction,
 			const data::LedgerAnchor& ledgerAnchor,
@@ -238,7 +239,61 @@ namespace gradido {
 			auto& block = getBlock(blockNr);
 			auto nodeTransactionEntry = make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
 			if (!block.pushTransaction(nodeTransactionEntry, mPublicKeysIndex)) {
-				// block was already stopped, so we can  stop here also 
+				// block was already stopped, so we can  stop here also
+				LOG_F(WARNING, "couldn't push transaction: %lu to block: %d", confirmedTransaction->getId(), blockNr);
+				return false;
+			}
+			role->runPastAddToBlockchain(confirmedTransaction, getptr());
+			mBlockchainState.updateState(DefaultStateKeys::LAST_TRANSACTION_ID, confirmedTransaction->getId());
+			mBlockchainState.updateState(DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex.getLastIndex());
+			mTransactionHashCache.push(*nodeTransactionEntry->getConfirmedTransaction());
+			mLedgerAnchorCache.add(confirmedTransaction->getLedgerAnchor(), confirmedTransaction->getId());
+			// add public keys to index
+			auto involvedAddresses = confirmedTransaction->getInvolvedAddresses();
+			for (const auto& address : involvedAddresses) {
+				mPublicKeysIndex.getOrAddIndexForData(address);
+			}
+			if (mCommunityServer) {
+				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
+				notifyClientTask->scheduleTask(notifyClientTask);
+			}
+			return true;
+		}
+
+		bool FileBased::createAndAddConfirmedTransactionExtern(
+				data::ConstGradidoTransactionPtr gradidoTransaction,
+				const data::LedgerAnchor& ledgerAnchor,
+				std::vector<data::AccountBalance> accountBalances
+			)
+		{
+			if (!gradidoTransaction) {
+				throw GradidoNullPointerException("missing transaction", "GradidoTransactionPtr", __FUNCTION__);
+			}
+			if (ledgerAnchor.empty()) {
+				throw GradidoNullPointerException("empty ledger anchor", "gradido::data::LedgerAnchor", __FUNCTION__);
+			}
+			std::lock_guard _lock(mWorkMutex);
+			if (mExitCalled) { return false; }
+			confirmTransaction::Context confirmTransactionContext(getptr());
+			auto role = confirmTransactionContext.createRole(
+				gradidoTransaction,
+				ledgerAnchor,
+				gradidoTransaction->getTransactionBody()->getCreatedAt()
+			);
+			if (!role) {
+				throw GradidoNotImplementedException("missing role for gradido transaction");
+			}
+			role->setAccountBalances(accountBalances);
+			auto confirmedTransaction = confirmTransactionContext.run(role);
+			// will occure if transaction already exist
+			if (!confirmedTransaction) {
+				return false;
+			}
+			auto blockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 1);
+			auto& block = getBlock(blockNr);
+			auto nodeTransactionEntry = make_shared<NodeTransactionEntry>(confirmedTransaction, getptr());
+			if (!block.pushTransaction(nodeTransactionEntry, mPublicKeysIndex)) {
+				// block was already stopped, so we can  stop here also
 				LOG_F(WARNING, "couldn't push transaction: %lu to block: %d", confirmedTransaction->getId(), blockNr);
 				return false;
 			}
