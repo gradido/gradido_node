@@ -6,90 +6,66 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
+#include "gradido_protobuf_zig.h"
 
+#include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
+#include <mutex>
+
+using namespace magic_enum;
 using memory::Block;
 using gradido::blockchain::FileBased;
-using std::shared_ptr, std::make_shared;
+using gradido::data::compact::ConfirmedGradidoTx;
+using std::shared_ptr, std::make_shared, std::unique_lock;
 using ServerGlobals::g_CPUScheduler;
 
 namespace task {
 	RebuildBlockIndexTask::RebuildBlockIndexTask(
-		std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
 		std::shared_ptr<cache::BlockIndex> blockIndex,
-		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
-	): task::CPUTask(g_CPUScheduler), mBlockchain(blockchain), mBlockIndex(blockIndex), mPublicKeyIndex(publicKeyDictionary)
+		uint32_t communityIdIndex
+	): task::CPUTask(g_CPUScheduler), mBlockIndex(blockIndex), mCommunityIdIndex(communityIdIndex), 
+		mLastLineReaded(false)
 	{
-		mRawTransactionsBulk.reserve(REBUILD_BLOCK_INDEX_TASK_BULK_SIZE);
-		mActiveDeserializerTasks = 0;
+		grdu_memory_init_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
 	}
 
 	int RebuildBlockIndexTask::run()
 	{
-		LOG_F(WARNING, "not supposed to sheduled as regular task");
+		unique_lock lock(mWorkConfirmedMutex);
+		mConfirmedTxReadyCondition.wait(lock, [&] { return mLastLineReaded.load();  });
 		return 0;
 	}
 
-	void RebuildBlockIndexTask::pushLine(int32_t fileCursor, memory::ConstBlockPtr line, std::shared_ptr<RebuildBlockIndexTask> ownPtr)
+	void RebuildBlockIndexTask::finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor)
 	{
-		std::lock_guard _lock(mFinishLineMutex);
-		mFileCursorsQueue.push_back(fileCursor);
-		mRawTransactionsBulk.push_back(line);
-		if (mRawTransactionsBulk.size() >= REBUILD_BLOCK_INDEX_TASK_BULK_SIZE) {
-			flush(ownPtr, false);
+		grdu_memory decodeMemoryAlloc;
+		grdu_memory_init_static(&decodeMemoryAlloc, mBuffers[1], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
+		grdw_confirmed_transaction tx{};
+		auto encodeResult = grdw_confirmed_transaction_decode(&decodeMemoryAlloc, &tx, mBuffers[0], size);
+		if (GRDW_ENCODING_ERROR_SUCCESS != encodeResult.state) {
+			LOG_F(ERROR, "decode error: %s", enum_name(encodeResult.state).data());
+			throw GradidoNodeInvalidDataException("error deserialize confirmed transaction");
 		}
-	}
-
-	void RebuildBlockIndexTask::flush(std::shared_ptr<RebuildBlockIndexTask> ownPtr, bool last/* = true, */)
-	{
-		std::lock_guard _lock(mFinishLineMutex);
-		if (!mRawTransactionsBulk.size()) { return; }
-		auto deserializeTask = make_shared<BatchDeserializeConfirmedTransactionTask>(std::move(mRawTransactionsBulk));
-		// deserializeTask->setFinishCommand(new FinishedDeserializeForRebuildBlockIndexCommand(ownPtr));
-		mBulkDeserializerTasks.push(deserializeTask);
-		deserializeTask->scheduleTask(deserializeTask);
 		
-		if (!last) {
-			mRawTransactionsBulk.reserve(REBUILD_BLOCK_INDEX_TASK_BULK_SIZE);
+		grdw_transaction_body body{};
+		grdu_memory_init_static(&decodeMemoryAlloc, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
+		encodeResult = grdw_transaction_body_decode(&decodeMemoryAlloc, &body, tx.transaction.body_bytes, tx.transaction.body_bytes_size);
+		if (GRDW_ENCODING_ERROR_SUCCESS != encodeResult.state) {
+			LOG_F(ERROR, "body decode error: %s", enum_name(encodeResult.state).data());
+			throw GradidoNodeInvalidDataException("error deserialize transaction body");
 		}
+
+		auto compactConfirmedTx = ConfirmedGradidoTx::fromGrdw(&tx, &body, mCommunityIdIndex, false);
+		mBlockIndex->addIndicesForTransaction(compactConfirmedTx);
+		mBlockIndex->addFileCursorForTransaction(compactConfirmedTx.txNr, fileCursor);
+
+		grdu_memory_init_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
 	}
 
-	void RebuildBlockIndexTask::finishBulk()
+	void RebuildBlockIndexTask::flush() 
 	{
-		std::lock_guard lock(mFinishLineMutex);
-		while (!mBulkDeserializerTasks.empty() && mBulkDeserializerTasks.front()->isTaskFinished())
-		{
-			auto& task = mBulkDeserializerTasks.front();
-			const auto& confirmedTransactions = task->getConfirmedTransactions();
-			const auto& rawTransactions = task->getRawTransactions();
-			for (int i = 0; i < confirmedTransactions.size(); i++) {
-				const auto& confirmedTransaction = confirmedTransactions[i];
-				auto fileCursor = mFileCursorsQueue.front();
-
-				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry = std::make_shared<gradido::blockchain::NodeTransactionEntry>(
-					confirmedTransaction,
-					rawTransactions[i],
-					mBlockchain,
-					fileCursor
-				);
-				try {
-					mBlockIndex->addIndicesForTransaction(transactionEntry, mPublicKeyIndex);
-				}
-				catch (std::exception& e) {
-					LOG_F(FATAL, "%s, couldn't add indices for transaction: %s",
-						e.what(),
-						serialization::toJsonString(*transactionEntry->getConfirmedTransaction(), true).c_str()
-					);
-				}
-				mFileCursorsQueue.pop_front();
-			}			
-			mBulkDeserializerTasks.pop();
-		}
-		int zahl = 0;
-	}
-
-	bool RebuildBlockIndexTask::isPendingQueueEmpty()
-	{
-		finishBulk();
-		return mBulkDeserializerTasks.empty();
-	}
+		mLastLineReaded = true;
+		mConfirmedTxReadyCondition.notify_one();
+	}		
 }

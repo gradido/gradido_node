@@ -27,6 +27,7 @@ public:
 protected:
 	FileLockManager();
 
+	bool mInitialized;
 	std::mutex mWorkingMutex;
 	std::unordered_map<std::string, bool*> mFiles;
 

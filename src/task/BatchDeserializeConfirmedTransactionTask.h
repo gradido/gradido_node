@@ -20,11 +20,11 @@ namespace task {
 
     class BatchDeserializeConfirmedTransactionTask : public CPUTask {
     public:
-        BatchDeserializeConfirmedTransactionTask(std::vector<memory::ConstBlockPtr>&& rawTransactions);
+        BatchDeserializeConfirmedTransactionTask(std::vector<memory::ConstBlockPtr>&& rawTransactions, uint32_t communityIdIndex);
         virtual ~BatchDeserializeConfirmedTransactionTask();
 
         const char* getResourceType() const override { return "BatchDeserializeConfirmedTransactionTask"; };
-		int run() override;
+		    int run() override;
 
         inline const std::vector<std::shared_ptr<const gradido::data::ConfirmedTransaction>>& getConfirmedTransactions() const { return mConfirmedTransactions; }
         inline const std::vector<memory::ConstBlockPtr>& getRawTransactions() const { return mRawTransactions; }
@@ -32,6 +32,7 @@ namespace task {
     private:
         std::vector<memory::ConstBlockPtr> mRawTransactions;
         std::vector<std::shared_ptr<const gradido::data::ConfirmedTransaction>> mConfirmedTransactions;
+        uint32_t mCommunityIdIndex;
     };
 }
 

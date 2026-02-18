@@ -7,7 +7,7 @@
 #include "../cache/GroupIndex.h"
 
 #include <unordered_map>
-#include <shared_mutex>
+#include <mutex>
 
 #define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE 1
 
@@ -53,8 +53,9 @@ namespace gradido {
 			inline std::vector<std::string> listCommunityIds() const;
 		protected:
 
+			// check if neccessary, or community context is enough
 			std::unordered_map<uint32_t, std::shared_ptr<FileBased>> mBlockchainsPerGroup;
-			std::shared_mutex mWorkMutex;
+			std::recursive_mutex mWorkMutex;
 
 		private:
 			FileBasedProvider();

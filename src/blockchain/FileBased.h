@@ -12,6 +12,7 @@
 #include "../lib/PersistentDictionary.h"
 
 #include "gradido_blockchain/blockchain/Abstract.h"
+#include "gradido_blockchain/crypto/ByteArray.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
 #include "gradido_blockchain/lib/AccessExpireCache.h"
 
@@ -22,7 +23,7 @@
 #define GRADIDO_NODE_MAGIC_NUMBER_BLOCKCHAIN_STATE_CACHE_SIZE_BYTES 192
 //! TODO: Test and Profile different values, or create dynamic algorithmus
 #define GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES 10
-#define GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES 1
+#define GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES 10
 #define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES 400
 #define GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES 1
 
@@ -91,11 +92,16 @@ namespace gradido {
 			bool init(bool resetBlockIndices);
 
 			//! init 2
+			//! check last GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE if they are valid
+			//! should be called, after all communities where initalized, because it would need other communities for cross group transaction validation
+			bool startValidationTransactions();
+
+			//! init 3
 			//! prepare task for syncronize with hiero topic
 			//! all SyncTopicOnStartup for all communities should be started/scheduled at the same time because there could need each other for new cross group transactions
 			std::shared_ptr<task::SyncTopicOnStartup> initOnline();
 
-			//! init 3
+			//! init 4
 			//! start listening to topic, will be called from SyncTopicOnStartup at the end, will update last known TopicId 
 			void startListening(data::Timestamp lastTransactionConfirmedAt);
 
@@ -122,16 +128,18 @@ namespace gradido {
 			virtual void addTransactionTriggerEvent(std::shared_ptr<const data::TransactionTriggerEvent> transactionTriggerEvent) override;
 			virtual void removeTransactionTriggerEvent(const data::TransactionTriggerEvent& transactionTriggerEvent) override;
 
-			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction) const override {
+			virtual bool isTransactionExist(data::ConstGradidoTransactionPtr gradidoTransaction, data::Timestamp confirmedAt) const override {
 				return mTransactionHashCache.has(*gradidoTransaction);
 			}
 
 			//! return events in asc order of targetDate
-			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(TimepointInterval range) override;
-			virtual std::shared_ptr<const data::TransactionTriggerEvent> findNextTransactionTriggerEventInRange(TimepointInterval range) override;
+			virtual std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> findTransactionTriggerEventsInRange(data::Timestamp startDate, data::Timestamp endDate) override;
+			virtual std::shared_ptr<const data::TransactionTriggerEvent> findNextTransactionTriggerEventInRange(data::Timestamp startDate, data::Timestamp endDate) override;
 
 			//! main search function, do all the work, reference from other functions
 			virtual TransactionEntries findAll(const Filter& filter) const override;
+
+			virtual data::compact::ConfirmedTxs findAll(const CompactFilter& filter) const override;
 
 			// find all optimized for counting transaction nrs, better not use the filter.function for that, because this would slow down
 			virtual size_t countAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const override;
@@ -143,6 +151,7 @@ namespace gradido {
 			virtual data::AddressType getAddressType(const Filter& filter = Filter::LAST_TRANSACTION) const override;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
+			virtual std::optional<std::reference_wrapper<const data::compact::ConfirmedGradidoTx>> getConfirmedTxForId(uint64_t transactionId) const;
 			//! \param filter use to speed up search if infos exist to narrow down search transactions range
 			virtual ConstTransactionEntryPtr findByLedgerAnchor(
 				const data::LedgerAnchor& ledgerAnchor,
@@ -153,9 +162,15 @@ namespace gradido {
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
 
-			inline uint32_t getOrAddIndexForPublicKey(memory::ConstBlockPtr publicKey) const {
+			inline virtual const IDictionary<PublicKey>& getPublicKeyDictionary() const override { return mPublicKeysIndex; }
+			inline virtual uint32_t getOrAddPublicKey(const PublicKey& publicKey) override {
 				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
 			}
+
+			inline uint32_t getOrAddIndexForPublicKey(const PublicKey& publicKey) const {
+				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
+			}
+						
 			inline const hiero::TopicId& getHieroTopicId() const { return mHieroTopicId; }
 			inline const std::string& getAlias() const { return mAlias; }
 			inline const std::string& getFolderPath() const { return mFolderPath; }
@@ -176,6 +191,9 @@ namespace gradido {
 
 			cache::Block& getBlock(uint32_t blockNr) const;
 
+			//! \param countToValidate lastTransaction.nr - countToValidate = minTransaction.nr, 0 for all
+			bool validateLastTransactions(uint64_t countToValidate);
+
 			mutable std::recursive_mutex mWorkMutex;
 			bool mExitCalled;
 			hiero::TopicId mHieroTopicId;
@@ -191,7 +209,7 @@ namespace gradido {
 			std::shared_ptr<hiero::MessageListenerQuery> mHieroMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
-			mutable PersistentDictionary<memory::ConstBlockPtr> mPublicKeysIndex;
+			mutable PersistentDictionary<PublicKey> mPublicKeysIndex;
 			// level db to store state values like last transaction
 			mutable cache::State mBlockchainState;
 

@@ -3,6 +3,8 @@
 
 #include "Decay.h"
 
+#include "gradido_blockchain/memory/Block.h"
+
 #include <string_view>
 
 namespace gradido {

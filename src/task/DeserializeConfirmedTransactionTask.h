@@ -18,7 +18,7 @@ namespace memory {
 namespace task {
     class DeserializeConfirmedTransactionTask : public CPUTask {
     public:
-        DeserializeConfirmedTransactionTask(memory::ConstBlockPtr rawTransaction);
+        DeserializeConfirmedTransactionTask(memory::ConstBlockPtr rawTransaction, uint32_t communityIdIndex);
         virtual ~DeserializeConfirmedTransactionTask();
 
         const char* getResourceType() const override { return "DeserializeConfirmedTransactionTask"; };
@@ -29,6 +29,7 @@ namespace task {
     private:
         memory::ConstBlockPtr mRawTransaction;
         std::shared_ptr<const gradido::data::ConfirmedTransaction> mConfirmedTransaction;
+        uint32_t mCommunityIdIndex;
     };
 }
 

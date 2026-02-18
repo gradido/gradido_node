@@ -1,6 +1,7 @@
 #include "Transaction.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/blockchain/Abstract.h"
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
 
 #include "magic_enum/magic_enum.hpp"
 #include "loguru/loguru.hpp"

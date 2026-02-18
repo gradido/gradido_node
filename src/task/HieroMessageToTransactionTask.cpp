@@ -85,7 +85,7 @@ namespace task {
         // also if we already have this transaction
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         assert(fileBasedBlockchain);
-        if (fileBasedBlockchain->isTransactionExist(mTransaction)) {
+        if (fileBasedBlockchain->isTransactionExist(mTransaction, mConsensusTimestamp)) {
             LOG_F(INFO, "Transaction skipped (cached): %s", mConsensusTimestamp.toString().data());
             return 0;
         }

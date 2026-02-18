@@ -52,19 +52,19 @@ namespace cache {
 		~Block();
 
 		//! \return false if block not exist
-		bool init(IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary);
+		bool init(IMutableDictionary<PublicKey>& publicKeyDictionary);
 		void exit();
 
 		//! \brief put new transaction to cache and file system
 		bool pushTransaction(
 			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+			IMutableDictionary<PublicKey>& publicKeyDictionary
 		);
 		
 		//! \brief load transaction from cache or file system
 		std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> getTransaction(
 			uint64_t transactionNr,
-			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+			IMutableDictionary<PublicKey>& publicKeyDictionary
 		) const;
 
 		inline BlockIndex& getBlockIndex() { return *mBlockIndex; }
@@ -82,7 +82,7 @@ namespace cache {
 		void addTransaction(
 			memory::ConstBlockPtr serializedTransaction, 
 			int32_t fileCursor,
-			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+			IMutableDictionary<PublicKey>& publicKeyDictionary
 		) const;
 		
 		mutable std::mutex mFastMutex;

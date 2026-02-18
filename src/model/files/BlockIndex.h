@@ -6,6 +6,7 @@
 #include "../../lib/VirtualFile.h"
 
 #include "date/date.h"
+#include <sodium.h>
 
 #include <queue>
 #include <string>

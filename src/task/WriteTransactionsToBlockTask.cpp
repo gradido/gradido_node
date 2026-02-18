@@ -64,7 +64,7 @@ namespace task {
 
 	void WriteTransactionsToBlockTask::addSerializedTransaction(
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		IMutableDictionary<PublicKey>& publicKeyDictionary
 	)
 	{
 		assert(!isTaskSheduled());

@@ -11,6 +11,11 @@ namespace gradido {
 	}
 }
 
+namespace memory {
+	class Block;
+	using ConstBlockPtr = std::shared_ptr <const Block>;
+}
+
 namespace server {
 	namespace json_rpc {
 

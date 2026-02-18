@@ -18,13 +18,14 @@
 #include <string>
 #include <vector>
 
-using std::shared_lock, std::unique_lock;
+using std::lock_guard;
 using std::shared_ptr, std::make_shared;
 using std::string;
 using std::vector;
 
 namespace gradido {
 	namespace blockchain {
+
 		FileBasedProvider::FileBasedProvider()
 			:mGroupIndex(nullptr), mInitalized(false)
 		{
@@ -33,7 +34,7 @@ namespace gradido {
 
 		FileBasedProvider::~FileBasedProvider()
 		{
-			unique_lock _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			if (mGroupIndex) {
 				delete mGroupIndex;
 				mGroupIndex = nullptr;
@@ -48,7 +49,7 @@ namespace gradido {
 
 		shared_ptr<Abstract> FileBasedProvider::findBlockchain(uint32_t communityIdIndex)
 		{
-			shared_lock _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			if (!mInitalized) {
 				throw ClassNotInitalizedException("please call init before", "blockchain::FileBasedProvider");
 			}
@@ -96,7 +97,7 @@ namespace gradido {
 			vector<shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 			uint8_t hieroClientsPerCommunity/* = 3 */
 		) {
-			unique_lock _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			mInitalized = true;
 			bool resetAllCommunityIndices = false;
 			mHieroClientsPerCommunity = hieroClientsPerCommunity;
@@ -119,7 +120,19 @@ namespace gradido {
 					return false;
 				}
 			}
-			// step 2: check for new transactions in hiero network, all blockchains at the same time
+			// step 2: validate last transactions
+			for (const auto& pair : mBlockchainsPerGroup) {
+				if (!pair.second->startValidationTransactions()) {
+					LOG_F(
+						ERROR, 
+						"error validate last transactions from community: %s in folder: %s", 
+						pair.second->getCommunityId().c_str(), 
+						pair.second->getFolderPath().c_str()
+					);
+				}
+			}
+			
+			// step 3: check for new transactions in hiero network, all blockchains at the same time
 			for (const auto& pair : mBlockchainsPerGroup) {
 				auto task = pair.second->initOnline();
 				auto hieroClient = pair.second->pickHieroClient();
@@ -131,7 +144,7 @@ namespace gradido {
 		}
 		void FileBasedProvider::exit()
 		{
-			unique_lock _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			mInitalized = false;
 			for (auto blockchain : mBlockchainsPerGroup) {
 				blockchain.second->exit();
@@ -141,7 +154,7 @@ namespace gradido {
 
 		int FileBasedProvider::reloadConfig()
 		{
-			unique_lock _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			if (!mInitalized) {
 				throw ClassNotInitalizedException("please call init before", "blockchain::FileBasedProvider");
 			}
@@ -180,7 +193,9 @@ namespace gradido {
 
 				// with that call community will be initialized and start listening
 				auto blockchain = FileBased::create(communityId, topicId, alias, folder, std::move(hieroClients));
+				g_appContext->addBlockchain(communityIdIndex, blockchain);
 				updateListenerCommunity(communityIdIndex, alias, blockchain);
+
 				// need to have blockchain in map for init able to work
 				mBlockchainsPerGroup.insert({ communityIdIndex, blockchain });
 				if (!blockchain->init(false)) {

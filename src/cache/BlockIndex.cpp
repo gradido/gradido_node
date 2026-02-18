@@ -4,21 +4,23 @@
 #include "../task/HddWriteBufferTask.h"
 #include "../ServerGlobals.h"
 #include "../blockchain/FileBasedProvider.h"
+#include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/blockchain/RangeUtils.h"
+#include "gradido_blockchain/blockchain/SearchDirection.h"
+#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/serialization/toJson.h"
 
 #include "loguru/loguru.hpp"
 
 using namespace rapidjson;
-using gradido::blockchain::TransactionsIndex, gradido::blockchain::AbstractProvider;
+using gradido::blockchain::AbstractProvider, gradido::blockchain::Filter, gradido::blockchain::SearchDirection, gradido::blockchain::TransactionsIndex;
+using gradido::data::TransactionType;
 
 namespace cache {
 
-
 	BlockIndex::BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex)
-		: mFolderPath(groupFolderPath), mBlockNr(blockNr), mBlockchainCommunityIdIndex(blockchainCommunityIdIndex), mDirty(false)
+		: TransactionsIndex(), mFolderPath(groupFolderPath), mBlockNr(blockNr), mBlockchainCommunityIdIndex(blockchainCommunityIdIndex), mDirty(false)
 	{
-
 	}
 
 	BlockIndex::~BlockIndex()
@@ -26,9 +28,9 @@ namespace cache {
 		exit();
 	}
 
-	bool BlockIndex::init()
+	bool BlockIndex::init(const IDictionary<PublicKey>& publicKeysDictionary)
 	{
-		if (loadFromFile()) {
+		if (loadFromFile(publicKeysDictionary)) {
 			return true;
 		}
 		return false;
@@ -55,7 +57,7 @@ namespace cache {
 		mMinTransactionNr = 0;
 	}
 
-	bool BlockIndex::loadFromFile()
+	bool BlockIndex::loadFromFile(const IDictionary<PublicKey>& publicKeysDictionary)
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		assert(!mYearMonthAddressIndexEntries.size() && !mTransactionNrsFileCursors.size());
@@ -73,37 +75,35 @@ namespace cache {
 		
 		assert(mYearMonthAddressIndexEntries.size() && mTransactionNrsFileCursors.size());
 		auto blockIndexFile = std::make_unique<model::files::BlockIndex>(mFolderPath, mBlockNr, mBlockchainCommunityIdIndex);
-
+		blockIndexFile->addYearBlock(mMinYearMonth.year());
+		
 		std::vector<uint32_t> publicKeyIndicesTemp;
 		publicKeyIndicesTemp.reserve(10);
-		for (auto itYear = mYearMonthAddressIndexEntries.begin(); itYear != mYearMonthAddressIndexEntries.end(); itYear++)
+		for (auto monthYearIndex = 0; monthYearIndex < mYearMonthAddressIndexEntries.size(); monthYearIndex++)
 		{
-			blockIndexFile->addYearBlock(itYear->first);
-			for (auto itMonth = itYear->second.begin(); itMonth != itYear->second.end(); itMonth++)
+			auto monthYear = indexToYearMonth(monthYearIndex);
+			if (monthYear.month() <= date::month(1) && mMinYearMonth != monthYear) {
+				blockIndexFile->addYearBlock(monthYear.year());
+			}
+			blockIndexFile->addMonthBlock(monthYear.month());
+			for (const auto& itEntry : mYearMonthAddressIndexEntries[monthYearIndex])
 			{
-				blockIndexFile->addMonthBlock(itMonth->first);
-				for (const auto& transactionsIndexEntryVectors : itMonth->second) 
-				{
-					for (const auto& blockIndexEntry : transactionsIndexEntryVectors)
-					{
-						auto fileCursorIt = mTransactionNrsFileCursors.find(blockIndexEntry.transactionNr);
-						if (fileCursorIt == mTransactionNrsFileCursors.end()) {
-							throw GradidoNodeInvalidDataException("missing file cursor for transaction");
-						}
-						publicKeyIndicesTemp.clear();
-						for (auto i = 0; i < blockIndexEntry.addressIndiceCount; i++) {
-							publicKeyIndicesTemp.push_back(blockIndexEntry.addressIndices[i]);
-						}
-						blockIndexFile->addDataBlock(
-							blockIndexEntry.transactionNr,
-							fileCursorIt->second,
-							blockIndexEntry.transactionType,
-							blockIndexEntry.coinCommunityIdIndex,
-							blockIndexEntry.isBalanceChanging,
-							publicKeyIndicesTemp
-						);
-					}
+				auto fileCursorIt = mTransactionNrsFileCursors.find(itEntry.transactionNr);
+				if (fileCursorIt == mTransactionNrsFileCursors.end()) {
+					throw GradidoNodeInvalidDataException("missing file cursor for transaction");
 				}
+				publicKeyIndicesTemp.clear();
+				for (auto i = 0; i < itEntry.addressIndiceCount; i++) {
+					publicKeyIndicesTemp.push_back(itEntry.addressIndices[i]);
+				}
+				blockIndexFile->addDataBlock(
+					itEntry.transactionNr,
+					fileCursorIt->second,
+					itEntry.transactionType,
+					itEntry.coinCommunityIdIndex,
+					itEntry.isBalanceChanging,
+					publicKeyIndicesTemp
+				);
 			}
 		}
 		// finally write down to file
@@ -152,12 +152,19 @@ namespace cache {
 
 	bool BlockIndex::addIndicesForTransaction(
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry,
-		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		IMutableDictionary<PublicKey>& publicKeyDictionary
 	)
 	{
 		std::lock_guard _lock(mRecursiveMutex);
 		TransactionsIndex::addIndicesForTransaction(transactionEntry, publicKeyDictionary);
 		addFileCursorForTransaction(transactionEntry->getTransactionNr(), transactionEntry->getFileCursor());
+		return true;
+	}
+
+	bool BlockIndex::addIndicesForTransaction(const gradido::data::compact::ConfirmedGradidoTx& compactTx)
+	{
+		std::lock_guard _lock(mRecursiveMutex);
+		TransactionsIndex::addIndicesForTransaction(compactTx);
 		return true;
 	}
 

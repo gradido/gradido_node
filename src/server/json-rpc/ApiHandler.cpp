@@ -5,16 +5,20 @@
 #include "../../model/Apollo/TransactionList.h"
 #include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
+#include "gradido_blockchain/data/adapter/byteArray.h"
+#include "gradido_blockchain/data/adapter/publicKey.h"
+#include "gradido_blockchain/data/compact/PublicKeyIndex.h"
+#include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/calculateCreationSum/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
-#include "gradido_blockchain/serialization/toJson.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/Profiler.h"
-#include "gradido_blockchain/data/ConfirmedTransaction.h"
-#include "gradido_blockchain/data/hiero/TransactionId.h"
+#include "gradido_blockchain/memory/Block.h"
+#include "gradido_blockchain/serialization/toJson.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/FileBasedProvider.h"
@@ -153,7 +157,10 @@ namespace server {
 				auto date = DataTypeConverter::dateTimeStringToTimePoint(date_string);
 				optional<uint32_t> coinCommunityId = nullopt;
 				if (params.HasMember("coinCommunityId") && params["coinCommunityId"].IsString()) {
-					coinCommunityId = g_appContext->getCommunityIds().getIndexForData(params["coinCommunityId"].GetString());
+					auto coinCommunityIdIndexOptional = g_appContext->getCommunityIds().getIndexForData(params["coinCommunityId"].GetString());
+					if (coinCommunityIdIndexOptional) {
+						coinCommunityId = static_cast<uint32_t>(coinCommunityIdIndexOptional.value());
+					}
 				}
 				getAddressBalance(resultJson, pubkey, date, blockchain, coinCommunityId);
 			}
@@ -314,8 +321,8 @@ namespace server {
 				auto communityRootBody = communityRootEntry->getTransactionBody();
 				assert(communityRootBody->isCommunityRoot());
 				auto communityRoot = communityRootBody->getCommunityRoot();
-				auto gmwAddress = communityRoot->getGmwPubkey();
-				auto aufAddress = communityRoot->getAufPubkey();
+				auto gmwAddress = adapter::toConstBlockPtr(communityRoot->gmwPublicKeyIndex);
+				auto aufAddress = adapter::toConstBlockPtr(communityRoot->aufPublicKeyIndex);
 				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now, blockchain->getCommunityIdIndex());
 				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now, blockchain->getCommunityIdIndex());
 				resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
@@ -510,13 +517,18 @@ namespace server {
 		{
 			Profiler timeUsed;
 			Filter f;
+			auto nameHashId = g_appContext->getUserNameHashs().getIndexForData(adapter::toByteArray<32>(nameHash));
+			if (!nameHashId) {
+				error(responseJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");
+				return;
+			} 
 			f.transactionType = data::TransactionType::REGISTER_ADDRESS;
 			// std::function<FilterResult(const TransactionEntry&)> filterFunction;
-			f.filterFunction = [nameHash](const TransactionEntry& entry) {
+			f.filterFunction = [nameHashId](const TransactionEntry& entry) {
 				auto body = entry.getTransactionBody();
 				assert(body->isRegisterAddress());
 				auto registerAddress = body->getRegisterAddress();
-				if (registerAddress->getNameHash()->isTheSame(nameHash)) {
+				if (nameHashId.value() == static_cast<size_t>(registerAddress->nameHashIndex)) {
 					return FilterResult::USE | FilterResult::STOP;
 				}
 				return FilterResult::DISMISS;
@@ -530,9 +542,7 @@ namespace server {
 				assert(body);
 				auto registerAddress = body->getRegisterAddress();
 				assert(registerAddress);
-				auto accountPubkey = registerAddress->getAccountPublicKey();
-				assert(accountPubkey);
-				resultJson.AddMember("pubkey", Value(accountPubkey->convertToHex().data(), alloc), alloc);
+				resultJson.AddMember("pubkey", toJson(registerAddress->accountPublicKeyIndex.getRawKey().convertToHex(), alloc), alloc);
 			}
 			else {
 				error(responseJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");

@@ -1,8 +1,11 @@
 #include "NodeTransactionEntry.h"
-
 #include "FileBased.h"
 
+#include "gradido_blockchain/data/adapter/PublicKey.h"
+
 namespace gradido {
+	using data::adapter::toPublicKey;
+
 	namespace blockchain {
 
 		NodeTransactionEntry::NodeTransactionEntry(
@@ -14,7 +17,7 @@ namespace gradido {
 			auto involvedPublicKeys = transaction->getInvolvedAddresses();
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
 			for (auto& publicKey : involvedPublicKeys) {
-				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(publicKey));
+				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(toPublicKey(publicKey)));
 			}			
 		}
 
@@ -46,7 +49,7 @@ namespace gradido {
 			auto involvedPublicKeys = getConfirmedTransaction()->getInvolvedAddresses();
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
 			for (auto& publicKey : involvedPublicKeys) {
-				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(publicKey));
+				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(toPublicKey(publicKey)));
 			}
 		}
 

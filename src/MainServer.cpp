@@ -77,7 +77,10 @@ bool MainServer::init()
 
 	auto communityDictionary = make_unique<PersistentDictionary<std::string>>(ServerGlobals::g_FilesPath + "/communityIdsCache");
 	communityDictionary->init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES);
-	g_appContext = make_unique<AppContext>(std::move(communityDictionary));
+	auto nameHashDictionary = make_unique<PersistentDictionary<GenericHash>>(ServerGlobals::g_FilesPath + "/nameHashCache");
+	nameHashDictionary->init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES);
+	g_appContext = make_unique<AppContext>(std::move(communityDictionary), std::move(nameHashDictionary));
+	g_appContext->syncCommunityContextsWithCommunityIds();
 
 	// timeouts
 	ServerGlobals::loadTimeouts(config);

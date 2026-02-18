@@ -14,8 +14,8 @@ using Deserializer = gradido::interaction::deserialize::Context;
 using DeserializerType = gradido::interaction::deserialize::Type;
 
 namespace task {
-    BatchDeserializeConfirmedTransactionTask::BatchDeserializeConfirmedTransactionTask(std::vector<memory::ConstBlockPtr>&& rawTransactions)
-        : CPUTask(ServerGlobals::g_CPUScheduler), mRawTransactions(std::move(rawTransactions))
+    BatchDeserializeConfirmedTransactionTask::BatchDeserializeConfirmedTransactionTask(std::vector<memory::ConstBlockPtr>&& rawTransactions, uint32_t communityIdIndex)
+        : CPUTask(ServerGlobals::g_CPUScheduler), mRawTransactions(std::move(rawTransactions)), mCommunityIdIndex(communityIdIndex)
     {
     }
     
@@ -30,7 +30,7 @@ namespace task {
         for (size_t i = 0; i < mRawTransactions.size(); i++) {
             Deserializer deserializer(mRawTransactions[i], DeserializerType::CONFIRMED_TRANSACTION);
             try {
-                deserializer.run();
+                deserializer.run(mCommunityIdIndex);
             }
             catch (std::exception& e) {
                 int zahl = 0;

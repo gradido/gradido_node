@@ -14,7 +14,12 @@
 #include "../client/hiero/MirrorClient.h"
 
 #include "gradido_blockchain/const.h"
+#include "gradido_blockchain/blockchain/batch/signaturesVerify.h"
+#include "gradido_blockchain/blockchain/batch/ThreadingPolicy.h"
+#include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
+#include "gradido_blockchain/data/adapter/PublicKey.h"
+#include "gradido_blockchain/data/Timestamp.h"
 #include "gradido_blockchain/interaction/confirmTransaction/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
@@ -33,10 +38,13 @@ using controller::SimpleOrderingManager;
 using serialization::toJsonString;
 
 namespace gradido {
-	using data::LedgerAnchor, data::AddressType;
+	using data::adapter::toPublicKey;
+	using data::AddressType, data::Timestamp, data::LedgerAnchor;
 
 	using namespace interaction;
 	namespace blockchain {
+		using batch::ThreadingPolicy, batch::verifySignatures;
+
 		FileBased::FileBased(
 			Private,
 			const string& communityId,
@@ -98,7 +106,13 @@ namespace gradido {
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_TRANSACTION_ID, 0);
 			mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0);
 			mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
+			
+			return true;
+		}
 
+		bool FileBased::startValidationTransactions()
+		{
+			auto lastBlockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
 			if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 				mLedgerAnchorCache.reset();
 				if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
@@ -106,7 +120,7 @@ namespace gradido {
 				}
 				// load last 20 message ids into cache
 				FilterBuilder filterBuilder;
-				auto transactions = findAll(filterBuilder.setPagination({20}).setSearchDirection(SearchDirection::DESC).build());
+				auto transactions = findAll(filterBuilder.setPagination({ 20 }).setSearchDirection(SearchDirection::DESC).build());
 				for (auto& transaction : transactions) {
 					mLedgerAnchorCache.add(transaction->getConfirmedTransaction()->getLedgerAnchor(), transaction->getTransactionNr());
 				}
@@ -118,45 +132,13 @@ namespace gradido {
 				LOG_F(INFO, "rescan blockchain for transaction trigger events, time: %s", timeUsed.string().data());
 			}
 
-			// load first GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE transaction into cache and validate the transaction to check file integrity
-			Profiler timeUsed;
-			FilterBuilder builder;
-			int count = 0;
-			findAll(builder
-				.setSearchDirection(SearchDirection::DESC)
-				.setPagination({ GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE })
-				.setFilterFunction([this, &count](const TransactionEntry& transactionEntry) -> FilterResult {
-					auto previousTransactionNr = transactionEntry.getTransactionNr() - 1;
-					data::ConstConfirmedTransactionPtr previousConfirmedTransaction;
-					auto transactionBody = transactionEntry.getTransactionBody();
-					validate::Context validator(*transactionEntry.getConfirmedTransaction());
-					if (previousTransactionNr >= 1) {
-						auto entry = getTransactionForId(previousTransactionNr);
-						if (entry) {
-							previousConfirmedTransaction = entry->getConfirmedTransaction();
-						}
-					}
-					validate::Type validationLevel = validate::Type::SINGLE | validate::Type::ACCOUNT;
-					if (transactionBody->getType() != data::CrossGroupType::LOCAL) {
-						validationLevel = validationLevel | validate::Type::PAIRED;
-					}
-					if (previousConfirmedTransaction) {
-						validationLevel = validationLevel | validate::Type::PREVIOUS;
-						validator.setSenderPreviousConfirmedTransaction(previousConfirmedTransaction);
-					}										
-					validator.run(validationLevel, getptr());
-					mTransactionHashCache.push(*transactionEntry.getConfirmedTransaction());
-					count++;
-					return FilterResult::DISMISS;
-				})
-				.build()
-			);
-			LOG_F(INFO, "time used for loading and validating last: %d/%d transactions: %s",
-				count,
-				GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE,
-				timeUsed.string().data()
-			);			
-			return true;
+			// if state was empty, we better validate full blockchain
+			if (!lastBlockNr) {
+				return validateLastTransactions(0);
+			}
+			else {
+				return validateLastTransactions(GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE);
+			}
 		}
 
 		std::shared_ptr<task::SyncTopicOnStartup> FileBased::initOnline()
@@ -251,7 +233,7 @@ namespace gradido {
 			// add public keys to index
 			auto involvedAddresses = confirmedTransaction->getInvolvedAddresses();
 			for (const auto& address : involvedAddresses) {
-				mPublicKeysIndex.getOrAddIndexForData(address);
+				mPublicKeysIndex.getOrAddIndexForData(toPublicKey(address));
 			}
 			if (mCommunityServer) {
 				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
@@ -305,7 +287,7 @@ namespace gradido {
 			// add public keys to index
 			auto involvedAddresses = confirmedTransaction->getInvolvedAddresses();
 			for (const auto& address : involvedAddresses) {
-				mPublicKeysIndex.getOrAddIndexForData(address);
+				mPublicKeysIndex.getOrAddIndexForData(toPublicKey(address));
 			}
 			if (mCommunityServer) {
 				task::TaskPtr notifyClientTask = std::make_shared<task::NotifyClient>(mCommunityServer, confirmedTransaction);
@@ -331,16 +313,16 @@ namespace gradido {
 			mTransactionTriggerEventsCache.removeTransactionTriggerEvent(transactionTriggerEvent);
 		}
 
-		std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> FileBased::findTransactionTriggerEventsInRange(TimepointInterval range)
+		std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> FileBased::findTransactionTriggerEventsInRange(Timestamp startDate, Timestamp endDate)
 		{
 			std::lock_guard _lock(mWorkMutex);
-			return mTransactionTriggerEventsCache.findTransactionTriggerEventsInRange(range);
+			return mTransactionTriggerEventsCache.findTransactionTriggerEventsInRange(startDate, endDate);
 		}
 
-		std::shared_ptr<const data::TransactionTriggerEvent> FileBased::findNextTransactionTriggerEventInRange(TimepointInterval range)
+		std::shared_ptr<const data::TransactionTriggerEvent> FileBased::findNextTransactionTriggerEventInRange(Timestamp startDate, Timestamp endDate)
 		{
 			std::lock_guard _lock(mWorkMutex);
-			return mTransactionTriggerEventsCache.findNextTransactionTriggerEventInRange(range);
+			return mTransactionTriggerEventsCache.findNextTransactionTriggerEventInRange(startDate, endDate);
 		}
 
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
@@ -375,6 +357,11 @@ namespace gradido {
 				return !stopped;
 			});
 			return result;
+		}
+
+		data::compact::ConfirmedTxs FileBased::findAll(const CompactFilter& filter) const
+		{
+			throw GradidoNotImplementedException("FileBased::findAll with compact filter not yet implemented");
 		}
 
 		size_t FileBased::countAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS*/) const
@@ -425,17 +412,25 @@ namespace gradido {
 
 		data::AddressType FileBased::getAddressType(const Filter& filter/* = Filter::LAST_TRANSACTION*/) const
 		{
+			// return getAddressTypeSlow(filter);
+			
 			data::AddressType result = data::AddressType::NONE;
 			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				result = block.getBlockIndex().getAddressType(filter.involvedPublicKey, mPublicKeysIndex);
+				auto addressTypeStateChange = block.getBlockIndex().getAddressType(filter.involvedPublicKey, mPublicKeysIndex);
+				result = addressTypeStateChange.getValue();
+				if (addressTypeStateChange.getTxId()) {
+					auto tx = getTransactionForId(addressTypeStateChange.getTxId());
+					if (FilterResult::USE != (filter.matches(tx, FilterCriteria::MAX) & FilterResult::USE)) {
+						result = data::AddressType::NONE;
+					}
+					return false; //break iterateBlocks
+				}
+				// result
 				if (data::AddressType::NONE == result) {
 					return true;
 				}
 				return false;
 			});
-			if (data::AddressType::NONE == result) {
-				result = getAddressTypeSlow(filter);
-			}
 			return result;
 		}
 
@@ -452,6 +447,12 @@ namespace gradido {
 			} while (blockNr > 0);
 			return nullptr;
 		}
+
+		std::optional<std::reference_wrapper<const data::compact::ConfirmedGradidoTx>> FileBased::getConfirmedTxForId(uint64_t transactionId) const
+		{
+			throw GradidoNotImplementedException("FileBased::getConfirmedTxForId not implemented yet");
+		}
+
 		std::shared_ptr<const TransactionEntry> FileBased::findByLedgerAnchor(
 			const data::LedgerAnchor& ledgerAnchor,
 			const Filter& filter/* = Filter::ALL_TRANSACTIONS*/
@@ -565,6 +566,71 @@ namespace gradido {
 				return *block;
 			}
 			return *block.value();
+		}
+
+		bool FileBased::validateLastTransactions(uint64_t countToValidate)
+		{
+			// load first GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE transaction into cache and validate the transaction to check file integrity
+			Profiler timeUsed;
+			Profiler timeSinceLastPrint;
+			data::ConstConfirmedTransactionPtr previousConfirmedTransaction = nullptr;
+			auto lastTransaction = findOne(Filter::LAST_TRANSACTION);
+			if (!lastTransaction) {
+				// seems we have nothing todo here
+				LOG_F(WARNING, "startValidationTransactions called on empty blockchain");
+				return true;
+			}
+			int count = 0;
+			Filter f;
+			f.searchDirection = SearchDirection::ASC;
+			int countTarget = countToValidate;
+			if (countToValidate) {
+				f.minTransactionNr = lastTransaction->getTransactionNr() - countToValidate;
+			}
+			else {
+				countTarget = lastTransaction->getTransactionNr();
+			}
+			 
+			f.filterFunction = 
+				[&](const TransactionEntry& transactionEntry) -> FilterResult 
+				{
+					auto transactionBody = transactionEntry.getTransactionBody();
+					validate::Context validator(*transactionEntry.getConfirmedTransaction());
+					validate::Type validationLevel = validate::Type::SINGLE | validate::Type::ACCOUNT;
+					if (transactionBody->getType() != data::CrossGroupType::LOCAL) {
+						validationLevel = validationLevel | validate::Type::PAIRED;
+					}
+					if (previousConfirmedTransaction) {
+						validationLevel = validationLevel | validate::Type::PREVIOUS;
+						validator.setSenderPreviousConfirmedTransaction(previousConfirmedTransaction);
+					}
+					validator.disableVerify();
+					validator.run(validationLevel, getptr());
+					if (transactionEntry.getTransactionNr() > (lastTransaction->getTransactionNr() - GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE)) {
+						mTransactionHashCache.push(*transactionEntry.getConfirmedTransaction());
+					}
+					previousConfirmedTransaction = transactionEntry.getConfirmedTransaction();
+					count++;
+					/*if (timeSinceLastPrint.millis() > 150) {
+						printf("\r%.2f%%", ((double)count / (double)countTarget) * 100.0);
+						timeSinceLastPrint.reset();
+					}*/
+					return FilterResult::DISMISS;
+				};
+			findAll(f);
+			// printf("\r");
+			f.filterFunction = nullptr;
+			Profiler batchVerifyTime;
+			auto invalidSignatures = verifySignatures(f, mCommunityId, ThreadingPolicy::ThreeQuarter);
+			LOG_F(INFO, "time used for loading and validating last: %d transactions: %s (%s for batch verify)",
+				count,
+				timeUsed.string().c_str(),
+				batchVerifyTime.string().c_str()
+			);
+			if (!invalidSignatures.empty()) {
+				throw GradidoNodeInvalidDataException("verify from at least one transaction failed");
+			}
+			return true;
 		}
 	}
 }

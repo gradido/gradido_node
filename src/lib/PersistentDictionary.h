@@ -13,7 +13,10 @@
 #include <optional>
 #include <cstdlib>
 
-
+// TODO: check usage of LMDB 
+// it is magnitude faster but especially it is designed for prevent data loss on system failure, data can only be corrupted through hardware failure!
+// - https://de.wikipedia.org/wiki/Lightning_Memory-Mapped_Database
+// - https://github.com/LMDB/lmdb/tree/mdb.master/libraries/liblmdb
 // TODO: remove bi-directionality, update whole code for not using getDataForIndex at all!
 template<typename DataType>
 requires serialization::HasString<DataType>
@@ -30,7 +33,9 @@ public:
 
     virtual std::optional<size_t> getIndexForData(const DataType& data) const override;
     virtual std::optional<DataType> getDataForIndex(size_t index) const override;
+    virtual DataType getDataForIndexOrThrow(size_t index) const override;
     virtual size_t getOrAddIndexForData(const DataType& data) override;
+    virtual bool hasIndex(size_t index) const override;
 
 private:
     // LevelDB reads are logically const but mutate internal state
@@ -109,6 +114,17 @@ std::optional<DataType> PersistentDictionary<DataType>::getDataForIndex(size_t i
 }
 
 template<typename DataType>
+ requires serialization::HasString<DataType>
+DataType PersistentDictionary<DataType>::getDataForIndexOrThrow(size_t index) const
+{
+  auto data = getDataForIndex(index);
+  if (!data) {
+    throw DictionaryMissingEntryException(mDictionaryFile.getFolderName().data(), std::to_string(index));
+  }
+  return data.value();
+}
+
+template<typename DataType>
 requires serialization::HasString<DataType>
 size_t PersistentDictionary<DataType>::getOrAddIndexForData(const DataType& data)
 {
@@ -126,6 +142,15 @@ size_t PersistentDictionary<DataType>::getOrAddIndexForData(const DataType& data
     mDictionaryFile.setKeyValue(dataString, serialization::toString<size_t>(index));
     mIndexDataReverseLookup.insert({ index, data });
     return index;
+}
+
+template<typename DataType>
+requires serialization::HasString<DataType>
+bool PersistentDictionary<DataType>::hasIndex(size_t index) const
+{
+  std::shared_lock _lock(mWorkingMutex);
+  auto it = mIndexDataReverseLookup.find(index);
+  return it != mIndexDataReverseLookup.end();
 }
 
 #endif //__GRADIDO_NODE_PERSISTENT_DICTIONARY_H

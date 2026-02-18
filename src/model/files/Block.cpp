@@ -141,6 +141,80 @@ namespace model {
 			auto transactionSize = readLine(startReading, &result);
 			return result;
 		}
+		bool Block::readBuffered(grdu_memory* alloc, IBlockBufferRead* callback)
+		{
+			assert(alloc && callback);
+
+			auto fileStream = getOpenFile();
+			if (fileStream->fail()) {
+				throw std::runtime_error("[model::files::Block::readBuffered] file stream is failing!");
+			}
+			auto minimalFileSize = sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
+			if (mCurrentFileSize <= minimalFileSize) {
+				throw EndReachingException("file is smaller than minimal block size", mBlockPath.data(), 0, minimalFileSize);
+			}
+			auto fl = FileLockManager::getInstance();
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+				throw LockException("cannot lock file for reading", mBlockPath.data());
+			}
+
+			uint16_t transactionSize = 0;
+			// call seek only if it is really necessary 
+			// for example if a block file is read in complete line by line on program startup
+			// https://stackoverflow.com/questions/2438953/how-is-fseek-implemented-in-the-filesystem
+			// "One observation I have made about fseek on Solaris, is that each call to it resets the read buffer of the FILE.The next read will then always read a full block(8K by default)."
+			// https://bytes.com/topic/c/answers/218188-fseek-speed
+			// "However, a side - effect of the fseek is the flushing of the buffer.Without
+			//	the fseek(), your output will(actually, I suppose "can" is correct in the
+			//		general sense) be buffered, and only written when the buffer fille.With
+			//	the fseek(), you are forcing the buffer to be written for every character."
+			// https://stackoverflow.com/questions/9349470/whats-the-difference-between-fseek-lseek-seekg-seekp
+			// "The difference between the various seek functions is just the kind of file/stream objects on which they operate. 
+			//  On Linux, seekg and fseek are probably implemented in terms of lseek."
+
+			fileStream->seekg(0, std::ios_base::beg);
+			int32_t readed = 0;
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			memset(hash, 0, sizeof hash);
+
+			while (fileStream->good() && readed < mCurrentFileSize) {
+				auto fileCursor = readed;
+				fileStream->read((char*)&transactionSize, sizeof(uint16_t));
+				readed += sizeof(uint16_t);
+				if (readed + transactionSize > mCurrentFileSize) {
+					fl->unlock(mBlockPath);
+					throw EndReachingException("file is to small for transaction size", mBlockPath.data(), readed, transactionSize);
+				}
+				if (transactionSize < MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE) {
+					fl->unlock(mBlockPath);
+					throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.data(), readed, transactionSize);
+				}
+				auto memStart = alloc->last_index;
+				auto buffer = grdu_memory_alloc(alloc, transactionSize);
+				if (alloc->out_of_memory_capacity) {
+					// TODO: own exception
+					throw GradidoNodeInvalidDataException("memory buffer to small");
+				}
+				fileStream->read(reinterpret_cast<char*>(buffer), transactionSize);
+				readed += transactionSize;
+				calculateOneHashStep(hash, buffer, transactionSize);
+				callback->finishedLine(memStart, transactionSize, fileCursor);				
+			}
+			callback->flush();
+			unsigned char hash2[crypto_generichash_KEYBYTES];
+			fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
+			int filePointer = fileStream->tellg();
+			if (0 != sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
+				throw HashMismatchException(
+					"block hash mismatch",
+					memory::Block(sizeof hash, hash),
+					memory::Block(sizeof hash2, hash2)
+				);
+			}
+			
+			fl->unlock(mBlockPath);
+			return transactionSize;
+		}
 
 
 		int32_t Block::appendLine(memory::ConstBlockPtr line)
@@ -268,49 +342,7 @@ namespace model {
 
 			return result;
 		}
-
-		void Block::fillRebuildBlockIndexTask(std::shared_ptr<task::RebuildBlockIndexTask> rebuildTask)
-		{
-			Profiler timeUsed;
-			auto fl = FileLockManager::getInstance();
-			int32_t fileCursor = 0;
-			std::shared_ptr<memory::Block> readBuffer;
-			unsigned char hash[crypto_generichash_KEYBYTES];
-			memset(hash, 0, sizeof hash);
-
-			// read in every line
-			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
-				auto lineSize = readLine(fileCursor, &readBuffer);
-				rebuildTask->pushLine(fileCursor, readBuffer, rebuildTask);
-				calculateOneHashStep(hash, (const unsigned char*)readBuffer->data(), readBuffer->size());
-				fileCursor += lineSize + sizeof(uint16_t);
-			}		
-			rebuildTask->flush(rebuildTask);
-			LOG_F(INFO, "%s time for read block file (%u) into rebuild task", timeUsed.string().c_str(), mCurrentFileSize);
-
-			unsigned char hash2[crypto_generichash_KEYBYTES];
-			if (!fl->tryLockTimeout(mBlockPath, 100)) {
-				throw LockException("couldn't lock file in time", mBlockPath.data());
-			}
-			auto fileStream = getOpenFile();			
-			fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
-			fl->unlock(mBlockPath);
-
-			bool result = false;
-			if (0 == sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
-				result = true;
-			}
-
-			if (!result) 
-			{
-				throw HashMismatchException(
-					"block hash mismatch",
-					memory::Block(sizeof hash, hash),
-					memory::Block(sizeof hash2, hash2)
-				);
-			}
-		}
-			
+	
 		uint32_t Block::findLastBlockFileInFolder(std::string_view groupFolderPath)
 		{
 			std::filesystem::path groupFolder(groupFolderPath);

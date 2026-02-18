@@ -7,10 +7,20 @@
 
 #include "../../task/CPUTask.h"
 
+#include "gradido_protobuf_zig.h"
+
+#include <sodium.h>
+
 #include <fstream>
+#include <memory>
 
 //! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
 #define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
+
+namespace cache {
+	class BlockIndex;
+}
+
 
 namespace controller {
 	class AddressIndex;
@@ -23,6 +33,11 @@ namespace gradido {
 	}
 }
 
+namespace memory {
+	class Block;
+	using BlockPtr = std::shared_ptr<Block>;
+}
+
 namespace task {
 	class RebuildBlockIndexTask;
 }
@@ -30,6 +45,14 @@ namespace task {
 namespace model {
 	namespace files {
 		class RebuildBlockIndexTask;
+
+		class IBlockBufferRead
+		{
+		public:
+			virtual void finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor) = 0;
+			// will be called after last line was finished
+			virtual void flush() = 0;
+		};
 
 		class Block : public TimerCallback
 		{
@@ -48,6 +71,8 @@ namespace model {
 			//! \return size of line (without size field in file)
 			uint16_t readLine(uint32_t startReading, memory::BlockPtr* buffer);
 			std::shared_ptr<memory::Block> readLine(uint32_t startReading);
+			// read whole file, validate hash
+			bool readBuffered(grdu_memory* alloc, IBlockBufferRead* callback);
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)
@@ -61,11 +86,6 @@ namespace model {
 
 			// very expensive, read in whole file and calculate hash
 			bool validateHash();
-
-			// read whole file, validate hash
-			// put lines of serialized transactions into task
-			// TODO: maybe make it more abstract so different tasks can use this
-			void fillRebuildBlockIndexTask(std::shared_ptr<task::RebuildBlockIndexTask> rebuildTask);
 
 			static uint32_t findLastBlockFileInFolder(std::string_view groupFolderPath);
 

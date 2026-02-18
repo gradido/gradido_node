@@ -2,12 +2,16 @@
 #define __GRADIDO_NODE_TASK_REBUILD_BLOCK_INDEX_TASK_H
 
 #include "CPUTask.h"
+#include "../model/files/Block.h"
+#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
 
-#include <memory>
-#include <queue>
+#include <condition_variable>
 #include <deque>
+#include <memory>
 #include <mutex>
+#include <queue>
 
 namespace gradido {
 	namespace blockchain {
@@ -26,59 +30,41 @@ namespace cache {
 }
 
 // TODO: maybe put into config
-#define REBUILD_BLOCK_INDEX_TASK_BULK_SIZE 1000
+#define REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE 1024
 
 namespace task {
-	class BatchDeserializeConfirmedTransactionTask;
-
-
+	
 	//! remove dependencie to CPUTask because this isn't really a cpu task, more are result storage,
 	//! because it will start subsequent tasks of it own which will call back via command if finished
-	class RebuildBlockIndexTask : public CPUTask
+	class RebuildBlockIndexTask : public CPUTask, public model::files::IBlockBufferRead
 	{
 	public:
 		RebuildBlockIndexTask(
-			std::shared_ptr<const gradido::blockchain::FileBased> blockchain, 
 			std::shared_ptr<cache::BlockIndex> blockIndex,
-			IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+			uint32_t communityIdIndex
 		);
 		const char* getResourceType() const { return "RebuildBlockIndexTask"; };
 
 		int run();
-		//! \param line will be moved
-		void pushLine(int32_t fileCursor, memory::ConstBlockPtr line, std::shared_ptr<RebuildBlockIndexTask> ownPtr);
-		// flush batch buffer
-		void flush(std::shared_ptr<RebuildBlockIndexTask> ownPtr, bool last = true);
-		// called from DeserializeConfirmedTransactionTask, will process queue from begin as long current entry was already deserialized
-		void finishBulk();
-
-		bool isPendingQueueEmpty();
+		
+		virtual void finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor) override;
+		virtual void flush() override;
+		
+		inline grdu_memory* getAlloc() { return &mReadInAllocator; }
 
 	protected:
-		std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
+	
+		uint8_t mBuffers[2][REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE];
+		
+		grdu_memory mReadInAllocator;
+		std::mutex mWorkConfirmedMutex;
+		gradido::data::compact::ConfirmedGradidoTx mConfirmedTx;
+		std::condition_variable mConfirmedTxReadyCondition;
 		std::shared_ptr<cache::BlockIndex> mBlockIndex;
-		IMutableDictionary<memory::ConstBlockPtr>& mPublicKeyIndex;
-		std::queue<std::shared_ptr<BatchDeserializeConfirmedTransactionTask>> mBulkDeserializerTasks;
-		std::deque<int32_t> mFileCursorsQueue;
-		std::vector<memory::ConstBlockPtr> mRawTransactionsBulk;
-		std::recursive_mutex mFinishLineMutex;
-		std::atomic<size_t> mActiveDeserializerTasks;
+		uint32_t mCommunityIdIndex;
+		std::atomic<bool> mLastLineReaded;
 	};
 
-
-	class FinishedDeserializeForRebuildBlockIndexCommand : public Command
-	{
-	public:
-		FinishedDeserializeForRebuildBlockIndexCommand(std::shared_ptr<RebuildBlockIndexTask> parent) : mParent(parent) {}
-		int taskFinished(Task* task) override
-		{
-			mParent->finishBulk();
-			return 0;
-		}
-
-	protected:
-		std::shared_ptr<RebuildBlockIndexTask> mParent;
-	};
 }
 
 #endif // __GRADIDO_NODE_TASK_REBUILD_BLOCK_INDEX_TASK_H

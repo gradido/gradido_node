@@ -13,6 +13,7 @@
 #include "../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/Application.h"
+#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
@@ -21,11 +22,16 @@
 #include "loguru/loguru.hpp"
 
 #include <chrono>
+#include <memory>
+#include <mutex>
 #include <thread>
 
 using namespace gradido::blockchain;
+using gradido::data::TransactionType;
 using namespace gradido::interaction;
+using std::shared_ptr, std::make_shared, std::lock_guard;
 using task::RebuildBlockIndexTask;
+
 
 namespace cache {
 	Block::Block(uint32_t blockNr, std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
@@ -51,38 +57,46 @@ namespace cache {
 		mSerializedTransactions.clear();
 	}
 
-	bool Block::init(IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary)
+	bool Block::init(IMutableDictionary<PublicKey>& publicKeyDictionary)
 	{
-		std::lock_guard lock(mFastMutex);
-		if (!mBlockIndex->loadFromFile()) {
+		lock_guard lock(mFastMutex);
+		// todo: add data for address index in file, until then rebuild block index on each program start
+		// if (!mBlockIndex->loadFromFile(publicKeyDictionary)) 
+		{
 			// check if Block exist
-			if (mBlockFile->getCurrentFileSize()) {
+			if (mBlockFile->getCurrentFileSize()) 
+			{
 				Profiler timeUsed;
 				mBlockIndex->reset();
-				std::shared_ptr<task::RebuildBlockIndexTask> rebuildBlockIndexTask = std::make_shared<task::RebuildBlockIndexTask>(
-					mBlockchain,
+				auto rebuildBlockIndexTask = make_shared<task::RebuildBlockIndexTask>(
 					mBlockIndex,
-					publicKeyDictionary
+					mBlockchain->getCommunityIdIndex()
 				);
-				mBlockFile->fillRebuildBlockIndexTask(rebuildBlockIndexTask);
-				if (!rebuildBlockIndexTask) {
-					throw GradidoNullPointerException("missing rebuild block index task", "RebuildBlockIndexTask", __FUNCTION__);
-				}
+				rebuildBlockIndexTask->scheduleTask(rebuildBlockIndexTask);
+				mBlockFile->readBuffered(rebuildBlockIndexTask->getAlloc(), rebuildBlockIndexTask.get());
+
 				int sumWaited = 0;
-				while (!rebuildBlockIndexTask->isPendingQueueEmpty() && sumWaited < GRADIDO_NODE_CACHE_BLOCK_MAX_WAIT_TIME_FOR_BLOCK_INDEX_REBUILD_MILLISECONDS) {
+				while (!rebuildBlockIndexTask->isTaskFinished() && sumWaited < GRADIDO_NODE_CACHE_BLOCK_MAX_WAIT_TIME_FOR_BLOCK_INDEX_REBUILD_MILLISECONDS) {
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 					sumWaited += 100;
 				}
-				if (!rebuildBlockIndexTask->isPendingQueueEmpty()) {
+				if (!rebuildBlockIndexTask->isTaskFinished()) {
 					LOG_F(FATAL, "rebuildBlockIndex Task isn't finished after waiting a whole minute");
 					Application::terminate();
 				}
 				LOG_F(INFO, "time for rebuilding block index for block %s: %s", mBlockFile->getBlockPath().data(), timeUsed.string().data());
+				mBlockIndex->writeIntoFile();
 			}
 			else {
 				return false;
 			}
 		}
+		/*else {
+			// hot fix: init address index
+			// if block index was loaded from file, we load all transactions which change something in address index
+			// TODO: persistent storage for address index			
+		}
+		*/
 		return true;
 	}
 
@@ -99,10 +113,10 @@ namespace cache {
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
 	bool Block::pushTransaction(
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		IMutableDictionary<PublicKey>& publicKeyDictionary
 	)
 	{
-		std::lock_guard lock(mFastMutex);
+		lock_guard lock(mFastMutex);
 		if (mExitCalled) return false;
 
 		if (!mTransactionWriteTask) {
@@ -118,7 +132,7 @@ namespace cache {
 	void Block::addTransaction(
 		memory::ConstBlockPtr serializedTransaction, 
 		int32_t fileCursor,
-		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		IMutableDictionary<PublicKey>& publicKeyDictionary
 	) const
 	{
 		auto transactionEntry = std::make_shared<NodeTransactionEntry>(serializedTransaction, mBlockchain, fileCursor);
@@ -127,13 +141,13 @@ namespace cache {
 		// mBlockIndex->updateAddressIndex(transactionEntry, publicKeyDictionary);
 	}
 
-	std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(
+	shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(
 		uint64_t transactionNr,
-		IMutableDictionary<memory::ConstBlockPtr>& publicKeyDictionary
+		IMutableDictionary<PublicKey>& publicKeyDictionary
 	) const
 	{
 		assert(transactionNr);
-		std::lock_guard lock(mFastMutex);
+		lock_guard lock(mFastMutex);
 
 		auto transactionEntry = mSerializedTransactions.get(transactionNr);
 		if (!transactionEntry) {
@@ -182,7 +196,7 @@ namespace cache {
 				LOG_F(ERROR, "fileCursor: %d", fileCursor);
 				auto blockLine = mBlockFile->readLine(fileCursor);
 				deserialize::Context deserializer(blockLine, deserialize::Type::CONFIRMED_TRANSACTION);
-				deserializer.run();
+				deserializer.run(mBlockchain->getCommunityIdIndex());
 				if (deserializer.isConfirmedTransaction()) {
 					LOG_F(ERROR, "block: %s", serialization::toJsonString(*deserializer.getConfirmedTransaction(), true).data());
 				}
