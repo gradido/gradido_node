@@ -33,7 +33,7 @@ namespace cache {
 #define REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE 1024
 
 namespace task {
-	
+
 	//! remove dependencie to CPUTask because this isn't really a cpu task, more are result storage,
 	//! because it will start subsequent tasks of it own which will call back via command if finished
 	class RebuildBlockIndexTask : public CPUTask, public model::files::IBlockBufferRead
@@ -43,19 +43,18 @@ namespace task {
 			std::shared_ptr<cache::BlockIndex> blockIndex,
 			uint32_t communityIdIndex
 		);
-		const char* getResourceType() const { return "RebuildBlockIndexTask"; };
+		const char* getResourceType() const override { return "RebuildBlockIndexTask"; };
 
-		int run();
-		
+		int run() override;
+
 		virtual void finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor) override;
 		virtual void flush() override;
-		
+
 		inline grdu_memory* getAlloc() { return &mReadInAllocator; }
 
 	protected:
-	
 		uint8_t mBuffers[2][REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE];
-		
+
 		grdu_memory mReadInAllocator;
 		std::mutex mWorkConfirmedMutex;
 		gradido::data::compact::ConfirmedGradidoTx mConfirmedTx;

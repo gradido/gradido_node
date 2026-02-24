@@ -72,8 +72,8 @@ FILE(GLOB SERVER_JSON_RPC "src/server/json-rpc/*.h" "src/server/json-rpc/*.cpp")
 FILE(GLOB LIB_SRC "src/lib/*.h" "src/lib/*.cpp" "src/lib/*.c")
 FILE(GLOB MODEL "src/model/*.h" "src/model/*.cpp")
 FILE(GLOB MODEL_APOLLO "src/model/Apollo/*.h" "src/model/Apollo/*.cpp")
-FILE(GLOB MODEL_APOLLO_CREATE_TRANSACTION 
-	"src/model/Apollo/createTransaction/*.h" 
+FILE(GLOB MODEL_APOLLO_CREATE_TRANSACTION
+	"src/model/Apollo/createTransaction/*.h"
 	"src/model/Apollo/createTransaction/*.cpp"
 )
 FILE(GLOB MODEL_FILES "src/model/files/*.h" "src/model/files/*.cpp")
@@ -84,7 +84,7 @@ FILE(GLOB VIEW "src/view/*.h" "src/view/*.cpp")
 FILE(GLOB MAIN "src/*.cpp" "src/*.c"  "src/*.h")
 
 
-SET(LOCAL_SRCS 
+SET(LOCAL_SRCS
 	${BLOCKCHAIN}
 	${CACHE_SRC}
 	${CONTAINER} ${CONTROLLER} ${CLIENT} ${CLIENT_HIERO} ${SERIALIZATION}
@@ -205,7 +205,7 @@ add_executable(GradidoNode ${LOCAL_SRCS})
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
 	# needed for clang/zig
-	target_compile_options(GradidoNode PRIVATE -Wno-error=deprecated-literal-operator)
+	target_compile_options(GradidoNode PRIVATE -Wno-error=deprecated-literal-operator -Wno-error=deprecated-declarations)
 endif()
 #SUBDIRS("src/test")
 
