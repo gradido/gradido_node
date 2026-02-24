@@ -51,6 +51,7 @@ namespace gradido {
 
 			//! list all known communities
 			inline std::vector<std::string> listCommunityIds() const;
+			inline const cache::GroupIndex* getGroupIndex() const { return mGroupIndex; }
 		protected:
 
 			// check if neccessary, or community context is enough

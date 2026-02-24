@@ -13,11 +13,14 @@
 #include "../SingletonManager/CacheManager.h"
 
 #include "gradido_blockchain/Application.h"
+#include "gradido_blockchain/AppContext.h"
+#include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 #include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_protobuf_zig.h"
 
 #include "loguru/loguru.hpp"
 
@@ -26,8 +29,9 @@
 #include <mutex>
 #include <thread>
 
+using gradido::AppContext;
 using namespace gradido::blockchain;
-using gradido::data::TransactionType;
+using gradido::data::TransactionType, gradido::data::compact::ConfirmedGradidoTx;
 using namespace gradido::interaction;
 using std::shared_ptr, std::make_shared, std::lock_guard;
 using task::RebuildBlockIndexTask;
@@ -37,6 +41,7 @@ namespace cache {
 	Block::Block(uint32_t blockNr, std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
 		: mBlockNr(blockNr),
 		mSerializedTransactions(ServerGlobals::g_CacheTimeout),
+		mConfirmedTxByNr(ServerGlobals::g_CacheTimeout),
 		mBlockIndex(std::make_shared<BlockIndex>(blockchain->getFolderPath(), blockNr, blockchain->getCommunityIdIndex())),
 		mBlockFile(std::make_shared<model::files::Block>(blockchain->getFolderPath(), blockNr)),
 		mBlockchain(blockchain),
@@ -57,7 +62,7 @@ namespace cache {
 		mSerializedTransactions.clear();
 	}
 
-	bool Block::init(IMutableDictionary<PublicKey>& publicKeyDictionary)
+	bool Block::init()
 	{
 		lock_guard lock(mFastMutex);
 		// todo: add data for address index in file, until then rebuild block index on each program start
@@ -113,7 +118,8 @@ namespace cache {
 	//bool Block::pushTransaction(const std::string& serializedTransaction, uint64_t transactionNr)
 	bool Block::pushTransaction(
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-		IMutableDictionary<PublicKey>& publicKeyDictionary
+		IMutableDictionary<PublicKey>& publicKeyDictionary,
+		AppContext& appContext
 	)
 	{
 		lock_guard lock(mFastMutex);
@@ -125,6 +131,7 @@ namespace cache {
 		}
 		mTransactionWriteTask->addSerializedTransaction(transaction, publicKeyDictionary);
 		mSerializedTransactions.add(transaction->getTransactionNr(), transaction);
+		addCompactTransaction(transaction, appContext);
 		return true;
 
 	}
@@ -132,19 +139,39 @@ namespace cache {
 	void Block::addTransaction(
 		memory::ConstBlockPtr serializedTransaction, 
 		int32_t fileCursor,
-		IMutableDictionary<PublicKey>& publicKeyDictionary
+		AppContext& appContext
 	) const
 	{
-		auto transactionEntry = std::make_shared<NodeTransactionEntry>(serializedTransaction, mBlockchain, fileCursor);
+		auto transactionEntry = make_shared<NodeTransactionEntry>(serializedTransaction, mBlockchain, fileCursor);
 		if (mExitCalled) return;
 		mSerializedTransactions.add(transactionEntry->getTransactionNr(), transactionEntry);
+		addCompactTransaction(transactionEntry, appContext);
 		// mBlockIndex->updateAddressIndex(transactionEntry, publicKeyDictionary);
 	}
 
-	shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(
-		uint64_t transactionNr,
-		IMutableDictionary<PublicKey>& publicKeyDictionary
-	) const
+	void Block::addCompactTransaction(shared_ptr<NodeTransactionEntry> transactionEntry, AppContext& appContext) const
+	{
+		// create compact version
+		try {
+			uint8_t buffer[1024];
+			grdu_memory alloc;
+			grdu_memory_init_static(&alloc, buffer, 1024);
+			grdw_confirmed_transaction tx{};
+			auto communityIdIndex = mBlockchain->getCommunityIdIndex();
+			transactionEntry->getConfirmedTransaction()->toGrdw(&alloc, &tx, communityIdIndex);
+			auto confirmedTxPtr = make_shared<ConfirmedGradidoTx>(ConfirmedGradidoTx::fromGrdw(&tx, communityIdIndex, appContext));
+			alloc.last_index = 0;
+			grdw_transaction_body txBody{};
+			transactionEntry->getTransactionBody()->toGrdw(&alloc, &txBody);
+			confirmedTxPtr->fillFromGrdwTransactionBody(&txBody, appContext);
+			mConfirmedTxByNr.add(confirmedTxPtr->txNr, confirmedTxPtr);
+		}
+		catch (GradidoBlockchainException& ex) {
+			LOG_F(WARNING, "%s on create compact", ex.getFullString().c_str());
+		}
+	}
+
+	shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr, AppContext& appContext) const
 	{
 		assert(transactionNr);
 		lock_guard lock(mFastMutex);
@@ -184,7 +211,7 @@ namespace cache {
 			}
 			try {
 				auto blockLine = mBlockFile->readLine(fileCursor);
-				addTransaction(blockLine, fileCursor, publicKeyDictionary);
+				addTransaction(blockLine, fileCursor, appContext);
 			}
 			catch (model::files::EndReachingException& ex) {
 				LOG_F(ERROR, "%s", ex.getFullString().data());
@@ -212,6 +239,20 @@ namespace cache {
 				.setTransactionId(transactionNr);
 		}
 		return transactionEntry.value();
+	}
+
+	std::shared_ptr<gradido::data::compact::ConfirmedGradidoTx> Block::getCompactTransaction(
+		uint64_t transactionNr,
+		gradido::AppContext& appContext
+	) const
+	{
+		auto confirmedTx = mConfirmedTxByNr.get(transactionNr);
+		if (!confirmedTx) {
+			// check write cache, else try to read from storage
+			getTransaction(transactionNr, appContext);
+		}
+		// should only don't work, if getTransaction failed, but this will throw an exception anyway
+		return mConfirmedTxByNr.get(transactionNr).value();
 	}
 
 	bool Block::hasSpaceLeft() {

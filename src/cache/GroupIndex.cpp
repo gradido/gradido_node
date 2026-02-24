@@ -132,15 +132,6 @@ namespace cache {
 		return mCommunities.find(communityIdIndex) != mCommunities.end();
 	}
 
-	void GroupIndex::iterate(function<bool(const CommunityIndexEntry&)> callback) const
-	{
-		shared_lock _lock(mWorkMutex);
-		for (const auto& it : mCommunities) {
-			auto result = callback(it.second);
-			if (!result) break;
-		}
-	}
-
 	vector<string> GroupIndex::listCommunitiesIds() const
 	{
 		shared_lock _lock(mWorkMutex);

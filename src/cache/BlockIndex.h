@@ -23,6 +23,7 @@ namespace gradido {
 	}
 	namespace blockchain {
 		class AbstractProvider;
+		class CompactFilter;
 	}
 }
 
@@ -87,6 +88,9 @@ namespace cache {
 		//! \return transaction nrs
 		inline std::vector<uint64_t> findTransactions(const gradido::blockchain::Filter& filter, const IDictionary<PublicKey>& publicKeysDictionary) const;
 
+		inline std::vector<uint64_t> findTransactions(const gradido::blockchain::CompactFilter& filter) const;
+		inline std::vector<uint64_t> findTransactionsBalanceChangingForPublicKey(const gradido::blockchain::CompactFilter& filter) const;
+
 		//! count all, ignore pagination
 		inline size_t countTransactions(const gradido::blockchain::Filter& filter, const IDictionary<PublicKey>& publicKeysDictionary) const;
 
@@ -106,6 +110,8 @@ namespace cache {
 		inline date::year_month getOldestYearMonth() const;
 		inline date::year_month getNewestYearMonth() const;
 		inline TimepointInterval filteredTimepointInterval(const gradido::blockchain::CompactFilter& filter) const;
+		inline void lock() const { mRecursiveMutex.lock(); }
+		inline void unlock() const { mRecursiveMutex.unlock(); }
 
 	protected:
 
@@ -134,7 +140,18 @@ namespace cache {
 	) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::findTransactions(filter, publicKeysDictionary);
+		return gradido::blockchain::TransactionsIndex::findTransactions(filter, publicKeysDictionary, mBlockchainCommunityIdIndex);
+	}
+
+	std::vector<uint64_t> BlockIndex::findTransactions(const gradido::blockchain::CompactFilter& filter) const
+	{
+		std::lock_guard _lock(mRecursiveMutex);
+		return gradido::blockchain::TransactionsIndex::findTransactions(filter);
+	}
+	std::vector<uint64_t> BlockIndex::findTransactionsBalanceChangingForPublicKey(const gradido::blockchain::CompactFilter& filter) const
+	{
+		std::lock_guard _lock(mRecursiveMutex);
+		return gradido::blockchain::TransactionsIndex::findTransactionsBalanceChangingForPublicKey(filter);
 	}
 
 	size_t BlockIndex::countTransactions(
@@ -190,7 +207,7 @@ namespace cache {
 	std::pair<uint64_t, uint64_t> BlockIndex::findTransactionsForMonthYear(date::year year, date::month month) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::findTransactionsForMonthYear(year, month);
+		return gradido::blockchain::TransactionsIndex::findTransactionsForMonthYear({ year, month });
 	}
 }
 

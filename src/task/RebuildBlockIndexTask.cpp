@@ -3,6 +3,7 @@
 #include "../ServerGlobals.h"
 #include "../blockchain/FileBased.h"
 
+#include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
@@ -56,7 +57,7 @@ namespace task {
 			throw GradidoNodeInvalidDataException("error deserialize transaction body");
 		}
 
-		auto compactConfirmedTx = ConfirmedGradidoTx::fromGrdw(&tx, &body, mCommunityIdIndex, false);
+		auto compactConfirmedTx = ConfirmedGradidoTx::fromGrdw(&tx, &body, mCommunityIdIndex, *gradido::g_appContext);
 		mBlockIndex->addIndicesForTransaction(compactConfirmedTx);
 		mBlockIndex->addFileCursorForTransaction(compactConfirmedTx.txNr, fileCursor);
 

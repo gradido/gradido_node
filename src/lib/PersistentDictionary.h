@@ -31,7 +31,7 @@ public:
     void reset() override;
     size_t getLastIndex();
 
-    virtual std::optional<size_t> getIndexForData(const DataType& data) const override;
+    virtual size_t getIndexForData(const DataType& data) const override;
     virtual std::optional<DataType> getDataForIndex(size_t index) const override;
     virtual DataType getDataForIndexOrThrow(size_t index) const override;
     virtual size_t getOrAddIndexForData(const DataType& data) override;
@@ -85,12 +85,12 @@ requires serialization::HasString<DataType>
 size_t PersistentDictionary<DataType>::getLastIndex()
 {
     std::unique_lock _lock(mWorkingMutex);
-    return mIndexDataReverseLookup.size() - 1;
+    return mIndexDataReverseLookup.size();
 }
 
 template<typename DataType>
 requires serialization::HasString<DataType>
-std::optional<size_t> PersistentDictionary<DataType>::getIndexForData(const DataType& data) const
+size_t PersistentDictionary<DataType>::getIndexForData(const DataType& data) const
 {
     std::shared_lock _lock(mWorkingMutex);
     auto result = mDictionaryFile.getValueForKey(serialization::toString<DataType>(data));
@@ -98,19 +98,20 @@ std::optional<size_t> PersistentDictionary<DataType>::getIndexForData(const Data
         const auto& value = result.value();
         return serialization::fromString<size_t>(value.data(), value.size());
     }
-    return std::nullopt;
+    return 0;
 }
 
 template<typename DataType>
 requires serialization::HasString<DataType>
 std::optional<DataType> PersistentDictionary<DataType>::getDataForIndex(size_t index) const
 {
-    std::shared_lock _lock(mWorkingMutex);
-    auto it = mIndexDataReverseLookup.find(index);
-    if (it == mIndexDataReverseLookup.end()) {
-        return std::nullopt;
-    }
-    return it->second;
+  std::shared_lock _lock(mWorkingMutex);
+
+  auto it = mIndexDataReverseLookup.find(index);
+  if (it == mIndexDataReverseLookup.end()) {
+    return std::nullopt;
+  }
+  return it->second;
 }
 
 template<typename DataType>
@@ -138,7 +139,7 @@ size_t PersistentDictionary<DataType>::getOrAddIndexForData(const DataType& data
     if (mIndexDataReverseLookup.size() >= static_cast<size_t>(std::numeric_limits<size_t>::max())) {
         throw DictionaryOverflowException("try to add more index data set's as size_t as index can handle", mDictionaryFile.getFolderName());
     }
-    size_t index = mIndexDataReverseLookup.size();
+    size_t index = mIndexDataReverseLookup.size() + 1;
     mDictionaryFile.setKeyValue(dataString, serialization::toString<size_t>(index));
     mIndexDataReverseLookup.insert({ index, data });
     return index;

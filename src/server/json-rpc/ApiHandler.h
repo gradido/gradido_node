@@ -3,6 +3,7 @@
 
 #include "RequestHandler.h"
 #include "gradido_blockchain/types.h"
+#include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 
 namespace gradido {
 	namespace blockchain {
@@ -56,7 +57,7 @@ namespace server {
 			//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
 			void getCreationSumForMonth(
 				rapidjson::Value& resultJson,
-				memory::ConstBlockPtr pubkey,
+				gradido::data::compact::PublicKeyIndex publicKeyIndex,
 				Timepoint targetDate,
 				Timepoint transactionCreationDate,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain

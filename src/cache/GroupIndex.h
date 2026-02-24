@@ -66,7 +66,14 @@ namespace cache {
 		bool isCommunityInConfig(uint32_t communityIdIndex) const;
 
 		// callback for each community, stop if return false
-		void iterate(std::function<bool(const CommunityIndexEntry&)> callback) const;
+		template<typename callbackFunc>
+		void iterate(callbackFunc callback) const {
+			std::shared_lock _lock(mWorkMutex);
+			for (const auto& it : mCommunities) {
+				auto result = callback(it.second);
+				if (!result) break;
+			}
+		}
 
 		//! \brief collect all group aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server

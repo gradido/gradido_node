@@ -19,7 +19,7 @@ using gradido::data::TransactionType;
 namespace cache {
 
 	BlockIndex::BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex)
-		: TransactionsIndex(), mFolderPath(groupFolderPath), mBlockNr(blockNr), mBlockchainCommunityIdIndex(blockchainCommunityIdIndex), mDirty(false)
+		: TransactionsIndex(blockchainCommunityIdIndex), mFolderPath(groupFolderPath), mBlockNr(blockNr), mBlockchainCommunityIdIndex(blockchainCommunityIdIndex), mDirty(false)
 	{
 	}
 

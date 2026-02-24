@@ -4,6 +4,7 @@
 // TODO: fix the reason
 #include "../../model/Apollo/TransactionList.h"
 #include "gradido_blockchain/AppContext.h"
+#include "gradido_blockchain/blockchain/CompactFilter.h"
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/data/adapter/byteArray.h"
 #include "gradido_blockchain/data/adapter/publicKey.h"
@@ -41,6 +42,7 @@ using namespace magic_enum;
 
 using std::optional, std::nullopt;
 using gradido::g_appContext;
+using gradido::data::compact::PublicKeyIndex;
 
 namespace server {
 	namespace json_rpc {
@@ -94,6 +96,8 @@ namespace server {
 
 			// load public key for nearly all requests
 			memory::BlockPtr pubkey;
+			PublicKeyIndex publickKeyIndex;
+			
 			std::string pubkeyHex;
 			std::set<std::string> noNeedForPubkey = {
 				"getLastTransaction", "getTransactions","getTransaction", "findUserByNameHash"
@@ -103,7 +107,8 @@ namespace server {
 					return;
 				}
 				pubkey = std::make_shared<memory::Block>(memory::Block::fromHex(pubkeyHex));
-			}
+				publickKeyIndex = adapter::toPublicKeyIndex(pubkey, blockchain->getCommunityIdIndex());
+			}			
 
 			if (method == "getLastTransaction") {
 				Profiler timeUsed;
@@ -159,7 +164,7 @@ namespace server {
 				if (params.HasMember("coinCommunityId") && params["coinCommunityId"].IsString()) {
 					auto coinCommunityIdIndexOptional = g_appContext->getCommunityIds().getIndexForData(params["coinCommunityId"].GetString());
 					if (coinCommunityIdIndexOptional) {
-						coinCommunityId = static_cast<uint32_t>(coinCommunityIdIndexOptional.value());
+						coinCommunityId = static_cast<uint32_t>(coinCommunityIdIndexOptional);
 					}
 				}
 				getAddressBalance(resultJson, pubkey, date, blockchain, coinCommunityId);
@@ -210,7 +215,7 @@ namespace server {
 				}
 
 				auto date = DataTypeConverter::dateTimeStringToTimePoint(date_string);
-				getCreationSumForMonth(resultJson, pubkey, targetDate, date, blockchain);
+				getCreationSumForMonth(resultJson, publickKeyIndex, targetDate, date, blockchain);
 			}
 			// TODO: think about better name, explain that this is extra formatted for the gradido frontend, to mimic current graphql backend response
 			else if (method == "listTransactions") {
@@ -267,9 +272,20 @@ namespace server {
 		void ApiHandler::listCommunities(rapidjson::Value& resultJson)
 		{
 			Profiler timeUsed;
-			auto alloc = mRootJson.GetAllocator();
-			auto groups = FileBasedProvider::getInstance()->listCommunityIds();
-			resultJson.AddMember("communities", toJson(groups, alloc), alloc);
+			auto& alloc = mRootJson.GetAllocator();
+			const auto& groupIndex = FileBasedProvider::getInstance()->getGroupIndex();
+			Value communities(kArrayType);
+			groupIndex->iterate(
+				[&communities, &alloc](const cache::CommunityIndexEntry& comInfos) -> bool
+				{
+					Value community(kObjectType);
+					community.AddMember("communityId", toJson(comInfos.communityId, alloc), alloc);
+					community.AddMember("alias", toJson(comInfos.alias, alloc), alloc);
+					communities.PushBack(community, alloc);
+					return true;
+				}
+			);
+			resultJson.AddMember("communities", communities, alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
 		}
 
@@ -316,15 +332,15 @@ namespace server {
 			// read gmw and auf balance
 			Timepoint now = std::chrono::system_clock::now();
 			calculateAccountBalance::Context calculateAddressBalance(blockchain);
-			auto communityRootEntry = blockchain->findOne(Filter::FIRST_TRANSACTION);
+			CompactFilter communityRootFindFilter;
+			communityRootFindFilter.searchDirection = SearchDirection::ASC;
+			communityRootFindFilter.pagination.size = 1;
+			auto communityRootEntry = blockchain->findOne(communityRootFindFilter);
 			if (communityRootEntry) {
-				auto communityRootBody = communityRootEntry->getTransactionBody();
-				assert(communityRootBody->isCommunityRoot());
-				auto communityRoot = communityRootBody->getCommunityRoot();
-				auto gmwAddress = adapter::toConstBlockPtr(communityRoot->gmwPublicKeyIndex);
-				auto aufAddress = adapter::toConstBlockPtr(communityRoot->aufPublicKeyIndex);
-				auto gmwBalance = calculateAddressBalance.fromEnd(gmwAddress, now, blockchain->getCommunityIdIndex());
-				auto aufBalance = calculateAddressBalance.fromEnd(aufAddress, now, blockchain->getCommunityIdIndex());
+				auto& tx = *communityRootEntry;
+				assert(tx.isCommunityRoot());
+				auto gmwBalance = calculateAddressBalance.fromEnd(tx.getGmw(), now, blockchain->getCommunityIdIndex());
+				auto aufBalance = calculateAddressBalance.fromEnd(tx.getAuf(), now, blockchain->getCommunityIdIndex());
 				resultJson.AddMember("gmwBalance", Value(gmwBalance.toString().data(), alloc), alloc);
 				resultJson.AddMember("aufBalance", Value(aufBalance.toString().data(), alloc), alloc);
 			} else {
@@ -386,7 +402,7 @@ namespace server {
 
 		void ApiHandler::getCreationSumForMonth(
 			rapidjson::Value& resultJson,
-			memory::ConstBlockPtr pubkey,
+			gradido::data::compact::PublicKeyIndex publicKeyIndex,
 			Timepoint targetDate,
 			Timepoint transactionCreationDate,
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain
@@ -396,7 +412,7 @@ namespace server {
 			auto& alloc = mRootJson.GetAllocator();
 			assert(blockchain);
 
-			calculateCreationSum::Context calculateCreationSum(transactionCreationDate, targetDate, pubkey);
+			calculateCreationSum::Context calculateCreationSum(transactionCreationDate, targetDate, publicKeyIndex);
 			auto sumString = calculateCreationSum.run(*blockchain).toString();
 			resultJson.AddMember("sum", Value(sumString.data(), sumString.size(), alloc), alloc);
 			resultJson.AddMember("timeUsed", Value(timeUsed.string().data(), alloc).Move(), alloc);
@@ -528,7 +544,7 @@ namespace server {
 				auto body = entry.getTransactionBody();
 				assert(body->isRegisterAddress());
 				auto registerAddress = body->getRegisterAddress();
-				if (nameHashId.value() == static_cast<size_t>(registerAddress->nameHashIndex)) {
+				if (nameHashId == static_cast<size_t>(registerAddress->nameHashIndex)) {
 					return FilterResult::USE | FilterResult::STOP;
 				}
 				return FilterResult::DISMISS;
@@ -542,7 +558,9 @@ namespace server {
 				assert(body);
 				auto registerAddress = body->getRegisterAddress();
 				assert(registerAddress);
-				resultJson.AddMember("pubkey", toJson(registerAddress->accountPublicKeyIndex.getRawKey().convertToHex(), alloc), alloc);
+				const auto& dict = blockchain->getPublicKeyDictionary();
+
+				resultJson.AddMember("pubkey", toJson(dict.getDataForIndexOrThrow(registerAddress->accountPublicKeyIndex).convertToHex(), alloc), alloc);
 			}
 			else {
 				error(responseJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");

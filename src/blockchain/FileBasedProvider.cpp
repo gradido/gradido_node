@@ -65,11 +65,11 @@ namespace gradido {
 		shared_ptr<Abstract> FileBasedProvider::findBlockchain(const string& communityId)
 		{
 			auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(communityId);
-			if (!communityIdIndex.has_value()) {
+			if (!communityIdIndex) {
 				LOG_F(WARNING, "no community id index for %s", communityId.c_str());
 			}
 			else {
-				return findBlockchain(communityIdIndex.value());
+				return findBlockchain(communityIdIndex);
 			}
 			return nullptr;
 		}
@@ -79,11 +79,11 @@ namespace gradido {
 			try {
 				const auto& groupIndexEntry = mGroupIndex->getCommunityDetails(topicId);
 				auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(groupIndexEntry.communityId);
-				if (!communityIdIndex.has_value()) {
+				if (!communityIdIndex) {
 					LOG_F(WARNING, "no community id index for %s", groupIndexEntry.communityId.c_str());
 				}
 				else {
-					return findBlockchain(communityIdIndex.value());
+					return findBlockchain(communityIdIndex);
 				}
 			}
 			catch (GradidoBlockchainException& ex) {

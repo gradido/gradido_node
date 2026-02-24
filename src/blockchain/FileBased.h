@@ -151,7 +151,7 @@ namespace gradido {
 			virtual data::AddressType getAddressType(const Filter& filter = Filter::LAST_TRANSACTION) const override;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
-			virtual std::optional<std::reference_wrapper<const data::compact::ConfirmedGradidoTx>> getConfirmedTxForId(uint64_t transactionId) const;
+			virtual data::compact::ConstConfirmedTxPtr getConfirmedTxForId(uint64_t transactionId) const;
 			//! \param filter use to speed up search if infos exist to narrow down search transactions range
 			virtual ConstTransactionEntryPtr findByLedgerAnchor(
 				const data::LedgerAnchor& ledgerAnchor,

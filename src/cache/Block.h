@@ -21,9 +21,13 @@ namespace model {
 }
 
 namespace gradido {
+	class AppContext;
 	namespace blockchain {
 		class FileBased;
 		class NodeTransactionEntry;
+	}
+	namespace data::compact {
+		struct ConfirmedGradidoTx;
 	}
 }
 
@@ -52,19 +56,25 @@ namespace cache {
 		~Block();
 
 		//! \return false if block not exist
-		bool init(IMutableDictionary<PublicKey>& publicKeyDictionary);
+		bool init();
 		void exit();
 
 		//! \brief put new transaction to cache and file system
 		bool pushTransaction(
 			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-			IMutableDictionary<PublicKey>& publicKeyDictionary
+			IMutableDictionary<PublicKey>& publicKeyDictionary,
+			gradido::AppContext& appContext
 		);
 		
 		//! \brief load transaction from cache or file system
 		std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> getTransaction(
 			uint64_t transactionNr,
-			IMutableDictionary<PublicKey>& publicKeyDictionary
+			gradido::AppContext& appContext
+		) const;
+
+		std::shared_ptr<gradido::data::compact::ConfirmedGradidoTx> getCompactTransaction(
+			uint64_t transactionNr,
+			gradido::AppContext& appContext
 		) const;
 
 		inline BlockIndex& getBlockIndex() { return *mBlockIndex; }
@@ -82,13 +92,15 @@ namespace cache {
 		void addTransaction(
 			memory::ConstBlockPtr serializedTransaction, 
 			int32_t fileCursor,
-			IMutableDictionary<PublicKey>& publicKeyDictionary
+			gradido::AppContext& appContext
 		) const;
+		void addCompactTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry, gradido::AppContext& appContext) const;
 		
 		mutable std::mutex mFastMutex;
 		uint32_t mBlockNr;		
 
 		mutable AccessExpireCache<uint64_t, std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mSerializedTransactions;
+		mutable AccessExpireCache<uint64_t, std::shared_ptr<gradido::data::compact::ConfirmedGradidoTx>> mConfirmedTxByNr;
 
 		std::shared_ptr<BlockIndex> mBlockIndex;
 		std::shared_ptr<model::files::Block> mBlockFile;
