@@ -18,7 +18,7 @@ namespace gradido {
 			mPublicKeyIndices.reserve(involvedPublicKeys.size());
 			for (auto& publicKey : involvedPublicKeys) {
 				mPublicKeyIndices.push_back(blockchain->getOrAddIndexForPublicKey(toPublicKey(publicKey)));
-			}			
+			}
 		}
 
 

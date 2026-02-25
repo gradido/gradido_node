@@ -33,12 +33,12 @@ namespace cache {
 
 	/*!
 	 * @author Dario Rekowski
-	 * 
+	 *
 	 * @date 2020-02-06
-	 * 
+	 *
 	 * @brief storing group folder name in memory in hash list for fast access
 	 *
-	 * protected by FastMutex 
+	 * protected by FastMutex
 	 *
 	 * TODO: adding function to adding group folder pair and save changed group.index file
 	 */
@@ -77,9 +77,9 @@ namespace cache {
 
 		//! \brief collect all group aliases from unordered map (not the fastest operation from unordered map)
 		//! \return vector with group aliases registered to the node server
-		std::vector<std::string> listCommunitiesIds() const;	
+		std::vector<std::string> listCommunitiesIds() const;
 		std::vector<uint32_t> listCommunitiesIdIndices() const;
-		
+
 	protected:
 		mutable std::shared_mutex mWorkMutex;
 		model::files::JsonFile mConfig;

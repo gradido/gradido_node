@@ -54,7 +54,7 @@ namespace gradido {
 			inline const cache::GroupIndex* getGroupIndex() const { return mGroupIndex; }
 		protected:
 
-			// check if neccessary, or community context is enough
+			// check if necessary, or community context is enough
 			std::unordered_map<uint32_t, std::shared_ptr<FileBased>> mBlockchainsPerGroup;
 			std::recursive_mutex mWorkMutex;
 

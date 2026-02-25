@@ -124,16 +124,19 @@ namespace gradido {
 			for (const auto& pair : mBlockchainsPerGroup) {
 				if (!pair.second->startValidationTransactions()) {
 					LOG_F(
-						ERROR, 
-						"error validate last transactions from community: %s in folder: %s", 
-						pair.second->getCommunityId().c_str(), 
+						ERROR,
+						"error validate last transactions from community: %s in folder: %s",
+						pair.second->getCommunityId().c_str(),
 						pair.second->getFolderPath().c_str()
 					);
 				}
 			}
-			
+
 			// step 3: check for new transactions in hiero network, all blockchains at the same time
 			for (const auto& pair : mBlockchainsPerGroup) {
+				if (pair.second->getHieroTopicId().empty()) {
+					continue;
+				}
 				auto task = pair.second->initOnline();
 				auto hieroClient = pair.second->pickHieroClient();
 				hieroClient->getTopicInfo(pair.second->getHieroTopicId(), task);
@@ -176,23 +179,27 @@ namespace gradido {
 		}
 
 		shared_ptr<FileBased> FileBasedProvider::addCommunity(
-			const string& communityId, 
+			const string& communityId,
 			const hiero::TopicId& topicId,
 			const string& alias
 		) {
 			try {
 				auto communityIdIndex = g_appContext->getOrAddCommunityIdIndex(communityId);
 				auto folder = mGroupIndex->getFolder(communityIdIndex);
+				std::shared_ptr<FileBased> blockchain;
+				if (topicId.empty()) {
+					blockchain = FileBased::createWithoutHieroTopic(communityId, alias, folder);
+				} else {
+					// with more hiero clients as per community needed, we make sure we not take always the first mHieroClientsPerCommunity from them
+					vector<shared_ptr<client::hiero::ConsensusClient>> hieroClients = mHieroClients; // copy
+					if (hieroClients.size() > mHieroClientsPerCommunity) {
+						std::shuffle(hieroClients.begin(), hieroClients.end(), std::mt19937{ std::random_device{}() });
+						hieroClients.resize(mHieroClientsPerCommunity);
+					}
 
-				// with more hiero clients as per community needed, we make sure we not take always the first mHieroClientsPerCommunity from them
-				vector<shared_ptr<client::hiero::ConsensusClient>> hieroClients = mHieroClients; // copy
-				if (hieroClients.size() > mHieroClientsPerCommunity) {
-					std::shuffle(hieroClients.begin(), hieroClients.end(), std::mt19937{ std::random_device{}() });
-					hieroClients.resize(mHieroClientsPerCommunity);
+					// with that call community will be initialized and start listening
+					blockchain = FileBased::create(communityId, topicId, alias, folder, std::move(hieroClients));
 				}
-
-				// with that call community will be initialized and start listening
-				auto blockchain = FileBased::create(communityId, topicId, alias, folder, std::move(hieroClients));
 				g_appContext->addBlockchain(communityIdIndex, blockchain);
 				updateListenerCommunity(communityIdIndex, alias, blockchain);
 

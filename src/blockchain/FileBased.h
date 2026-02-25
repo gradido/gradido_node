@@ -63,10 +63,10 @@ namespace gradido {
 		public:
 			// Constructor is only usable by this class
 			FileBased(
-				Private, 
+				Private,
 				const std::string& communityId,
 				const hiero::TopicId& topicId,
-				std::string_view alias, 
+				std::string_view alias,
 				std::string_view folder,
 				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 			);
@@ -77,6 +77,12 @@ namespace gradido {
 				std::string_view alias,
 				std::string_view folder,
 				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
+			);
+			// construct without valid HieroTopic Id. Make Blockchain txs available, but don't listen for new ones from hiero/hedera
+			static inline std::shared_ptr<FileBased> createWithoutHieroTopic(
+				const std::string& communityId,
+				std::string_view alias,
+				std::string_view folder
 			);
 			inline std::shared_ptr<FileBased> getptr();
 			inline std::shared_ptr<const FileBased> getptr() const;
@@ -170,7 +176,7 @@ namespace gradido {
 			inline uint32_t getOrAddIndexForPublicKey(const PublicKey& publicKey) const {
 				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
 			}
-						
+
 			inline const hiero::TopicId& getHieroTopicId() const { return mHieroTopicId; }
 			inline const std::string& getAlias() const { return mAlias; }
 			inline const std::string& getFolderPath() const { return mFolderPath; }
@@ -235,6 +241,21 @@ namespace gradido {
 			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 		) {
 			return std::make_shared<FileBased>(Private(), communityId, topicId, alias, folder, std::move(hieroClients));
+		}
+
+		std::shared_ptr<FileBased> FileBased::createWithoutHieroTopic(
+			const std::string& communityId,
+			std::string_view alias,
+			std::string_view folder
+		) {
+			return std::make_shared<FileBased>(
+				Private(),
+				communityId,
+				hiero::TopicId(),
+				alias,
+				folder,
+				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>()
+			);
 		}
 
 		std::shared_ptr<FileBased> FileBased::getptr()

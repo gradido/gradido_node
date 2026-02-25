@@ -52,11 +52,15 @@ namespace cache {
 					rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "communityId", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
-					rapidjson_helper::checkMember(communityEntry, "hieroTopicId", rapidjson_helper::MemberType::STRING);
+					// rapidjson_helper::checkMember(communityEntry, "hieroTopicId", rapidjson_helper::MemberType::STRING);
 					entry.alias = communityEntry["alias"].GetString();
 					entry.communityId = communityEntry["communityId"].GetString();
 					entry.communityIdIndex = g_appContext->getOrAddCommunityIdIndex(entry.communityId);
-					entry.topicId = communityEntry["hieroTopicId"].GetString();
+					if (communityEntry.HasMember("hieroTopicId")) {
+						entry.topicId = communityEntry["hieroTopicId"].GetString();
+					} else {
+						LOG_F(WARNING, "community entry %s doesn't have hieroTopicId, this community won't be listened for new transactions", entry.communityId.c_str());
+					}
 					entry.folderName = communityEntry["folder"].GetString();
 					if (communityEntry.HasMember("newBlockUri")) {
 						entry.newBlockUri = communityEntry["newBlockUri"].GetString();
