@@ -72,7 +72,7 @@ namespace gradido {
 			mTransactionHashCache(communityId),
 			mHieroClients(std::move(hieroClients))
 		{
-			assert(mHieroClients.size());
+			assert(mHieroTopicId.empty() || mHieroClients.size());
 		}
 
 		FileBased::~FileBased()
@@ -146,11 +146,11 @@ namespace gradido {
 
 		std::shared_ptr<task::SyncTopicOnStartup> FileBased::initOnline()
 		{
-			auto hieroTopicId = hiero::TopicId(mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString()));
-			if (!hieroTopicId.empty()) {
+			auto hieroTopicIdString = mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
+			if (hieroTopicIdString.size()) {
 				return std::make_shared<task::SyncTopicOnStartup>(
 					mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0),
-					hieroTopicId,
+					hieroTopicIdString,
 					getptr()
 				);
 			}

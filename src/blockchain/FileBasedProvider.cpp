@@ -115,7 +115,11 @@ namespace gradido {
 				// exit if at least one blockchain from config couldn't be loaded
 				// should only occure with invalid config
 				const auto& details = mGroupIndex->getCommunityDetails(communityId);
-				if (!addCommunity(communityId, hiero::TopicId(details.topicId), details.alias)) {
+				hiero::TopicId topicId;
+				if (details.topicId.size()) {
+					topicId = details.topicId;
+				}
+				if (!addCommunity(communityId, topicId, details.alias)) {
 					LOG_F(ERROR, "error adding community %s in folder: %s", details.alias.data(), details.folderName.data());
 					return false;
 				}

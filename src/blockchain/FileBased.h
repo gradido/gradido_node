@@ -182,7 +182,7 @@ namespace gradido {
 			inline const std::string& getFolderPath() const { return mFolderPath; }
 			inline const std::string& getCommunityId() const { return mCommunityId; }
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
-			inline std::shared_ptr<client::hiero::ConsensusClient> pickHieroClient() const { return mHieroClients[std::rand() % mHieroClients.size()]; }
+			inline std::shared_ptr<client::hiero::ConsensusClient> pickHieroClient() const { return mHieroClients.size() ?  mHieroClients[std::rand() % mHieroClients.size()] : nullptr; }
 			std::shared_ptr<controller::SimpleOrderingManager> getOrderingManager() { return mOrderingManager; }
 
 		protected:

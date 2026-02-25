@@ -56,7 +56,7 @@ namespace cache {
 					entry.alias = communityEntry["alias"].GetString();
 					entry.communityId = communityEntry["communityId"].GetString();
 					entry.communityIdIndex = g_appContext->getOrAddCommunityIdIndex(entry.communityId);
-					if (communityEntry.HasMember("hieroTopicId")) {
+					if (communityEntry.HasMember("hieroTopicId") && communityEntry["hieroTopicId"].IsString()) {
 						entry.topicId = communityEntry["hieroTopicId"].GetString();
 					} else {
 						LOG_F(WARNING, "community entry %s doesn't have hieroTopicId, this community won't be listened for new transactions", entry.communityId.c_str());
