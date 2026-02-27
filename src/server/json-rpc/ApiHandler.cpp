@@ -97,7 +97,7 @@ namespace server {
 			// load public key for nearly all requests
 			memory::BlockPtr pubkey;
 			PublicKeyIndex publickKeyIndex;
-			
+
 			std::string pubkeyHex;
 			std::set<std::string> noNeedForPubkey = {
 				"getLastTransaction", "getTransactions","getTransaction", "findUserByNameHash"
@@ -108,7 +108,7 @@ namespace server {
 				}
 				pubkey = std::make_shared<memory::Block>(memory::Block::fromHex(pubkeyHex));
 				publickKeyIndex = adapter::toPublicKeyIndex(pubkey, blockchain->getCommunityIdIndex());
-			}			
+			}
 
 			if (method == "getLastTransaction") {
 				Profiler timeUsed;

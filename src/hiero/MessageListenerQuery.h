@@ -23,7 +23,7 @@ namespace hiero {
 		void onConnectionClosed() override;
 
 		inline bool isClosed() const { return mIsClosed; }
-		inline void cancelConnection() { mClientContext.TryCancel(); }
+		inline void cancelConnection() { getClientContextPtr()->TryCancel(); }
 	protected:
 		TopicId mTopicId;
 		std::string mCommunityId;

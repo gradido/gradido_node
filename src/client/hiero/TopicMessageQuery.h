@@ -39,8 +39,8 @@ namespace client {
 			TopicMessageQuery(TopicMessageQuery&&) = delete;
 			TopicMessageQuery& operator=(TopicMessageQuery&&) = delete;
 
-			grpc::CompletionQueue* getCompletionQueuePtr() { return &mCompletionQueue; }
-			grpc::ClientContext* getClientContextPtr() { return &mClientContext; }
+			grpc::CompletionQueue* getCompletionQueuePtr() { return mCompletionQueues.back().get(); }
+			grpc::ClientContext* getClientContextPtr() { return mClientContexts.back().get(); }
 
 			void setResponseReader(std::unique_ptr<grpc::ClientAsyncReaderWriter<grpc::ByteBuffer, grpc::ByteBuffer>>& responseReader);
 
@@ -63,8 +63,8 @@ namespace client {
 
 			::hiero::ConsensusTopicQuery mStartQuery;
 
-			grpc::CompletionQueue mCompletionQueue;
-			grpc::ClientContext mClientContext;
+			std::vector<std::unique_ptr<grpc::CompletionQueue>> mCompletionQueues;
+			std::vector<std::unique_ptr<grpc::ClientContext>> mClientContexts;
 			CallStatus mCallStatus;
 			std::unique_ptr<grpc::ClientAsyncReaderWriter<grpc::ByteBuffer, grpc::ByteBuffer>> mResponseReader;
 		};
