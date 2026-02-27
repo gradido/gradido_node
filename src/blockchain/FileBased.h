@@ -149,6 +149,7 @@ namespace gradido {
 
 			// find all optimized for counting transaction nrs, better not use the filter.function for that, because this would slow down
 			virtual size_t countAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const override;
+			virtual size_t countAll(const CompactFilter& filter) const override;
 
 			//! use only index for searching, ignore filter function
 			//! \return vector with transaction nrs
@@ -193,6 +194,7 @@ namespace gradido {
 			void rescanForTransactionTriggerEvents();
 
 			//! \param func if function return false, stop iteration
+			//! TODO: make a template function without using std::function
 			void iterateBlocks(const SearchDirection& searchDir, std::function<bool(const cache::Block&)> func) const;
 
 			cache::Block& getBlock(uint32_t blockNr) const;

@@ -93,6 +93,7 @@ namespace cache {
 
 		//! count all, ignore pagination
 		inline size_t countTransactions(const gradido::blockchain::Filter& filter, const IDictionary<PublicKey>& publicKeysDictionary) const;
+		inline size_t countTransactions(const gradido::blockchain::CompactFilter& filter) const;
 
 		//! \brief find transaction nrs from specific month and year
 		//! \return {0, 0} if nothing found
@@ -160,7 +161,13 @@ namespace cache {
 	) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::countTransactions(filter, publicKeysDictionary);
+		return gradido::blockchain::TransactionsIndex::countTransactions(gradido::blockchain::CompactFilter(filter, publicKeysDictionary, mBlockchainCommunityIdIndex));
+	}
+
+	size_t BlockIndex::countTransactions(const gradido::blockchain::CompactFilter& filter) const
+	{
+		std::lock_guard _lock(mRecursiveMutex);
+		return gradido::blockchain::TransactionsIndex::countTransactions(filter);
 	}
 
 	bool BlockIndex::hasTransactionNr(uint64_t transactionNr) const

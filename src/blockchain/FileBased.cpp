@@ -468,10 +468,25 @@ namespace gradido {
 				);
 				return findAll(filter).size();
 			}
-			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				count += block.getBlockIndex().countTransactions(filter, mPublicKeysIndex);
-				return true;
-			});
+			iterateBlocks(filter.searchDirection, 
+				[&](const cache::Block& block) -> bool {
+					count += block.getBlockIndex().countTransactions(filter, mPublicKeysIndex);
+					return true;
+				}
+			);
+			return count;
+		}
+
+		size_t FileBased::countAll(const CompactFilter& filter) const
+		{
+			size_t count = 0;
+			// check if filter has fields which aren't checked by index
+			iterateBlocks(filter.searchDirection, 
+				[&](const cache::Block& block) -> bool {
+					count += block.getBlockIndex().countTransactions(filter);
+					return true;
+				}
+			);
 			return count;
 		}
 
