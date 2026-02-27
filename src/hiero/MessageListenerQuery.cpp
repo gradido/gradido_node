@@ -41,8 +41,8 @@ namespace hiero {
 
 	// will be called from grpc client if connection was closed
 	void MessageListenerQuery::onConnectionClosed()
-	{		
-		mIsClosed = true;
-		LOG_F(WARNING, "connection closed on topic: %s", mTopicId.toString().data());
+	{
+		//mIsClosed = true;
+		LOG_F(WARNING, "connection closed on topic: %s, try reconnect", mTopicId.toString().data());
 	}
 }

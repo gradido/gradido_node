@@ -102,7 +102,7 @@ namespace client {
             return ::hiero::ConsensusTopicResponse(resultJson);
         }
 
-        void MirrorClient::subscribeTopic(std::shared_ptr<TopicMessageQuery> responseListener) {
+        void MirrorClient::subscribeTopic(TopicMessageQuery* responseListener) {
             if (!responseListener) {
                 throw GradidoNullPointerException("missing response listener", "TopicMessageQuery", __FUNCTION__);
             }

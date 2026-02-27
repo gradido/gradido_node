@@ -1,8 +1,10 @@
 #include "TopicMessageQuery.h"
 #include "const.h"
 #include "MemoryBlock.h"
+#include "MirrorClient.h"
 #include "../../hiero/ConsensusTopicQuery.h"
 #include "../../lib/protopuf.h"
+#include "../../ServerGlobals.h"
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
@@ -14,6 +16,7 @@
 #include <chrono>
 
 using namespace magic_enum;
+using std::make_unique;
 
 namespace client {
 	namespace hiero {
@@ -24,6 +27,8 @@ namespace client {
             mStartQuery(startQuery),
             mCallStatus(CallStatus::STATUS_CREATE)
         {
+            mCompletionQueues.push_back(make_unique<grpc::CompletionQueue>());
+            mClientContexts.push_back(make_unique<grpc::ClientContext>());
             mThread = std::thread(&TopicMessageQuery::ThreadFunction, this);
         }
 
@@ -43,7 +48,7 @@ namespace client {
         {
             loguru::set_thread_name(mThreadName.data());
             // copied most of the code from hiero cpp sdk from startSubscription from TopicMessageQuery.cc
-            ::hiero::ConsensusTopicQuery query;
+            // ::hiero::ConsensusTopicQuery query;
             // Declare needed variables.
             ::grpc::ByteBuffer grpcByteBuffer;
             ::hiero::ConsensusTopicResponse response;
@@ -62,7 +67,7 @@ namespace client {
             while (!mExitCalled) {
                 // Process based on the completion queue status.
                 auto backOffFromNow = std::chrono::system_clock::now() + std::chrono::duration_cast<std::chrono::milliseconds>(backoff);
-                auto nextStatus = mCompletionQueue.AsyncNext(&tag, &ok, backOffFromNow);
+                auto nextStatus = mCompletionQueues.back()->AsyncNext(&tag, &ok, backOffFromNow);
                 LOG_F(2, "next status: %s", enum_name(nextStatus).data());
                 switch (nextStatus)
                 {
@@ -115,14 +120,14 @@ namespace client {
                             if (!consensusTimestamp.empty())
                             {
                                 // Add one of the smallest denomination of time
-                                query.setConsensusStartTime({
+                                mStartQuery.setConsensusStartTime({
                                     consensusTimestamp.getSeconds(), consensusTimestamp.getNanos() + 1
                                 });
                             }
 
-                            if (query.getLimit() > 0ULL)
+                            if (mStartQuery.getLimit() > 0ULL)
                             {
-                                query.setLimit(query.getLimit() - 1ULL);
+                                mStartQuery.setLimit(mStartQuery.getLimit() - 1ULL);
                             }
 
                             // Process the received message.
@@ -166,7 +171,7 @@ namespace client {
                             LOG_F(INFO, "RPC subscription complete!");
 
                             // Shutdown the completion queue.
-                            mCompletionQueue.Shutdown();
+                            mCompletionQueues.back()->Shutdown();
 
                             // Mark the RPC as complete.
                             complete = true;
@@ -175,8 +180,8 @@ namespace client {
                         else
                         {
                             // An error occurred. Whether retrying or not, cancel the call and close the queue.
-                            mClientContext.TryCancel();
-                            mCompletionQueue.Shutdown();
+                            mClientContexts.back()->TryCancel();
+                            mCompletionQueues.back()->Shutdown();
 
                             if (attempt >= ::hiero::DEFAULT_MAX_ATTEMPTS || !shouldRetry(grpcStatus))
                             {
@@ -206,6 +211,7 @@ namespace client {
                     {
                         // Give a second for the queue to finish its processing.
                         std::this_thread::sleep_for(std::chrono::seconds(1));
+                        LOG_F(INFO, "RPC Subscription for topic %s ended.", mStartQuery.getTopicId().toString().data());
                         return 0;
                     }
 
@@ -225,6 +231,12 @@ namespace client {
                     reader = getConnectedMirrorNode(network)->getConsensusServiceStub()->AsyncsubscribeTopic(
                         contexts.back().get(), query, queues.back().get(), callStatus.get());
                         */
+                    mCallStatus = CallStatus::STATUS_CREATE;
+                    mCompletionQueues.push_back(make_unique<grpc::CompletionQueue>());
+                    mClientContexts.push_back(make_unique<grpc::ClientContext>());
+                    MemoryBlock memoryBuffer(protopuf::serialize<::hiero::ConsensusTopicQuery, ::hiero::ConsensusTopicQueryMessage>(mStartQuery));
+                    grpcByteBuffer = memoryBuffer.createGrpcBuffer();
+                    ServerGlobals::g_HieroMirrorNode->subscribeTopic(this);
                     onConnectionClosed();
                     break;
                 }

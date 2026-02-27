@@ -49,7 +49,7 @@ namespace client {
             ::hiero::ConsensusTopicResponse getTopicMessageByConsensusTimestamp(gradido::data::Timestamp confirmedAt);
 
             // gRPC API
-            void subscribeTopic(std::shared_ptr<TopicMessageQuery> responseListener);
+            void subscribeTopic(TopicMessageQuery* responseListener);
 
             inline std::string getProtocolHost() const { return "https://" + std::string(getHost()); }
             inline const char* getHost() const { return MirrorNetworkEndpoints::getByEndpointName(mNetworkType.data()); }

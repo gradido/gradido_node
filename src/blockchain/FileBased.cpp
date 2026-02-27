@@ -177,7 +177,7 @@ namespace gradido {
 				mCommunityId,
 				hiero::ConsensusTopicQuery( hieroTopicId, listenFrom, endTime )
 			);
-			ServerGlobals::g_HieroMirrorNode->subscribeTopic(mHieroMessageListener);
+			ServerGlobals::g_HieroMirrorNode->subscribeTopic(mHieroMessageListener.get());
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, hieroTopicId.toString());
 		}
 
