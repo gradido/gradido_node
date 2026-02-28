@@ -134,7 +134,18 @@ namespace client {
                             const auto& chunkInfo = response.getChunkInfo();
                             if (chunkInfo.empty() || chunkInfo.getTotal() == 1)
                             {
+                              try {
                                 onMessageArrived(std::move(response));
+                              }
+                              catch (GradidoBlockchainException& ex) {
+                                LOG_F(ERROR, "error calling onMessageArrived: %s", ex.getFullString().c_str());
+                              }
+                              catch (std::exception& ex) {
+                                LOG_F(ERROR, "std error calling onMessageArrived: %s", ex.what());
+                              } 
+                              catch (...) {
+                                LOG_F(ERROR, "unknown error calling onMessageArrived");
+                              }
                             }
                             else
                             {

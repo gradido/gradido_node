@@ -56,7 +56,7 @@ namespace task {
 
         // deserialize
         deserialize::Context deserializer(mTransactionRaw, deserialize::Type::GRADIDO_TRANSACTION);
-        deserializer.run();
+        deserializer.run(blockchain->getCommunityIdIndex());
         if (deserializer.isGradidoTransaction()) {
             mTransaction = deserializer.getGradidoTransaction();
         }

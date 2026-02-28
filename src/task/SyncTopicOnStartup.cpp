@@ -116,7 +116,7 @@ namespace task {
 		}
 
 		deserialize::Context deserializer(lastTransactionMirrorRaw);
-		deserializer.run();
+		deserializer.run(mBlockchain->getCommunityIdIndex());
 		if (!deserializer.isGradidoTransaction()) {
 			LOG_F(
 				ERROR, 
