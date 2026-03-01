@@ -307,8 +307,6 @@ namespace server {
 			countFilter.minTransactionNr = 0; // remove minTransactionNr for count
 			countFilter.maxTransactionNr = 0; // remove maxTransactionNr for count
 			auto totalCount = blockchain->countAll(countFilter);
-			auto microsForCounting = timeUsed.micros();
-			printf("time used for counting: %.4f micro seconds\n", microsForCounting);
 
 			resultJson.AddMember("totalCount", totalCount, alloc);
 
