@@ -10,6 +10,9 @@ namespace gradido {
 		class Abstract;
 		class Filter;
 	}
+	namespace data {
+		class LedgerAnchor;
+	}
 }
 
 namespace memory {
@@ -44,7 +47,7 @@ namespace server {
 			* @param resultJson: for success result
 			* @param responseJson: for the overall response, used for example for errors
 			* @param transactionId: this parameter or
-			* @param iotaMessageId: this parameter for finding transaction
+			* @param ledgerAnchor: this parameter for finding transaction
 			*/
 			void getTransaction(
 				rapidjson::Value& resultJson,
@@ -52,7 +55,7 @@ namespace server {
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
 				const std::string& format,
 				uint64_t transactionId = 0,
-				std::shared_ptr<const memory::Block> iotaMessageId = nullptr
+				gradido::data::LedgerAnchor* ledgerAnchor = nullptr
 			);
 			//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
 			void getCreationSumForMonth(

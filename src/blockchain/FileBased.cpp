@@ -589,7 +589,11 @@ namespace gradido {
 			if (transactionNr) {
 				return getTransactionForId(transactionNr);
 			}
-			return Abstract::findByLedgerAnchor(ledgerAnchor, filter);
+			auto result = Abstract::findByLedgerAnchor(ledgerAnchor, filter);
+			if (result) {
+				mLedgerAnchorCache.add(ledgerAnchor, result->getTransactionNr());
+			}
+			return result;
 		}
 
 		AbstractProvider* FileBased::getProvider() const

@@ -10,6 +10,7 @@
 #include "gradido_blockchain/data/adapter/publicKey.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain/data/LedgerAnchor.h"
 #include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/interaction/calculateAccountBalance/Context.h"
 #include "gradido_blockchain/interaction/calculateCreationSum/Context.h"
@@ -179,7 +180,7 @@ namespace server {
 				std::string format;
 				uint64_t transactionId = 0;
 				std::string hieroTransactionIdString;
-				hiero::TransactionId hieroTransactionId;
+				LedgerAnchor ledgerAnchor;
 				std::shared_ptr<const memory::Block> iotaMessageId;
 
 				if (!getStringParameter(responseJson, params, "format", format)) {
@@ -188,17 +189,18 @@ namespace server {
 				getUInt64Parameter(responseJson, params, "transactionId", transactionId, true);
 				getStringParameter(responseJson, params, "hieroTransactionId", hieroTransactionIdString, true);
 				getBinaryFromHexStringParameter(responseJson, params, "iotaMessageId", iotaMessageId, true);
-				if (!iotaMessageId && !hieroTransactionIdString.empty()) {
-					hieroTransactionId = hiero::TransactionId(hieroTransactionIdString);
-					serialize::Context serializeContext(hieroTransactionId);
-					iotaMessageId = serializeContext.run();
+				if (iotaMessageId) {
+					error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "iotaMessageId is not longer supported");
 				}
-				if (!transactionId && !iotaMessageId && hieroTransactionId.empty()) {
-					error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "transactionId, hieroTransactionId or iotaMessageId needed");
+				if (!hieroTransactionIdString.empty()) {
+					ledgerAnchor = LedgerAnchor(hiero::TransactionId(hieroTransactionIdString));
+				}
+				if (!transactionId && !iotaMessageId && ledgerAnchor.empty()) {
+					error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, "transactionId or hieroTransactionId needed");
 					return;
 				}
 
-				getTransaction(resultJson, responseJson, blockchain, format, transactionId, iotaMessageId);
+				getTransaction(resultJson, responseJson, blockchain, format, transactionId, &ledgerAnchor);
 			}
 			else if (method == "getCreationSumForMonth") {
 				int month, year;
@@ -305,6 +307,9 @@ namespace server {
 			countFilter.minTransactionNr = 0; // remove minTransactionNr for count
 			countFilter.maxTransactionNr = 0; // remove maxTransactionNr for count
 			auto totalCount = blockchain->countAll(countFilter);
+			auto microsForCounting = timeUsed.micros();
+			printf("time used for counting: %.4f micro seconds\n", microsForCounting);
+
 			resultJson.AddMember("totalCount", totalCount, alloc);
 
 			auto transactions = blockchain->findAll(filter);
@@ -358,7 +363,7 @@ namespace server {
 			std::shared_ptr<Abstract> blockchain,
 			const std::string& format,
 			uint64_t transactionId/* = 0*/,
-			std::shared_ptr<const memory::Block> iotaMessageId /* = nullptr */
+			gradido::data::LedgerAnchor* ledgerAnchor/* = nullptr */
 		)
 		{
 			Profiler timeUsed;
@@ -369,13 +374,12 @@ namespace server {
 				transactionEntry = blockchain->getTransactionForId(transactionId);
 			}
 			else {
-				deserialize::Context deserializer(iotaMessageId);
-				deserializer.run();
-				if (deserializer.isLedgerAnchor()) {
-					transactionEntry = blockchain->findByLedgerAnchor(deserializer.getLedgerAnchor());
+				if (ledgerAnchor && !ledgerAnchor->empty()) {
+					transactionEntry = blockchain->findByLedgerAnchor(*ledgerAnchor);
 				}
 			}
 			if (!transactionEntry) {
+				printf("not found after: %s\n", timeUsed.string().c_str());
 				error(responseJson, JSON_RPC_ERROR_TRANSACTION_NOT_FOUND, "transaction not found");
 				return;
 			}
