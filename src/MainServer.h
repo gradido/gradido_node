@@ -5,6 +5,7 @@
 #include "gradido_blockchain/http/Server.h"
 
 #include <string>
+#include <stop_token>
 
 class MainServer : public Application
 {

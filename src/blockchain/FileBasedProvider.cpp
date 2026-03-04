@@ -93,11 +93,13 @@ namespace gradido {
 		}
 
 		bool FileBasedProvider::init(
+			std::stop_token masterStopView,
 			const string& communityConfigFile,
 			vector<shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 			uint8_t hieroClientsPerCommunity/* = 3 */
 		) {
 			lock_guard _lock(mWorkMutex);
+			mStopToken = masterStopView;
 			mInitalized = true;
 			bool resetAllCommunityIndices = false;
 			mHieroClientsPerCommunity = hieroClientsPerCommunity;
@@ -192,7 +194,7 @@ namespace gradido {
 				auto folder = mGroupIndex->getFolder(communityIdIndex);
 				std::shared_ptr<FileBased> blockchain;
 				if (topicId.empty()) {
-					blockchain = FileBased::createWithoutHieroTopic(communityId, alias, folder);
+					blockchain = FileBased::createWithoutHieroTopic(mStopToken, communityId, alias, folder);
 				} else {
 					// with more hiero clients as per community needed, we make sure we not take always the first mHieroClientsPerCommunity from them
 					vector<shared_ptr<client::hiero::ConsensusClient>> hieroClients = mHieroClients; // copy
@@ -202,7 +204,7 @@ namespace gradido {
 					}
 
 					// with that call community will be initialized and start listening
-					blockchain = FileBased::create(communityId, topicId, alias, folder, std::move(hieroClients));
+					blockchain = FileBased::create(mStopToken, communityId, topicId, alias, folder, std::move(hieroClients));
 				}
 				g_appContext->addBlockchain(communityIdIndex, blockchain);
 				updateListenerCommunity(communityIdIndex, alias, blockchain);

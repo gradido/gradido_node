@@ -13,6 +13,7 @@
 
 #include <map>
 #include <memory>
+#include <stop_token>
 
 namespace model {
 	namespace files {
@@ -56,7 +57,7 @@ namespace cache {
 		~Block();
 
 		//! \return false if block not exist
-		bool init();
+		bool init(std::stop_token stop = std::stop_token());
 		void exit();
 
 		//! \brief put new transaction to cache and file system

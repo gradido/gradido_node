@@ -9,7 +9,6 @@
 #include <string_view>
 
 namespace cache {
-
 	class State 
 	{
 	public:
