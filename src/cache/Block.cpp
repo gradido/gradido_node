@@ -62,7 +62,7 @@ namespace cache {
 		mSerializedTransactions.clear();
 	}
 
-	bool Block::init()
+	bool Block::init(std::stop_token stop /* = std::stop_token() */)
 	{
 		lock_guard lock(mFastMutex);
 		// todo: add data for address index in file, until then rebuild block index on each program start
@@ -78,7 +78,7 @@ namespace cache {
 					mBlockchain->getCommunityIdIndex()
 				);
 				rebuildBlockIndexTask->scheduleTask(rebuildBlockIndexTask);
-				mBlockFile->readBuffered(rebuildBlockIndexTask->getAlloc(), rebuildBlockIndexTask.get());
+				mBlockFile->readBuffered(rebuildBlockIndexTask->getAlloc(), rebuildBlockIndexTask.get(), stop);
 
 				int sumWaited = 0;
 				while (!rebuildBlockIndexTask->isTaskFinished() && sumWaited < GRADIDO_NODE_CACHE_BLOCK_MAX_WAIT_TIME_FOR_BLOCK_INDEX_REBUILD_MILLISECONDS) {

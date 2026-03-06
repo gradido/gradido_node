@@ -6,8 +6,9 @@
 #include "FileBased.h"
 #include "../cache/GroupIndex.h"
 
-#include <unordered_map>
 #include <mutex>
+#include <stop_token>
+#include <unordered_map>
 
 #define GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE 1
 
@@ -39,6 +40,7 @@ namespace gradido {
 			std::shared_ptr<Abstract> findBlockchain(hiero::TopicId& topicId);
 			//! \return true if successfully else return false
 			bool init(
+				std::stop_token masterStopView,
 				const std::string& communityConfigFile,
 				std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 				uint8_t hieroClientsPerCommunity = 3
@@ -74,6 +76,8 @@ namespace gradido {
 			);
 			void updateListenerCommunity(uint32_t communityIdIndex, const std::string& alias, std::shared_ptr<FileBased> blockchain);
 
+			//! master stop source view
+			std::stop_token mStopToken;
 			cache::GroupIndex* mGroupIndex;
 			std::vector<std::shared_ptr<client::hiero::ConsensusClient>> mHieroClients;
 			uint8_t mHieroClientsPerCommunity;

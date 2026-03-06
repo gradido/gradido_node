@@ -115,11 +115,12 @@ bool MainServer::init()
 		if (hieroNodeCountPerCommunity > hieroNodeCount) {
 			LOG_F(ERROR, "clients.hiero.nodeCountPerCommunity (%d) mustn't be greate than clients.hiero.nodeCount (%d)", hieroNodeCount, hieroNodeCountPerCommunity);
 		}
-		hiero::Addressbook addressbook(grpcAddressesFile.data());
+		hiero::Addressbook addressbook(grpcAddressesFile.c_str());
 		addressbook.load();
 		
 		hieroClients.reserve(hieroNodeCount);
 		for (int i = 0; i < hieroNodeCount; i++) {
+			if (mMasterStopSource.stop_requested()) break;
 			const auto& hieroNode = addressbook.pickRandomNode();
 			const auto& endpoint = hieroNode.pickRandomEndpoint();
 			auto hieroServiceEndpointUrl = endpoint.getConnectionString();
@@ -129,37 +130,40 @@ bool MainServer::init()
 				hieroNode.getNodeCertHash()
 			);
 			if (!hieroClient) {
-				LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.data());
+				LOG_F(ERROR, "Error connecting with hiero network via service endpoint: %s", hieroServiceEndpointUrl.c_str());
 				return false;
 			}
 			LOG_F(INFO, "Hiero endpoint: %s (%s)",
-				hieroServiceEndpointUrl.data(),
-				hieroNode.getDescription().data()
+				hieroServiceEndpointUrl.c_str(),
+				hieroNode.getDescription().c_str()
 			);
 			hieroClients.push_back(hieroClient);
 		}
 	}
 
-	if (!FileBasedProvider::getInstance()->init(ServerGlobals::g_FilesPath + "/communities.json", std::move(hieroClients), hieroNodeCountPerCommunity)) {
+	if (!FileBasedProvider::getInstance()->init(getStopToken(), ServerGlobals::g_FilesPath + "/communities.json", std::move(hieroClients), hieroNodeCountPerCommunity)) {
 		LOG_F(ERROR, "Error loading communities, please try to delete communities folders and try again!");
 		return false;
 	}
-
-	// JSON Interface Server
-	mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
-	mHttpServer->init();
-	mHttpServer->registerResponseHandler("/api", new server::json_rpc::ApiHandlerFactory());
-	mHttpServer->run();
-	LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().data(), jsonrpc_port);
-	// start the json server
-	// doesn't return
+	if (!mMasterStopSource.stop_requested()) {
+		// start jsonrpc 2.0 server
+		mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
+		mHttpServer->init();
+		mHttpServer->registerResponseHandler("/api", new server::json_rpc::ApiHandlerFactory());
+		mHttpServer->run();
+		LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().c_str(), jsonrpc_port);
+	}
+	else {
+		LOG_F(INFO, "stopped before startup was finished in: %s", usedTime.string().c_str());
+		return false;
+	}	
 	return true;
 }
 
 void MainServer::exit()
 {
 	LOG_F(INFO, "Running Tasks Count on shutdown: %lu", ServerGlobals::g_NumberExistingTasks.load());
-
+	
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage
 	if (mHttpServer) {

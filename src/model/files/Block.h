@@ -13,6 +13,7 @@
 
 #include <fstream>
 #include <memory>
+#include <stop_token>
 
 //! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
 #define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
@@ -72,7 +73,7 @@ namespace model {
 			uint16_t readLine(uint32_t startReading, memory::BlockPtr* buffer);
 			std::shared_ptr<memory::Block> readLine(uint32_t startReading);
 			// read whole file, validate hash
-			bool readBuffered(grdu_memory* alloc, IBlockBufferRead* callback);
+			bool readBuffered(grdu_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken = std::stop_token());
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)
