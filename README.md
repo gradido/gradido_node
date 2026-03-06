@@ -40,3 +40,9 @@ install rust compiler
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
+
+ON debian 12 64Bit
+cmake .. -DUSE_INSTALLED_SSL=On -DCMAKE_BUILD_TYPE=Release -DTARGET=x86_64-linux-gnu  -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+
+On Debian 12 ARM64 Server
+cmake .. -DOPENSSL_ROOT_DIR=/usr/lib/aarch64-linux-gnu -DCMAKE_BUILD_TYPE=Release -DUSE_INSTALLED_SSL=On -DTARGET=aarch64-linux-gnu -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake

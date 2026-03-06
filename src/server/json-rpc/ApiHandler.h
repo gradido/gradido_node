@@ -5,6 +5,8 @@
 #include "gradido_blockchain/types.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 
+#include <optional>
+
 namespace gradido {
 	namespace blockchain {
 		class Abstract;
