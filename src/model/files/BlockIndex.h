@@ -190,9 +190,11 @@ namespace model {
 					addressIndices(nullptr), 
 					addressIndicesCount(_addressIndices.size())					
 				{
-					addressIndices = (uint32_t*)malloc(addressIndicesCount * sizeof(uint32_t));
-					assert(addressIndices);
-					memcpy(addressIndices, _addressIndices.data(), addressIndicesCount * sizeof(uint32_t));
+					if (addressIndicesCount) {
+						addressIndices = (uint32_t*)malloc(addressIndicesCount * sizeof(uint32_t));
+						assert(addressIndices);
+						memcpy(addressIndices, _addressIndices.data(), addressIndicesCount * sizeof(uint32_t));
+					}
 				}
 				DataBlock()
 					: 

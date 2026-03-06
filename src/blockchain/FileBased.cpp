@@ -104,12 +104,12 @@ namespace gradido {
 				loadStateFromBlockCache();
 			}
 			// read basic states into memory
-			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, 0);
+			/*mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, 0);
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
 			mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_TRANSACTION_ID, 0);
 			mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0);
-			mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
-
+			mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.getTopicNum());
+			*/
 			return true;
 		}
 
@@ -146,11 +146,11 @@ namespace gradido {
 
 		std::shared_ptr<task::SyncTopicOnStartup> FileBased::initOnline()
 		{
-			auto hieroTopicIdString = mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString());
-			if (hieroTopicIdString.size()) {
+			auto hieroTopicIdNum = mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.getTopicNum());
+			if (hieroTopicIdNum) {
 				return std::make_shared<task::SyncTopicOnStartup>(
 					mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0),
-					hieroTopicIdString,
+					hiero::TopicId(0, 0, hieroTopicIdNum),
 					getptr()
 				);
 			}
@@ -163,7 +163,7 @@ namespace gradido {
 			if (mHieroMessageListener) {
 				LOG_F(WARNING, "called again, while listener where already existing");
 			}
-			auto hieroTopicId = hiero::TopicId(mBlockchainState.readState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.toString()));
+			auto hieroTopicId = hiero::TopicId(0, 0, mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.getTopicNum()));
 			if (hieroTopicId.empty()) {
 				LOG_F(WARNING, "startListening called without valid hiero topic id");
 				return;
@@ -178,7 +178,7 @@ namespace gradido {
 				hiero::ConsensusTopicQuery( hieroTopicId, listenFrom, endTime )
 			);
 			ServerGlobals::g_HieroMirrorNode->subscribeTopic(mHieroMessageListener.get());
-			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, hieroTopicId.toString());
+			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, hieroTopicId.getTopicNum());
 		}
 
 		void FileBased::exit()

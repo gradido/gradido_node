@@ -3,13 +3,19 @@
 #include "../lib/LevelDBExceptions.h"
 
 #include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
+#include <string_view>
+
+using namespace magic_enum;
+using std::string_view;
 
 namespace cache {
 	State::State(std::string_view folder)
 		: mInitalized(false),
 		mStateFile(folder)
 	{
-
+		mFastAccessDefaultStates.resize(static_cast<size_t>(DefaultStateKeys::MAX), 0);
 	}
 
 	State::~State()
@@ -25,6 +31,17 @@ namespace cache {
 		if (!mStateFile.init(cacheInBytes)) {
 			return false;
 		}
+		// fill fast access default states vector
+		mStateFile.iterate(
+			[&](leveldb::Slice key, leveldb::Slice value)
+			{
+				auto state = enum_cast<DefaultStateKeys>(string_view(key.data(), key.size()));
+				if (state.has_value()) {
+					assert(state.value() < DefaultStateKeys::MAX);
+					mFastAccessDefaultStates[static_cast<size_t>(state.value())] = strtoll(value.data(), nullptr, 10);
+				}
+			}
+		);
 		mInitalized = true;
 		return true;
 	}
