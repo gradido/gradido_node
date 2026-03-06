@@ -141,8 +141,11 @@ namespace model {
 			auto transactionSize = readLine(startReading, &result);
 			return result;
 		}
-		bool Block::readBuffered(grdu_memory* alloc, IBlockBufferRead* callback)
+		bool Block::readBuffered(grdu_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken/* = std::stop_token()*/)
 		{
+			if (stopToken.stop_requested()) {
+				return false;
+			}
 			assert(alloc && callback);
 
 			auto fileStream = getOpenFile();
@@ -177,7 +180,7 @@ namespace model {
 			unsigned char hash[crypto_generichash_KEYBYTES];
 			memset(hash, 0, sizeof hash);
 
-			while (fileStream->good() && readed < mCurrentFileSize) {
+			while (fileStream->good() && readed < mCurrentFileSize && !stopToken.stop_requested()) {
 				auto fileCursor = readed;
 				fileStream->read((char*)&transactionSize, sizeof(uint16_t));
 				readed += sizeof(uint16_t);
@@ -201,19 +204,21 @@ namespace model {
 				callback->finishedLine(memStart, transactionSize, fileCursor);				
 			}
 			callback->flush();
-			unsigned char hash2[crypto_generichash_KEYBYTES];
-			fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
-			int filePointer = fileStream->tellg();
-			if (0 != sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
-				throw HashMismatchException(
-					"block hash mismatch",
-					memory::Block(sizeof hash, hash),
-					memory::Block(sizeof hash2, hash2)
-				);
+			if (!stopToken.stop_requested()) {
+				unsigned char hash2[crypto_generichash_KEYBYTES];
+				fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
+				int filePointer = fileStream->tellg();
+				if (0 != sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
+					throw HashMismatchException(
+						"block hash mismatch",
+						memory::Block(sizeof hash, hash),
+						memory::Block(sizeof hash2, hash2)
+					);
+				}
 			}
 			
 			fl->unlock(mBlockPath);
-			return transactionSize;
+			return true;
 		}
 
 

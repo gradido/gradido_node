@@ -28,6 +28,7 @@
 #define GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES 1
 
 #include <mutex>
+#include <stop_token>
 
 namespace client {
 	namespace hiero {
@@ -64,6 +65,7 @@ namespace gradido {
 			// Constructor is only usable by this class
 			FileBased(
 				Private,
+				std::stop_token stopToken,
 				const std::string& communityId,
 				const hiero::TopicId& topicId,
 				std::string_view alias,
@@ -72,6 +74,7 @@ namespace gradido {
 			);
 			// make sure that all shared_ptr from FileBased Blockchain know each other
 			static inline std::shared_ptr<FileBased> create(
+				std::stop_token stopToken,
 				const std::string& communityId,
 				const hiero::TopicId& topicId,
 				std::string_view alias,
@@ -80,6 +83,7 @@ namespace gradido {
 			);
 			// construct without valid HieroTopic Id. Make Blockchain txs available, but don't listen for new ones from hiero/hedera
 			static inline std::shared_ptr<FileBased> createWithoutHieroTopic(
+				std::stop_token stopToken,
 				const std::string& communityId,
 				std::string_view alias,
 				std::string_view folder
@@ -185,6 +189,7 @@ namespace gradido {
 			inline TaskObserver& getTaskObserver() const { return *mTaskObserver; }
 			inline std::shared_ptr<client::hiero::ConsensusClient> pickHieroClient() const { return mHieroClients.size() ?  mHieroClients[std::rand() % mHieroClients.size()] : nullptr; }
 			std::shared_ptr<controller::SimpleOrderingManager> getOrderingManager() { return mOrderingManager; }
+			std::stop_token getStopToken() const { return mStopToken; }
 
 		protected:
 			//! if state leveldb was invalid, recover values from block cache
@@ -203,7 +208,7 @@ namespace gradido {
 			bool validateLastTransactions(uint64_t countToValidate);
 
 			mutable std::recursive_mutex mWorkMutex;
-			bool mExitCalled;
+			std::stop_token mStopToken;
 			hiero::TopicId mHieroTopicId;
 			std::string mAlias;
 			std::string mFolderPath;
@@ -219,6 +224,7 @@ namespace gradido {
 			//! contain indices for every public key address, used overall for optimisation
 			mutable PersistentDictionary<PublicKey> mPublicKeysIndex;
 			// level db to store state values like last transaction
+			// TODO: speedup with atcual struct, write out into leveldb/lmdb only on changes, maybe even buffered, think on exit management
 			mutable cache::State mBlockchainState;
 
 			mutable cache::LedgerAnchor mLedgerAnchorCache;
@@ -236,22 +242,25 @@ namespace gradido {
 		};
 
 		std::shared_ptr<FileBased> FileBased::create(
+			std::stop_token stopToken,
 			const std::string& communityId,
 			const hiero::TopicId& topicId,
 			std::string_view alias,
 			std::string_view folder,
 			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients
 		) {
-			return std::make_shared<FileBased>(Private(), communityId, topicId, alias, folder, std::move(hieroClients));
+			return std::make_shared<FileBased>(Private(), stopToken, communityId, topicId, alias, folder, std::move(hieroClients));
 		}
 
 		std::shared_ptr<FileBased> FileBased::createWithoutHieroTopic(
+			std::stop_token stopToken,
 			const std::string& communityId,
 			std::string_view alias,
 			std::string_view folder
 		) {
 			return std::make_shared<FileBased>(
 				Private(),
+				stopToken,
 				communityId,
 				hiero::TopicId(),
 				alias,
@@ -262,11 +271,13 @@ namespace gradido {
 
 		std::shared_ptr<FileBased> FileBased::getptr()
 		{
+			if (mStopToken.stop_requested()) return nullptr;
 			return shared_from_this();
 		}
 
 		std::shared_ptr<const FileBased> FileBased::getptr() const
 		{
+			if (mStopToken.stop_requested()) return nullptr;
 			return shared_from_this();
 		}
 
