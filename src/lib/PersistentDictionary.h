@@ -3,21 +3,42 @@
 
 #include "../model/files/LevelDBWrapper.h"
 #include "../serialization/String.h"
+#include "gradido_blockchain/lib/Dictionary.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
 #include "gradido_blockchain/lib/DictionaryExceptions.h"
 
 #include "loguru/loguru.hpp"
 
+#include <cstdlib>
+#include <optional>
 #include <shared_mutex>
 #include <unordered_map>
-#include <optional>
-#include <cstdlib>
+
+// use simple in memory threadsafe dictionary for now, until updated transaction and address index are stored into files
+template<
+  typename DataType,
+  typename Hash = std::hash<DataType>,
+  typename Equal = std::equal_to<DataType>
+>
+class PersistentDictionary : public ThreadsafeRuntimeDictionary<DataType, Hash, Equal>
+{
+public:
+  explicit PersistentDictionary(const std::string& directory): ThreadsafeRuntimeDictionary<DataType, Hash, Equal>(directory) {}
+  ~PersistentDictionary() {}
+
+  inline bool init(size_t cacheInBytes) { return false; };
+  inline void exit() { ThreadsafeRuntimeDictionary<DataType, Hash, Equal>::reset(); };
+  inline size_t getLastIndex() {
+    return RuntimeDictionary<DataType, Hash, Equal>::mIndexDataLookup.size();
+  }
+};
 
 // TODO: check usage of LMDB 
 // it is magnitude faster but especially it is designed for prevent data loss on system failure, data can only be corrupted through hardware failure!
 // - https://de.wikipedia.org/wiki/Lightning_Memory-Mapped_Database
 // - https://github.com/LMDB/lmdb/tree/mdb.master/libraries/liblmdb
 // TODO: remove bi-directionality, update whole code for not using getDataForIndex at all!
+/*
 template<typename DataType>
 requires serialization::HasString<DataType>
 class PersistentDictionary: public IMutableDictionary<DataType>
@@ -153,5 +174,5 @@ bool PersistentDictionary<DataType>::hasIndex(size_t index) const
   auto it = mIndexDataReverseLookup.find(index);
   return it != mIndexDataReverseLookup.end();
 }
-
+*/
 #endif //__GRADIDO_NODE_PERSISTENT_DICTIONARY_H

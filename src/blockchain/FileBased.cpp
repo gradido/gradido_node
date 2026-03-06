@@ -92,13 +92,16 @@ namespace gradido {
 				return false;
 			}
 			lock_guard _lock(mWorkMutex);
-			if (!mPublicKeysIndex.init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES * 1024 * 1024)) {
+			if (mPublicKeysIndex.init(0)) {
+				LOG_F(WARNING, "dictionary is again persistent, please update here");
+			}
+			/*if (!mPublicKeysIndex.init(GRADIDO_NODE_MAGIC_NUMBER_PUBLIC_KEYS_INDEX_CACHE_MEGA_BTYES * 1024 * 1024)) {
 				// remove index files for regenration
 				LOG_F(WARNING, "reset the public key index file");
 				// mCachedBlocks.clear();
 				mPublicKeysIndex.reset();
 				resetBlockIndices = true;
-			}
+			}*/
 
 			if (resetBlockIndices) {
 				model::files::BlockIndex::removeAllBlockIndexFiles(mFolderPath);
@@ -121,8 +124,14 @@ namespace gradido {
 		bool FileBased::startValidationTransactions()
 		{
 			if (mStopToken.stop_requested()) return false;
+
 			lock_guard _lock(mWorkMutex);			
 			auto lastBlockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
+
+			// trigger block index creation, only needed here for non-persistent public key dictionary
+			iterateBlocks(SearchDirection::ASC, [](const cache::Block& block) -> bool { return true; });
+			loadStateFromBlockCache();
+			
 			if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 				mLedgerAnchorCache.reset();
 				if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
@@ -597,7 +606,7 @@ namespace gradido {
 		) const
 		{
 			lock_guard _lock(mWorkMutex);
-			auto transactionNr = mLedgerAnchorCache.has(ledgerAnchor);
+			auto transactionNr = mLedgerAnchorCache.getTransactionNrForLedgerAnchor(ledgerAnchor);
 			if (transactionNr) {
 				return getTransactionForId(transactionNr);
 			}
@@ -616,13 +625,11 @@ namespace gradido {
 
 		void FileBased::loadStateFromBlockCache()
 		{
-			Profiler timeUsed;
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_ADDRESS_INDEX, mPublicKeysIndex.getLastIndex());
 			auto lastBlockNr = model::files::Block::findLastBlockFileInFolder(mFolderPath);
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_BLOCK_NR, lastBlockNr);
 			auto& block = getBlock(lastBlockNr);
 			mBlockchainState.updateState(cache::DefaultStateKeys::LAST_TRANSACTION_ID, block.getBlockIndex().getMaxTransactionNr());
-			LOG_F(INFO, "timeUsed: %s", timeUsed.string().data());
 		}
 
 		// TODO: look for a way of reusing logic from interaction::confirmTransaction, with nearly the same code in the roles
@@ -729,8 +736,8 @@ namespace gradido {
 			Filter f;
 			f.searchDirection = SearchDirection::ASC;
 			int countTarget = countToValidate;
-			if (countToValidate) {
-				f.minTransactionNr = lastTransaction->getTransactionNr() - countToValidate;
+			if (countToValidate && lastTransaction->getTransactionNr() > countToValidate) {
+				f.minTransactionNr = lastTransaction->getTransactionNr() - countToValidate + 1;
 			}
 			else {
 				countTarget = lastTransaction->getTransactionNr();

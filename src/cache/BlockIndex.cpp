@@ -51,7 +51,8 @@ namespace cache {
 		clearIndexEntries();
 		mTransactionNrsFileCursors.clear();		
 		model::files::BlockIndex blockIndexFile(mFolderPath, mBlockNr, mBlockchainCommunityIdIndex);
-		LOG_F(WARNING, "BlockIndex: %s was corrupted and must be rebuild", blockIndexFile.getFileName().c_str());
+		// only needed if public key dictionary is again persistend
+		// LOG_F(WARNING, "BlockIndex: %s was corrupted and must be rebuild", blockIndexFile.getFileName().c_str());
 		blockIndexFile.reset();
 		mMaxTransactionNr = 0;
 		mMinTransactionNr = 0;

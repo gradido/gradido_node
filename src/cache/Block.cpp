@@ -89,7 +89,7 @@ namespace cache {
 					LOG_F(FATAL, "rebuildBlockIndex Task isn't finished after waiting a whole minute");
 					Application::terminate();
 				}
-				LOG_F(INFO, "time for rebuilding block index for block %s: %s", mBlockFile->getBlockPath().data(), timeUsed.string().data());
+				LOG_F(INFO, "rebuilding block index for block %s in %s", mBlockFile->getBlockPath().data(), timeUsed.string().data());
 				mBlockIndex->writeIntoFile();
 			}
 			else {

@@ -222,7 +222,7 @@ namespace gradido {
 			std::shared_ptr<hiero::MessageListenerQuery> mHieroMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
-			mutable PersistentDictionary<PublicKey> mPublicKeysIndex;
+			mutable PersistentDictionary<PublicKey, PublicKeyHash, PublicKeyEqual> mPublicKeysIndex;
 			// level db to store state values like last transaction
 			// TODO: speedup with atcual struct, write out into leveldb/lmdb only on changes, maybe even buffered, think on exit management
 			mutable cache::State mBlockchainState;
