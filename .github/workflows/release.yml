@@ -91,7 +91,7 @@ jobs:
 
       - name: Collect all and compress
         run: |
-          $files = Get-ChildItem -Path build/Release -Include *.exe,*.dll -Recurse
+          $files = Get-ChildItem -Path build/bin/Release -Include *.exe,*.dll -Recurse
           Compress-Archive -Path $files -DestinationPath GradidoNode-windows-x86_64.zip
 
       - name: Upload artifact
