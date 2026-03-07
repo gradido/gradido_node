@@ -1,0 +1,140 @@
+# =============================================================================
+# grpc-deps-builder
+# Builds static OpenSSL + gRPC for x86_64-linux-musl and aarch64-linux-musl
+# Final image contains only the compiled artifacts (headers + .a files)
+# Written by Claude Code, 2026-03-06
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Common build tools
+# -----------------------------------------------------------------------------
+FROM denisgolius/zig:0.15.2 AS base
+
+RUN apk add --no-cache \
+    cmake make git binutils perl wget \
+    # needed by gRPC cmake scripts
+    autoconf automake libtool
+
+# Zig wrapper helper script
+# Usage: make-zig-wrappers <target>
+RUN cat > /usr/local/bin/make-zig-wrappers <<'EOF'
+#!/bin/sh
+TARGET="$1"
+printf '#!/bin/sh\nexec zig cc  -target %s "$@"\n' "$TARGET" > /usr/local/bin/zigcc
+printf '#!/bin/sh\nexec zig c++ -target %s "$@"\n' "$TARGET" > /usr/local/bin/zigcxx
+# ar und ranlib brauchen kein target-flag
+printf '#!/bin/sh\nexec zig ar "$@"\n'             > /usr/local/bin/zigar
+printf '#!/bin/sh\nexec zig ranlib "$@"\n'         > /usr/local/bin/zigranlib
+chmod +x /usr/local/bin/zigcc /usr/local/bin/zigcxx \
+         /usr/local/bin/zigar /usr/local/bin/zigranlib
+EOF
+RUN chmod +x /usr/local/bin/make-zig-wrappers
+
+
+FROM base AS libraries_src
+
+RUN wget -q https://www.openssl.org/source/openssl-3.3.2.tar.gz && \
+    tar xf openssl-3.3.2.tar.gz
+
+RUN git clone --depth 1 --branch v1.74.1 \
+      --recurse-submodules \
+      --shallow-submodules \
+      https://github.com/grpc/grpc.git /tmp/grpc
+
+# -----------------------------------------------------------------------------
+# Stage 2a: OpenSSL for x86_64-linux-musl
+# -----------------------------------------------------------------------------
+FROM libraries_src AS openssl_x86_64
+
+RUN make-zig-wrappers x86_64-linux-musl
+
+RUN cd openssl-3.3.2 && \
+    CC=zigcc CXX=zigcxx AR="zig ar" RANLIB="zig ranlib" \
+    ./Configure linux-x86_64 \
+        no-shared no-tests no-docs \
+        #--prefix=/opt/x86_64/usr \
+        && \
+    make -j$(nproc) && \
+    make install_sw && \
+    cd .. && rm -rf openssl-3.3.2*
+
+# -----------------------------------------------------------------------------
+# Stage 2b: OpenSSL for aarch64-linux-musl
+# -----------------------------------------------------------------------------
+FROM libraries_src AS openssl_aarch64
+
+RUN make-zig-wrappers aarch64-linux-musl
+
+RUN cd openssl-3.3.2 && \
+    CC=zigcc CXX=zigcxx AR="zig ar" RANLIB="zig ranlib" \
+    ./Configure linux-aarch64 \
+        no-shared no-tests no-docs \
+        #--prefix=/opt/aarch64/usr \
+        && \
+    make -j$(nproc) && \
+    make install_sw && \
+    cd .. && rm -rf openssl-3.3.2*
+
+FROM openssl_x86_64 AS grpc_x86_64
+
+RUN make-zig-wrappers x86_64-linux-musl
+
+RUN mkdir -p /tmp/grpc/cmake/build && \
+    cd /tmp/grpc/cmake/build && \
+    CC=zigcc CXX=zigcxx AR="zig ar" RANLIB="zig ranlib" \
+    cmake -DCMAKE_CXX_STANDARD=20 ../.. \
+        #-DCMAKE_INSTALL_PREFIX=/opt/x86_64/usr \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" \
+        -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG" \
+        -DCMAKE_C_FLAGS="-g0" \
+        -DCMAKE_CXX_FLAGS="-g0" \
+        -DZLIB_BUILD_EXAMPLES=OFF \
+        -DZLIB_SHARED=OFF \
+        -DZLIB_STATIC=ON \
+        -DgRPC_SSL_PROVIDER=package && \
+    make -j$(nproc) && make install
+
+FROM openssl_aarch64 AS grpc_aarch64
+
+#COPY --from=grpc-deps:v1.74.1 /opt/x86_64 /opt/x86_64
+
+RUN make-zig-wrappers aarch64-linux-musl
+
+RUN mkdir -p /tmp/grpc/cmake/build && \
+    cd /tmp/grpc/cmake/build && \
+    CC=zigcc CXX=zigcxx AR="zig ar" RANLIB="zig ranlib" \
+    cmake -DCMAKE_CXX_STANDARD=20 ../.. \
+        #-DCMAKE_INSTALL_PREFIX=/opt/aarch64/usr \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" \
+        -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG" \
+        -DCMAKE_C_FLAGS="-g0" \
+        -DCMAKE_CXX_FLAGS="-g0" \
+        -DZLIB_BUILD_EXAMPLES=OFF \
+        -DZLIB_SHARED=OFF \
+        -DZLIB_STATIC=ON \
+        #-DgRPC_PROTOBUF_PROVIDER=package \
+        #-DgRPC_PROTOBUF_PACKAGE_TYPE=MODULE \
+        #-DProtobuf_PROTOC_EXECUTABLE=/opt/x86_64/usr/bin/protoc \
+        #-DgRPC_CPP_PLUGIN_EXECUTABLE=/opt/x86_64/usr/bin/grpc_cpp_plugin \
+        #-DgRPC_BUILD_GRPC_CPP_PLUGIN=OFF \
+        -DgRPC_BUILD_CODEGEN=OFF \
+        -DgRPC_SSL_PROVIDER=package && \
+    make -j$(nproc) && make install
+RUN find /usr/local/lib -name "*.so*" -delete
+
+# -----------------------------------------------------------------------------
+# Stage 4: Final image — only the compiled artifacts, no build tools
+# -----------------------------------------------------------------------------
+FROM busybox:musl AS final
+
+COPY --from=grpc_x86_64  /usr/local /opt/x86_64/local
+COPY --from=grpc_aarch64 /usr/local  /opt/aarch64/local
+
+# Layout:
+#   /x86_64/usr/lib/        -> libgrpc.a, libssl.a, libcrypto.a, ...
+#   /x86_64/usr/include/    -> grpc/, openssl/, google/protobuf/, ...
+#   /x86_64/usr/bin/        -> grpc_cpp_plugin (host tool, x86_64 only useful)
+#   /aarch64/usr/lib/       -> same for aarch64
+#   /aarch64/usr/include/   -> same for aarch64

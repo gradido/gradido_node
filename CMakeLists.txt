@@ -1,18 +1,24 @@
 cmake_minimum_required(VERSION 3.18.2)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/toolchain.cmake")
-execute_process(
-    COMMAND git describe --tags --dirty --always
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE GRADIDO_NODE_GIT_VER
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+if(DEFINED ENV{GRADIDO_VERSION} AND NOT "$ENV{GRADIDO_VERSION}" STREQUAL "")
+    set(GRADIDO_NODE_GIT_VER $ENV{GRADIDO_VERSION})
+else()
+	execute_process(
+			COMMAND git describe --tags --dirty --always
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+			OUTPUT_VARIABLE GRADIDO_NODE_GIT_VER
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+endif()
+
 string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+" GRADIDO_NODE_CLEAN_VERSION "${GRADIDO_NODE_GIT_VER}")
 project(GradidoNode VERSION ${GRADIDO_NODE_CLEAN_VERSION} LANGUAGES C CXX)
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 message("runtime output directory: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+option(GRPC_FETCH_CONTENT "Download and build gRPC via FetchContent" ON)
 IF(WIN32)
 	set(CMAKE_CXX_FLAGS         "/MP /EHsc /std:c++20")
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
@@ -131,38 +137,56 @@ set(ENABLE_HTTPS ON)
 #	set(VCPKG_TARGET_TRIPLET "x64-windows" CACHE STRING "vcpkg target triplet")
 #endif()
 add_subdirectory("dependencies/gradido_blockchain")
+
 find_package(OpenSSL REQUIRED)
 # reuse cacert.pem from gradido_blockchain
 if(WIN32)
 	add_compile_definitions(CACERT_PEM_PATH="${CACERT_PEM}")
 endif()
-find_package(OpenSSL REQUIRED)
+
 
 add_subdirectory("dependencies/jsonrpcpp")
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 add_subdirectory("dependencies/leveldb")
 #add_subdirectory("dependencies/googletest")
 
-# Fetch Content Module
-include(FetchContent)
+#find_package(gRPC CONFIG QUIET)
+#find_package(Protobuf QUIET)
 
-# gRPC
-set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)
-set(gRPC_INSTALL ON CACHE BOOL "" FORCE)
-set(gRPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+if(GRPC_FETCH_CONTENT)
+	# Fetch Content Module
+	include(FetchContent)
 
-message(STATUS "Make gRPC Available")
-FetchContent_Declare(
-	grpc
-	GIT_REPOSITORY https://github.com/grpc/grpc.git
-	GIT_TAG        v1.74.1
-)
-FetchContent_MakeAvailable(grpc)
+	# gRPC
+	set(FETCHCONTENT_QUIET OFF)
+	set(FETCHCONTENT_UPDATES_DISCONNECTED TRUE)
+	set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)
+	set(gRPC_INSTALL ON CACHE BOOL "" FORCE)
+	set(gRPC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+	set(gRPC_BUILD_CSHARP_EXT OFF CACHE BOOL "" FORCE)
 
-if(NOT WIN32)
-	include_directories(${grpc_SOURCE_DIR}/include)
-	include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
-	message(${grpc_SOURCE_DIR})
+	message(STATUS "Make gRPC Available")
+	FetchContent_Declare(
+		grpc
+		GIT_REPOSITORY https://github.com/grpc/grpc.git
+		GIT_TAG        v1.74.1
+		GIT_SHALLOW TRUE
+	)
+	FetchContent_MakeAvailable(grpc)
+
+	if(NOT WIN32)
+		include_directories(${grpc_SOURCE_DIR}/include)
+		include_directories(${grpc_SOURCE_DIR}/third_party/abseil-cpp)
+		message(${grpc_SOURCE_DIR})
+	endif()
+	set(_GRPC_GRPCPP grpc++)
+else()
+	message(STATUS "Using pre-built gRPC from docker")
+	list(APPEND CMAKE_PREFIX_PATH "/usr/local")
+	include_directories(/usr/local/include)
+	find_package(Protobuf REQUIRED)
+	find_package(gRPC CONFIG REQUIRED)
+	set(_GRPC_GRPCPP gRPC::grpc++)
 endif()
 
 # Since FetchContent uses add_subdirectory under the hood, we can use
@@ -170,7 +194,7 @@ endif()
 # set(_PROTOBUF_LIBPROTOBUF libprotobuf)
 #set(_REFLECTION grpc++_reflection)
 #set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
-set(_GRPC_GRPCPP grpc++)
+
 	#message("grpc++: ${_GRPC_GRPCPP}")
 
 SET(GradidoBlockchain_BINARY_DIR ${GradidoNode_BINARY_DIR})

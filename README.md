@@ -46,3 +46,16 @@ cmake .. -DUSE_INSTALLED_SSL=On -DCMAKE_BUILD_TYPE=Release -DTARGET=x86_64-linux
 
 On Debian 12 ARM64 Server
 cmake .. -DOPENSSL_ROOT_DIR=/usr/lib/aarch64-linux-gnu -DCMAKE_BUILD_TYPE=Release -DUSE_INSTALLED_SSL=On -DTARGET=aarch64-linux-gnu -DCMAKE_TOOLCHAIN_FILE=toolchain.cmake
+
+
+## Docker
+docker build \
+  --build-arg VERSION=$(git describe --tags --dirty --always) \
+  -t gradido-node .
+Build for aarch64
+docker build \
+  --build-arg VERSION=$(git describe --tags --dirty --always) \
+  --build-arg ZIG_TARGET=aarch64-linux-musl \
+  --build-arg TARGET_ARCH=aarch64 \
+  --target debug_build \
+  -t gradido-node-aarch64 .
