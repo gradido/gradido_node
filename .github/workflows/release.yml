@@ -2,69 +2,146 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - 'release/*'
-
+    tags:
+      - 'v*'
 jobs:
-  build:
-    name: Build Binaries
+  # ─── Linux Builds via Docker ───────────────────────
+  linux-x64-build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - name: Build x86_64
+        run: |
+          docker build \
+            --build-arg VERSION=${{ github.ref_name }} \
+            --target release_build \
+            -t gradido-node-x86_64 .
+          docker create --name extract-x64 gradido-node-x86_64
+          docker cp extract-x64:/code/build/bin/GradidoNode ./GradidoNode-linux-x86_64
+          docker rm extract-x64
 
-    - name: Configure and build
-      run: |
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
-        make -j$(nproc)
-        cmake ..
-        make -j$(nproc) GradidoNode
+      - name: compress
+        run: tar -czf GradidoNode-linux-x86_64.tar.gz GradidoNode-linux-x86_64
 
-    - name: Archive binaries
-      uses: actions/upload-artifact@v2
-      with:
-        name: binaries
-        path: build/bin/*
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: GradidoNode-linux-*.tar.gz
 
-  release:
-    name: Create Release
+  linux-aarch64-build:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - name: Build aarch64
+        run: |
+          docker build \
+            --build-arg VERSION=${{ github.ref_name }} \
+            --build-arg ZIG_TARGET=aarch64-linux-musl \
+            --build-arg TARGET_ARCH=aarch64 \
+            --target release_build \
+            -t gradido-node-aarch64 .
+          docker create --name extract-arm gradido-node-aarch64
+          docker cp extract-arm:/code/build/bin/GradidoNode ./GradidoNode-linux-aarch64
+          docker rm extract-arm
 
-    - name: Download binaries
-      uses: actions/download-artifact@v2
-      with:
-        name: binaries
-        path: build/bin/
+      - name: compress
+        run: tar -czf GradidoNode-linux-aarch64.tar.gz GradidoNode-linux-aarch64
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Describe your release here.
-        draft: false
-        prerelease: false
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: GradidoNode-linux-*.tar.gz
 
-    - name: Upload binaries
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build/bin/*
-        asset_name: ${{ github.ref }}
+  # ─── Windows Native Build ──────────────────────────
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
 
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. `
+            -DENABLE_TEST=Off `
+            -DENABLE_HTTPS=On `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --target GradidoNode --config Release
+
+      - name: Collect all and compress
+        run: |
+          $files = Get-ChildItem -Path build/Release -Include *.exe,*.dll -Recurse
+          Compress-Archive -Path $files -DestinationPath GradidoNode-windows-x86_64.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binary
+          path: GradidoNode-windows-x86_64.zip
+
+  # ─── Release erstellen ─────────────────────────────
+  create-release:
+    needs: [linux-x64-build, linux-aarch64-build, windows-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # für PR-History~
+
+      - name: Download alle Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: generate Release Notes from PRs
+        id: notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tags = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 2
+            });
+            const previousTag = tags.data[1]?.name;
+
+            // Collect PRs since last tag~
+            const comparison = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: previousTag || 'HEAD~10',
+              head: context.ref_name
+            });
+
+            const prs = comparison.data.commits
+              .map(c => c.commit.message)
+              .filter(m => m.includes('Merge pull request'))
+              .join('\n');
+
+            return prs || "No PRs found~ Direct pushes detected~ 😈";
+
+      - name: create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes~
+            ${{ steps.notes.outputs.result }}
+
+            ## Downloads~
+            | Platform | Architecture | File |
+            |---|---|---|
+            | Linux | x86_64 | GradidoNode-linux-x86_64.tar.gz |
+            | Linux | aarch64 | GradidoNode-linux-aarch64.tar.gz |
+            | Windows | x86_64 | GradidoNode-windows-x86_64.zip |
+          files: |
+            linux-binaries/GradidoNode-linux-x86_64.tar.gz
+            linux-binaries/GradidoNode-linux-aarch64.tar.gz
+            windows-binary/GradidoNode-windows-x86_64.zip
