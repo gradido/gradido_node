@@ -31,7 +31,7 @@ ENV TARGET_ARCH=${TARGET_ARCH}
 ENV GRADIDO_VERSION=${GRADIDO_VERSION}
 
 # copy grpc-deps artifacts
-COPY --from=grpc-deps:v1.74.1 /opt/${TARGET_ARCH}/local /usr/local
+COPY --from=gradido/grpc-deps:v1.74.1 /opt/${TARGET_ARCH}/local /usr/local
 
 ENV DOCKER_WORKDIR="/code"
 WORKDIR ${DOCKER_WORKDIR}
@@ -71,7 +71,7 @@ ENV TARGET_ARCH=${TARGET_ARCH}
 ENV GRADIDO_VERSION=${GRADIDO_VERSION}
 
 # copy grpc-deps artifacts
-COPY --from=grpc-deps:v1.74.1 /opt/${TARGET_ARCH}/local /usr/local
+COPY --from=gradido/grpc-deps:v1.74.1 /opt/${TARGET_ARCH}/local /usr/local
 
 ENV DOCKER_WORKDIR="/code"
 WORKDIR ${DOCKER_WORKDIR}
