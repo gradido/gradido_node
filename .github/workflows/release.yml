@@ -29,7 +29,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binaries
+          name: linux-x86_64
           path: GradidoNode-linux-x86_64.tar.gz
 
   linux-aarch64-build:
@@ -57,7 +57,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binaries
+          name: linux-aarch64
           path: GradidoNode-linux-aarch64.tar.gz
 
   # ─── Windows Native Build ──────────────────────────
@@ -97,7 +97,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-binary
+          name: windows-x86_64
           path: GradidoNode-windows-x86_64.zip
 
   # ─── Release erstellen ─────────────────────────────
@@ -154,6 +154,6 @@ jobs:
             | Linux | aarch64 | GradidoNode-linux-aarch64.tar.gz |
             | Windows | x86_64 | GradidoNode-windows-x86_64.zip |
           files: |
-            linux-binaries/GradidoNode-linux-x86_64.tar.gz
-            linux-binaries/GradidoNode-linux-aarch64.tar.gz
-            windows-binary/GradidoNode-windows-x86_64.zip
+            linux-x86_64/GradidoNode-linux-x86_64.tar.gz
+            linux-aarch64/GradidoNode-linux-aarch64.tar.gz
+            windows-x86_64/GradidoNode-windows-x86_64.zip
