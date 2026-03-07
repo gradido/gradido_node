@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
       - name: Build x86_64
         run: |
           docker build \
@@ -33,6 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
       - name: Build aarch64
         run: |
           docker build \
@@ -59,7 +65,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
+        with:
+            submodules: recursive
+            fetch-depth: 0
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@v2
 
@@ -125,7 +133,7 @@ jobs:
               .filter(m => m.includes('Merge pull request'))
               .join('\n');
 
-            return prs || "No PRs found~ Direct pushes detected~ 😈";
+            return prs || "No PRs found~ Direct pushes detected~";
 
       - name: create GitHub Release
         uses: softprops/action-gh-release@v1
