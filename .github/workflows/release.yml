@@ -20,17 +20,19 @@ jobs:
             --target release_build \
             -t gradido-node-x86_64 .
           docker create --name extract-x64 gradido-node-x86_64
-          docker cp extract-x64:/code/build/bin/GradidoNode ./GradidoNode-linux-x86_64
+          docker cp extract-x64:/code/build/bin/GradidoNode ./GradidoNode
           docker rm extract-x64
 
-      - name: compress
-        run: tar -czf GradidoNode-linux-x86_64.tar.gz GradidoNode-linux-x86_64
+      - name: Strip binary
+        run: strip ./GradidoNode
 
+      - name: compress
+        run: tar -czf gradido_node-${{ github.ref_name }}-linux-x64.tar.gz GradidoNode
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64
-          path: GradidoNode-linux-x86_64.tar.gz
+          path: gradido_node-${{ github.ref_name }}-linux-x64.tar.gz
 
   linux-aarch64-build:
     runs-on: ubuntu-latest
@@ -48,11 +50,16 @@ jobs:
             --target release_build \
             -t gradido-node-aarch64 .
           docker create --name extract-arm gradido-node-aarch64
-          docker cp extract-arm:/code/build/bin/GradidoNode ./GradidoNode-linux-aarch64
+          docker cp extract-arm:/code/build/bin/GradidoNode ./GradidoNode
           docker rm extract-arm
 
+      - name: Strip binary
+        run: |
+          sudo apt-get install -y binutils-aarch64-linux-gnu
+          aarch64-linux-gnu-strip ./GradidoNode
+
       - name: compress
-        run: tar -czf GradidoNode-linux-aarch64.tar.gz GradidoNode-linux-aarch64
+        run: tar -czf gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz GradidoNode
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -91,15 +98,23 @@ jobs:
           cmake --build . --target GradidoNode --config Release
 
       - name: Collect all and compress
+        shell: powershell
         run: |
-          $files = Get-ChildItem -Path build/bin/Release -Include *.exe,*.dll -Recurse
-          Compress-Archive -Path $files -DestinationPath GradidoNode-windows-x86_64.zip
+          $exeAndDll = Get-ChildItem -Path build/bin/Release -Include *.exe,*.dll -Recurse | Select-Object -ExpandProperty FullName
+
+          $opensslDlls = @(
+              "dependencies/gradido_blockchain/dependencies/vcpkg/packages/openssl_x64-windows/bin/libssl-3-x64.dll",
+              "dependencies/gradido_blockchain/dependencies/vcpkg/packages/openssl_x64-windows/bin/libcrypto-3-x64.dll"
+          )
+          $files = $exeAndDll + $opensslDlls
+          $files = $files | Where-Object { Test-Path $_ }
+          Compress-Archive -Path $files -DestinationPath "gradido_node-${{ github.ref_name }}-win32-x64.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64
-          path: GradidoNode-windows-x86_64.zip
+          path: gradido_node-${{ github.ref_name }}-win32-x64.zip
 
   # ─── Release erstellen ─────────────────────────────
   create-release:
@@ -128,14 +143,15 @@ jobs:
           body: |
             ## Changes~
             ${{ steps.changelog.outputs.result }}
+            *Auto-generated release notes from Pull-Requests*
 
             ## Downloads~
             | Platform | Architecture | File |
             |---|---|---|
-            | Linux | x86_64 | GradidoNode-linux-x86_64.tar.gz |
-            | Linux | aarch64 | GradidoNode-linux-aarch64.tar.gz |
-            | Windows | x86_64 | GradidoNode-windows-x86_64.zip |
+            | Linux | x86_64 | gradido_node-${{ github.ref_name }}-linux-x64.tar.gz |
+            | Linux | aarch64 | gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz |
+            | Windows | x86_64 | gradido_node-${{ github.ref_name }}-win32-x64.zip |
           files: |
-            linux-x86_64/GradidoNode-linux-x86_64.tar.gz
-            linux-aarch64/GradidoNode-linux-aarch64.tar.gz
-            windows-x86_64/GradidoNode-windows-x86_64.zip
+            linux-x86_64/gradido_node-${{ github.ref_name }}-linux-x64.tar.gz
+            linux-aarch64/gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz
+            windows-x86_64/gradido_node-${{ github.ref_name }}-win32-x64.zip
