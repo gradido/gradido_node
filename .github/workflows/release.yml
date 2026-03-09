@@ -119,6 +119,7 @@ jobs:
         with:
           token: ${{ github.token }}
           tag: ${{ github.ref_name }}
+          includeInvalidCommits: true
 
       - name: create GitHub Release
         uses: softprops/action-gh-release@v1
