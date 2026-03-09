@@ -29,8 +29,8 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binaries
-          path: GradidoNode-linux-*.tar.gz
+          name: linux-x86_64
+          path: GradidoNode-linux-x86_64.tar.gz
 
   linux-aarch64-build:
     runs-on: ubuntu-latest
@@ -57,18 +57,22 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-binaries
-          path: GradidoNode-linux-*.tar.gz
+          name: linux-aarch64
+          path: GradidoNode-linux-aarch64.tar.gz
 
   # ─── Windows Native Build ──────────────────────────
   windows-build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
 
+      - name: install zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@v2
 
@@ -88,13 +92,13 @@ jobs:
 
       - name: Collect all and compress
         run: |
-          $files = Get-ChildItem -Path build/Release -Include *.exe,*.dll -Recurse
+          $files = Get-ChildItem -Path build/bin/Release -Include *.exe,*.dll -Recurse
           Compress-Archive -Path $files -DestinationPath GradidoNode-windows-x86_64.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-binary
+          name: windows-x86_64
           path: GradidoNode-windows-x86_64.zip
 
   # ─── Release erstellen ─────────────────────────────
@@ -131,6 +135,6 @@ jobs:
             | Linux | aarch64 | GradidoNode-linux-aarch64.tar.gz |
             | Windows | x86_64 | GradidoNode-windows-x86_64.zip |
           files: |
-            linux-binaries/GradidoNode-linux-x86_64.tar.gz
-            linux-binaries/GradidoNode-linux-aarch64.tar.gz
-            windows-binary/GradidoNode-windows-x86_64.zip
+            linux-x86_64/GradidoNode-linux-x86_64.tar.gz
+            linux-aarch64/GradidoNode-linux-aarch64.tar.gz
+            windows-x86_64/GradidoNode-windows-x86_64.zip
