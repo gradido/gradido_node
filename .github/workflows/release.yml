@@ -66,8 +66,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-            submodules: recursive
-            fetch-depth: 0
+          submodules: recursive
+          fetch-depth: 0
+
       - name: Setup MSVC
         uses: microsoft/setup-msbuild@v2
 
@@ -108,32 +109,12 @@ jobs:
       - name: Download alle Artifacts
         uses: actions/download-artifact@v4
 
-      - name: generate Release Notes from PRs
-        id: notes
-        uses: actions/github-script@v7
+      - name: Update CHANGELOG
+        id: changelog
+        uses: requarks/changelog-action@v1.10.3
         with:
-          script: |
-            const tags = await github.rest.repos.listTags({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 2
-            });
-            const previousTag = tags.data[1]?.name;
-
-            // Collect PRs since last tag~
-            const comparison = await github.rest.repos.compareCommits({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              base: previousTag || 'HEAD~10',
-              head: context.ref_name
-            });
-
-            const prs = comparison.data.commits
-              .map(c => c.commit.message)
-              .filter(m => m.includes('Merge pull request'))
-              .join('\n');
-
-            return prs || "No PRs found~ Direct pushes detected~";
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
 
       - name: create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -141,7 +122,7 @@ jobs:
           name: Release ${{ github.ref_name }}
           body: |
             ## Changes~
-            ${{ steps.notes.outputs.result }}
+            ${{ steps.changelog.outputs.result }}
 
             ## Downloads~
             | Platform | Architecture | File |
