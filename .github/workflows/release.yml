@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: linux-aarch64
-          path: GradidoNode-linux-aarch64.tar.gz
+          path: gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz
 
   # ─── Windows Native Build ──────────────────────────
   windows-build:
