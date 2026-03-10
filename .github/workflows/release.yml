@@ -13,10 +13,14 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Get blockchain version
+        id: blockchain_version
+        run: echo "version=$(git -C dependencies/gradido_blockchain describe --tags --dirty --always)" >> $GITHUB_OUTPUT
       - name: Build x86_64
         run: |
           docker build \
-            --build-arg VERSION=${{ github.ref_name }} \
+            --build-arg GRADIDO_NODE_VERSION=${{ github.ref_name }} \
+            --build-arg GRADIDO_BLOCKCHAIN_VERSION=${{ steps.blockchain_version.outputs.version }} \
             --target release_build \
             -t gradido-node-x86_64 .
           docker create --name extract-x64 gradido-node-x86_64
@@ -41,10 +45,14 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Get blockchain version
+        id: blockchain_version
+        run: echo "version=$(git -C dependencies/gradido_blockchain describe --tags --dirty --always)" >> $GITHUB_OUTPUT
       - name: Build aarch64
         run: |
           docker build \
-            --build-arg VERSION=${{ github.ref_name }} \
+            --build-arg GRADIDO_NODE_VERSION=${{ github.ref_name }} \
+            --build-arg GRADIDO_BLOCKCHAIN_VERSION=${{ steps.blockchain_version.outputs.version }} \
             --build-arg ZIG_TARGET=aarch64-linux-musl \
             --build-arg TARGET_ARCH=aarch64 \
             --target release_build \
