@@ -1,12 +1,17 @@
 
 #include "MessageListenerQuery.h"
-#include "../controller/SimpleOrderingManager.h"
 #include "../blockchain/FileBasedProvider.h"
+#include "../client/hiero/ConsensusClient.h"
+#include "../controller/SimpleOrderingManager.h"
+#include "../task/SyncTopic.h"
 #include "ConsensusTopicResponse.h"
 
+#include "gradido_blockchain/Application.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include "loguru/loguru.hpp"
+
+using client::hiero::ConnectionClosedReason;
 
 namespace hiero {
 
@@ -40,9 +45,21 @@ namespace hiero {
 	}
 
 	// will be called from grpc client if connection was closed
-	void MessageListenerQuery::onConnectionClosed()
+	void MessageListenerQuery::onConnectionClosed(ConnectionClosedReason reason) noexcept
 	{
 		//mIsClosed = true;
-		LOG_F(WARNING, "connection closed on topic: %s, try reconnect", mTopicId.toString().data());
+		if (ConnectionClosedReason::Reconnect == reason) {
+			LOG_F(WARNING, "connection closed on topic: %s, try reconnect", mTopicId.toString().data());
+		}
+		else {
+			if (!Application::getStopToken().stop_requested()) {
+				auto blockchain = gradido::blockchain::FileBasedProvider::getInstance()->findBlockchain(mCommunityId);
+				auto fileBasedBlockchain = static_cast<gradido::blockchain::FileBased*>(blockchain.get());
+				auto task = fileBasedBlockchain->getTopicSyncTask();
+				auto hieroClient = fileBasedBlockchain->pickHieroClient();
+				hieroClient->getTopicInfo(fileBasedBlockchain->getHieroTopicId(), task);
+				task->scheduleTask(task);
+			}
+		}
 	}
 }

@@ -10,7 +10,7 @@
 #include "../ServerGlobals.h"
 #include "../SystemExceptions.h"
 #include "../task/NotifyClient.h"
-#include "../task/SyncTopicOnStartup.h"
+#include "../task/SyncTopic.h"
 #include "../client/hiero/MirrorClient.h"
 
 #include "gradido_blockchain/const.h"
@@ -160,12 +160,12 @@ namespace gradido {
 			}
 		}
 
-		std::shared_ptr<task::SyncTopicOnStartup> FileBased::initOnline()
+		std::shared_ptr<task::SyncTopic> FileBased::getTopicSyncTask()
 		{
       if (mStopToken.stop_requested()) return nullptr;
 			auto hieroTopicIdNum = mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.getTopicNum());
 			if (hieroTopicIdNum) {
-				return std::make_shared<task::SyncTopicOnStartup>(
+				return std::make_shared<task::SyncTopic>(
 					mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_SEQUENCE_NUMBER, 0),
 					hiero::TopicId(0, 0, hieroTopicIdNum),
 					getptr()
@@ -178,9 +178,6 @@ namespace gradido {
 		void FileBased::startListening(data::Timestamp lastTransactionConfirmedAt)
 		{
 			if (mStopToken.stop_requested()) return;
-			if (mHieroMessageListener) {
-				LOG_F(WARNING, "called again, while listener where already existing");
-			}
 			auto hieroTopicId = hiero::TopicId(0, 0, mBlockchainState.readInt64State(cache::DefaultStateKeys::LAST_HIERO_TOPIC_ID, mHieroTopicId.getTopicNum()));
 			if (hieroTopicId.empty()) {
 				LOG_F(WARNING, "startListening called without valid hiero topic id");

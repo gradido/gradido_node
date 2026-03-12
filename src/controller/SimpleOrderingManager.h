@@ -39,7 +39,8 @@ namespace controller {
         SimpleOrderingManager(std::string_view communityId);
         ~SimpleOrderingManager();
 
-        void init(uint64_t lastKnownSequenceNumber);
+        // combine init and reset
+        void reinitialize(uint64_t lastKnownSequenceNumber);
 
         enum class PushResult {
             FOUND_IN_LAST_TRANSACTIONS,
@@ -51,7 +52,6 @@ namespace controller {
         std::shared_ptr<task::HieroMessageToTransactionTask> findCrossGroupTransactionPair(const gradido::data::LedgerAnchor& transactionId) const;
 
     protected:        
-
         inline uint64_t getLastSequenceNumber() const { return mLastSequenceNumber; }
         void updateSequenceNumber(uint64_t newSequenceNumber);
 
@@ -93,6 +93,7 @@ namespace controller {
 
         void processTransaction(const TopicResponseDeserializer& gradidoTransactionWorkData);
 
+        bool mInitalized;
         // fast duplication check
         // use first 4 and last 4 Byte of transaction hash as key
         // data part is consensusTimestamp which already should be unique.. but better make sure it is really unique

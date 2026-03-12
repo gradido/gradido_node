@@ -19,7 +19,7 @@ using gradido::data::LedgerAnchor;
 namespace controller {
 
     SimpleOrderingManager::SimpleOrderingManager(std::string_view communityId)
-        : task::Thread("SimpleOrderingManager"), 
+        : task::Thread("SimpleOrderingManager"), mInitalized(false),
         mLastTransactions(MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION * 2), 
         mCommunityId(communityId), 
         mLastSequenceNumber(0)
@@ -30,10 +30,16 @@ namespace controller {
     {
     }
 
-    void SimpleOrderingManager::init(uint64_t lastKnownSequenceNumber) 
+    void SimpleOrderingManager::reinitialize(uint64_t lastKnownSequenceNumber)
     {
-        mLastSequenceNumber = lastKnownSequenceNumber;
+      std::unique_lock _lock(mTransactionsMutex);
+      mLastSequenceNumber = lastKnownSequenceNumber;
+      mTransactions.clear();
+      mLastTransactions.clear();
+      if (!mInitalized) {
+        mInitalized = true;
         Thread::init();
+      }
     }
 
     int SimpleOrderingManager::ThreadFunction()

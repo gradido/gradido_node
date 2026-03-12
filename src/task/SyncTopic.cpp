@@ -1,4 +1,4 @@
-#include "SyncTopicOnStartup.h"
+#include "SyncTopic.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "../blockchain/FileBased.h"
 #include "../client/hiero/MirrorClient.h"
@@ -25,7 +25,7 @@ using std::shared_ptr;
 using std::string, std::to_string;
 
 namespace task {
-	SyncTopicOnStartup::SyncTopicOnStartup(
+	SyncTopic::SyncTopic(
 		uint64_t lastKnownSequenceNumber,
 		hiero::TopicId lastKnowTopicId,
 		shared_ptr<FileBased> blockchain
@@ -37,12 +37,12 @@ namespace task {
 
 	}
 
-	SyncTopicOnStartup::~SyncTopicOnStartup()
+	SyncTopic::~SyncTopic()
 	{
 
 	}
 
-	int SyncTopicOnStartup::run()
+	int SyncTopic::run()
 	{
 		// check topic info
 		const auto& topicInfo = mObject;
@@ -54,8 +54,8 @@ namespace task {
 		// or check if maybe or block files get corrupted
 		auto lastTransactionIdentical = checkLastTransaction();
 
-		// start ordering manager
-		orderingManager->init(mLastKnownSequenceNumber);
+		// (re-)start ordering manager
+		orderingManager->reinitialize(mLastKnownSequenceNumber);
 		
 		// load transactions from mirror node
 		mConfirmedAtLastReadedTransaction = data::Timestamp();
@@ -89,7 +89,7 @@ namespace task {
 		return 0;
 	}
 
-	SyncTopicOnStartup::LastTransactionState SyncTopicOnStartup::checkLastTransaction()
+	SyncTopic::LastTransactionState SyncTopic::checkLastTransaction()
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 
@@ -147,7 +147,7 @@ namespace task {
 		return LastTransactionState::IDENTICAL;
 	}
 
-	uint32_t SyncTopicOnStartup::loadTransactionsFromMirrorNode(hiero::TopicId topicId)
+	uint32_t SyncTopic::loadTransactionsFromMirrorNode(hiero::TopicId topicId)
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 		const auto& orderingManager = mBlockchain->getOrderingManager();

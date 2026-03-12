@@ -25,7 +25,9 @@ namespace model {
 
 		LevelDBWrapper::~LevelDBWrapper()
 		{
-			exit();
+			if (mLevelDB) {
+				exit();
+			}
 		}
 
 		bool LevelDBWrapper::init(size_t cacheInByte/* = 0*/)

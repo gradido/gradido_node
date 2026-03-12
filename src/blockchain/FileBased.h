@@ -45,7 +45,7 @@ namespace controller {
 }
 
 namespace task {
-	class SyncTopicOnStartup;
+	class SyncTopic;
 }
 
 namespace gradido {
@@ -108,11 +108,11 @@ namespace gradido {
 
 			//! init 3
 			//! prepare task for syncronize with hiero topic
-			//! all SyncTopicOnStartup for all communities should be started/scheduled at the same time because there could need each other for new cross group transactions
-			std::shared_ptr<task::SyncTopicOnStartup> initOnline();
+			//! all SyncTopic for all communities should be started/scheduled at the same time because there could need each other for new cross group transactions
+			std::shared_ptr<task::SyncTopic> getTopicSyncTask();
 
 			//! init 4
-			//! start listening to topic, will be called from SyncTopicOnStartup at the end, will update last known TopicId 
+			//! start listening to topic, will be called from SyncTopic at the end, will update last known TopicId 
 			void startListening(data::Timestamp lastTransactionConfirmedAt);
 
 			// clean up group, stopp all running processes

@@ -4,7 +4,7 @@
 #include "../client/hiero/ConsensusClient.h"
 #include "../client/GraphQL.h"
 #include "../ServerGlobals.h"
-#include "../task/SyncTopicOnStartup.h"
+#include "../task/SyncTopic.h"
 
 #include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
@@ -143,7 +143,7 @@ namespace gradido {
 				if (pair.second->getHieroTopicId().empty()) {
 					continue;
 				}
-				auto task = pair.second->initOnline();
+				auto task = pair.second->getTopicSyncTask();
 				auto hieroClient = pair.second->pickHieroClient();
 				hieroClient->getTopicInfo(pair.second->getHieroTopicId(), task);
 				task->scheduleTask(task);

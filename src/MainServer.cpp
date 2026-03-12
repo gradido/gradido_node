@@ -174,10 +174,10 @@ void MainServer::exit()
 
 	// iota::MqttClientWrapper::getInstance()->exit();
 	CacheManager::getInstance()->getFuzzyTimer()->stop();
-	ServerGlobals::g_CPUScheduler->stop();
-	ServerGlobals::g_WriteFileCPUScheduler->stop();
 	// ServerGlobals::g_IotaRequestCPUScheduler->stop();
 	FileBasedProvider::getInstance()->exit();
+	ServerGlobals::g_CPUScheduler->stop();
+	ServerGlobals::g_WriteFileCPUScheduler->stop();
 }
 
 bool MainServer::configExists(const string& fileName) {
