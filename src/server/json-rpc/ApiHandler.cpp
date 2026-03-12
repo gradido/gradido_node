@@ -141,17 +141,22 @@ namespace server {
 				std::string format;
 				uint64_t transactionId = 0;
 				uint32_t maxResultCount = 100;
+				std::string searchDirectionString;
 
-				if (!getUInt64Parameter(responseJson, params, "fromTransactionId", transactionId) || 
+				if (!getUInt64Parameter(responseJson, params, "fromTransactionId", transactionId) ||
 					!getStringParameter(responseJson, params, "format", format)) { return; }
 				getUIntParameter(responseJson, params, "maxResultCount", maxResultCount, true);
+
 				//printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
 				FilterBuilder builder;
 				auto filter = builder
 					.setMinTransactionNr(transactionId)
 					.setPagination({ maxResultCount })
-					.setSearchDirection(SearchDirection::ASC)
+					.setSearchDirection(SearchDirection::DESC)
 					.build();
+				if (getStringParameter(responseJson, params, "searchDirection", searchDirectionString, true) && searchDirectionString == "ASC") {
+						filter.searchDirection = SearchDirection::ASC;
+				}
 				findAllTransactions(resultJson, filter, blockchain, format);
 			}
 			else if (method == "getAddressBalance") {
