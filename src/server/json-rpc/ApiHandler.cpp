@@ -169,9 +169,6 @@ namespace server {
 			else if (method == "getAddressType") {
 				getAddressType(resultJson, pubkey, blockchain);
 			}
-			else if (method == "getAddressTxids") {
-				getAddressTxids(resultJson, pubkey, blockchain);
-			}
 			else if (method == "getTransaction") {
 				std::string format;
 				uint64_t transactionId = 0;
@@ -441,27 +438,6 @@ namespace server {
 
 			resultJson.AddMember("addressType", Value(typeString.data(), typeString.size(), alloc), alloc);
 		}
-
-		void ApiHandler::getAddressTxids(Value& resultJson, memory::ConstBlockPtr pubkey, std::shared_ptr<gradido::blockchain::Abstract> blockchain)
-		{
-			assert(blockchain);
-			assert(pubkey);
-
-			auto fileBasedBlockchain = std::dynamic_pointer_cast<gradido::blockchain::FileBased>(blockchain);
-			assert(fileBasedBlockchain);
-
-			auto transactionNrs = fileBasedBlockchain->findAllFast({ 0, 0, pubkey });
-
-			auto alloc = mRootJson.GetAllocator();
-			Value transactionNrsJson(kArrayType);
-			for (auto& transactionNr : transactionNrs) {
-				transactionNrsJson.PushBack(transactionNr, alloc);
-			}
-
-			resultJson.AddMember("transactionNrs", transactionNrsJson, alloc);
-		}
-
-
 
 		void ApiHandler::listTransactions(
 			Value& resultJson,

@@ -2,10 +2,12 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_NODE_TRANSACTION_ENTRY_H
 
 #include "gradido_blockchain/blockchain/TransactionEntry.h"
+#include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 
 #include <vector>
 
 namespace gradido {
+
 	namespace blockchain {
 
 		class FileBased;
@@ -61,6 +63,8 @@ namespace gradido {
 			inline void addAddressIndex(uint32_t addressIndex) { std::scoped_lock lock(mFastMutex); mPublicKeyIndices.push_back(addressIndex); }
 			inline const std::vector<uint32_t>& getAddressIndices() const { std::scoped_lock lock(mFastMutex); return mPublicKeyIndices; }
 			inline bool isAddressIndexInvolved(uint32_t addressIndex) const; 
+
+			data::compact::ConfirmedGradidoTx convertToCompactConfirmedTx() const;
 
 		protected:
 			int32_t mFileCursor;

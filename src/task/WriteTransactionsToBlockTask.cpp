@@ -71,7 +71,7 @@ namespace task {
 		assert(!isTaskFinished());		
 		std::lock_guard lock(mFastMutex);
 		mTransactions.insert({transaction->getTransactionNr(), transaction});
-		mBlockIndex->addIndicesForTransaction(transaction, publicKeyDictionary);
+		mBlockIndex->addTransactionIndices(transaction->convertToCompactConfirmedTx(), publicKeyDictionary);
 	}
 
 	std::shared_ptr<gradido::blockchain::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)

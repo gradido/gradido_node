@@ -90,11 +90,6 @@ namespace server {
 				memory::ConstBlockPtr pubkey,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain
 			);
-			void getAddressTxids(
-				rapidjson::Value& resultJson,
-				memory::ConstBlockPtr pubkey,
-				std::shared_ptr<gradido::blockchain::Abstract> blockchain
-			);
 			void listTransactions(
 				rapidjson::Value& resultJson,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,

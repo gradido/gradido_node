@@ -357,141 +357,142 @@ namespace gradido {
 
 		TransactionEntries FileBased::findAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS */) const
 		{
-			TransactionEntries result;
-			// if pagination is used, filterCopy contain count of still to find transactions
-			Filter filterCopy(filter);
-			bool stopped = false;
-			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, mPublicKeysIndex);
-				for (auto transactionNr : transactionNrs) {
-					if (!filter.pagination.hasCapacityLeft(result.size())) {
+			TransactionEntries resultTxs;
+			CompactFilter compactFilter(filter, mPublicKeysIndex, mCommunityIdIndex);
+			FilterResult lastFilterResult = FilterResult::DISMISS;
+
+			bool hasPagination = filter.pagination.size > 0;
+			if (hasPagination) {
+				resultTxs.reserve(filter.pagination.size);
+			}
+
+			iterateBlocks(filter.searchDirection,
+				[&](const cache::Block& block) -> bool
+				{
+					do {
+						auto txs = block.getBlockIndex().findTransactions(compactFilter);
+						// nothing found? search next block
+						if (!txs.size()) return true;
+
+						if (resultTxs.capacity() - resultTxs.size() < txs.size()) {
+							resultTxs.reserve(txs.size() + resultTxs.size());
+						}
+						for (const auto& tx : txs) {
+							// cannot short cut like in blockchain::InMemory, because FileBased uses a Cache and when we don't copy the shared_ptr,
+							// it is possible it will be deleted while we are using it :/
+							auto confirmedTx = getTransactionForId(tx);
+							if (!confirmedTx) {
+								throw GradidoBlockchainTransactionNotFoundException("cannot found confirmed tx in iterateAllImpl").setTransactionId(tx);
+							}
+							if (filter.filterFunction) {
+								lastFilterResult = filter.filterFunction(*confirmedTx);
+							}
+							else {
+								lastFilterResult = FilterResult::USE;
+							}
+							if ((FilterResult::USE & lastFilterResult) == FilterResult::USE) {
+								resultTxs.emplace_back(confirmedTx);
+							}
+						}
+					} while (hasPagination && filter.pagination.hasCapacityLeft(resultTxs.size()) && (FilterResult::STOP & lastFilterResult) != FilterResult::STOP);
+					// we have enough, stop
+					if ((FilterResult::STOP & lastFilterResult) == FilterResult::STOP || !filter.pagination.hasCapacityLeft(resultTxs.size())) {
 						return false;
 					}
-					auto transaction = block.getTransaction(transactionNr, *g_appContext);
-					auto filterResult = filter.matches(transaction, FilterCriteria::FILTER_FUNCTION | FilterCriteria::TIMEPOINT_INTERVAL);
-					if ((filterResult & FilterResult::USE) == FilterResult::USE) {
-						result.push_back(transaction);
-					}
-					if ((filterResult & FilterResult::STOP) == FilterResult::STOP) {
-						stopped = true;
-						break;
-					}
+					return true;
 				}
-				if (filter.pagination.size) {
-					filterCopy.pagination.size = filter.pagination.size - result.size();
-					// we have requested result count, let's exit here
-					if (filterCopy.pagination.size <= 0) {
-						return false;
-					}
-				}
-				return !stopped;
-			});
-			return result;
+			);
+			return resultTxs;
 		}
 
 		ConfirmedTxs FileBased::findAll(const CompactFilter& filter) const
 		{
-			ConfirmedTxs results;
-			// if pagination is used, filterCopy contain count of still to find transactions
-			CompactFilter filterCopy(filter);
-			auto skipEntries = filter.pagination.skipEntriesCount();
-			int paginationCursor = 0;
-			iterateBlocks(filterCopy.searchDirection,
+			ConfirmedTxs resultTxs;
+
+			bool hasPagination = filter.pagination.size > 0;
+			if (hasPagination) {
+				resultTxs.reserve(filter.pagination.size);
+			}
+
+			iterateBlocks(filter.searchDirection,
 				[&](const cache::Block& block) -> bool
 				{
-					const auto& transactionIndex = block.getBlockIndex();
-					if (PublicKeySearchType::BalanceChangingPublicKey == filterCopy.publicKeySearchType && filterCopy.publicKeyIndex.communityIdIndex == mCommunityIdIndex) 
-					{
-						filterCopy.pagination.page = 1;
-						do {
-							auto balanceChangingTxsInRange = transactionIndex.findTransactionsBalanceChangingForPublicKey(filterCopy);
-							if (balanceChangingTxsInRange.empty()) {
-								break;
-							}
-							for (const auto& tx : balanceChangingTxsInRange) {
-								auto transaction = getConfirmedTxForId(tx);
-								if (!transaction) {
-									throw GradidoBlockchainTransactionNotFoundException("confirmed tx not found").setTransactionId(tx);
-								}
-								auto filterResult = filterCopy.matches(*transaction, FilterCriteria::TIMEPOINT_INTERVAL);
-								if ((filterResult & FilterResult::USE) == FilterResult::USE) {
-									if (paginationCursor >= skipEntries) {
-										results.push_back(transaction);
-										if (!filterCopy.pagination.hasCapacityLeft(results.size())) {
-											return false;
-										}
-									}
-									paginationCursor++;
-								}
-								if ((filterResult & FilterResult::STOP) == FilterResult::STOP) {
-									return false;
-								}
-							}
-							if (filterCopy.pagination.empty() || filter.pagination.size > balanceChangingTxsInRange.size()) {
-								break;
-							}
-							filterCopy.pagination.page++;
-						} while (filter.pagination.hasCapacityLeft(results.size()));
-						return true;
-					}
+					auto txs = block.getBlockIndex().findTransactions(filter);
+					// nothing found? search next block
+					if (!txs.size()) return true;
 
-					transactionIndex.lock();
-					try {
-						auto startIt = transactionIndex.begin(filter);
-						auto endIt = transactionIndex.end(filter);
-						auto it = startIt;
-						for (; it != endIt; ++it) 
-						{
-							auto transaction = block.getCompactTransaction(*it, *g_appContext);
-							if (!transaction) {
-								throw GradidoBlockchainTransactionNotFoundException("confirmed tx not found").setTransactionId(*it);
+					if (!hasPagination && (resultTxs.capacity() - resultTxs.size() < txs.size())) {
+						resultTxs.reserve(txs.size() + resultTxs.size());
+					}
+					for (const auto& tx : txs) {
+						auto confirmedTx = getConfirmedTxForId(tx);
+						if (!confirmedTx) {
+							throw GradidoBlockchainTransactionNotFoundException("cannot found confirmed tx in iterateAllImpl").setTransactionId(tx);
+						}
+						resultTxs.emplace_back(confirmedTx);
+					}
+					// we have enough, stop
+					// without pagination, hasCapacityLeft returns always true
+					if (!filter.pagination.hasCapacityLeft(resultTxs.size())) {
+						return false;
+					}
+					return true;
+				}
+			);
+			return resultTxs;
+		}
+
+		data::compact::ConfirmedTxs FileBased::findAll(
+			const CompactFilter& filter,
+			std::function<FilterResult(const data::compact::ConfirmedGradidoTx&)> elementFilter
+		) const
+		{
+			ConfirmedTxs resultTxs;
+			FilterResult lastFilterResult = FilterResult::DISMISS;
+
+			bool hasPagination = filter.pagination.size > 0;
+			if (hasPagination) {
+				resultTxs.reserve(filter.pagination.size);
+			}
+
+			iterateBlocks(filter.searchDirection,
+				[&](const cache::Block& block) -> bool
+				{
+					do {
+						auto txs = block.getBlockIndex().findTransactions(filter);
+						// nothing found? search next block
+						if (!txs.size()) return true;
+
+						if (resultTxs.capacity() - resultTxs.size() < txs.size()) {
+							resultTxs.reserve(txs.size() + resultTxs.size());
+						}
+						for (const auto& tx : txs) {
+							// cannot short cut like in blockchain::InMemory, because FileBased uses a Cache and when we don't copy the shared_ptr,
+							// it is possible it will be deleted while we are using it :/
+							auto confirmedTx = getConfirmedTxForId(tx);
+							if (!confirmedTx) {
+								throw GradidoBlockchainTransactionNotFoundException("cannot found confirmed tx in iterateAllImpl").setTransactionId(tx);
 							}
-							auto filterResult = filter.matches(*transaction, FilterCriteria::TIMEPOINT_INTERVAL);
-							if ((filterResult & FilterResult::USE) == FilterResult::USE) {
-								if (paginationCursor >= skipEntries) {
-									results.push_back(transaction);
-									if (!filter.pagination.hasCapacityLeft(results.size())) {
-										transactionIndex.unlock();
-										return false;
-									}
-								}
-								paginationCursor++;
-							}
-							if ((filterResult & FilterResult::STOP) == FilterResult::STOP) {
-								transactionIndex.unlock();
-								return false;
+							lastFilterResult = elementFilter(*confirmedTx);
+							if ((FilterResult::USE & lastFilterResult) == FilterResult::USE) {
+								resultTxs.emplace_back(getConfirmedTxForId(tx));
 							}
 						}
-						transactionIndex.unlock();
-						return true;
+					} while (hasPagination && filter.pagination.hasCapacityLeft(resultTxs.size()) && (FilterResult::STOP & lastFilterResult) != FilterResult::STOP);
+					// we have enough, stop
+					if ((FilterResult::STOP & lastFilterResult) == FilterResult::STOP || !filter.pagination.hasCapacityLeft(resultTxs.size())) {
+						return false;
 					}
-					catch (...) {
-						transactionIndex.unlock();
-						throw;
-					}
-				});
-			return results;
+					return true;
+				}
+			);
+			return resultTxs;
 		}
 
 		size_t FileBased::countAll(const Filter& filter/* = Filter::ALL_TRANSACTIONS*/) const
 		{
-			size_t count = 0;
-			// check if filter has fields which aren't checked by index
-			if (!gradido::blockchain::TransactionsIndex::canMatchWithoutDeserialize(filter)) {
-				LOG_F(
-					WARNING,
-					"slow count, detect fields in Filter which aren't covered by index: %s",
-					toJsonString(filter).c_str()
-				);
-				return findAll(filter).size();
-			}
-			iterateBlocks(filter.searchDirection, 
-				[&](const cache::Block& block) -> bool {
-					count += block.getBlockIndex().countTransactions(filter, mPublicKeysIndex);
-					return true;
-				}
-			);
-			return count;
+			CompactFilter compactFilter(filter, mPublicKeysIndex, mCommunityIdIndex);
+			return countAll(compactFilter);
 		}
 
 		size_t FileBased::countAll(const CompactFilter& filter) const
@@ -505,33 +506,6 @@ namespace gradido {
 				}
 			);
 			return count;
-		}
-
-		std::vector<uint64_t> FileBased::findAllFast(const Filter& filter) const
-		{
-			// check if filter has fields which aren't checked by index
-			if (!gradido::blockchain::TransactionsIndex::canMatchWithoutDeserialize(filter)) {
-				LOG_F(
-					ERROR,
-					"findAllFast call with invalid filter not covered by index: %s",
-					toJsonString(filter).c_str()
-				);
-				return {};
-			}
-			std::vector<uint64_t> result;
-			// if pagination is used, filterCopy contain count of still to find transactions
-			Filter filterCopy(filter);
-			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
-				auto transactionNrs = block.getBlockIndex().findTransactions(filterCopy, mPublicKeysIndex);
-				result.insert(result.end(), transactionNrs.begin(), transactionNrs.end());
-				if (filter.pagination.size) {
-					filterCopy.pagination.size = filter.pagination.size - result.size();
-					// we have requested result count, let's exit here
-					if (filterCopy.pagination.size <= 0) return false;
-				}
-				return true;
-			});
-			return result;
 		}
 
 		AddressType FileBased::getAddressType(const Filter& filter/* = Filter::LAST_TRANSACTION*/) const

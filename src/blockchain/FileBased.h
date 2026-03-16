@@ -150,14 +150,14 @@ namespace gradido {
 			virtual TransactionEntries findAll(const Filter& filter) const override;
 
 			virtual data::compact::ConfirmedTxs findAll(const CompactFilter& filter) const override;
+			virtual data::compact::ConfirmedTxs findAll(
+				const CompactFilter& filter,
+				std::function<FilterResult(const data::compact::ConfirmedGradidoTx&)> elementFilter
+			) const override;
 
 			// find all optimized for counting transaction nrs, better not use the filter.function for that, because this would slow down
 			virtual size_t countAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const override;
 			virtual size_t countAll(const CompactFilter& filter) const override;
-
-			//! use only index for searching, ignore filter function
-			//! \return vector with transaction nrs
-			std::vector<uint64_t> findAllFast(const Filter& filter) const;
 
 			virtual data::AddressType getAddressType(const Filter& filter = Filter::LAST_TRANSACTION) const override;
 

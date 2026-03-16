@@ -60,7 +60,7 @@ namespace task {
 			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
 			IMutableDictionary<PublicKey>& publicKeyDictionary
 		);
-
+		
 		//! return transaction by nr
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t nr);
 

@@ -3,7 +3,7 @@
 
 #include "gradido_blockchain/blockchain/CompactFilter.h"
 #include "gradido_blockchain/blockchain/Filter.h"
-#include "gradido_blockchain/blockchain/TransactionsIndex.h"
+#include "gradido_blockchain/blockchain/TransactionsIndexRoaringBitmaps.h"
 #include "gradido_blockchain/crypto/ByteArray.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
 
@@ -40,7 +40,7 @@ namespace cache {
 	 TODO: Auto-Recover if missing, and maybe check with saved block on startup
 	 */
 
-	class BlockIndex : public gradido::blockchain::TransactionsIndex, public model::files::IBlockIndexReceiver
+	class BlockIndex : public gradido::blockchain::TransactionsIndexRoaringBitmaps
 	{
 		// friend model::files::BlockIndex;
 	public:
@@ -56,29 +56,12 @@ namespace cache {
 
 		//! \brief write block index into files
 		std::unique_ptr<model::files::BlockIndex> serialize();
-		inline rapidjson::Value serializeToJson(rapidjson::Document::AllocatorType& alloc) const;
+
 		//! \brief
 		//! \return true if there was something to write into file, after writing it to file
 		bool writeIntoFile();
 
-		bool addIndicesForTransaction(
-			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry,
-			IMutableDictionary<PublicKey>& publicKeyDictionary
-		);
-		bool addIndicesForTransaction(const gradido::data::compact::ConfirmedGradidoTx& compactTx);
-
-		//! implement from model::files::IBlockIndexReceiver, called by loading block index from file
-		bool addIndicesForTransaction(
-			gradido::data::TransactionType transactionType,
-			uint32_t coinCommunityIdIndex,
-			date::year year,
-			date::month month,
-			uint64_t transactionNr, 
-			int32_t fileCursor, 
-			const uint32_t* addressIndices,
-			uint16_t addressIndiceCount,
-			uint8_t isBalanceChanging
-		);
+		bool addIndicesForTransaction(const gradido::data::compact::ConfirmedGradidoTx& compactTx, const IDictionary<PublicKey>& publicKeyDict);
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
 		//! \return false if transactionNr exist, else return true
@@ -86,18 +69,11 @@ namespace cache {
 
 		//! \brief search transaction nrs for search criteria in filter, ignore filter function
 		//! \return transaction nrs
-		inline std::vector<uint64_t> findTransactions(const gradido::blockchain::Filter& filter, const IDictionary<PublicKey>& publicKeysDictionary) const;
 
 		inline std::vector<uint64_t> findTransactions(const gradido::blockchain::CompactFilter& filter) const;
-		inline std::vector<uint64_t> findTransactionsBalanceChangingForPublicKey(const gradido::blockchain::CompactFilter& filter) const;
 
 		//! count all, ignore pagination
-		inline size_t countTransactions(const gradido::blockchain::Filter& filter, const IDictionary<PublicKey>& publicKeysDictionary) const;
 		inline size_t countTransactions(const gradido::blockchain::CompactFilter& filter) const;
-
-		//! \brief find transaction nrs from specific month and year
-		//! \return {0, 0} if nothing found
-		inline std::pair<uint64_t, uint64_t> findTransactionsForMonthYear(date::year year, date::month month) const;
 
 		//! \param fileCursor reference to be filled with fileCursor
 		//! \return true if transaction nr was found and fileCursor was set, else return false
@@ -129,45 +105,25 @@ namespace cache {
 		
 	};
 
-	rapidjson::Value BlockIndex::serializeToJson(rapidjson::Document::AllocatorType& alloc) const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::serializeToJson(alloc);
-	}
-
-	std::vector<uint64_t> BlockIndex::findTransactions(
-		const gradido::blockchain::Filter& filter, 
-		const IDictionary<PublicKey>& publicKeysDictionary
-	) const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::findTransactions(filter, publicKeysDictionary, mBlockchainCommunityIdIndex);
-	}
-
 	std::vector<uint64_t> BlockIndex::findTransactions(const gradido::blockchain::CompactFilter& filter) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::findTransactions(filter);
-	}
-	std::vector<uint64_t> BlockIndex::findTransactionsBalanceChangingForPublicKey(const gradido::blockchain::CompactFilter& filter) const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::findTransactionsBalanceChangingForPublicKey(filter);
-	}
-
-	size_t BlockIndex::countTransactions(
-		const gradido::blockchain::Filter& filter, 
-		const IDictionary<PublicKey>& publicKeysDictionary
-	) const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::countTransactions(gradido::blockchain::CompactFilter(filter, publicKeysDictionary, mBlockchainCommunityIdIndex));
+		return gradido::blockchain::TransactionsIndexRoaringBitmaps::findTransactions(filter);
 	}
 
 	size_t BlockIndex::countTransactions(const gradido::blockchain::CompactFilter& filter) const
 	{
 		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::countTransactions(filter);
+		return gradido::blockchain::TransactionsIndexRoaringBitmaps::countTransactions(filter);
+	}
+
+	size_t BlockIndex::getTransactionsCount() const
+	{
+		std::lock_guard _lock(mRecursiveMutex);
+		if (!mMaxTransactionNr && !mMinTransactionNr) {
+			return 0;
+		}
+		return mMaxTransactionNr - mMinTransactionNr + 1;
 	}
 
 	bool BlockIndex::hasTransactionNr(uint64_t transactionNr) const
@@ -180,41 +136,12 @@ namespace cache {
 	uint64_t BlockIndex::getMaxTransactionNr() const 
 	{ 
 		std::lock_guard _lock(mRecursiveMutex);  
-		return gradido::blockchain::TransactionsIndex::getMaxTransactionNr();
+		return gradido::blockchain::TransactionsIndexRoaringBitmaps::getMaxTransactionNr();
 	}
 	uint64_t BlockIndex::getMinTransactionNr() const 
 	{ 
 		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::getMinTransactionNr();
-	}
-
-	uint64_t BlockIndex::getTransactionsCount() const 
-	{ 
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::getTransactionsCount();
-	}
-
-	date::year_month BlockIndex::getOldestYearMonth() const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::getOldestYearMonth();
-	}
-	date::year_month BlockIndex::getNewestYearMonth() const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::getNewestYearMonth();
-	}
-
-	TimepointInterval BlockIndex::filteredTimepointInterval(const gradido::blockchain::CompactFilter& filter) const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::filteredTimepointInterval(filter);
-	}
-
-	std::pair<uint64_t, uint64_t> BlockIndex::findTransactionsForMonthYear(date::year year, date::month month) const
-	{
-		std::lock_guard _lock(mRecursiveMutex);
-		return gradido::blockchain::TransactionsIndex::findTransactionsForMonthYear({ year, month });
+		return gradido::blockchain::TransactionsIndexRoaringBitmaps::getMinTransactionNr();
 	}
 }
 

@@ -14,10 +14,11 @@
 
 #include <mutex>
 
-using namespace magic_enum;
-using memory::Block;
+using gradido::g_appContext;
 using gradido::blockchain::FileBased;
 using gradido::data::compact::ConfirmedGradidoTx;
+using namespace magic_enum;
+using memory::Block;
 using std::shared_ptr, std::make_shared, std::unique_lock;
 using ServerGlobals::g_CPUScheduler;
 
@@ -57,8 +58,8 @@ namespace task {
 			throw GradidoNodeInvalidDataException("error deserialize transaction body");
 		}
 
-		auto compactConfirmedTx = ConfirmedGradidoTx::fromGrdw(&tx, &body, mCommunityIdIndex, *gradido::g_appContext);
-		mBlockIndex->addIndicesForTransaction(compactConfirmedTx);
+		auto compactConfirmedTx = ConfirmedGradidoTx::fromGrdw(&tx, &body, mCommunityIdIndex, *g_appContext);
+		mBlockIndex->addIndicesForTransaction(compactConfirmedTx, g_appContext->getCommunityContext(mCommunityIdIndex).getBlockchain()->getPublicKeyDictionary());
 		mBlockIndex->addFileCursorForTransaction(compactConfirmedTx.txNr, fileCursor);
 
 		grdu_memory_init_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
