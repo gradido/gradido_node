@@ -1,4 +1,6 @@
 #include "ApiHandler.h"
+#include "fromJson.h"
+#include "WireFilter.h"
 
 // need to be here, else it produce a linker error, or more precisly the member function generateList
 // TODO: fix the reason
@@ -8,6 +10,7 @@
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/data/adapter/byteArray.h"
 #include "gradido_blockchain/data/adapter/publicKey.h"
+#include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
 #include "gradido_blockchain/data/LedgerAnchor.h"
@@ -21,11 +24,13 @@
 #include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJson.h"
+#include "gradido_protobuf_zig.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/FileBasedProvider.h"
 #include "../../blockchain/NodeTransactionEntry.h"
 
+#include <rapidjson/document.h>
 #include "rapidjson/prettywriter.h"
 #include "magic_enum/magic_enum.hpp"
 #include "loguru/loguru.hpp"
@@ -43,7 +48,7 @@ using namespace magic_enum;
 
 using std::optional, std::nullopt;
 using gradido::g_appContext;
-using gradido::data::compact::PublicKeyIndex;
+using gradido::data::compact::PublicKeyIndex, gradido::data::compact::ConfirmedTxs;
 
 namespace server {
 	namespace json_rpc {
@@ -138,26 +143,12 @@ namespace server {
 			}
 			// TODO: rename to listsinceblock
 			else if (method == "getTransactions") {
-				std::string format;
-				uint64_t transactionId = 0;
-				uint32_t maxResultCount = 100;
-				std::string searchDirectionString;
-
-				if (!getUInt64Parameter(responseJson, params, "fromTransactionId", transactionId) ||
-					!getStringParameter(responseJson, params, "format", format)) { return; }
-				getUIntParameter(responseJson, params, "maxResultCount", maxResultCount, true);
-
-				//printf("group: %s, id: %d\n", groupAlias.data(), transactionId);
-				FilterBuilder builder;
-				auto filter = builder
-					.setMinTransactionNr(transactionId)
-					.setPagination({ maxResultCount })
-					.setSearchDirection(SearchDirection::DESC)
-					.build();
-				if (getStringParameter(responseJson, params, "searchDirection", searchDirectionString, true) && searchDirectionString == "ASC") {
-						filter.searchDirection = SearchDirection::ASC;
+				WireFilter filter;
+				auto result = fromJson(params, filter);
+				if (JsonParseResultType::Ok != result.type) {
+					error(responseJson, JSON_RPC_ERROR_INVALID_PARAMS, result.error.c_str());
 				}
-				findAllTransactions(resultJson, filter, blockchain, format);
+				findAllTransactions(resultJson, filter.toCompactFilter(*g_appContext), blockchain, filter.format);
 			}
 			else if (method == "getAddressBalance") {
 				std::string date_string;
@@ -298,16 +289,16 @@ namespace server {
 
 		void ApiHandler::findAllTransactions(
 			rapidjson::Value& resultJson,
-			const Filter& filter,
+			const CompactFilter& filter,
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-			const std::string& format
+			WireOutputFormat format
 		)
 		{
 			Profiler timeUsed;
-			auto alloc = mRootJson.GetAllocator();
+			auto& alloc = mRootJson.GetAllocator();
 
 			// count for pagination
-			Filter countFilter = filter;
+			CompactFilter countFilter = filter;
 			countFilter.pagination = Pagination(); // remove pagination for count
 			countFilter.minTransactionNr = 0; // remove minTransactionNr for count
 			countFilter.maxTransactionNr = 0; // remove maxTransactionNr for count
@@ -317,7 +308,7 @@ namespace server {
 
 			auto transactions = blockchain->findAll(filter);
 
-			if (format == "json") {
+			if (WireOutputFormat::Json == format) {
 				resultJson.AddMember("type", "json", alloc);
 			}
 			else {
@@ -325,10 +316,11 @@ namespace server {
 			}
 			Value jsonTransactionArray(kArrayType);
 			for (auto it = transactions.begin(); it != transactions.end(); it++) {
-				auto transactionSerialized = (*it)->getSerializedTransaction();
+				auto legacyTx = blockchain->getTransactionForId((*it)->txNr);
+				auto transactionSerialized = legacyTx->getSerializedTransaction();
 				if (transactionSerialized->size() > 0) {
-					if (format == "json") {
-						jsonTransactionArray.PushBack(toJson(*(*it)->getConfirmedTransaction(), alloc), alloc);
+					if (WireOutputFormat::Json == format) {
+						jsonTransactionArray.PushBack(toJson(*legacyTx->getConfirmedTransaction(), alloc), alloc);
 					}
 					else {
 						auto base64TransactionString = transactionSerialized->convertToBase64();

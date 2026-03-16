@@ -5,15 +5,24 @@
 #include "gradido_blockchain/types.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 
+#include <memory>
 #include <optional>
+#include <vector>
+
 
 namespace gradido {
 	namespace blockchain {
 		class Abstract;
 		class Filter;
+		struct CompactFilter;
 	}
 	namespace data {
 		class LedgerAnchor;
+		namespace compact {
+			class ConfirmedGradidoTx;
+			using ConstConfirmedTxPtr = std::shared_ptr<const ConfirmedGradidoTx>;
+			using ConfirmedTxs = std::vector<ConstConfirmedTxPtr>;
+		}
 	}
 }
 
@@ -24,6 +33,8 @@ namespace memory {
 
 namespace server {
 	namespace json_rpc {
+
+		enum class WireOutputFormat;
 
 		// TODO: write api doc and help on command
 		class ApiHandler : public RequestHandler
@@ -40,9 +51,9 @@ namespace server {
 			*/
 			void findAllTransactions(
 				rapidjson::Value& resultJson,
-				const gradido::blockchain::Filter& filter,
+				const gradido::blockchain::CompactFilter& filter,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-				const std::string& format
+				WireOutputFormat format
 			);
 			/*!
 			* TODO: implement index for iota message id if it is used much
@@ -102,8 +113,6 @@ namespace server {
 				memory::ConstBlockPtr nameHash,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain
 			);
-			// helper	
-
 		};
 	}
 }
