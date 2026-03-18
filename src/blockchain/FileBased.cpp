@@ -360,6 +360,7 @@ namespace gradido {
 			TransactionEntries resultTxs;
 			CompactFilter compactFilter(filter, mPublicKeysIndex, mCommunityIdIndex);
 			FilterResult lastFilterResult = FilterResult::DISMISS;
+			size_t lastFindTransactionResultCount = 0;
 
 			bool hasPagination = filter.pagination.size > 0;
 			if (hasPagination) {
@@ -370,14 +371,18 @@ namespace gradido {
 				[&](const cache::Block& block) -> bool
 				{
 					do {
+						compactFilter.pagination = filter.pagination;
 						auto txs = block.getBlockIndex().findTransactions(compactFilter);
+						lastFindTransactionResultCount = txs.size();
+
 						// nothing found? search next block
 						if (!txs.size()) return true;
 
 						if (resultTxs.capacity() - resultTxs.size() < txs.size()) {
 							resultTxs.reserve(txs.size() + resultTxs.size());
 						}
-						for (const auto& tx : txs) {
+						for (const auto& tx : txs) 
+						{
 							// cannot short cut like in blockchain::InMemory, because FileBased uses a Cache and when we don't copy the shared_ptr,
 							// it is possible it will be deleted while we are using it :/
 							auto confirmedTx = getTransactionForId(tx);
@@ -394,7 +399,13 @@ namespace gradido {
 								resultTxs.emplace_back(confirmedTx);
 							}
 						}
-					} while (hasPagination && filter.pagination.hasCapacityLeft(resultTxs.size()) && (FilterResult::STOP & lastFilterResult) != FilterResult::STOP);
+						++compactFilter.pagination.page;
+					} while (
+						hasPagination && 
+						filter.pagination.hasCapacityLeft(resultTxs.size()) && 
+						(FilterResult::STOP & lastFilterResult) != FilterResult::STOP && 
+						lastFindTransactionResultCount == filter.pagination.size
+					);
 					// we have enough, stop
 					if ((FilterResult::STOP & lastFilterResult) == FilterResult::STOP || !filter.pagination.hasCapacityLeft(resultTxs.size())) {
 						return false;
@@ -448,7 +459,9 @@ namespace gradido {
 		) const
 		{
 			ConfirmedTxs resultTxs;
+			CompactFilter filterCopy(filter);
 			FilterResult lastFilterResult = FilterResult::DISMISS;
+			size_t lastFindTransactionResultCount = 0;
 
 			bool hasPagination = filter.pagination.size > 0;
 			if (hasPagination) {
@@ -459,7 +472,9 @@ namespace gradido {
 				[&](const cache::Block& block) -> bool
 				{
 					do {
-						auto txs = block.getBlockIndex().findTransactions(filter);
+						filterCopy.pagination = filter.pagination;
+						auto txs = block.getBlockIndex().findTransactions(filterCopy);
+						lastFindTransactionResultCount = txs.size();
 						// nothing found? search next block
 						if (!txs.size()) return true;
 
@@ -478,7 +493,13 @@ namespace gradido {
 								resultTxs.emplace_back(getConfirmedTxForId(tx));
 							}
 						}
-					} while (hasPagination && filter.pagination.hasCapacityLeft(resultTxs.size()) && (FilterResult::STOP & lastFilterResult) != FilterResult::STOP);
+						++filterCopy.pagination.page;
+					} while (
+						hasPagination &&
+						filter.pagination.hasCapacityLeft(resultTxs.size()) &&
+						(FilterResult::STOP & lastFilterResult) != FilterResult::STOP &&
+						lastFindTransactionResultCount == filter.pagination.size
+					);
 					// we have enough, stop
 					if ((FilterResult::STOP & lastFilterResult) == FilterResult::STOP || !filter.pagination.hasCapacityLeft(resultTxs.size())) {
 						return false;
@@ -712,6 +733,12 @@ namespace gradido {
 			}
 			else {
 				countTarget = lastTransaction->getTransactionNr();
+			}
+			if (f.minTransactionNr) {
+				auto previousTxEntry = getTransactionForId(f.minTransactionNr - 1);
+				if (previousTxEntry) {
+					previousConfirmedTransaction = previousTxEntry->getConfirmedTransaction();
+				}
 			}
 
 			f.filterFunction =
