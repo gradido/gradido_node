@@ -734,6 +734,12 @@ namespace gradido {
 			else {
 				countTarget = lastTransaction->getTransactionNr();
 			}
+			if (f.minTransactionNr) {
+				auto previousTxEntry = getTransactionForId(f.minTransactionNr - 1);
+				if (previousTxEntry) {
+					previousConfirmedTransaction = previousTxEntry->getConfirmedTransaction();
+				}
+			}
 
 			f.filterFunction =
 				[&](const TransactionEntry& transactionEntry) -> FilterResult
