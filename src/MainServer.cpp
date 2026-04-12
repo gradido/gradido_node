@@ -3,8 +3,8 @@
 #include "ServerGlobals.h"
 
 #include "blockchain/FileBasedProvider.h"
+#include "server/json-rpc/ApiHandler.h"
 // #include "iota/MqttClientWrapper.h"
-#include "server/json-rpc/ApiHandlerFactory.h"
 #include "SingletonManager/CacheManager.h"
 
 #include "hiero/Addressbook.h"
@@ -24,10 +24,12 @@
 #include <string>
 #include <vector>
 
+#include "cpp-httplib/httplib.h"
 #include "loguru.hpp"
 
 using gradido::blockchain::FileBasedProvider;
 using gradido::g_appContext, gradido::AppContext;
+using server::json_rpc::ApiHandler;
 using std::filesystem::create_directories, std::filesystem::exists, std::filesystem::is_regular_file, std::filesystem::path;
 using std::shared_ptr, std::make_unique;
 using std::string;
@@ -149,7 +151,24 @@ bool MainServer::init()
 		// start jsonrpc 2.0 server
 		mHttpServer = new Server("0.0.0.0", jsonrpc_port, "http-server");
 		mHttpServer->init();
-		mHttpServer->registerResponseHandler("/api", new server::json_rpc::ApiHandlerFactory());
+		// mHttpServer->registerResponseHandler("/api", new server::json_rpc::ApiHandlerFactory());
+		mHttpServer->registerCallbackHandler("/api", MethodType::OPTIONS, [](const httplib::Request& req, httplib::Response& res) {
+				ApiHandler::cors(res);
+			}
+		);
+		mHttpServer->registerCallbackHandler("/api", MethodType::GET, [](const httplib::Request& req, httplib::Response& res) {
+				res.set_content("REST API", "text/plain");
+			}
+		);
+		mHttpServer->registerCallbackHandler("/api", MethodType::DEL, [](const httplib::Request& req, httplib::Response& res) {
+				res.set_content("---", "text/plain");
+			}
+		);
+		mHttpServer->registerCallbackHandler("/api", MethodType::POST, [](const httplib::Request& req, httplib::Response& res) {
+				ApiHandler handler;
+				handler.handlePostPut(req, res);
+			}
+		);
 		mHttpServer->run();
 		LOG_F(INFO, "started in %s, json rpc port: %d", usedTime.string().c_str(), jsonrpc_port);
 	}

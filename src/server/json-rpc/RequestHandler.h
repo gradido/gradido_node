@@ -1,8 +1,6 @@
 #ifndef __GRADIDO_NODE_SERVER_JSON_RPC_REQUEST_HANDLER_H
 #define __GRADIDO_NODE_SERVER_JSON_RPC_REQUEST_HANDLER_H
 
-#include "cpp-httplib/httplib.h"
-
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/JsonRPCRequest.h" // need JsonRPCErrorCodes from that
 #include "gradido_blockchain/http/AbstractResponseHandler.h"
@@ -11,12 +9,15 @@
 namespace server {
 	namespace json_rpc {
 
-		class RequestHandler : public AbstractResponseHandler
+		class RequestHandler
 		{
 		public:
 			RequestHandler();
 
-			virtual void handleRequest(const httplib::Request& request, httplib::Response& response, MethodType method);
+			void handlePostPut(const httplib::Request& request, httplib::Response& response);
+			void handleOptions(const httplib::Request& request, httplib::Response& response);
+			void handleGet(const httplib::Request& request, httplib::Response& response);
+			static void cors(httplib::Response& response);
 			rapidjson::Value handleOneRpcCall(const rapidjson::Value& jsonRpcRequest);
 
 			//virtual Poco::JSON::Object* handle(Poco::Dynamic::Var params) = 0;
@@ -48,6 +49,7 @@ namespace server {
 			void error(rapidjson::Value& responseJson, JsonRPCErrorCodes code, GradidoBlockchainException& ex);
 
 		protected:
+			
 			rapidjson::Document mRootJson;
 
 		};
