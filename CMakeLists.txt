@@ -53,6 +53,7 @@ include_directories(
 	"dependencies/gradido_blockchain/build"
 	"dependencies/gradido_blockchain/dependencies"
 	"dependencies/gradido_blockchain/dependencies/date/include"
+	"dependencies/gradido_blockchain/dependencies/gradido-blockchain-core/include"
 	"dependencies/gradido_blockchain/dependencies/magic_enum/include"
 	"dependencies/gradido_blockchain/dependencies/protopuf/include"
 	"dependencies/gradido_blockchain/dependencies/rapidjson/include"

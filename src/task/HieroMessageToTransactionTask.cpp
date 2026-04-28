@@ -1,7 +1,5 @@
 #include "HieroMessageToTransactionTask.h"
 
-#include "gradido_blockchain/lib/Profiler.h"
-
 #include "../blockchain/FileBasedProvider.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "gradido_blockchain/blockchain/Filter.h"

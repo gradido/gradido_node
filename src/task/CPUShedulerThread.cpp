@@ -5,7 +5,7 @@
 #include "../ServerGlobals.h"
 
 #ifdef _UNI_LIB_DEBUG
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #endif //_UNI_LIB_DEBUG
 #include "gradido_blockchain/Application.h"
 
@@ -31,7 +31,7 @@ namespace task {
 		{
 				
 #ifdef _UNI_LIB_DEBUG
-			Profiler counter;
+			MonotonicTimer counter;
 			//debug::CPUShedulerTasksLog* l = debug::CPUShedulerTasksLog::getInstance();
 			std::string name = mWaitingTask->getName();
 			//l->addTaskLogEntry((HASH)mWaitingTask.getResourcePtrHolder(), mWaitingTask->getResourceType(), mName.data(), name);

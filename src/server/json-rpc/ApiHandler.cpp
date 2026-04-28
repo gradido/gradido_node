@@ -21,7 +21,7 @@
 #include "gradido_blockchain/interaction/serialize/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJson.h"
 #include "gradido_protobuf_zig.h"
@@ -117,7 +117,7 @@ namespace server {
 			}
 
 			if (method == "getLastTransaction") {
-				Profiler timeUsed;
+				MonotonicTimer timeUsed;
 				std::string format = "base64";
 				getStringParameter(responseJson, params, "format", format);
 				auto lastTransaction = blockchain->findOne(Filter::LAST_TRANSACTION);
@@ -266,7 +266,7 @@ namespace server {
 
 		void ApiHandler::listCommunities(rapidjson::Value& resultJson)
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto& alloc = mRootJson.GetAllocator();
 			const auto& groupIndex = FileBasedProvider::getInstance()->getGroupIndex();
 			Value communities(kArrayType);
@@ -291,7 +291,7 @@ namespace server {
 			WireOutputFormat format
 		)
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto& alloc = mRootJson.GetAllocator();
 
 			// count for pagination
@@ -358,7 +358,7 @@ namespace server {
 			gradido::data::LedgerAnchor* ledgerAnchor/* = nullptr */
 		)
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto& alloc = mRootJson.GetAllocator();
 
 			std::shared_ptr<const TransactionEntry> transactionEntry;
@@ -404,7 +404,7 @@ namespace server {
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain
 		)
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto& alloc = mRootJson.GetAllocator();
 			assert(blockchain);
 
@@ -459,7 +459,7 @@ namespace server {
 				"query": "query ($currentPage: Int = 1, $pageSize: Int = 25, $order: Order = DESC, $onlyCreations: Boolean = false) {\n  transactionList(\n    currentPage: $currentPage\n    pageSize: $pageSize\n    order: $order\n    onlyCreations: $onlyCreations\n  ) {\n    gdtSum\n    count\n    balance\n    decay\n    decayDate\n    transactions {\n      type\n      balance\n      decayStart\n      decayEnd\n      decayDuration\n      memo\n      transactionId\n      name\n      email\n      date\n      decay {\n        balance\n        decayStart\n        decayEnd\n        decayDuration\n        decayStartBlock\n        __typename\n      }\n      firstTransaction\n      __typename\n    }\n    __typename\n  }\n}\n"
 			}
 			*/
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto& alloc = mRootJson.GetAllocator();
 
 			model::Apollo::TransactionList transactionList(blockchain, filter.updatedBalancePublicKey);
@@ -483,7 +483,7 @@ namespace server {
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain
 		)
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			Filter f;
 			f.involvedPublicKey = pubkey;
 			f.minTransactionNr = firstTransactionNr;
@@ -506,7 +506,7 @@ namespace server {
 			std::shared_ptr<gradido::blockchain::Abstract> blockchain
 		)
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			Filter f;
 			auto nameHashId = g_appContext->getUserNameHashs().getIndexForData(adapter::toByteArray<32>(nameHash));
 			if (!nameHashId) {

@@ -8,7 +8,7 @@
 #include "../Exceptions.h"
 #include "MessageObserver.h"
 
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 
 #include <grpcpp/support/client_callback.h>
 #include <grpcpp/impl/status.h>
@@ -43,7 +43,7 @@ namespace client {
                     );
                 }
                 else {
-                    Profiler timeUsed;
+                  MonotonicTimer timeUsed;
                     auto block = MemoryBlock(mBuffer);
                     auto result = pp::message_coder<T>::decode(block.get()->span());
                     if (!result.has_value()) {

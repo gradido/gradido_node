@@ -4,7 +4,6 @@
 #include "../blockchain/FileBased.h"
 
 #include "gradido_blockchain/AppContext.h"
-#include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_protobuf_zig.h"

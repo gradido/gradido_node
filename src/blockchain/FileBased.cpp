@@ -25,7 +25,7 @@
 #include "gradido_blockchain/interaction/confirmTransaction/Context.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 
 #include "loguru/loguru.hpp"
 
@@ -146,7 +146,7 @@ namespace gradido {
 			}
 
 			if (!mTransactionTriggerEventsCache.init(GRADIDO_NODE_MAGIC_NUMBER_TRANSACTION_TRIGGER_EVENTS_CACHE_MEGA_BTYES * 1024 * 1024)) {
-				Profiler timeUsed;
+				MonotonicTimer timeUsed;
 				rescanForTransactionTriggerEvents();
 				LOG_F(INFO, "rescan blockchain for transaction trigger events, time: %s", timeUsed.string().data());
 			}
@@ -207,7 +207,7 @@ namespace gradido {
 				mHieroMessageListener->cancelConnection();
 			}
 
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			// wait until all Task of TaskObeserver are finished, wait a second and check if number decreased,
 			// if number no longer descrease after a second and we wait more than 10 seconds total, exit loop
 			while (auto pendingTasksCount = mTaskObserver->getPendingTasksCount()) {
@@ -715,8 +715,8 @@ namespace gradido {
 		{
 			// load first GRADIDO_NODE_MAGIC_NUMBER_STARTUP_TRANSACTIONS_CACHE_SIZE transaction into cache and validate the transaction to check file integrity
 			if (mStopToken.stop_requested()) return false;
-			Profiler timeUsed;
-			Profiler timeSinceLastPrint;
+			MonotonicTimer timeUsed;
+			MonotonicTimer timeSinceLastPrint;
 			data::ConstConfirmedTransactionPtr previousConfirmedTransaction = nullptr;
 			auto lastTransaction = findOne(Filter::LAST_TRANSACTION);
 			if (!lastTransaction) {
@@ -771,7 +771,7 @@ namespace gradido {
 			findAll(f);
 			// printf("\r");
 			f.filterFunction = nullptr;
-			Profiler batchVerifyTime;
+			MonotonicTimer batchVerifyTime;
 			auto invalidSignatures = verifySignatures(f, mCommunityId, ThreadingPolicy::ThreeQuarter);
 			LOG_F(INFO, "time used for loading and validating last: %d transactions: %s (%s for batch verify)",
 				count,

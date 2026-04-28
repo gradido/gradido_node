@@ -7,7 +7,6 @@
 #include "ServerGlobals.h"
 #include "generated/version.h"
 
-#include "gradido_blockchain/lib/Profiler.h"
 #include "gradido_blockchain/version.h"
 
 #include "sodium.h"

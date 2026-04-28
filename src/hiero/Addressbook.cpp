@@ -1,6 +1,6 @@
 #include "../SystemExceptions.h"
 #include "Addressbook.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 
 #include "loguru/loguru.hpp"
 
@@ -21,7 +21,7 @@ namespace hiero {
 
 	void Addressbook::load()
 	{
-		Profiler timeUsed;
+		MonotonicTimer timeUsed;
 
 		// read addressbook from binary file
 		std::ifstream file(mFilePath, std::ios::binary | std::ios::ate);

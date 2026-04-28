@@ -19,7 +19,7 @@
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_protobuf_zig.h"
 
 #include "loguru/loguru.hpp"
@@ -71,7 +71,7 @@ namespace cache {
 			// check if Block exist
 			if (mBlockFile->getCurrentFileSize()) 
 			{
-				Profiler timeUsed;
+				MonotonicTimer timeUsed;
 				mBlockIndex->reset();
 				auto rebuildBlockIndexTask = make_shared<task::RebuildBlockIndexTask>(
 					mBlockIndex,

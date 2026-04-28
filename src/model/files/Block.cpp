@@ -10,7 +10,7 @@
 
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include "loguru/loguru.hpp"
@@ -94,7 +94,7 @@ namespace model {
 			if (startReading > mCurrentFileSize - minimalFileSize) {
 				throw EndReachingException("file is to small for read request", mBlockPath.data(), startReading, minimalFileSize);
 			}
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
 			auto fl = FileLockManager::getInstance();			
 			if (!fl->tryLockTimeout(mBlockPath, 100)) {
@@ -281,7 +281,7 @@ namespace model {
 
 		std::shared_ptr<memory::Block> Block::calculateHash()
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto fl = FileLockManager::getInstance();
 			
 			if (mCurrentFileSize == 0) {

@@ -1,6 +1,5 @@
 #include "ServerGlobals.h"
 
-#include "gradido_blockchain/lib/Profiler.h"
 // #include "gradido_blockchain/http/IotaRequest.h"
 #include "client/hiero/MirrorClient.h"
 

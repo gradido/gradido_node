@@ -12,7 +12,7 @@
 #include "lib/PersistentDictionary.h"
 
 #include "gradido_blockchain/AppContext.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/http/ServerConfig.h"
 
 #include <algorithm>
@@ -46,7 +46,7 @@ MainServer::~MainServer()
 
 bool MainServer::init()
 {
-	Profiler usedTime;
+	MonotonicTimer usedTime;
 	ServerGlobals::g_FilesPath = getHomeDir() + "/.gradido";
 	create_directories(ServerGlobals::g_FilesPath);
 	
