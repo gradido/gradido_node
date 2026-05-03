@@ -65,7 +65,7 @@ namespace gradido {
 			mFolderPath(folder),
 			mCommunityId(communityId),
 			mTaskObserver(std::make_shared<TaskObserver>()),
-			mOrderingManager(std::make_shared<SimpleOrderingManager>(communityId)),
+			mOrderingManager(std::make_shared<SimpleOrderingManager>(communityId, stopToken)),
 			// mIotaMessageListener(new iota::MessageListener(communityId, alias)),
 			mPublicKeysIndex((string(folder).append("/pubkeysCache"))),
 			mBlockchainState(string(folder).append("/.state")),
@@ -125,13 +125,13 @@ namespace gradido {
 		{
 			if (mStopToken.stop_requested()) return false;
 
-			lock_guard _lock(mWorkMutex);			
+			lock_guard _lock(mWorkMutex);
 			auto lastBlockNr = mBlockchainState.readInt32State(cache::DefaultStateKeys::LAST_BLOCK_NR, 0);
 
 			// trigger block index creation, only needed here for non-persistent public key dictionary
 			iterateBlocks(SearchDirection::ASC, [](const cache::Block& block) -> bool { return true; });
 			loadStateFromBlockCache();
-			
+
 			if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
 				mLedgerAnchorCache.reset();
 				if (!mLedgerAnchorCache.init(GRADIDO_NODE_MAGIC_NUMBER_IOTA_MESSAGE_ID_CACHE_MEGA_BYTES * 1024 * 1024)) {
