@@ -18,34 +18,38 @@ using gradido::data::LedgerAnchor;
 
 namespace controller {
 
-    SimpleOrderingManager::SimpleOrderingManager(std::string_view communityId)
-        : task::Thread("SimpleOrderingManager"), mInitalized(false),
-        mLastTransactions(MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION * 2), 
-        mCommunityId(communityId), 
+    SimpleOrderingManager::SimpleOrderingManager(std::string_view communityId, std::stop_token stopToken)
+        : task::Thread("SimpleOrderingManager"), mStopToken(stopToken), mInitalized(false),
+        mLastTransactions(MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION * 2),
+        mCommunityId(communityId),
         mLastSequenceNumber(0)
     {
     }
 
     SimpleOrderingManager::~SimpleOrderingManager()
     {
+
     }
 
     void SimpleOrderingManager::reinitialize(uint64_t lastKnownSequenceNumber)
     {
-      std::unique_lock _lock(mTransactionsMutex);
-      mLastSequenceNumber = lastKnownSequenceNumber;
-      mTransactions.clear();
-      mLastTransactions.clear();
-      if (!mInitalized) {
-        mInitalized = true;
-        Thread::init();
-      }
+        std::unique_lock _lock(mTransactionsMutex);
+        mLastSequenceNumber = lastKnownSequenceNumber;
+        mTransactions.clear();
+        mLastTransactions.clear();
+        if (!mInitalized) {
+            mInitalized = true;
+            Thread::init();
+        }
     }
 
     int SimpleOrderingManager::ThreadFunction()
     {
         size_t transactionsCount = 0;
         do {
+            if (mStopToken.stop_requested()) {
+                return 0;
+            }
             std::unique_lock _lock(mTransactionsMutex);
             auto it = mTransactions.begin();
             // if no transaction is in map or first transaction deserialize task is still running (or is waiting to be scheduled)
@@ -87,7 +91,7 @@ namespace controller {
                 Timepoint now = std::chrono::system_clock::now();
 
                 if (it->second.putIntoListTime + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION < now) {
-                    // timeouted                    
+                    // timeouted
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing not found)");
                     mTransactions.erase(it);
                     updateSequenceNumber(currentSequenceNumber);
@@ -124,7 +128,7 @@ namespace controller {
             }
             if (task->isSuccess()) {
                 processTransaction(it->second);
-            }            
+            }
             mTransactions.erase(it);
             updateSequenceNumber(currentSequenceNumber);
             transactionsCount = mTransactions.size();
@@ -156,7 +160,7 @@ namespace controller {
             LOG_F(INFO, "Transaction confirmed, msgId: %s, confirmedAt: %s",
                 transactionId.toString().data(), confirmedAt.toString().data()
             );
-            
+
         }
         catch (GradidoBlockchainException& ex) {
             auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
@@ -191,7 +195,7 @@ namespace controller {
                 return PushResult::FOUND_IN_LAST_TRANSACTIONS;
             }
         }
-        
+
         auto range = mTransactions.equal_range(consensusTimestamp);
         for (auto& it = range.first; it != range.second; ++it) {
             if (it->second.consensusTopicResponse.isMessageSame(consensusTopicResponse)) {
@@ -231,7 +235,7 @@ namespace controller {
 
     void SimpleOrderingManager::updateSequenceNumber(uint64_t newSequenceNumber)
     {
-        
+
         if (!mLastSequenceNumber) {
             mLastSequenceNumber = newSequenceNumber;
         }

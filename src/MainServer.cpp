@@ -182,7 +182,7 @@ bool MainServer::init()
 void MainServer::exit()
 {
 	LOG_F(INFO, "Running Tasks Count on shutdown: %lu", ServerGlobals::g_NumberExistingTasks.load());
-	
+
 	// stop worker scheduler
 	// TODO: make sure that pending transaction are still write out to storage
 	if (mHttpServer) {
@@ -190,13 +190,20 @@ void MainServer::exit()
 		delete mHttpServer;
 		mHttpServer = nullptr;
 	}
+	printf("[shutdown] Stopped HTTP Server...\n");
 
 	// iota::MqttClientWrapper::getInstance()->exit();
 	CacheManager::getInstance()->getFuzzyTimer()->stop();
+	printf("[shutdown] Stopped Fuzzy Timer...\n");
 	// ServerGlobals::g_IotaRequestCPUScheduler->stop();
 	FileBasedProvider::getInstance()->exit();
+	printf("[shutdown] Stopped File Based Provider...\n");
 	ServerGlobals::g_CPUScheduler->stop();
+	printf("[shutdown] Stopped CPU Scheduler...\n");
 	ServerGlobals::g_WriteFileCPUScheduler->stop();
+	printf("[shutdown] Stopped IO Worker...\n");
+	ServerGlobals::clearMemory();
+	printf("[shutdown] Cleared Memory...\n");
 }
 
 bool MainServer::configExists(const string& fileName) {

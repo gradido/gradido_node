@@ -36,8 +36,8 @@ namespace controller {
     class SimpleOrderingManager : public task::Thread
     {
     public:
-        SimpleOrderingManager(std::string_view communityId);
-        ~SimpleOrderingManager();
+        SimpleOrderingManager(std::string_view communityId, std::stop_token stopToken);
+        virtual ~SimpleOrderingManager();
 
         // combine init and reset
         void reinitialize(uint64_t lastKnownSequenceNumber);
@@ -51,7 +51,7 @@ namespace controller {
         PushResult pushTransaction(hiero::ConsensusTopicResponse&& consensusTopicResponse);
         std::shared_ptr<task::HieroMessageToTransactionTask> findCrossGroupTransactionPair(const gradido::data::LedgerAnchor& transactionId) const;
 
-    protected:        
+    protected:
         inline uint64_t getLastSequenceNumber() const { return mLastSequenceNumber; }
         void updateSequenceNumber(uint64_t newSequenceNumber);
 
@@ -63,21 +63,21 @@ namespace controller {
             TopicResponseDeserializer(
                 hiero::ConsensusTopicResponse&& _consensusTopicResponse,
                 std::shared_ptr<task::HieroMessageToTransactionTask> _deserializeTask
-            ) : consensusTopicResponse(std::move(_consensusTopicResponse)), 
-                deserializeTask(_deserializeTask), 
+            ) : consensusTopicResponse(std::move(_consensusTopicResponse)),
+                deserializeTask(_deserializeTask),
                 putIntoListTime(std::chrono::system_clock::now())
             {
             }
 
             TopicResponseDeserializer(TopicResponseDeserializer&& move) noexcept
-                : consensusTopicResponse(std::move(move.consensusTopicResponse)), 
+                : consensusTopicResponse(std::move(move.consensusTopicResponse)),
                 deserializeTask(std::move(move.deserializeTask)),
                 putIntoListTime(std::move(move.putIntoListTime))
             {
             }
 
             TopicResponseDeserializer(const TopicResponseDeserializer& other) noexcept
-                : consensusTopicResponse(other.consensusTopicResponse), 
+                : consensusTopicResponse(other.consensusTopicResponse),
                 deserializeTask(other.deserializeTask),
                 putIntoListTime(other.putIntoListTime)
             {
@@ -93,6 +93,7 @@ namespace controller {
 
         void processTransaction(const TopicResponseDeserializer& gradidoTransactionWorkData);
 
+        std::stop_token mStopToken;
         bool mInitalized;
         // fast duplication check
         // use first 4 and last 4 Byte of transaction hash as key
