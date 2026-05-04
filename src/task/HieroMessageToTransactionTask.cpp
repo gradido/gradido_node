@@ -79,7 +79,7 @@ namespace task {
         }
 
         // check if transaction already exist
-        // if this transaction doesn't belong to us, we can quit here 
+        // if this transaction doesn't belong to us, we can quit here
         // also if we already have this transaction
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         assert(fileBasedBlockchain);

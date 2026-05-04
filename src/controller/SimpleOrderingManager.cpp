@@ -72,7 +72,7 @@ namespace controller {
                 // maybe we have an error
                 // or hiero has used the same sequence number twice?
                 LOG_F(
-                    ERROR, 
+                    ERROR,
                     "this transaction or after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %lu, current sequence number: %lu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );

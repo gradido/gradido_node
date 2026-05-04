@@ -11,6 +11,7 @@
 #include "gradido_blockchain/serialization/toJsonString.h"
 
 #include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
 
 #include <memory>
 #include <string>
@@ -18,6 +19,7 @@
 using namespace gradido;
 using namespace blockchain;
 using namespace interaction;
+using namespace magic_enum;
 using namespace serialization;
 
 using gradido::blockchain::FileBased;
@@ -53,10 +55,11 @@ namespace task {
 		// for example: check previous transaction until one was found,
 		// or check if maybe or block files get corrupted
 		auto lastTransactionIdentical = checkLastTransaction();
+		LOG_F(INFO, "last transaction state: %s, last known sequence number: %lu", enum_name(lastTransactionIdentical).data(), mLastKnownSequenceNumber);
 
 		// (re-)start ordering manager
 		orderingManager->reinitialize(mLastKnownSequenceNumber);
-		
+
 		// load transactions from mirror node
 		mConfirmedAtLastReadedTransaction = data::Timestamp();
 		if (LastTransactionState::IDENTICAL == lastTransactionIdentical) {
@@ -119,13 +122,13 @@ namespace task {
 		deserializer.run(mBlockchain->getCommunityIdIndex());
 		if (!deserializer.isGradidoTransaction()) {
 			LOG_F(
-				ERROR, 
+				ERROR,
 				"last transaction on mirrors is invalid Gradido Transaction. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %lu, transactionNr: %lu, confirmedAt: %s",
 				mBlockchain->getCommunityId().data(),
 				mLastKnowTopicId.toString().data(),
 				mLastKnownSequenceNumber,
 				lastTransaction->getTransactionNr(),
-				lastTransaction->getConfirmedTransaction()->getConfirmedAt().toString().data()
+				confirmedAt.toString().data()
 			);
 			return LastTransactionState::INVALID;
 		}
@@ -135,10 +138,10 @@ namespace task {
 			bool prettyJson = true;
 			LOG_F(ERROR, "own transaction: %s", toJsonString(*lastTransaction->getConfirmedTransaction(), prettyJson).data());
 			LOG_F(
-				ERROR, 
-				"from topic: %s, sequenceNumber: %lu: %s", 
-				mLastKnowTopicId.toString().data(), 
-				mLastKnownSequenceNumber, 
+				ERROR,
+				"from topic: %s, sequenceNumber: %lu: %s",
+				mLastKnowTopicId.toString().data(),
+				mLastKnownSequenceNumber,
 				toJsonString(*lastTransactionMirror, prettyJson).data()
 			);
 			return LastTransactionState::NOT_IDENTICAL;
@@ -160,6 +163,15 @@ namespace task {
 			auto responses = mirrorNode->listTopicMessagesById(topicId, mConfirmedAtLastReadedTransaction, limit, "asc");
 			if (responses.empty()) break;
 			responsesCount = responses.size();
+			if (responses.back().getConsensusTimestamp() <= mConfirmedAtLastReadedTransaction) {
+				LOG_F(WARNING, "unexpected response from mirror node, transaction has the same or lower consensus timestamp than last readed transaction. CommunityId: %s, topicId: %s, last readed consensus timestamp: %s, last readed sequence number: %lu, responses count: %u",
+					mBlockchain->getCommunityId().data(),
+					topicId.toString().data(),
+					mConfirmedAtLastReadedTransaction.toString().data(),
+					mLastKnownSequenceNumber,
+					responsesCount
+				);
+			}
 			mConfirmedAtLastReadedTransaction = responses.back().getConsensusTimestamp();
 			addedTransactionsSum += responsesCount;
 			for (auto& response : responses) {
