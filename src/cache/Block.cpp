@@ -66,10 +66,10 @@ namespace cache {
 	{
 		lock_guard lock(mFastMutex);
 		// todo: add data for address index in file, until then rebuild block index on each program start
-		// if (!mBlockIndex->loadFromFile(publicKeyDictionary)) 
+		// if (!mBlockIndex->loadFromFile(publicKeyDictionary))
 		{
 			// check if Block exist
-			if (mBlockFile->getCurrentFileSize()) 
+			if (mBlockFile->getCurrentFileSize())
 			{
 				MonotonicTimer timeUsed;
 				mBlockIndex->reset();
@@ -99,7 +99,7 @@ namespace cache {
 		/*else {
 			// hot fix: init address index
 			// if block index was loaded from file, we load all transactions which change something in address index
-			// TODO: persistent storage for address index			
+			// TODO: persistent storage for address index
 		}
 		*/
 		return true;
@@ -137,7 +137,7 @@ namespace cache {
 	}
 
 	void Block::addTransaction(
-		memory::ConstBlockPtr serializedTransaction, 
+		memory::ConstBlockPtr serializedTransaction,
 		int32_t fileCursor,
 		AppContext& appContext
 	) const
@@ -170,6 +170,7 @@ namespace cache {
 		catch (GradidoBlockchainException& ex) {
 			LOG_F(WARNING, "%s on create compact", ex.getFullString().c_str());
 		}
+		return nullptr;
 	}
 
 	shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr, AppContext& appContext) const
@@ -199,7 +200,7 @@ namespace cache {
 			int32_t fileCursor = 0;
 			if (!mBlockIndex->getFileCursorForTransactionNr(transactionNr, fileCursor)) {
 				LOG_F(INFO, "writeTransactionTaskExist: %d, writeTransactionTaskIsObserved: %d",
-					(int)writeTransactionTaskExist, 
+					(int)writeTransactionTaskExist,
 					(int)writeTransactionTaskIsObserved
 				);
 				throw GradidoBlockchainTransactionNotFoundException("transaction not found in cache, in write task or file").setTransactionId(transactionNr);
@@ -252,7 +253,7 @@ namespace cache {
 			// check write cache, else try to read from storage
 			// return always a valid ptr or throw exception
 			auto transactionEntry = getTransaction(transactionNr, appContext);
-			
+
 			// we use two different access expire caches, after this call succeed it is sure, that the transaction is in Serialized Transactions,
 			// but it can be still missing in mConfirmedTxByNr
 			confirmedTx = mConfirmedTxByNr.get(transactionNr);
@@ -279,7 +280,7 @@ namespace cache {
 
 		if (mTransactionWriteTask) {
 			Timepoint now = std::chrono::system_clock::now();
-			if (now - mTransactionWriteTask->getCreationDate() > ServerGlobals::g_WriteToDiskTimeout) 
+			if (now - mTransactionWriteTask->getCreationDate() > ServerGlobals::g_WriteToDiskTimeout)
 			{
 				auto copyTask = mTransactionWriteTask;
 				mBlockchain->getTaskObserver().addBlockWriteTask(copyTask);
