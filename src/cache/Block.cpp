@@ -149,7 +149,7 @@ namespace cache {
 		// mBlockIndex->updateAddressIndex(transactionEntry, publicKeyDictionary);
 	}
 
-	void Block::addCompactTransaction(shared_ptr<NodeTransactionEntry> transactionEntry, AppContext& appContext) const
+	std::shared_ptr<gradido::data::compact::ConfirmedGradidoTx> Block::addCompactTransaction(shared_ptr<const NodeTransactionEntry> transactionEntry, AppContext& appContext) const
 	{
 		// create compact version
 		try {
@@ -165,6 +165,7 @@ namespace cache {
 			transactionEntry->getTransactionBody()->toGrdw(&alloc, &txBody);
 			confirmedTxPtr->fillFromGrdwTransactionBody(&txBody, appContext);
 			mConfirmedTxByNr.add(confirmedTxPtr->txNr, confirmedTxPtr);
+			return confirmedTxPtr;
 		}
 		catch (GradidoBlockchainException& ex) {
 			LOG_F(WARNING, "%s on create compact", ex.getFullString().c_str());
@@ -249,10 +250,18 @@ namespace cache {
 		auto confirmedTx = mConfirmedTxByNr.get(transactionNr);
 		if (!confirmedTx) {
 			// check write cache, else try to read from storage
-			getTransaction(transactionNr, appContext);
+			// return always a valid ptr or throw exception
+			auto transactionEntry = getTransaction(transactionNr, appContext);
+			
+			// we use two different access expire caches, after this call succeed it is sure, that the transaction is in Serialized Transactions,
+			// but it can be still missing in mConfirmedTxByNr
+			confirmedTx = mConfirmedTxByNr.get(transactionNr);
+			if (!confirmedTx) {
+				return addCompactTransaction(transactionEntry, appContext);
+			}
 		}
 		// should only don't work, if getTransaction failed, but this will throw an exception anyway
-		return mConfirmedTxByNr.get(transactionNr).value();
+		return confirmedTx.value();
 	}
 
 	bool Block::hasSpaceLeft() {

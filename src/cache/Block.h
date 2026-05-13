@@ -95,7 +95,7 @@ namespace cache {
 			int32_t fileCursor,
 			gradido::AppContext& appContext
 		) const;
-		void addCompactTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry, gradido::AppContext& appContext) const;
+		std::shared_ptr<gradido::data::compact::ConfirmedGradidoTx> addCompactTransaction(std::shared_ptr<const gradido::blockchain::NodeTransactionEntry> transactionEntry, gradido::AppContext& appContext) const;
 		
 		mutable std::mutex mFastMutex;
 		uint32_t mBlockNr;		
