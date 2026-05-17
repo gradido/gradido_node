@@ -12,6 +12,9 @@
 
 #include "../SingletonManager/CacheManager.h"
 
+#include "gradido_blockchain_core/memory.h"
+#include "gradido_blockchain_core/data/wire/confirmed_transaction.h"
+#include "gradido_blockchain_core/data/wire/transaction_body.h"
 #include "gradido_blockchain/Application.h"
 #include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
@@ -20,7 +23,6 @@
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/MonotonicTimer.h"
-#include "gradido_protobuf_zig.h"
 
 #include "loguru/loguru.hpp"
 
@@ -154,8 +156,8 @@ namespace cache {
 		// create compact version
 		try {
 			uint8_t buffer[1024];
-			grdu_memory alloc;
-			grdu_memory_init_static(&alloc, buffer, 1024);
+			grd_memory alloc;
+			grd_memory_init_arena_static(&alloc, buffer, 1024);
 			grdw_confirmed_transaction tx{};
 			auto communityIdIndex = mBlockchain->getCommunityIdIndex();
 			transactionEntry->getConfirmedTransaction()->toGrdw(&alloc, &tx, communityIdIndex);
@@ -170,6 +172,7 @@ namespace cache {
 		catch (GradidoBlockchainException& ex) {
 			LOG_F(WARNING, "%s on create compact", ex.getFullString().c_str());
 		}
+		return nullptr;
 	}
 
 	shared_ptr<const gradido::blockchain::NodeTransactionEntry> Block::getTransaction(uint64_t transactionNr, AppContext& appContext) const

@@ -1,9 +1,11 @@
 #include "NodeTransactionEntry.h"
 #include "FileBased.h"
 
+#include "gradido_blockchain_core/memory.h"
+#include "gradido_blockchain_core/data/wire/confirmed_transaction.h"
+#include "gradido_blockchain_core/data/wire/transaction_body.h"
 #include "gradido_blockchain/data/adapter/publicKey.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
-#include "gradido_protobuf_zig.h"
 
 namespace gradido {
 	using data::adapter::toPublicKey;
@@ -69,8 +71,8 @@ namespace gradido {
 		ConfirmedGradidoTx NodeTransactionEntry::convertToCompactConfirmedTx() const
 		{
 			uint8_t buffer[1024];
-			grdu_memory alloc;
-			grdu_memory_init_static(&alloc, buffer, 1024);
+			grd_memory alloc;
+			grd_memory_init_arena_static(&alloc, buffer, 1024);
 			grdw_confirmed_transaction tx{};
 			getConfirmedTransaction()->toGrdw(&alloc, &tx, mBlockchainCommunityIdIndex);
 			auto confirmedTx = ConfirmedGradidoTx::fromGrdw(&tx, mBlockchainCommunityIdIndex, *g_appContext);

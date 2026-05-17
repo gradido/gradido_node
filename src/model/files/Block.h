@@ -7,8 +7,6 @@
 
 #include "../../task/CPUTask.h"
 
-#include "gradido_protobuf_zig.h"
-
 #include <sodium.h>
 
 #include <fstream>
@@ -18,10 +16,11 @@
 //! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
 #define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
 
+struct grd_memory;
+
 namespace cache {
 	class BlockIndex;
 }
-
 
 namespace controller {
 	class AddressIndex;
@@ -73,7 +72,7 @@ namespace model {
 			uint16_t readLine(uint32_t startReading, memory::BlockPtr* buffer);
 			std::shared_ptr<memory::Block> readLine(uint32_t startReading);
 			// read whole file, validate hash
-			bool readBuffered(grdu_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken = std::stop_token());
+			bool readBuffered(grd_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken = std::stop_token());
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)

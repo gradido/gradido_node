@@ -3,6 +3,7 @@
 
 #include "CPUTask.h"
 #include "../model/files/Block.h"
+#include "gradido_blockchain_core/memory.h"
 #include "gradido_blockchain/crypto/ByteArray.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
@@ -12,6 +13,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+
 
 namespace gradido {
 	namespace blockchain {
@@ -30,7 +32,7 @@ namespace cache {
 }
 
 // TODO: maybe put into config
-#define REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE 1024
+#define REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE 2048
 
 namespace task {
 
@@ -50,12 +52,12 @@ namespace task {
 		virtual void finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor) override;
 		virtual void flush() override;
 
-		inline grdu_memory* getAlloc() { return &mReadInAllocator; }
+		inline grd_memory* getAlloc() { return &mReadInAllocator; }
 
 	protected:
 		uint8_t mBuffers[2][REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE];
 
-		grdu_memory mReadInAllocator;
+		grd_memory mReadInAllocator;
 		std::mutex mWorkConfirmedMutex;
 		gradido::data::compact::ConfirmedGradidoTx mConfirmedTx;
 		std::condition_variable mConfirmedTxReadyCondition;

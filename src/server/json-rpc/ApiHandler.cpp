@@ -24,7 +24,6 @@
 #include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJson.h"
-#include "gradido_protobuf_zig.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/FileBasedProvider.h"

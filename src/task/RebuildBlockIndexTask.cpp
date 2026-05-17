@@ -3,10 +3,12 @@
 #include "../ServerGlobals.h"
 #include "../blockchain/FileBased.h"
 
+#include "gradido_blockchain_core/memory.h"
+#include "gradido_blockchain_core/data/wire/confirmed_transaction.h"
+#include "gradido_blockchain_core/data/wire/transaction_body.h"
 #include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
-#include "gradido_protobuf_zig.h"
 
 #include "loguru/loguru.hpp"
 #include "magic_enum/magic_enum.hpp"
@@ -28,7 +30,7 @@ namespace task {
 	): task::CPUTask(g_CPUScheduler), mBlockIndex(blockIndex), mCommunityIdIndex(communityIdIndex), 
 		mLastLineReaded(false)
 	{
-		grdu_memory_init_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
+		grd_memory_init_arena_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
 	}
 
 	int RebuildBlockIndexTask::run()
@@ -40,20 +42,21 @@ namespace task {
 
 	void RebuildBlockIndexTask::finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor)
 	{
-		grdu_memory decodeMemoryAlloc;
-		grdu_memory_init_static(&decodeMemoryAlloc, mBuffers[1], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
+		grd_memory decodeMemoryAlloc;
+		grd_memory_init_arena_static(&decodeMemoryAlloc, mBuffers[1], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
 		grdw_confirmed_transaction tx{};
-		auto encodeResult = grdw_confirmed_transaction_decode(&decodeMemoryAlloc, &tx, mBuffers[0], size);
-		if (GRDW_ENCODING_ERROR_SUCCESS != encodeResult.state) {
-			LOG_F(ERROR, "decode error: %s", enum_name(encodeResult.state).data());
+		grd_memory_block src = { .data = mBuffers[0], .size = size };
+		auto result = grdw_confirmed_transaction_decode(&tx, &src, &decodeMemoryAlloc);
+		if (GRD_SUCCESS != result) {
+			LOG_F(ERROR, "decode error: %s", enum_name(result).data());
 			throw GradidoNodeInvalidDataException("error deserialize confirmed transaction");
 		}
 		
 		grdw_transaction_body body{};
-		grdu_memory_init_static(&decodeMemoryAlloc, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
-		encodeResult = grdw_transaction_body_decode(&decodeMemoryAlloc, &body, tx.transaction.body_bytes, tx.transaction.body_bytes_size);
-		if (GRDW_ENCODING_ERROR_SUCCESS != encodeResult.state) {
-			LOG_F(ERROR, "body decode error: %s", enum_name(encodeResult.state).data());
+		grd_memory_init_arena_static(&decodeMemoryAlloc, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
+		result = grdw_transaction_body_decode(&body, &tx.transaction.body_bytes, &decodeMemoryAlloc);
+		if (GRD_SUCCESS != result) {
+			LOG_F(ERROR, "body decode error: %s", enum_name(result).data());
 			throw GradidoNodeInvalidDataException("error deserialize transaction body");
 		}
 
@@ -61,7 +64,7 @@ namespace task {
 		mBlockIndex->addIndicesForTransaction(compactConfirmedTx, g_appContext->getCommunityContext(mCommunityIdIndex).getBlockchain()->getPublicKeyDictionary());
 		mBlockIndex->addFileCursorForTransaction(compactConfirmedTx.txNr, fileCursor);
 
-		grdu_memory_init_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
+		grd_memory_init_arena_static(&mReadInAllocator, mBuffers[0], REBUILD_BLOCK_INDEX_TASK_BUFFER_SIZE);
 	}
 
 	void RebuildBlockIndexTask::flush() 

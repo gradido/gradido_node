@@ -1,7 +1,6 @@
 #ifndef GRADIDO_NODE_SERVER_GLOBALS 
 #define GRADIDO_NODE_SERVER_GLOBALS
 
-#include "gradido_blockchain/http/IotaRequest.h"
 #include "gradido_blockchain/lib/MapEnvironmentToConfig.h"
 #include "cache/GroupIndex.h"
 #include "task/CPUSheduler.h"
@@ -28,7 +27,6 @@ namespace ServerGlobals {
 	extern std::chrono::seconds				g_TimeoutCheck;
 	//! in which timespan data will be flushed to disk, in seconds, default 10 seconds
 	extern std::chrono::seconds				g_WriteToDiskTimeout;	
-	extern IotaRequest*						g_IotaRequestHandler;
 	extern std::string						g_IotaMqttBrokerUri;
 	extern std::atomic<size_t>              g_NumberExistingTasks;
 	extern bool								g_LogTransactions;

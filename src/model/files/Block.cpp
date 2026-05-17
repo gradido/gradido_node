@@ -141,7 +141,7 @@ namespace model {
 			auto transactionSize = readLine(startReading, &result);
 			return result;
 		}
-		bool Block::readBuffered(grdu_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken/* = std::stop_token()*/)
+		bool Block::readBuffered(grd_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken/* = std::stop_token()*/)
 		{
 			if (stopToken.stop_requested()) {
 				return false;
@@ -193,14 +193,15 @@ namespace model {
 					throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.data(), readed, transactionSize);
 				}
 				auto memStart = alloc->last_index;
-				auto buffer = grdu_memory_alloc(alloc, transactionSize);
+				grd_memory_block buffer;
+				grd_memory_block_alloc(&buffer, alloc, transactionSize);
 				if (alloc->out_of_memory_capacity) {
 					// TODO: own exception
 					throw GradidoNodeInvalidDataException("memory buffer to small");
 				}
-				fileStream->read(reinterpret_cast<char*>(buffer), transactionSize);
+				fileStream->read(reinterpret_cast<char*>(buffer.data), buffer.size);
 				readed += transactionSize;
-				calculateOneHashStep(hash, buffer, transactionSize);
+				calculateOneHashStep(hash, buffer.data, buffer.size);
 				callback->finishedLine(memStart, transactionSize, fileCursor);				
 			}
 			callback->flush();
