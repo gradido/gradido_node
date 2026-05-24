@@ -1,9 +1,10 @@
 #include "String.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/memory/Block.h"
 
 #include <memory>
 
+using gradido::data::ByteArray;
 using memory::ConstBlockPtr, memory::Block;
 using std::string;
 using std::make_shared;
