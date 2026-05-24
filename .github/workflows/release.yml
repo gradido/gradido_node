@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 jobs:
   # ─── Linux Builds via Docker ───────────────────────
   linux-x64-build:
@@ -108,15 +108,26 @@ jobs:
       - name: Collect all and compress
         shell: powershell
         run: |
-          $exeAndDll = Get-ChildItem -Path build/bin/Release -Include *.exe,*.dll -Recurse | Select-Object -ExpandProperty FullName
-
-          $opensslDlls = @(
+          Write-Host "Current directory: $(Get-Location)"
+          $exeAndDll = @(
+              "build/bin/Release/GradidoNode.exe",
               "dependencies/gradido_blockchain/dependencies/vcpkg/packages/openssl_x64-windows/bin/libssl-3-x64.dll",
               "dependencies/gradido_blockchain/dependencies/vcpkg/packages/openssl_x64-windows/bin/libcrypto-3-x64.dll"
           )
-          $files = $exeAndDll + $opensslDlls
-          $files = $files | Where-Object { Test-Path $_ }
-          Compress-Archive -Path $files -DestinationPath "gradido_node-${{ github.ref_name }}-win32-x64.zip" -Force
+          Write-Host "=== Debug: gefundene Dateien ==="
+          Write-Host "Anzahl der gefundenen Dateien: $($exeAndDll.Count)"
+          if ($exeAndDll.Count -gt 0) {
+              Write-Host "Liste der Dateien:"
+              $exeAndDll | ForEach-Object { Write-Host "  - $_" }
+          } else {
+              Write-Host "Keine Dateien gefunden!"
+              Write-Host "Existiert der Pfad? $(Test-Path build/bin/Release)"
+              if (Test-Path build/bin/Release) {
+                  Write-Host "Inhalt des Verzeichnisses:"
+                  Get-ChildItem -Path build/bin/Release -Recurse | ForEach-Object { Write-Host "  - $($_.FullName)" }
+              }
+          }
+          Compress-Archive -Path $exeAndDll -DestinationPath "gradido_node-${{ github.ref_name }}-win32-x64.zip" -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -131,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # für PR-History~
+          fetch-depth: 0 # für PR-History~
 
       - name: Download alle Artifacts
         uses: actions/download-artifact@v4
