@@ -6,7 +6,7 @@
 #include "gradido_blockchain/blockchain/Pagination.h"
 #include "gradido_blockchain/blockchain/PublicKeySearchType.h"
 #include "gradido_blockchain/blockchain/SearchDirection.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/lib/TimepointInterval.h"
 
@@ -50,7 +50,7 @@ namespace server::json_rpc {
 		uint64_t minTransactionNr;
 
 		//! return only transaction in which the public key is involved, either directly in the transaction or as signer
-		PublicKey publicKey;
+		gradido::data::PublicKey publicKey;
 
 		//! search result scope 
 		gradido::blockchain::Pagination pagination;

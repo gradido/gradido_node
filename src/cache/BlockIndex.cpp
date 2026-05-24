@@ -7,8 +7,9 @@
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/blockchain/RangeUtils.h"
 #include "gradido_blockchain/blockchain/SearchDirection.h"
-#include "gradido_blockchain/data/TransactionType.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
+#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/serialization/toJson.h"
 
 #include "loguru/loguru.hpp"
@@ -18,6 +19,7 @@ using gradido::blockchain::AbstractProvider;
 using gradido::blockchain::Filter, gradido::blockchain::SearchDirection;
 using gradido::blockchain::TransactionsIndexRoaringBitmaps;
 using gradido::data::compact::ConfirmedGradidoTx;
+using gradido::data::PublicKey;
 using gradido::data::TransactionType;
 
 namespace cache {

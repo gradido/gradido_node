@@ -4,7 +4,6 @@
 #include "CPUTask.h"
 #include "../model/files/Block.h"
 #include "gradido_blockchain_core/memory.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
 

@@ -10,6 +10,8 @@
 #include "gradido_blockchain/blockchain/FilterBuilder.h"
 #include "gradido_blockchain/data/adapter/byteArray.h"
 #include "gradido_blockchain/data/adapter/publicKey.h"
+#include "gradido_blockchain/data/adapter/uuid.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
@@ -48,6 +50,7 @@ using namespace magic_enum;
 using std::optional, std::nullopt;
 using gradido::g_appContext;
 using gradido::data::compact::PublicKeyIndex, gradido::data::compact::ConfirmedTxs;
+using gradido::data::adapter::uuidFromString;
 
 namespace server {
 	namespace json_rpc {
@@ -158,7 +161,9 @@ namespace server {
 				auto date = DataTypeConverter::dateTimeStringToTimePoint(date_string);
 				optional<uint32_t> coinCommunityId = nullopt;
 				if (params.HasMember("coinCommunityId") && params["coinCommunityId"].IsString()) {
-					auto coinCommunityIdIndexOptional = g_appContext->getCommunityIds().getIndexForData(params["coinCommunityId"].GetString());
+					auto coinCommunityIdIndexOptional = g_appContext->getCommunityIds().getIndexForData(
+						uuidFromString(params["coinCommunityId"].GetString())
+					);
 					if (coinCommunityIdIndexOptional) {
 						coinCommunityId = static_cast<uint32_t>(coinCommunityIdIndexOptional);
 					}

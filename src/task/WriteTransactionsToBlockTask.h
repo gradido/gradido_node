@@ -8,7 +8,7 @@
  */
 
 #include "CPUTask.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
 
@@ -58,7 +58,7 @@ namespace task {
 
 		void addSerializedTransaction(
 			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-			IMutableDictionary<PublicKey>& publicKeyDictionary
+			IMutableDictionary<gradido::data::PublicKey>& publicKeyDictionary
 		);
 		
 		//! return transaction by nr

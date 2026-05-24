@@ -29,6 +29,8 @@
 
 using gradido::blockchain::FileBasedProvider;
 using gradido::g_appContext, gradido::AppContext;
+using gradido::data::GenericHash, gradido::data::GenericHashHash, gradido::data::GenericHashEqual;
+using gradido::data::Uuid, gradido::data::UuidHash, gradido::data::UuidEqual;
 using server::json_rpc::ApiHandler;
 using std::filesystem::create_directories, std::filesystem::exists, std::filesystem::is_regular_file, std::filesystem::path;
 using std::shared_ptr, std::make_unique;
@@ -77,7 +79,7 @@ bool MainServer::init()
 
 	unsigned short jsonrpc_port = (unsigned short)config.getInt("server.json_rpc", 8340);
 
-	auto communityDictionary = make_unique<PersistentDictionary<std::string>>(ServerGlobals::g_FilesPath + "/communityIdsCache");
+	auto communityDictionary = make_unique<PersistentDictionary<Uuid, UuidHash, UuidEqual>>(ServerGlobals::g_FilesPath + "/communityIdsCache");
 	communityDictionary->init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES);
 	auto nameHashDictionary = make_unique<PersistentDictionary<GenericHash, GenericHashHash, GenericHashEqual>>(ServerGlobals::g_FilesPath + "/nameHashCache");
 	nameHashDictionary->init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_INDEX_CACHE_BYTES);

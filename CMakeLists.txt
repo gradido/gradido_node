@@ -46,7 +46,7 @@ configure_file(
 set(GRADIDO_NODE_VERSION "@PROJECT_VERSION@")
 
 include_directories(
-	"dependencies" 
+	"dependencies"
 	"dependencies/jsonrpcpp/include"
 	"dependencies/gradido_blockchain"
 	"dependencies/gradido_blockchain/include"
@@ -213,7 +213,7 @@ endif()
 #add_subdirectory(dependencies/protobuf/cmake)
 
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-# prevent problems with two libs including googletest 
+# prevent problems with two libs including googletest
 #option(protobuf_BUILD_TESTS "Build tests" OFF)
 
 #message("binary dir: ${CMAKE_BINARY_DIR}")
@@ -244,7 +244,7 @@ else()
 endif()
 target_link_libraries(GradidoNode ${_GRPC_GRPCPP})
 
-IF(WIN32)
+IF(WIN32 AND BUILD_SHARED_LIBS)
   add_custom_command(TARGET GradidoNode POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:GradidoNode> $<TARGET_FILE_DIR:GradidoNode>
     COMMAND_EXPAND_LISTS
@@ -259,5 +259,3 @@ endif(UNIX)
 # add test
 #include(CTest)
 #add_subdirectory(test)
-
-

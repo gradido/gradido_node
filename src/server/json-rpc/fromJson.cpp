@@ -5,7 +5,7 @@
 #include "gradido_blockchain/blockchain/Pagination.h"
 #include "gradido_blockchain/blockchain/SearchDirection.h"
 #include "gradido_blockchain/CommunityContext.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/lib/TimepointInterval.h"
@@ -24,6 +24,7 @@ using gradido::AppContext;
 using gradido::blockchain::CompactFilter, gradido::blockchain::Pagination, gradido::blockchain::SearchDirection;
 using gradido::CommunityContext;
 using gradido::data::compact::PublicKeyIndex;
+using gradido::data::PublicKey;
 using rapidjson::Value;
 using std::string, std::string_view;
 

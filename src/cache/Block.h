@@ -63,7 +63,7 @@ namespace cache {
 		//! \brief put new transaction to cache and file system
 		bool pushTransaction(
 			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-			IMutableDictionary<PublicKey>& publicKeyDictionary,
+			IMutableDictionary<gradido::data::PublicKey>& publicKeyDictionary,
 			gradido::AppContext& appContext
 		);
 		

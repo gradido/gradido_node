@@ -4,7 +4,7 @@
 #include "gradido_blockchain/blockchain/CompactFilter.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/blockchain/TransactionsIndexRoaringBitmaps.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/lib/DictionaryInterface.h"
 
 #include "../blockchain/NodeTransactionEntry.h"
@@ -47,12 +47,12 @@ namespace cache {
 		BlockIndex(std::string_view groupFolderPath, uint32_t blockNr, uint32_t blockchainCommunityIdIndex);
 		~BlockIndex();
 
-		bool init(const IDictionary<PublicKey>& publicKeysDictionary);
+		bool init(const IDictionary<gradido::data::PublicKey>& publicKeysDictionary);
 		void exit();
 		void reset();
 
 		//! \brief loading block index from file (or at least try to load)
-		bool loadFromFile(const IDictionary<PublicKey>& publicKeysDictionary);
+		bool loadFromFile(const IDictionary<gradido::data::PublicKey>& publicKeysDictionary);
 
 		//! \brief write block index into files
 		std::unique_ptr<model::files::BlockIndex> serialize();
@@ -61,7 +61,7 @@ namespace cache {
 		//! \return true if there was something to write into file, after writing it to file
 		bool writeIntoFile();
 
-		bool addIndicesForTransaction(const gradido::data::compact::ConfirmedGradidoTx& compactTx, const IDictionary<PublicKey>& publicKeyDict);
+		bool addIndicesForTransaction(const gradido::data::compact::ConfirmedGradidoTx& compactTx, const IDictionary<gradido::data::PublicKey>& publicKeyDict);
 
 		//! \brief add transactionNr - fileCursor pair to map if not already exist
 		//! \return false if transactionNr exist, else return true

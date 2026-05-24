@@ -4,6 +4,7 @@
 #include "../model/files/Block.h"
 #include "../ServerGlobals.h"
 
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/memory/Block.h"
 
@@ -64,7 +65,7 @@ namespace task {
 
 	void WriteTransactionsToBlockTask::addSerializedTransaction(
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
-		IMutableDictionary<PublicKey>& publicKeyDictionary
+		IMutableDictionary<gradido::data::PublicKey>& publicKeyDictionary
 	)
 	{
 		assert(!isTaskSheduled());

@@ -12,7 +12,7 @@
 #include "../lib/PersistentDictionary.h"
 
 #include "gradido_blockchain/blockchain/Abstract.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
 #include "gradido_blockchain/lib/AccessExpireCache.h"
 
@@ -173,12 +173,12 @@ namespace gradido {
 			inline void setListeningCommunityServer(std::shared_ptr<client::Base> client);
 			inline std::shared_ptr<client::Base> getListeningCommunityServer() const;
 
-			inline virtual const IDictionary<PublicKey>& getPublicKeyDictionary() const override { return mPublicKeysIndex; }
-			inline virtual uint32_t getOrAddPublicKey(const PublicKey& publicKey) override {
+			inline virtual const IDictionary<data::PublicKey>& getPublicKeyDictionary() const override { return mPublicKeysIndex; }
+			inline virtual uint32_t getOrAddPublicKey(const data::PublicKey& publicKey) override {
 				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
 			}
 
-			inline uint32_t getOrAddIndexForPublicKey(const PublicKey& publicKey) const {
+			inline uint32_t getOrAddIndexForPublicKey(const data::PublicKey& publicKey) const {
 				return mPublicKeysIndex.getOrAddIndexForData(publicKey);
 			}
 
@@ -222,7 +222,7 @@ namespace gradido {
 			std::shared_ptr<hiero::MessageListenerQuery> mHieroMessageListener;
 
 			//! contain indices for every public key address, used overall for optimisation
-			mutable PersistentDictionary<PublicKey, PublicKeyHash, PublicKeyEqual> mPublicKeysIndex;
+			mutable PersistentDictionary<data::PublicKey, data::PublicKeyHash, data::PublicKeyEqual> mPublicKeysIndex;
 			// level db to store state values like last transaction
 			// TODO: speedup with atcual struct, write out into leveldb/lmdb only on changes, maybe even buffered, think on exit management
 			mutable cache::State mBlockchainState;

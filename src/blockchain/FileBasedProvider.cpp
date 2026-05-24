@@ -7,6 +7,8 @@
 #include "../task/SyncTopic.h"
 
 #include "gradido_blockchain/AppContext.h"
+#include "gradido_blockchain/data/adapter/uuid.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
 #include "gradido_blockchain/lib/DictionaryExceptions.h"
 
@@ -24,6 +26,7 @@ using std::string;
 using std::vector;
 
 namespace gradido {
+	using data::adapter::uuidFromString;
 	namespace blockchain {
 
 		FileBasedProvider::FileBasedProvider()
@@ -64,7 +67,7 @@ namespace gradido {
 
 		shared_ptr<Abstract> FileBasedProvider::findBlockchain(const string& communityId)
 		{
-			auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(communityId);
+			auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(uuidFromString(communityId.c_str()));
 			if (!communityIdIndex) {
 				LOG_F(WARNING, "no community id index for %s", communityId.c_str());
 			}
@@ -78,7 +81,7 @@ namespace gradido {
 		{
 			try {
 				const auto& groupIndexEntry = mGroupIndex->getCommunityDetails(topicId);
-				auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(groupIndexEntry.communityId);
+				auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(uuidFromString(groupIndexEntry.communityId.c_str()));
 				if (!communityIdIndex) {
 					LOG_F(WARNING, "no community id index for %s", groupIndexEntry.communityId.c_str());
 				}
