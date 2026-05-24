@@ -6,10 +6,10 @@
 
 #include "magic_enum/magic_enum.hpp"
 
+#include <array>
 #include <string_view>
 
 namespace cache {
-
 	class State 
 	{
 	public:
@@ -23,7 +23,6 @@ namespace cache {
 		//! remove state level db folder, clear maps
 		void reset();
 
-		inline void updateState(DefaultStateKeys key, std::string_view value);
 		inline void updateState(DefaultStateKeys key, int32_t value);
 		inline void updateState(DefaultStateKeys key, uint32_t value);
 		inline void updateState(DefaultStateKeys key, int64_t value);		
@@ -35,7 +34,6 @@ namespace cache {
 		void updateState(const char* key, uint64_t value);
 		void removeState(const char* key);
 
-		inline std::string readState(DefaultStateKeys key, const std::string& defaultValue);
 		std::string readState(const char* key, const std::string& defaultValue);
 		inline int32_t readInt32State(DefaultStateKeys key, int32_t defaultValue);
 		int32_t readInt32State(const char* key, int32_t defaultValue);
@@ -48,46 +46,53 @@ namespace cache {
 	protected:
 		bool mInitalized;
 		model::files::LevelDBWrapper mStateFile;
+		std::vector<int64_t> mFastAccessDefaultStates;
 	};
 
 	// simple functions for inline declarations
-	void State::updateState(DefaultStateKeys key, std::string_view value)
-	{
-		return updateState(magic_enum::enum_name(key).data(), value);
-	}
-
 	void State::updateState(DefaultStateKeys key, int32_t value)
 	{
+		assert(key < DefaultStateKeys::MAX);
+		mFastAccessDefaultStates[static_cast<size_t>(key)] = value;
 		return updateState(magic_enum::enum_name(key).data(), value);
 	}
 
 	void State::updateState(DefaultStateKeys key, uint32_t value)
 	{
+		assert(key < DefaultStateKeys::MAX);
+		mFastAccessDefaultStates[static_cast<size_t>(key)] = value;
 		return updateState(magic_enum::enum_name(key).data(), value);
 	}
 
 	void State::updateState(DefaultStateKeys key, int64_t value)
 	{
+		assert(key < DefaultStateKeys::MAX);
+		mFastAccessDefaultStates[static_cast<size_t>(key)] = value;
 		return updateState(magic_enum::enum_name(key).data(), value);
 	}
 
 	void State::updateState(DefaultStateKeys key, uint64_t value)
 	{
+		assert(key < DefaultStateKeys::MAX);
+		mFastAccessDefaultStates[static_cast<size_t>(key)] = value;
 		return updateState(magic_enum::enum_name(key).data(), value);
-	}
-
-	std::string State::readState(DefaultStateKeys key, const std::string& defaultValue)
-	{
-		return readState(magic_enum::enum_name(key).data(), defaultValue);
 	}
 
 	int32_t State::readInt32State(DefaultStateKeys key, int32_t defaultValue)
 	{
-		return readInt32State(magic_enum::enum_name(key).data(), defaultValue);
+		assert(key < DefaultStateKeys::MAX);
+		auto value = mFastAccessDefaultStates[static_cast<size_t>(key)];
+		if (value) return value;
+		else return defaultValue;
+		// return readInt32State(magic_enum::enum_name(key).data(), defaultValue);
 	}
 	int64_t State::readInt64State(DefaultStateKeys key, int64_t defaultValue)
 	{
-		return readInt64State(magic_enum::enum_name(key).data(), defaultValue);
+		assert(key < DefaultStateKeys::MAX);
+		auto value = mFastAccessDefaultStates[static_cast<size_t>(key)];
+		if (value) return value;
+		else return defaultValue;
+		// return readInt64State(magic_enum::enum_name(key).data(), defaultValue);
 	}
 }
 

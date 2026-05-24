@@ -4,17 +4,26 @@
 
 #include <string>
 
+using std::string, std::to_string;
+
 using namespace gradido::data;
 
 namespace controller {
-	GroupNotFoundException::GroupNotFoundException(const char* what, const std::string& groupAlias) noexcept
+	GroupNotFoundException::GroupNotFoundException(const char* what, const string& groupAlias) noexcept
 		: GradidoBlockchainException(what), mGroupAlias(groupAlias)
 	{
 
 	}
-	std::string GroupNotFoundException::getFullString() const
+
+	GroupNotFoundException::GroupNotFoundException(const char* what, uint32_t communityIdIndex) noexcept
+		: GradidoBlockchainException(what), mGroupAlias(to_string(communityIdIndex))
 	{
-		std::string resultString;
+
+	}
+
+	string GroupNotFoundException::getFullString() const
+	{
+		string resultString;
 		size_t resultSize = strlen(what()) + mGroupAlias.size() + 2 + 15;
 		resultString.reserve(resultSize);
 		resultString = what();
@@ -23,16 +32,16 @@ namespace controller {
 	}
 
 	// *******************  BlockNotLoadedException *****************************
-	BlockNotLoadedException::BlockNotLoadedException(const char* what, const std::string& groupAlias, int blockNr) noexcept
+	BlockNotLoadedException::BlockNotLoadedException(const char* what, const string& groupAlias, int blockNr) noexcept
 		: GradidoBlockchainException(what), mGroupAlias(groupAlias), mBlockNr(blockNr)
 	{
 
 	}
 
-	std::string BlockNotLoadedException::getFullString() const
+	string BlockNotLoadedException::getFullString() const
 	{
-		std::string resultString;
-		std::string blockNrString = std::to_string(mBlockNr);
+		string resultString;
+		string blockNrString = to_string(mBlockNr);
 		size_t resultSize = strlen(what()) + 2 + 14 + 13 + mGroupAlias.size() + blockNrString.size();
 		resultString = what();
 		resultString += ", with group: " + mGroupAlias;
@@ -54,10 +63,10 @@ namespace controller {
 
 	}
 
-	std::string WrongTransactionTypeException::getFullString() const
+	string WrongTransactionTypeException::getFullString() const
 	{
-		std::string resultString;
-		std::string transactionTypeString(magic_enum::enum_name(mType));
+		string resultString;
+		string transactionTypeString(magic_enum::enum_name(mType));
 		size_t resultSize = strlen(what()) + 2 + 20 + transactionTypeString.size() + mPubkeyHex.size() + 10;
 		resultString.reserve(resultSize);
 		resultString = what();

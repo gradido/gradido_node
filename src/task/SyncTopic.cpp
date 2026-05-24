@@ -1,26 +1,36 @@
-#include "SyncTopicOnStartup.h"
+#include "SyncTopic.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "../blockchain/FileBased.h"
 #include "../client/hiero/MirrorClient.h"
 #include "../ServerGlobals.h"
 
+#include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 
 #include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
+#include <memory>
+#include <string>
 
 using namespace gradido;
 using namespace blockchain;
 using namespace interaction;
+using namespace magic_enum;
 using namespace serialization;
 
+using gradido::blockchain::FileBased;
+using std::shared_ptr;
+using std::string, std::to_string;
+
 namespace task {
-	SyncTopicOnStartup::SyncTopicOnStartup(
+	SyncTopic::SyncTopic(
 		uint64_t lastKnownSequenceNumber,
 		hiero::TopicId lastKnowTopicId,
-		std::shared_ptr<gradido::blockchain::FileBased> blockchain
+		shared_ptr<FileBased> blockchain
 	) : CPUTaskGRPCReactor(ServerGlobals::g_CPUScheduler),
 		mLastKnownSequenceNumber(lastKnownSequenceNumber),
 		mLastKnowTopicId(lastKnowTopicId),
@@ -29,12 +39,12 @@ namespace task {
 
 	}
 
-	SyncTopicOnStartup::~SyncTopicOnStartup()
+	SyncTopic::~SyncTopic()
 	{
 
 	}
 
-	int SyncTopicOnStartup::run()
+	int SyncTopic::run()
 	{
 		// check topic info
 		const auto& topicInfo = mObject;
@@ -45,10 +55,11 @@ namespace task {
 		// for example: check previous transaction until one was found,
 		// or check if maybe or block files get corrupted
 		auto lastTransactionIdentical = checkLastTransaction();
+		LOG_F(INFO, "last transaction state: %s, last known sequence number: %lu", enum_name(lastTransactionIdentical).data(), mLastKnownSequenceNumber);
 
-		// start ordering manager
-		orderingManager->init(mLastKnownSequenceNumber);
-		
+		// (re-)start ordering manager
+		orderingManager->reinitialize(mLastKnownSequenceNumber);
+
 		// load transactions from mirror node
 		mConfirmedAtLastReadedTransaction = data::Timestamp();
 		if (LastTransactionState::IDENTICAL == lastTransactionIdentical) {
@@ -81,7 +92,7 @@ namespace task {
 		return 0;
 	}
 
-	SyncTopicOnStartup::LastTransactionState SyncTopicOnStartup::checkLastTransaction()
+	SyncTopic::LastTransactionState SyncTopic::checkLastTransaction()
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 
@@ -108,16 +119,16 @@ namespace task {
 		}
 
 		deserialize::Context deserializer(lastTransactionMirrorRaw);
-		deserializer.run();
+		deserializer.run(mBlockchain->getCommunityIdIndex());
 		if (!deserializer.isGradidoTransaction()) {
 			LOG_F(
-				ERROR, 
+				ERROR,
 				"last transaction on mirrors is invalid Gradido Transaction. CommunityId: %s, lastKnownTopicId: %s, sequenceNumber: %lu, transactionNr: %lu, confirmedAt: %s",
 				mBlockchain->getCommunityId().data(),
 				mLastKnowTopicId.toString().data(),
 				mLastKnownSequenceNumber,
 				lastTransaction->getTransactionNr(),
-				lastTransaction->getConfirmedTransaction()->getConfirmedAt().toString().data()
+				confirmedAt.toString().data()
 			);
 			return LastTransactionState::INVALID;
 		}
@@ -127,10 +138,10 @@ namespace task {
 			bool prettyJson = true;
 			LOG_F(ERROR, "own transaction: %s", toJsonString(*lastTransaction->getConfirmedTransaction(), prettyJson).data());
 			LOG_F(
-				ERROR, 
-				"from topic: %s, sequenceNumber: %lu: %s", 
-				mLastKnowTopicId.toString().data(), 
-				mLastKnownSequenceNumber, 
+				ERROR,
+				"from topic: %s, sequenceNumber: %lu: %s",
+				mLastKnowTopicId.toString().data(),
+				mLastKnownSequenceNumber,
 				toJsonString(*lastTransactionMirror, prettyJson).data()
 			);
 			return LastTransactionState::NOT_IDENTICAL;
@@ -139,7 +150,7 @@ namespace task {
 		return LastTransactionState::IDENTICAL;
 	}
 
-	uint32_t SyncTopicOnStartup::loadTransactionsFromMirrorNode(hiero::TopicId topicId)
+	uint32_t SyncTopic::loadTransactionsFromMirrorNode(hiero::TopicId topicId)
 	{
 		const auto& mirrorNode = ServerGlobals::g_HieroMirrorNode;
 		const auto& orderingManager = mBlockchain->getOrderingManager();
@@ -152,6 +163,15 @@ namespace task {
 			auto responses = mirrorNode->listTopicMessagesById(topicId, mConfirmedAtLastReadedTransaction, limit, "asc");
 			if (responses.empty()) break;
 			responsesCount = responses.size();
+			if (responses.back().getConsensusTimestamp() <= mConfirmedAtLastReadedTransaction) {
+				LOG_F(WARNING, "unexpected response from mirror node, transaction has the same or lower consensus timestamp than last readed transaction. CommunityId: %s, topicId: %s, last readed consensus timestamp: %s, last readed sequence number: %lu, responses count: %u",
+					mBlockchain->getCommunityId().data(),
+					topicId.toString().data(),
+					mConfirmedAtLastReadedTransaction.toString().data(),
+					mLastKnownSequenceNumber,
+					responsesCount
+				);
+			}
 			mConfirmedAtLastReadedTransaction = responses.back().getConsensusTimestamp();
 			addedTransactionsSum += responsesCount;
 			for (auto& response : responses) {

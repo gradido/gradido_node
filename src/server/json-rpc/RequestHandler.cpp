@@ -1,6 +1,7 @@
 #include "RequestHandler.h"
 
 #include "gradido_blockchain/lib/DataTypeConverter.h"
+#include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/ServerConfig.h"
 
@@ -24,18 +25,22 @@ using namespace rapidjson;
 namespace server {
 	namespace json_rpc {
 
-		RequestHandler::RequestHandler()
-			: mRootJson(kObjectType)
-		{
+		static thread_local void* gtl_valueBuffer = malloc(RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY * 4);
 
+		RequestHandler::RequestHandler()
+			: mRootJson(kObjectType, new MemoryPoolAllocator<>(gtl_valueBuffer, RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY * 4))
+		{
+			// MemoryPoolAllocator<> valueAllocator(valueBuffer, valueBuffer->size());
+			//MemoryPoolAllocator<> parseAllocator(parseBuffer, parseBuffer->size());
+// 			mRootJson = Document()
 		}
 
 		Value RequestHandler::handleOneRpcCall(const rapidjson::Value& jsonRpcRequest)
 		{
-			LOG_F(2, "handleOneRpcCall");
+			// LOG_F(2, "handleOneRpcCall");
 			Value responseJson(kObjectType);
 			std::string method;
-			auto alloc = mRootJson.GetAllocator();
+			auto& alloc = mRootJson.GetAllocator();
 
 			if (checkObjectOrArrayParameter(responseJson, jsonRpcRequest, "params") && getStringParameter(responseJson, jsonRpcRequest, "method", method)) {
 				try {
@@ -61,72 +66,71 @@ namespace server {
 			return responseJson;
 		}
 
-		void RequestHandler::handleRequest(const httplib::Request& request, httplib::Response& response, MethodType method)
+		void RequestHandler::cors(httplib::Response& response)
 		{
-			loguru::set_thread_name("json-rpc");
 			if (ServerConfig::g_AllowUnsecureFlags & ServerConfig::UNSECURE_CORS_ALL) {
 				response.set_header("Access-Control-Allow-Origin", "*");
 				response.set_header("Access-Control-Allow-Headers", "Authorization, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers");
 			}
+		}
 
-			auto alloc = mRootJson.GetAllocator();
+		void RequestHandler::handlePostPut(const httplib::Request& request, httplib::Response& response)
+		{
+			loguru::set_thread_name("json-rpc");
+			cors(response);
+			
+			auto& alloc = mRootJson.GetAllocator();
 			Value responseJson(kObjectType);
 			responseJson.AddMember("jsonrpc", "2.0", alloc);
 			responseJson.AddMember("id", Value(kNullType), alloc);
 
-			// TODO: put group name in request url to keep function calls as similar as possible to bitcoin and co
-			Document rapidjson_params;
-			if (MethodType::POST == method || MethodType::PUT == method)
+			Document rapidjson_params;			
+			
+			rapidjson_params.Parse(request.body.data());
+			if (rapidjson_params.HasParseError())
 			{
-				rapidjson_params.Parse(request.body.data());
-				if (rapidjson_params.HasParseError())
-				{
-					Value data(kObjectType);
-					data.AddMember("parseError", Value(GetParseError_En(rapidjson_params.GetParseError()), alloc), alloc);
-					data.AddMember("errorOffset", rapidjson_params.GetErrorOffset(), alloc);
-					error(responseJson, JSON_RPC_ERROR_PARSE_ERROR, "error parsing request to json", &data);
-				}
-				else
-				{
-					if (rapidjson_params.IsObject()) {
-						responseJson = handleOneRpcCall(rapidjson_params);
-					}
-					else if (rapidjson_params.IsArray()) {
-						responseJson = Value(kArrayType);
-						for (auto& v : rapidjson_params.GetArray()) {
-							responseJson.PushBack(handleOneRpcCall(v), alloc);
-						}
-					}
-					else {
-						error(responseJson, JSON_RPC_ERROR_INVALID_REQUEST, "empty body");
-					}
-				}
-			}
-			else if (MethodType::GET == method)
-			{
-				parseQueryParametersToRapidjson(request.params, rapidjson_params);
-
-				//rapid_json_result = handle(rapidjson_params);
-				LOG_F(ERROR, "[%s:%d] must be implemented\n", __FUNCTION__, __LINE__);
-			}
-			else if (MethodType::OPTIONS == method)
-			{
-				return;
+				Value data(kObjectType);
+				data.AddMember("parseError", Value(GetParseError_En(rapidjson_params.GetParseError()), alloc), alloc);
+				data.AddMember("errorOffset", rapidjson_params.GetErrorOffset(), alloc);
+				error(responseJson, JSON_RPC_ERROR_PARSE_ERROR, "error parsing request to json", &data);
 			}
 			else
 			{
-				error(responseJson, JSON_RPC_ERROR_INVALID_REQUEST, "HTTP method unknown");
-			}
+				if (rapidjson_params.IsObject()) {
+					responseJson = handleOneRpcCall(rapidjson_params);
+				}
+				else if (rapidjson_params.IsArray()) {
+					responseJson = Value(kArrayType);
+					for (auto& v : rapidjson_params.GetArray()) {
+						responseJson.PushBack(handleOneRpcCall(v), alloc);
+					}
+				}
+				else {
+					error(responseJson, JSON_RPC_ERROR_INVALID_REQUEST, "empty body");
+				}
+			}		
 
 			// 3. Stringify the DOM
-			StringBuffer buffer;
-			Writer<StringBuffer> writer(buffer);
+			static thread_local void* writeMemoryBuffer = malloc(RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY);
+			MemoryPoolAllocator<> writeBufferAllocator(writeMemoryBuffer, RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY);
+			GenericStringBuffer<UTF8<>, MemoryPoolAllocator<>> buffer(&writeBufferAllocator, RAPIDJSON_ALLOCATOR_DEFAULT_CHUNK_CAPACITY);
+			
+			// StringBuffer buffer();
+			Writer writer(buffer);
 			responseJson.Accept(writer);
-
 			// printf("response: %s\n", buffer.GetString());
 			response.set_content(buffer.GetString(), "application/json");
 		}
 
+		void RequestHandler::handleOptions(const httplib::Request& request, httplib::Response& response)
+		{
+			cors(response);
+		}
+
+		void RequestHandler::handleGet(const httplib::Request& request, httplib::Response& response)
+		{
+			throw GradidoNotImplementedException("REST Api not implemented yet");
+		}
 
 		bool RequestHandler::parseQueryParametersToRapidjson(const std::multimap<std::string, std::string>& params, Document& rapidParams)
 		{

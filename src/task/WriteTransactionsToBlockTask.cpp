@@ -4,7 +4,9 @@
 #include "../model/files/Block.h"
 #include "../ServerGlobals.h"
 
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
+#include "gradido_blockchain/memory/Block.h"
 
 #include "loguru/loguru.hpp"
 #include <cassert>
@@ -61,13 +63,16 @@ namespace task {
 		return 0;
 	}
 
-	void WriteTransactionsToBlockTask::addSerializedTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction)
+	void WriteTransactionsToBlockTask::addSerializedTransaction(
+		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
+		IMutableDictionary<gradido::data::PublicKey>& publicKeyDictionary
+	)
 	{
 		assert(!isTaskSheduled());
 		assert(!isTaskFinished());		
 		std::lock_guard lock(mFastMutex);
 		mTransactions.insert({transaction->getTransactionNr(), transaction});
-		mBlockIndex->addIndicesForTransaction(transaction);
+		mBlockIndex->addTransactionIndices(transaction->convertToCompactConfirmedTx(), publicKeyDictionary);
 	}
 
 	std::shared_ptr<gradido::blockchain::NodeTransactionEntry> WriteTransactionsToBlockTask::getTransaction(uint64_t nr)

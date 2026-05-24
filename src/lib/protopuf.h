@@ -7,7 +7,7 @@
 #include "protopuf/message.h"
 */
 
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "loguru/loguru.hpp"
@@ -34,7 +34,7 @@ namespace protopuf {
 	template<class T, class Message>
 	T deserialize(const memory::Block& raw)
 	{
-		Profiler timeUsed;
+		MonotonicTimer timeUsed;
 		auto result = pp::message_coder<Message>::decode(raw.span());
 		if (!result.has_value()) {
 			// TODO: check if using exception is better

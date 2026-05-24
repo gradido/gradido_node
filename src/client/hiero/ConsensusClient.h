@@ -12,7 +12,7 @@
 
 namespace grpc {
     class ChannelCredentials;
-    class Client;    
+    class Client;
 }
 
 namespace hiero {
@@ -24,7 +24,7 @@ namespace client {
     namespace hiero {
 
         // Client for hiero/hedera Consensus Services
-        class ConsensusClient 
+        class ConsensusClient
         {
         public:
             ~ConsensusClient();
@@ -47,7 +47,7 @@ namespace client {
                 std::shared_ptr<MessageObserver<::hiero::ConsensusGetTopicInfoResponseMessage>> responseListener
             );
 
-        private: 
+        private:
             ConsensusClient(std::shared_ptr<grpc::Channel> channel);
             static std::shared_ptr<grpc::ChannelCredentials> getTlsChannelCredentials(memory::ConstBlockPtr certificateHash);
 

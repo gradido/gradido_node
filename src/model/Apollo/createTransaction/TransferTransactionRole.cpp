@@ -14,21 +14,20 @@ namespace model {
         assert(transactionBody->isTransfer());
 
         Transaction result(confirmedTransaction, pubkey);
-        auto transfer = transactionBody->getTransfer();
+        const auto& transfer = transactionBody->getTransfer();
         auto amount = transfer->getSender().getAmount();
 
         if (transfer->getRecipient()->isTheSame(pubkey)) {
-          result.setType(TransactionType::RECEIVE);
-          result.setPubkey(transfer->getSender().getPublicKey());
-        }
-				else if (transfer->getSender().getPublicKey()->isTheSame(pubkey)) {
-          result.setType(TransactionType::SEND);
-          result.setPubkey(transfer->getRecipient());
-					amount.negate();
-				} else {
+            result.setType(TransactionType::RECEIVE);
+            result.setPubkey(transfer->getSender().getPublicKey());
+        } else if (transfer->getSender().getPublicKey()->isTheSame(pubkey)) {
+            result.setType(TransactionType::SEND);
+            result.setPubkey(transfer->getRecipient());
+            amount.negate();
+		} else {
           throw GradidoNodeInvalidDataException("unhandled case in model::Apollo::createTransaction::TransferTransactionRole if pubkey is neither sender or recipient");
-				}
-				result.setAmount(amount);
+		}
+		result.setAmount(amount);
         return result;
       }
     }

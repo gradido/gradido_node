@@ -3,8 +3,7 @@
 #include "../blockchain/FileBasedProvider.h"
 #include "../blockchain/Exceptions.h"
 #include "../task/HieroMessageToTransactionTask.h"
-#include "gradido_blockchain/interaction/serialize/Context.h"
-#include "gradido_blockchain/interaction/deserialize/Context.h"
+#include "gradido_blockchain/data/LedgerAnchor.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
 
@@ -14,32 +13,43 @@
 
 using namespace gradido;
 using namespace blockchain;
-using namespace interaction;
+
+using gradido::data::LedgerAnchor;
 
 namespace controller {
 
-    SimpleOrderingManager::SimpleOrderingManager(std::string_view communityId)
-        : task::Thread("SimpleOrderingManager"), 
-        mLastTransactions(MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION * 2), 
-        mCommunityId(communityId), 
+    SimpleOrderingManager::SimpleOrderingManager(std::string_view communityId, std::stop_token stopToken)
+        : task::Thread("SimpleOrderingManager"), mStopToken(stopToken), mInitalized(false),
+        mLastTransactions(MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION * 2),
+        mCommunityId(communityId),
         mLastSequenceNumber(0)
     {
     }
 
     SimpleOrderingManager::~SimpleOrderingManager()
     {
+
     }
 
-    void SimpleOrderingManager::init(uint64_t lastKnownSequenceNumber) 
+    void SimpleOrderingManager::reinitialize(uint64_t lastKnownSequenceNumber)
     {
+        std::unique_lock _lock(mTransactionsMutex);
         mLastSequenceNumber = lastKnownSequenceNumber;
-        Thread::init();
+        mTransactions.clear();
+        mLastTransactions.clear();
+        if (!mInitalized) {
+            mInitalized = true;
+            Thread::init();
+        }
     }
 
     int SimpleOrderingManager::ThreadFunction()
     {
         size_t transactionsCount = 0;
         do {
+            if (mStopToken.stop_requested()) {
+                return 0;
+            }
             std::unique_lock _lock(mTransactionsMutex);
             auto it = mTransactions.begin();
             // if no transaction is in map or first transaction deserialize task is still running (or is waiting to be scheduled)
@@ -62,7 +72,7 @@ namespace controller {
                 // maybe we have an error
                 // or hiero has used the same sequence number twice?
                 LOG_F(
-                    ERROR, 
+                    ERROR,
                     "this transaction or after this was already put into blockchain, fatal error, programm code must be fixed, communityId: %s, last sequence number: %lu, current sequence number: %lu",
                     mCommunityId.data(), lastSequenceNumber, currentSequenceNumber
                 );
@@ -81,30 +91,28 @@ namespace controller {
                 Timepoint now = std::chrono::system_clock::now();
 
                 if (it->second.putIntoListTime + MAGIC_NUMBER_MAX_TIMESPAN_BETWEEN_CREATING_AND_RECEIVING_TRANSACTION < now) {
-                    // timeouted                    
+                    // timeouted
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing not found)");
                     mTransactions.erase(it);
                     updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
-                auto otherBlockchain = blockchainProvider->findBlockchain(body->getOtherGroup());
+                auto otherBlockchain = blockchainProvider->findBlockchain(body->getOtherCommunityIdIndex().value());
                 if (!otherBlockchain) {
                     task->notificateFailedTransaction(blockchain, "Transaction skipped (target community unknown)");
                     mTransactions.erase(it);
                     updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
-                deserialize::Context topicIdDeserializer(gradidoTransaction->getParingMessageId(), deserialize::Type::HIERO_TRANSACTION_ID);
-                topicIdDeserializer.run();
-                if (!topicIdDeserializer.isHieroTransactionId()) {
-                    task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing transactionId invalid)");
+                if (gradidoTransaction->getPairingLedgerAnchor().empty()) {
+                    task->notificateFailedTransaction(blockchain, "Transaction skipped (pairing ledger anchor empty)");
                     mTransactions.erase(it);
                     updateSequenceNumber(currentSequenceNumber);
                     continue;
                 }
                 auto pairTask = static_cast<gradido::blockchain::FileBased*>(otherBlockchain.get())
                     ->getOrderingManager()
-                    ->findCrossGroupTransactionPair(topicIdDeserializer.getHieroTransactionId())
+                    ->findCrossGroupTransactionPair(gradidoTransaction->getPairingLedgerAnchor())
                 ;
                 if (!pairTask || !pairTask->isTaskFinished()) {
                     // not found? maybe it need some more time?
@@ -120,7 +128,7 @@ namespace controller {
             }
             if (task->isSuccess()) {
                 processTransaction(it->second);
-            }            
+            }
             mTransactions.erase(it);
             updateSequenceNumber(currentSequenceNumber);
             transactionsCount = mTransactions.size();
@@ -136,24 +144,23 @@ namespace controller {
             throw CommunityNotFoundExceptions("couldn't find group", mCommunityId);
         }
         auto transaction = gradidoTransactionWorkData.deserializeTask->getGradidoTransaction();
-        const auto& transactionId = gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId();
+        auto transactionId = LedgerAnchor(gradidoTransactionWorkData.consensusTopicResponse.getChunkInfo().getInitialTransactionId());
         const auto& confirmedAt = gradidoTransactionWorkData.consensusTopicResponse.getConsensusTimestamp();
         if (transactionId.empty()) {
             throw GradidoNodeInvalidDataException("missing transaction id in hiero response");
         }
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         try {
-            serialize::Context serializer(transactionId);
             bool result = blockchain->createAndAddConfirmedTransaction(
                 transaction,
-                serializer.run(),
+                transactionId,
                 confirmedAt
             );
             fileBasedBlockchain->updateLastKnownSequenceNumber(mLastSequenceNumber);
             LOG_F(INFO, "Transaction confirmed, msgId: %s, confirmedAt: %s",
                 transactionId.toString().data(), confirmedAt.toString().data()
             );
-            
+
         }
         catch (GradidoBlockchainException& ex) {
             auto communityServer = fileBasedBlockchain->getListeningCommunityServer();
@@ -188,7 +195,7 @@ namespace controller {
                 return PushResult::FOUND_IN_LAST_TRANSACTIONS;
             }
         }
-        
+
         auto range = mTransactions.equal_range(consensusTimestamp);
         for (auto& it = range.first; it != range.second; ++it) {
             if (it->second.consensusTopicResponse.isMessageSame(consensusTopicResponse)) {
@@ -207,13 +214,20 @@ namespace controller {
         return PushResult::ADDED;
     }
 
-    std::shared_ptr<task::HieroMessageToTransactionTask> SimpleOrderingManager::findCrossGroupTransactionPair(const hiero::TransactionId& transactionId) const
+    std::shared_ptr<task::HieroMessageToTransactionTask> SimpleOrderingManager::findCrossGroupTransactionPair(const LedgerAnchor& transactionId) const
     {
         if (isExitCalled()) { return nullptr; }
         std::lock_guard _lock(mTransactionsMutex);
         for (auto it = mTransactions.begin(); it != mTransactions.end(); it++) {
-            if (it->second.consensusTopicResponse.getChunkInfo().getInitialTransactionId() == transactionId) {
-                return it->second.deserializeTask;
+            if (transactionId.isHieroTransactionId()) {
+                if (it->second.consensusTopicResponse.getChunkInfo().getInitialTransactionId() == transactionId.getHieroTransactionId()) {
+                    return it->second.deserializeTask;
+                }
+            }
+            else {
+                if (it->second.deserializeTask->isSuccess() && it->second.deserializeTask->getGradidoTransaction()->getPairingLedgerAnchor() == transactionId) {
+                    return it->second.deserializeTask;
+                }
             }
         }
         return nullptr;
@@ -221,7 +235,7 @@ namespace controller {
 
     void SimpleOrderingManager::updateSequenceNumber(uint64_t newSequenceNumber)
     {
-        
+
         if (!mLastSequenceNumber) {
             mLastSequenceNumber = newSequenceNumber;
         }

@@ -2,10 +2,12 @@
 #define __GRADIDO_NODE_BLOCKCHAIN_NODE_TRANSACTION_ENTRY_H
 
 #include "gradido_blockchain/blockchain/TransactionEntry.h"
+#include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
 
 #include <vector>
 
 namespace gradido {
+
 	namespace blockchain {
 
 		class FileBased;
@@ -36,14 +38,22 @@ namespace gradido {
 				int32_t fileCursor = -10
 			);
 
+			NodeTransactionEntry(
+				gradido::data::ConstConfirmedTransactionPtr transaction,
+				memory::ConstBlockPtr serializedTransaction,
+				std::shared_ptr<const gradido::blockchain::FileBased> blockchain,
+				int32_t fileCursor = -10
+			);
+
 			//! \brief init entry object from details e.g. by loading from file
 			NodeTransactionEntry(
 				uint64_t transactionNr,
 				date::month month,
 				date::year year,
 				gradido::data::TransactionType transactionType,
-				const std::string& coinGroupId,
+				std::optional<uint32_t> coinCommunityIdIndex,
 				const uint32_t* addressIndices, uint8_t addressIndiceCount,
+				uint32_t blockchainCommunityIdIndex,
 				int32_t fileCursor = -10
 			);
 
@@ -53,6 +63,8 @@ namespace gradido {
 			inline void addAddressIndex(uint32_t addressIndex) { std::scoped_lock lock(mFastMutex); mPublicKeyIndices.push_back(addressIndex); }
 			inline const std::vector<uint32_t>& getAddressIndices() const { std::scoped_lock lock(mFastMutex); return mPublicKeyIndices; }
 			inline bool isAddressIndexInvolved(uint32_t addressIndex) const; 
+
+			data::compact::ConfirmedGradidoTx convertToCompactConfirmedTx() const;
 
 		protected:
 			int32_t mFileCursor;

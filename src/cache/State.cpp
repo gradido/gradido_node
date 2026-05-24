@@ -3,13 +3,19 @@
 #include "../lib/LevelDBExceptions.h"
 
 #include "loguru/loguru.hpp"
+#include "magic_enum/magic_enum.hpp"
+
+#include <string_view>
+
+using namespace magic_enum;
+using std::string_view;
 
 namespace cache {
 	State::State(std::string_view folder)
 		: mInitalized(false),
 		mStateFile(folder)
 	{
-
+		mFastAccessDefaultStates.resize(static_cast<size_t>(DefaultStateKeys::MAX), 0);
 	}
 
 	State::~State()
@@ -25,6 +31,17 @@ namespace cache {
 		if (!mStateFile.init(cacheInBytes)) {
 			return false;
 		}
+		// fill fast access default states vector
+		mStateFile.iterate(
+			[&](leveldb::Slice key, leveldb::Slice value)
+			{
+				auto state = enum_cast<DefaultStateKeys>(string_view(key.data(), key.size()));
+				if (state.has_value()) {
+					assert(state.value() < DefaultStateKeys::MAX);
+					mFastAccessDefaultStates[static_cast<size_t>(state.value())] = strtoll(value.data(), nullptr, 10);
+				}
+			}
+		);
 		mInitalized = true;
 		return true;
 	}
@@ -101,9 +118,9 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
 			return defaultValue;
 		}
-		std::string tmp;
-		if (mStateFile.getValueForKey(key, &tmp)) {
-			return tmp;
+		auto result = mStateFile.getValueForKey(key);
+		if (result.has_value()) {
+			return result.value();
 		}
 		return defaultValue;
 	}
@@ -114,9 +131,9 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
 			return defaultValue;
 		}
-		std::string tmp;
-		if (mStateFile.getValueForKey(key, &tmp)) {
-			return atoi(tmp.data());
+		auto result = mStateFile.getValueForKey(key);
+		if (result.has_value()) {
+			return atoi(result.value().data());
 		}
 		return defaultValue;
 	}
@@ -127,9 +144,9 @@ namespace cache {
 			LOG_F(WARNING, "init wasn't called, leveldb file couldn't be used");
 			return defaultValue;
 		}
-		std::string tmp;
-		if (mStateFile.getValueForKey(key, &tmp)) {
-			return strtoll(tmp.data(), nullptr, 10);
+		auto result = mStateFile.getValueForKey(key);
+		if (result.has_value()) {
+			return strtoll(result.value().data(), nullptr, 10);
 		}
 		return defaultValue;
 	}

@@ -2,69 +2,175 @@ name: Build and Release
 
 on:
   push:
-    branches:
-      - 'release/*'
-
+    tags:
+      - "v*"
 jobs:
-  build:
-    name: Build Binaries
+  # ─── Linux Builds via Docker ───────────────────────
+  linux-x64-build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Get blockchain version
+        id: blockchain_version
+        run: echo "version=$(git -C dependencies/gradido_blockchain describe --tags --dirty --always)" >> $GITHUB_OUTPUT
+      - name: Build x86_64
+        run: |
+          docker build \
+            --build-arg GRADIDO_NODE_VERSION=${{ github.ref_name }} \
+            --build-arg GRADIDO_BLOCKCHAIN_VERSION=${{ steps.blockchain_version.outputs.version }} \
+            --target release_build \
+            -t gradido-node-x86_64 .
+          docker create --name extract-x64 gradido-node-x86_64
+          docker cp extract-x64:/code/build/bin/GradidoNode ./GradidoNode
+          docker rm extract-x64
 
-    - name: Configure and build
-      run: |
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ..
-        make -j$(nproc)
-        cmake ..
-        make -j$(nproc) GradidoNode
+      - name: Strip binary
+        run: strip ./GradidoNode
 
-    - name: Archive binaries
-      uses: actions/upload-artifact@v2
-      with:
-        name: binaries
-        path: build/bin/*
+      - name: compress
+        run: tar -czf gradido_node-${{ github.ref_name }}-linux-x64.tar.gz GradidoNode
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: gradido_node-${{ github.ref_name }}-linux-x64.tar.gz
 
-  release:
-    name: Create Release
+  linux-aarch64-build:
     runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Get blockchain version
+        id: blockchain_version
+        run: echo "version=$(git -C dependencies/gradido_blockchain describe --tags --dirty --always)" >> $GITHUB_OUTPUT
+      - name: Build aarch64
+        run: |
+          docker build \
+            --build-arg GRADIDO_NODE_VERSION=${{ github.ref_name }} \
+            --build-arg GRADIDO_BLOCKCHAIN_VERSION=${{ steps.blockchain_version.outputs.version }} \
+            --build-arg ZIG_TARGET=aarch64-linux-musl \
+            --build-arg TARGET_ARCH=aarch64 \
+            --target release_build \
+            -t gradido-node-aarch64 .
+          docker create --name extract-arm gradido-node-aarch64
+          docker cp extract-arm:/code/build/bin/GradidoNode ./GradidoNode
+          docker rm extract-arm
 
-    - name: Download binaries
-      uses: actions/download-artifact@v2
-      with:
-        name: binaries
-        path: build/bin/
+      - name: Strip binary
+        run: |
+          sudo apt-get install -y binutils-aarch64-linux-gnu
+          aarch64-linux-gnu-strip ./GradidoNode
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          Describe your release here.
-        draft: false
-        prerelease: false
+      - name: compress
+        run: tar -czf gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz GradidoNode
 
-    - name: Upload binaries
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: build/bin/*
-        asset_name: ${{ github.ref }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-aarch64
+          path: gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz
 
+  # ─── Windows Native Build ──────────────────────────
+  windows-build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: install zig
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.2
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake .. `
+            -DENABLE_TEST=Off `
+            -DENABLE_HTTPS=On `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build . --target GradidoNode --config Release
+
+      - name: Collect all and compress
+        shell: powershell
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          $exeAndDll = @(
+              "build/bin/Release/GradidoNode.exe",
+              "dependencies/gradido_blockchain/dependencies/vcpkg/packages/openssl_x64-windows/bin/libssl-3-x64.dll",
+              "dependencies/gradido_blockchain/dependencies/vcpkg/packages/openssl_x64-windows/bin/libcrypto-3-x64.dll"
+          )
+          Write-Host "=== Debug: gefundene Dateien ==="
+          Write-Host "Anzahl der gefundenen Dateien: $($exeAndDll.Count)"
+          if ($exeAndDll.Count -gt 0) {
+              Write-Host "Liste der Dateien:"
+              $exeAndDll | ForEach-Object { Write-Host "  - $_" }
+          } else {
+              Write-Host "Keine Dateien gefunden!"
+              Write-Host "Existiert der Pfad? $(Test-Path build/bin/Release)"
+              if (Test-Path build/bin/Release) {
+                  Write-Host "Inhalt des Verzeichnisses:"
+                  Get-ChildItem -Path build/bin/Release -Recurse | ForEach-Object { Write-Host "  - $($_.FullName)" }
+              }
+          }
+          Compress-Archive -Path $exeAndDll -DestinationPath "gradido_node-${{ github.ref_name }}-win32-x64.zip" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-x86_64
+          path: gradido_node-${{ github.ref_name }}-win32-x64.zip
+
+  # ─── Release erstellen ─────────────────────────────
+  create-release:
+    needs: [linux-x64-build, linux-aarch64-build, windows-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # für PR-History~
+
+      - name: Download alle Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Update CHANGELOG
+        id: changelog
+        uses: requarks/changelog-action@v1.10.3
+        with:
+          token: ${{ github.token }}
+          tag: ${{ github.ref_name }}
+          includeInvalidCommits: true
+
+      - name: create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Changes~
+            ${{ steps.changelog.outputs.result }}
+            *Auto-generated release notes from Pull-Requests*
+
+            ## Downloads~
+            | Platform | Architecture | File |
+            |---|---|---|
+            | Linux | x86_64 | gradido_node-${{ github.ref_name }}-linux-x64.tar.gz |
+            | Linux | aarch64 | gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz |
+            | Windows | x86_64 | gradido_node-${{ github.ref_name }}-win32-x64.zip |
+          files: |
+            linux-x86_64/gradido_node-${{ github.ref_name }}-linux-x64.tar.gz
+            linux-aarch64/gradido_node-${{ github.ref_name }}-linux-arm64.tar.gz
+            windows-x86_64/gradido_node-${{ github.ref_name }}-win32-x64.zip

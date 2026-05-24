@@ -17,12 +17,22 @@ namespace client {
 	namespace hiero {
 
 		// Enum to track the status of the gRPC call.
-		enum class CallStatus
+		enum class CallStatus : long
 		{
 			STATUS_CREATE = 0,
 			STATUS_WRITE = 1,
 			STATUS_PROCESSING = 2,
 			STATUS_FINISH = 3
+		};
+
+		enum class ConnectionClosedReason 
+		{
+			Subscription_Ended,
+			Error,
+			Exception,
+			Reconnect,
+			Deconstruct,
+			Timeout // it seems that grpc/hiero topic subscribe is unstable around ~ 30 minutes without messages so better close connection than and create new one
 		};
 
 		class TopicMessageQuery
@@ -39,8 +49,8 @@ namespace client {
 			TopicMessageQuery(TopicMessageQuery&&) = delete;
 			TopicMessageQuery& operator=(TopicMessageQuery&&) = delete;
 
-			grpc::CompletionQueue* getCompletionQueuePtr() { return &mCompletionQueue; }
-			grpc::ClientContext* getClientContextPtr() { return &mClientContext; }
+			grpc::CompletionQueue* getCompletionQueuePtr() { return mCompletionQueues.back().get(); }
+			grpc::ClientContext* getClientContextPtr() { return mClientContexts.back().get(); }
 
 			void setResponseReader(std::unique_ptr<grpc::ClientAsyncReaderWriter<grpc::ByteBuffer, grpc::ByteBuffer>>& responseReader);
 
@@ -48,7 +58,7 @@ namespace client {
 
 			// will be called from grpc client if connection was closed
 			// so no more messageArrived calls
-			virtual void onConnectionClosed() = 0;
+			virtual void onConnectionClosed(ConnectionClosedReason reason) noexcept = 0;
 
 			// called inside loop if connection was closed, default implementation copied from hiero cpp sdk
 			virtual bool shouldRetry(grpc::Status status);
@@ -63,8 +73,8 @@ namespace client {
 
 			::hiero::ConsensusTopicQuery mStartQuery;
 
-			grpc::CompletionQueue mCompletionQueue;
-			grpc::ClientContext mClientContext;
+			std::vector<std::unique_ptr<grpc::CompletionQueue>> mCompletionQueues;
+			std::vector<std::unique_ptr<grpc::ClientContext>> mClientContexts;
 			CallStatus mCallStatus;
 			std::unique_ptr<grpc::ClientAsyncReaderWriter<grpc::ByteBuffer, grpc::ByteBuffer>> mResponseReader;
 		};

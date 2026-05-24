@@ -15,14 +15,14 @@ namespace gradido {
 #define MAGIC_NUMBER_MIRROR_API_GET_TOPIC_MESSAGES_BULK_SIZE 25
 
 namespace task {
-    class SyncTopicOnStartup: public CPUTaskGRPCReactor<hiero::ConsensusGetTopicInfoResponse, hiero::ConsensusGetTopicInfoResponseMessage> {
+    class SyncTopic: public CPUTaskGRPCReactor<hiero::ConsensusGetTopicInfoResponse, hiero::ConsensusGetTopicInfoResponseMessage> {
     public:
-        SyncTopicOnStartup(
+        SyncTopic(
             uint64_t lastKnownSequenceNumber, 
             hiero::TopicId lastKnowTopicId,
             std::shared_ptr<gradido::blockchain::FileBased> blockchain
         );
-        virtual ~SyncTopicOnStartup();
+        virtual ~SyncTopic();
 
         int run() override;
         const char* getResourceType() const override { return "SyncTopicOnStartup"; }

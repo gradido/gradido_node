@@ -1,7 +1,5 @@
 #include "ServerGlobals.h"
 
-#include "gradido_blockchain/lib/Profiler.h"
-// #include "gradido_blockchain/http/IotaRequest.h"
 #include "client/hiero/MirrorClient.h"
 
 using namespace std::chrono;
@@ -16,7 +14,6 @@ namespace ServerGlobals {
 	std::chrono::seconds				g_CacheTimeout(600);
 	std::chrono::seconds				g_TimeoutCheck(60);
 	std::chrono::seconds				g_WriteToDiskTimeout(10);
-	IotaRequest*						g_IotaRequestHandler = nullptr;
 	std::string							g_IotaMqttBrokerUri;
 	std::atomic<size_t>		            g_NumberExistingTasks;
 	bool								g_LogTransactions = false;
@@ -41,34 +38,12 @@ namespace ServerGlobals {
 			delete g_GroupIndex;
 			g_GroupIndex = nullptr;
 		}
-		if (g_IotaRequestHandler) {
-			delete g_IotaRequestHandler;
-			g_IotaRequestHandler = nullptr;
-		}
 		if (g_HieroMirrorNode) {
 			delete g_HieroMirrorNode;
 			g_HieroMirrorNode = nullptr;
 		}
 	}
 
-
-	/*bool initIota(const MapEnvironmentToConfig& cfg)
-	{
-		// testnet
-		// api.lb-0.h.chrysalis-devnet.iota.cafe
-		// mainnet:
-		// chrysalis-nodes.iota.org
-		std::string iotaHost = cfg.getString("clients.iota.rest_api.host", "api.lb-0.h.chrysalis-devnet.iota.cafe");
-		int iotaPort = cfg.getInt("clients.iota.rest_api.port", 443);
-		g_IotaRequestHandler = new IotaRequest(iotaHost, iotaPort, "/api/v1/");
-
-		std::string iotaMqttHost = cfg.getString("clients.iota.mqtt.host", "api.lb-0.h.chrysalis-devnet.iota.cafe");
-		int mqttPort = cfg.getInt("clients.iota.mqtt.port", 1883);
-		g_IotaMqttBrokerUri = iotaHost + ":" + std::to_string(mqttPort);
-
-		g_isOfflineMode = cfg.getBool("clients.isOfflineMode", false);
-	    return true;	
-	}*/
 
 	bool initHiero(std::string_view hieroNetworkType) {
 		g_HieroMirrorNode = new client::hiero::MirrorClient(hieroNetworkType);

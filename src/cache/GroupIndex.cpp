@@ -2,15 +2,26 @@
 #include "../controller/ControllerExceptions.h"
 
 #include "../ServerGlobals.h"
+#include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/lib/RapidjsonHelper.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
 
 #include "loguru/loguru.hpp"
 
 #include <filesystem>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+
+using gradido::g_appContext;
+using std::function;
+using std::string;
+using std::shared_lock, std::unique_lock;
+using std::vector;
 
 namespace cache {
-	GroupIndex::GroupIndex(const std::string& jsonConfigFileName)
+	GroupIndex::GroupIndex(const string& jsonConfigFileName)
 		: mConfig(jsonConfigFileName)
 	{
 
@@ -28,7 +39,7 @@ namespace cache {
 
 	size_t GroupIndex::update()
 	{
-		std::scoped_lock _lock(mWorkMutex);
+		unique_lock _lock(mWorkMutex);
 
 		clear();
 		try {
@@ -41,10 +52,15 @@ namespace cache {
 					rapidjson_helper::checkMember(communityEntry, "alias", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "communityId", rapidjson_helper::MemberType::STRING);
 					rapidjson_helper::checkMember(communityEntry, "folder", rapidjson_helper::MemberType::STRING);
-					rapidjson_helper::checkMember(communityEntry, "hieroTopicId", rapidjson_helper::MemberType::STRING);
+					// rapidjson_helper::checkMember(communityEntry, "hieroTopicId", rapidjson_helper::MemberType::STRING);
 					entry.alias = communityEntry["alias"].GetString();
 					entry.communityId = communityEntry["communityId"].GetString();
-					entry.topicId = communityEntry["hieroTopicId"].GetString();
+					entry.communityIdIndex = g_appContext->getOrAddCommunityIdIndex(entry.communityId);
+					if (communityEntry.HasMember("hieroTopicId") && communityEntry["hieroTopicId"].IsString()) {
+						entry.topicId = communityEntry["hieroTopicId"].GetString();
+					} else {
+						LOG_F(WARNING, "community entry %s doesn't have hieroTopicId, this community won't be listened for new transactions", entry.communityId.c_str());
+					}
 					entry.folderName = communityEntry["folder"].GetString();
 					if (communityEntry.HasMember("newBlockUri")) {
 						entry.newBlockUri = communityEntry["newBlockUri"].GetString();
@@ -52,7 +68,7 @@ namespace cache {
 					if (communityEntry.HasMember("blockUriType")) {
 						entry.blockUriType = communityEntry["blockUriType"].GetString();
 					}
-					mCommunities.insert({ entry.communityId, entry });
+					mCommunities.insert({ entry.communityIdIndex, entry });
 				}
 			}
 			else {
@@ -67,13 +83,12 @@ namespace cache {
 		return mCommunities.size();
 	}
 
-	std::string GroupIndex::getFolder(const std::string& communityId)
+	string GroupIndex::getFolder(uint32_t communityIdIndex) const
 	{
-		std::scoped_lock _lock(mWorkMutex);
-
-		auto it = mCommunities.find(communityId);
+		shared_lock _lock(mWorkMutex);
+		auto it = mCommunities.find(communityIdIndex);
 		if(it != mCommunities.end()) {
-			std::string folder = ServerGlobals::g_FilesPath + '/';
+			string folder = ServerGlobals::g_FilesPath + '/';
 			folder += it->second.folderName;
 			if(!std::filesystem::exists(folder)) {
 				std::filesystem::create_directories(folder);
@@ -82,19 +97,21 @@ namespace cache {
 		}
 		return "";
 	}
-	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const std::string& communityId) const
-	{
-		std::scoped_lock _lock(mWorkMutex);
 
-		auto it = mCommunities.find(communityId);
-		if (it != mCommunities.end()) {
-			return it->second;
+	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const string& communityId) const
+	{
+		shared_lock _lock(mWorkMutex);
+		for (auto& it : mCommunities) {
+			if (it.second.communityId == communityId) {
+				return it.second;
+			}
 		}
 		throw controller::GroupNotFoundException("couldn't found config details for community", communityId);
 	}
+
 	const CommunityIndexEntry& GroupIndex::getCommunityDetails(const hiero::TopicId& topicId) const
 	{
-		std::scoped_lock _lock(mWorkMutex);
+		shared_lock _lock(mWorkMutex);
 		for (auto& it : mCommunities) {
 			if (topicId == hiero::TopicId(it.second.topicId)) {
 				return it.second;
@@ -102,18 +119,41 @@ namespace cache {
 		}
 		throw controller::GroupNotFoundException("couldn't found config details for community by topic id", topicId.toString());
 	}
-	bool GroupIndex::isCommunityInConfig(const std::string& communityId) const
+
+	const CommunityIndexEntry& GroupIndex::getCommunityDetails(uint32_t communityIdIndex) const
 	{
-		std::scoped_lock _lock(mWorkMutex);
-		return mCommunities.find(communityId) != mCommunities.end();
+		shared_lock _lock(mWorkMutex);
+		auto it = mCommunities.find(communityIdIndex);
+		if (it != mCommunities.end()) {
+			return it->second;
+		}
+		throw controller::GroupNotFoundException("couldn't found config details for community", communityIdIndex);
 	}
 
-	std::vector<std::string> GroupIndex::listCommunitiesIds()
+	bool GroupIndex::isCommunityInConfig(uint32_t communityIdIndex) const
 	{
-		std::scoped_lock _lock(mWorkMutex);
-		std::vector<std::string> result;
+		shared_lock _lock(mWorkMutex);
+		return mCommunities.find(communityIdIndex) != mCommunities.end();
+	}
+
+	vector<string> GroupIndex::listCommunitiesIds() const
+	{
+		shared_lock _lock(mWorkMutex);
+		vector<string> result;
+		result.reserve(mCommunities.size());
 		for (auto it = mCommunities.begin(); it != mCommunities.end(); it++) {
-			result.push_back(it->first);
+			result.emplace_back(it->second.communityId);
+		}
+		return result;
+	}
+
+	vector<uint32_t> GroupIndex::listCommunitiesIdIndices() const
+	{
+		shared_lock _lock(mWorkMutex);
+		vector<uint32_t> result;
+		result.reserve(mCommunities.size());
+		for (auto it = mCommunities.begin(); it != mCommunities.end(); it++) {
+			result.emplace_back(it->second.communityIdIndex);
 		}
 		return result;
 	}

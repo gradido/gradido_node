@@ -5,9 +5,9 @@
 using namespace rapidjson;
 
 namespace serialization {
-	template<>
+	/*template<>
 	Value toJson(const cache::BlockIndex& value, Document::AllocatorType& alloc)
 	{
 		return value.serializeToJson(alloc);
-	}
+	}*/
 }

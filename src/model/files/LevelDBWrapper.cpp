@@ -1,5 +1,6 @@
 #include "LevelDBWrapper.h"
 #include "../../lib/LevelDBExceptions.h"
+#include "../../SingletonManager/FileLockManager.h"
 
 #include "loguru/loguru.hpp"
 #include "leveldb/cache.h"
@@ -9,48 +10,62 @@
 #include <filesystem>
 #include <thread>
 
+using std::chrono::milliseconds, std::this_thread::sleep_for;
+using std::filesystem::remove_all;
+using std::optional, std::nullopt, std::string, std::string_view, std::function;
+using leveldb::Status, leveldb::DB, leveldb::Slice, leveldb::ReadOptions, leveldb::WriteOptions, leveldb::NewLRUCache;
+
 namespace model {
 	namespace files {
-	
-		// use this global mutex to prevent an error with level db if one group is deconstructed while the same group is created new at the same time
-		std::mutex g_StateMutex;
 
-		LevelDBWrapper::LevelDBWrapper(std::string_view folderName)
+		LevelDBWrapper::LevelDBWrapper(string_view folderName)
 			: mFolderName(folderName), mLevelDB(nullptr)
 		{
 		}
 
 		LevelDBWrapper::~LevelDBWrapper()
 		{
-			exit();
+			if (mLevelDB) {
+				exit();
+			}
 		}
 
 		bool LevelDBWrapper::init(size_t cacheInByte/* = 0*/)
 		{
-			std::lock_guard _lock(g_StateMutex);
+			auto fm = FileLockManager::getInstance();
+			if (!fm->tryLockTimeout(mFolderName, 100)) {
+				LOG_F(ERROR, "path: %s couldn't locked, another process still use this folder?", mFolderName.c_str());
+				return false;
+			}
 			mOptions.create_if_missing = true;
 			mOptions.paranoid_checks = true;
 			if (cacheInByte) {
-				mOptions.block_cache = leveldb::NewLRUCache(cacheInByte);
+				mOptions.block_cache = NewLRUCache(cacheInByte);
 			}
-			leveldb::Status status = leveldb::DB::Open(mOptions, mFolderName, &mLevelDB);
+			Status status = DB::Open(mOptions, mFolderName, &mLevelDB);
 			// if blockchain::FileBased is removed from cache and created new at the same time, the lock file from other level db instance is maybe still there 
 			// and trigger an io error, so give it same time an try it again, maximal 100 times. 
 			// TODO: Maybe use the FileLockManager for this 
 			int maxTry = 100;
 			while (status.IsIOError() && maxTry > 0) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				status = leveldb::DB::Open(mOptions, mFolderName, &mLevelDB);
+				sleep_for(milliseconds(100));
+				status = DB::Open(mOptions, mFolderName, &mLevelDB);
 				maxTry--;
 			}
+			fm->unlock(mFolderName);
 			if (!status.ok()) {
 				LOG_F(ERROR, "path: %s, state: %s, ioError: %d", mFolderName.data(), status.ToString().data(), status.IsIOError());
 			}
 			return status.ok();
 		}
+
 		void LevelDBWrapper::exit()
 		{
-			std::lock_guard _lock(g_StateMutex);
+			auto fm = FileLockManager::getInstance();
+			if (!fm->tryLockTimeout(mFolderName, 1000)) {
+				LOG_F(FATAL, "on exit: path: %s couldn't locked, another process still use this folder, data maybe corrupted, please refresh!", mFolderName.c_str());
+				return;
+			}
 			if (mLevelDB) {
 				delete mLevelDB;
 				mLevelDB = nullptr;
@@ -59,38 +74,43 @@ namespace model {
 					mOptions.block_cache = nullptr;
 				}
 			}
+			fm->unlock(mFolderName);
 		}
 
 		void LevelDBWrapper::reset()
 		{
 			exit();
-			std::filesystem::remove_all(mFolderName);
+			remove_all(mFolderName);
 			init();
 		}
 
-		bool LevelDBWrapper::getValueForKey(const char* key, std::string* value)
+		optional<string> LevelDBWrapper::getValueForKey(const std::string& key)
 		{
-			leveldb::Status s = mLevelDB->Get(leveldb::ReadOptions(), key, value);
-			return s.ok();
+			string value;
+			Status s = mLevelDB->Get(ReadOptions(), key, &value);
+			if (!s.ok()) { return nullopt; }
+			return value;
 		}
 
-		void LevelDBWrapper::setKeyValue(const char* key, const std::string& value)
+		void LevelDBWrapper::setKeyValue(const std::string& key, const std::string& value)
 		{
-			leveldb::Status s = mLevelDB->Put(leveldb::WriteOptions(), key, value);
+			WriteOptions writeOptions;
+			writeOptions.sync = false;
+			Status s = mLevelDB->Put(writeOptions, key, value);
 			if (!s.ok()) {
 				throw LevelDBStatusException("cannot put to level db", s);
 			}
 		}
 
-		void LevelDBWrapper::removeKey(const char* key)
+		void LevelDBWrapper::removeKey(const std::string& key)
 		{
-			mLevelDB->Delete(leveldb::WriteOptions(), key);
+			mLevelDB->Delete(WriteOptions(), key);
 		}
 
-		void LevelDBWrapper::iterate(std::function<void(leveldb::Slice key, leveldb::Slice value)> callback)
+		void LevelDBWrapper::iterate(function<void(Slice key, Slice value)> callback)
 		{
 			//! \brief get iterator for looping over every entry
-			leveldb::ReadOptions options;
+			ReadOptions options;
 			options.fill_cache = false;
 			options.verify_checksums = true;
 			auto it = mLevelDB->NewIterator(options);

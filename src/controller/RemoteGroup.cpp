@@ -4,8 +4,8 @@ using namespace gradido::blockchain;
 using namespace gradido::data;
 
 namespace controller {
-	RemoteGroup::RemoteGroup(const std::string& groupAlias)
-		: Abstract(groupAlias)
+	RemoteGroup::RemoteGroup(uint32_t communityIdIndex)
+		: Abstract(communityIdIndex)
 	{
 		// get coin color on first connect to remote group
 	}

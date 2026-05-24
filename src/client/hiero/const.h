@@ -18,6 +18,10 @@ namespace hiero {
      * The default maximum number of times a request will attempt to be submitted before considering the execution failed.
      */
     constexpr auto DEFAULT_MAX_ATTEMPTS = 10U;
+    /*
+    * Header/Hiero gRPC seems becoming unstable around 30 minutes without messages
+    */
+    constexpr auto DEFAULT_SUBSCRIPTION_INACTIVE_TIMEOUT = std::chrono::minutes(30);
 }
 
 #endif // __GRADIDO_NODE_CLIENT_HIERO_CONST_H_

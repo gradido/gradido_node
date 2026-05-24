@@ -3,16 +3,38 @@
 
 #include "RequestHandler.h"
 #include "gradido_blockchain/types.h"
+#include "gradido_blockchain/data/compact/PublicKeyIndex.h"
+
+#include <memory>
+#include <optional>
+#include <vector>
+
 
 namespace gradido {
 	namespace blockchain {
 		class Abstract;
 		class Filter;
+		struct CompactFilter;
 	}
+	namespace data {
+		class LedgerAnchor;
+		namespace compact {
+			class ConfirmedGradidoTx;
+			using ConstConfirmedTxPtr = std::shared_ptr<const ConfirmedGradidoTx>;
+			using ConfirmedTxs = std::vector<ConstConfirmedTxPtr>;
+		}
+	}
+}
+
+namespace memory {
+	class Block;
+	using ConstBlockPtr = std::shared_ptr <const Block>;
 }
 
 namespace server {
 	namespace json_rpc {
+
+		enum class WireOutputFormat;
 
 		// TODO: write api doc and help on command
 		class ApiHandler : public RequestHandler
@@ -29,16 +51,16 @@ namespace server {
 			*/
 			void findAllTransactions(
 				rapidjson::Value& resultJson,
-				const gradido::blockchain::Filter& filter,
+				const gradido::blockchain::CompactFilter& filter,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-				const std::string& format
+				WireOutputFormat format
 			);
 			/*!
 			* TODO: implement index for iota message id if it is used much
 			* @param resultJson: for success result
 			* @param responseJson: for the overall response, used for example for errors
 			* @param transactionId: this parameter or
-			* @param iotaMessageId: this parameter for finding transaction
+			* @param ledgerAnchor: this parameter for finding transaction
 			*/
 			void getTransaction(
 				rapidjson::Value& resultJson,
@@ -46,12 +68,12 @@ namespace server {
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
 				const std::string& format,
 				uint64_t transactionId = 0,
-				std::shared_ptr<const memory::Block> iotaMessageId = nullptr
+				gradido::data::LedgerAnchor* ledgerAnchor = nullptr
 			);
 			//! \param searchStartDate start date for reverse search for creation transactions range -2 month from there
 			void getCreationSumForMonth(
 				rapidjson::Value& resultJson,
-				memory::ConstBlockPtr pubkey,
+				gradido::data::compact::PublicKeyIndex publicKeyIndex,
 				Timepoint targetDate,
 				Timepoint transactionCreationDate,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain
@@ -61,14 +83,9 @@ namespace server {
 				memory::ConstBlockPtr pubkey,
 				Timepoint date,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain,
-				const std::string& coinCommunityId = ""
+				std::optional<uint32_t> coinCommunityIdIndex = std::nullopt
 			);
 			void getAddressType(
-				rapidjson::Value& resultJson,
-				memory::ConstBlockPtr pubkey,
-				std::shared_ptr<gradido::blockchain::Abstract> blockchain
-			);
-			void getAddressTxids(
 				rapidjson::Value& resultJson,
 				memory::ConstBlockPtr pubkey,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain
@@ -91,8 +108,6 @@ namespace server {
 				memory::ConstBlockPtr nameHash,
 				std::shared_ptr<gradido::blockchain::Abstract> blockchain
 			);
-			// helper	
-
 		};
 	}
 }

@@ -6,10 +6,11 @@
 #include "../../ServerGlobals.h"
 #include "../../SingletonManager/FileLockManager.h"
 #include "../../SingletonManager/CacheManager.h"
+#include "../../task/RebuildBlockIndexTask.h"
 
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
-#include "gradido_blockchain/lib/Profiler.h"
+#include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 
 #include "loguru/loguru.hpp"
@@ -93,7 +94,7 @@ namespace model {
 			if (startReading > mCurrentFileSize - minimalFileSize) {
 				throw EndReachingException("file is to small for read request", mBlockPath.data(), startReading, minimalFileSize);
 			}
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			//Poco::FastMutex::ScopedLock lock(mFastMutex);
 			auto fl = FileLockManager::getInstance();			
 			if (!fl->tryLockTimeout(mBlockPath, 100)) {
@@ -139,6 +140,86 @@ namespace model {
 			std::shared_ptr<memory::Block> result;
 			auto transactionSize = readLine(startReading, &result);
 			return result;
+		}
+		bool Block::readBuffered(grd_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken/* = std::stop_token()*/)
+		{
+			if (stopToken.stop_requested()) {
+				return false;
+			}
+			assert(alloc && callback);
+
+			auto fileStream = getOpenFile();
+			if (fileStream->fail()) {
+				throw std::runtime_error("[model::files::Block::readBuffered] file stream is failing!");
+			}
+			auto minimalFileSize = sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE;
+			if (mCurrentFileSize <= minimalFileSize) {
+				throw EndReachingException("file is smaller than minimal block size", mBlockPath.data(), 0, minimalFileSize);
+			}
+			auto fl = FileLockManager::getInstance();
+			if (!fl->tryLockTimeout(mBlockPath, 100)) {
+				throw LockException("cannot lock file for reading", mBlockPath.data());
+			}
+
+			uint16_t transactionSize = 0;
+			// call seek only if it is really necessary 
+			// for example if a block file is read in complete line by line on program startup
+			// https://stackoverflow.com/questions/2438953/how-is-fseek-implemented-in-the-filesystem
+			// "One observation I have made about fseek on Solaris, is that each call to it resets the read buffer of the FILE.The next read will then always read a full block(8K by default)."
+			// https://bytes.com/topic/c/answers/218188-fseek-speed
+			// "However, a side - effect of the fseek is the flushing of the buffer.Without
+			//	the fseek(), your output will(actually, I suppose "can" is correct in the
+			//		general sense) be buffered, and only written when the buffer fille.With
+			//	the fseek(), you are forcing the buffer to be written for every character."
+			// https://stackoverflow.com/questions/9349470/whats-the-difference-between-fseek-lseek-seekg-seekp
+			// "The difference between the various seek functions is just the kind of file/stream objects on which they operate. 
+			//  On Linux, seekg and fseek are probably implemented in terms of lseek."
+
+			fileStream->seekg(0, std::ios_base::beg);
+			int32_t readed = 0;
+			unsigned char hash[crypto_generichash_KEYBYTES];
+			memset(hash, 0, sizeof hash);
+
+			while (fileStream->good() && readed < mCurrentFileSize && !stopToken.stop_requested()) {
+				auto fileCursor = readed;
+				fileStream->read((char*)&transactionSize, sizeof(uint16_t));
+				readed += sizeof(uint16_t);
+				if (readed + transactionSize > mCurrentFileSize) {
+					fl->unlock(mBlockPath);
+					throw EndReachingException("file is to small for transaction size", mBlockPath.data(), readed, transactionSize);
+				}
+				if (transactionSize < MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE) {
+					fl->unlock(mBlockPath);
+					throw InvalidReadBlockSize("transactionSize is to small to contain a transaction", mBlockPath.data(), readed, transactionSize);
+				}
+				auto memStart = alloc->last_index;
+				grd_memory_block buffer;
+				grd_memory_block_alloc(&buffer, alloc, transactionSize);
+				if (alloc->out_of_memory_capacity) {
+					// TODO: own exception
+					throw GradidoNodeInvalidDataException("memory buffer to small");
+				}
+				fileStream->read(reinterpret_cast<char*>(buffer.data), buffer.size);
+				readed += transactionSize;
+				calculateOneHashStep(hash, buffer.data, buffer.size);
+				callback->finishedLine(memStart, transactionSize, fileCursor);				
+			}
+			callback->flush();
+			if (!stopToken.stop_requested()) {
+				unsigned char hash2[crypto_generichash_KEYBYTES];
+				fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
+				int filePointer = fileStream->tellg();
+				if (0 != sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
+					throw HashMismatchException(
+						"block hash mismatch",
+						memory::Block(sizeof hash, hash),
+						memory::Block(sizeof hash2, hash2)
+					);
+				}
+			}
+			
+			fl->unlock(mBlockPath);
+			return true;
 		}
 
 
@@ -201,7 +282,7 @@ namespace model {
 
 		std::shared_ptr<memory::Block> Block::calculateHash()
 		{
-			Profiler timeUsed;
+			MonotonicTimer timeUsed;
 			auto fl = FileLockManager::getInstance();
 			
 			if (mCurrentFileSize == 0) {
@@ -267,50 +348,7 @@ namespace model {
 
 			return result;
 		}
-
-		std::shared_ptr<RebuildBlockIndexTask> Block::rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
-		{			
-			auto fl = FileLockManager::getInstance();
-			std::shared_ptr<RebuildBlockIndexTask> rebuildTask = std::make_shared<RebuildBlockIndexTask>(blockchain);
-			
-			int32_t fileCursor = 0;
-			std::shared_ptr<memory::Block> readBuffer;
-			unsigned char hash[crypto_generichash_KEYBYTES];
-			memset(hash, 0, sizeof hash);
-
-			// read in every line
-			while (fileCursor + sizeof(uint16_t) + MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE <= mCurrentFileSize) {
-				auto lineSize = readLine(fileCursor, &readBuffer);
-				rebuildTask->pushLine(fileCursor, readBuffer);
-				calculateOneHashStep(hash, (const unsigned char*)readBuffer->data(), readBuffer->size());
-				fileCursor += lineSize + sizeof(uint16_t);
-			}		
-
-			unsigned char hash2[crypto_generichash_KEYBYTES];
-			if (!fl->tryLockTimeout(mBlockPath, 100)) {
-				throw LockException("couldn't lock file in time", mBlockPath.data());
-			}
-			auto fileStream = getOpenFile();			
-			fileStream->read((char*)hash2, crypto_generichash_KEYBYTES);
-			fl->unlock(mBlockPath);
-
-			bool result = false;
-			if (0 == sodium_memcmp(hash, hash2, crypto_generichash_KEYBYTES)) {
-				result = true;
-			}
-
-			if (result) {
-				return rebuildTask;
-			}
-			else {
-				throw HashMismatchException(
-					"block hash mismatch",
-					memory::Block(sizeof hash, hash),
-					memory::Block(sizeof hash2, hash2)
-				);
-			}
-		}
-			
+	
 		uint32_t Block::findLastBlockFileInFolder(std::string_view groupFolderPath)
 		{
 			std::filesystem::path groupFolder(groupFolderPath);
@@ -357,44 +395,6 @@ namespace model {
 			mCursorPositions = mTargetBlock->appendLines(mLines);
 
 			return 0;
-		}
-
-
-		RebuildBlockIndexTask::RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain)
-			: task::CPUTask(ServerGlobals::g_CPUScheduler), mBlockchain(blockchain)
-		{
-
-		}
-
-		int RebuildBlockIndexTask::run()
-		{
-			while (!mPendingFileCursorLine.empty()) 
-			{
-				std::pair<int32_t, std::shared_ptr<memory::Block>> fileCursorLine;
-				if (!mPendingFileCursorLine.pop(fileCursorLine)) {
-					throw std::runtime_error("don't get next file cursor line");
-				}
-				auto& serializedTransaction = fileCursorLine.second;
-				deserialize::Context deserializer(serializedTransaction, deserialize::Type::CONFIRMED_TRANSACTION);
-				deserializer.run();
-				if (!deserializer.isConfirmedTransaction()) {
-					throw InvalidGradidoTransaction("invalid transaction from block file while rebuilding block index", serializedTransaction);
-				}
-				lock();
-				std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transactionEntry = std::make_shared<gradido::blockchain::NodeTransactionEntry>(
-					deserializer.getConfirmedTransaction(),
-					mBlockchain,
-					fileCursorLine.first
-				);
-				mTransactionEntries.push_back(transactionEntry);
-				unlock();
-			}
-			return 0;
-		}
-
-		void RebuildBlockIndexTask::pushLine(int32_t fileCursor, std::shared_ptr<memory::Block> line)
-		{
-			mPendingFileCursorLine.push({ fileCursor, line });
 		}
 	}
 }

@@ -102,18 +102,26 @@ namespace client {
             return ::hiero::ConsensusTopicResponse(resultJson);
         }
 
-        void MirrorClient::subscribeTopic(std::shared_ptr<TopicMessageQuery> responseListener) {
+        void MirrorClient::subscribeTopic(TopicMessageQuery* responseListener) 
+        {
             if (!responseListener) {
                 throw GradidoNullPointerException("missing response listener", "TopicMessageQuery", __FUNCTION__);
             }
 
             grpc::StubOptions options;
             grpc::TemplatedGenericStub<grpc::ByteBuffer, grpc::ByteBuffer> mirrorStub(mChannel);
-            auto readerWriter = std::move(mirrorStub.PrepareCall(
-                responseListener->getClientContextPtr(),
-                "/com.hedera.mirror.api.proto.ConsensusService/subscribeTopic",
-                responseListener->getCompletionQueuePtr()
-            ));
+            auto readerWriter = mirrorStub.PrepareCall(
+              responseListener->getClientContextPtr(),
+              "/com.hedera.mirror.api.proto.ConsensusService/subscribeTopic",
+              responseListener->getCompletionQueuePtr()
+            );
+            if (!readerWriter) {
+              throw GradidoNullPointerException(
+                "PrepareCall failed, couldn't subscribe to topic",
+                "std::unique_ptr<ClientAsyncReaderWriter<RequestType, ResponseType>>",
+                __FUNCTION__
+              );
+            }
             readerWriter->StartCall(responseListener->getCallStatusPtr());
             responseListener->setResponseReader(readerWriter);
         }

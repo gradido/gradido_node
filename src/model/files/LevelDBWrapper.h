@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include <functional>
+#include <optional>
 
 /*!
  * @author Dario Rekowski
@@ -33,13 +34,13 @@ namespace model {
 			//! read value for key from leveldb
 			//! \param value pointer to string in which result will be write
 			//! \return true if value could be found
-			bool getValueForKey(const char* key, std::string* value);
+			std::optional<std::string> getValueForKey(const std::string& key);
 
 			//! add new value key pair or update value if key exist
 			//! \return true, throw exception on error
-			void setKeyValue(const char* key, const std::string& value);
+			void setKeyValue(const std::string& key, const std::string& value);
 
-			void removeKey(const char* key);
+			void removeKey(const std::string& key);
 
 			//! go through all entries and call callback for each with key, value
 			//! don't fill level db cache, verify checksum

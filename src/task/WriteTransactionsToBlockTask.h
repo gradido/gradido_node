@@ -8,7 +8,11 @@
  */
 
 #include "CPUTask.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/lib/MultithreadQueue.h"
+#include "gradido_blockchain/lib/DictionaryInterface.h"
+
+#include <memory>
 
 namespace cache {
 	class BlockIndex;
@@ -24,6 +28,11 @@ namespace gradido {
 	namespace blockchain {
 		class NodeTransactionEntry;
 	}
+}
+
+namespace memory {
+	class Block;
+	using ConstBlockPtr = std::shared_ptr<const Block>;
 }
 
 /*! 
@@ -47,8 +56,11 @@ namespace task {
 		//! no mutex lock, value doesn't change, set in WriteTransactionsToBlockTask()
 		inline Timepoint getCreationDate() { return mCreationDate; }
 
-		void addSerializedTransaction(std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction);
-
+		void addSerializedTransaction(
+			std::shared_ptr<gradido::blockchain::NodeTransactionEntry> transaction,
+			IMutableDictionary<gradido::data::PublicKey>& publicKeyDictionary
+		);
+		
 		//! return transaction by nr
 		std::shared_ptr<gradido::blockchain::NodeTransactionEntry> getTransaction(uint64_t nr);
 

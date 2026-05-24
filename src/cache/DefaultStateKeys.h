@@ -1,8 +1,10 @@
 #ifndef __GRADIDO_NODE_CACHE_DEFAULT_STATE_KEYS_H
 #define __GRADIDO_NODE_CACHE_DEFAULT_STATE_KEYS_H
 
+#include "gradido_blockchain/types.h"
+
 namespace cache {
-	enum class DefaultStateKeys {
+	enum class DefaultStateKeys: uint8_t {
 		LAST_ADDRESS_INDEX,
 		LAST_BLOCK_NR,
 		LAST_TRANSACTION_ID,

@@ -56,7 +56,7 @@ namespace task {
 			// else put task to pending queue
 			// printf("[CPUSheduler::sheduleTask] all %d threads in use \n", getThreadCount());
 			if (mFreeWorkerThreads.empty()) {
-				LOG_F(INFO, "sheduleTask in %s all %u threads in use, add to pending task list", mName.data(), getThreadCount());
+				// LOG_F(INFO, "sheduleTask in %s all %u threads in use, add to pending task list", mName.data(), getThreadCount());
 			}
 			{
 				std::lock_guard _lock(mPendingTasksMutex);

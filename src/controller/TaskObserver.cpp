@@ -29,7 +29,7 @@ bool TaskObserver::addBlockWriteTask(std::shared_ptr<task::WriteTransactionsToBl
 	}
 	auto transactions = blockWriteTask->getTransactionEntriesList();
 	mTransactionsFromPendingTasks.insert(transactions->begin(), transactions->end());
-	
+
 	return true;
 }
 
@@ -89,7 +89,7 @@ std::shared_ptr<NodeTransactionEntry> TaskObserver::getTransaction(uint64_t tran
 
 // *********************** Finish command **************************************
 int TaskObserverFinishCommand::taskFinished(task::Task* task)
-{ 
-	mBlockchain->getTaskObserver().removeTask(task); 
+{
+	mBlockchain->getTaskObserver().removeTask(task);
 	return 0; 
 }

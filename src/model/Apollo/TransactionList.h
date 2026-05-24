@@ -8,7 +8,7 @@ namespace gradido {
 	namespace blockchain {
 		class Abstract;
 		class TransactionEntry;
-		class Filter;
+		struct Filter;
 	}
 }
 

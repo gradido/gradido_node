@@ -7,10 +7,20 @@
 
 #include "../../task/CPUTask.h"
 
+#include <sodium.h>
+
 #include <fstream>
+#include <memory>
+#include <stop_token>
 
 //! MAGIC NUMBER: use to check if a file is big enough to could contain a transaction
 #define MAGIC_NUMBER_MINIMAL_TRANSACTION_SIZE 25
+
+struct grd_memory;
+
+namespace cache {
+	class BlockIndex;
+}
 
 namespace controller {
 	class AddressIndex;
@@ -23,9 +33,26 @@ namespace gradido {
 	}
 }
 
+namespace memory {
+	class Block;
+	using BlockPtr = std::shared_ptr<Block>;
+}
+
+namespace task {
+	class RebuildBlockIndexTask;
+}
+
 namespace model {
 	namespace files {
 		class RebuildBlockIndexTask;
+
+		class IBlockBufferRead
+		{
+		public:
+			virtual void finishedLine(uint16_t memStart, uint16_t size, int32_t fileCursor) = 0;
+			// will be called after last line was finished
+			virtual void flush() = 0;
+		};
 
 		class Block : public TimerCallback
 		{
@@ -44,6 +71,8 @@ namespace model {
 			//! \return size of line (without size field in file)
 			uint16_t readLine(uint32_t startReading, memory::BlockPtr* buffer);
 			std::shared_ptr<memory::Block> readLine(uint32_t startReading);
+			// read whole file, validate hash
+			bool readBuffered(grd_memory* alloc, IBlockBufferRead* callback, std::stop_token stopToken = std::stop_token());
 
 			//! \brief call appendLines
 			//! \return file cursor pos at start from this line in file (0 at start of file)
@@ -57,9 +86,6 @@ namespace model {
 
 			// very expensive, read in whole file and calculate hash
 			bool validateHash();
-
-			// read whole file, validate hash
-			std::shared_ptr<RebuildBlockIndexTask> rebuildBlockIndex(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
 
 			static uint32_t findLastBlockFileInFolder(std::string_view groupFolderPath);
 
@@ -100,27 +126,7 @@ namespace model {
 			std::vector<uint32_t> mCursorPositions;
 		};
 
-		//! TODO: update for able to start with first line, while calling function is still loading more and more lines from file
-		//! gives the additional option to prevent task for storing to many lines at once
-		//! use ability of Task Object for resheduling
-		class RebuildBlockIndexTask : public task::CPUTask
-		{
-		public:
-			RebuildBlockIndexTask(std::shared_ptr<const gradido::blockchain::FileBased> blockchain);
-			const char* getResourceType() const { return "RebuildBlockIndexTask"; };
-
-			int run();
-			//! \param line will be moved
-			void pushLine(int32_t fileCursor, std::shared_ptr<memory::Block> line);
-			const std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>>& getTransactionEntries() const { return mTransactionEntries; }
-
-			inline bool isPendingQueueEmpty() { return mPendingFileCursorLine.empty(); }
-
-		protected:
-			std::shared_ptr<const gradido::blockchain::FileBased> mBlockchain;
-			std::list<std::shared_ptr<gradido::blockchain::NodeTransactionEntry>> mTransactionEntries;
-			MultithreadQueue<std::pair<int32_t, std::shared_ptr<memory::Block>>> mPendingFileCursorLine;
-		};
+		
 	}
 }
 

@@ -78,10 +78,10 @@ namespace cache {
 		LOG_F(WARNING, "couldn't find transactionTriggerEvent for removal for transaction: %lu", transactionTriggerEvent.getLinkedTransactionId());
 	}
 
-	std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> TransactionTriggerEvent::findTransactionTriggerEventsInRange(TimepointInterval range)
+	std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> TransactionTriggerEvent::findTransactionTriggerEventsInRange(Timestamp startDate, Timestamp endDate)
 	{
-		auto startIt = mTransactionTriggerEvents.lower_bound(range.getStartDate());
-		auto endIt = mTransactionTriggerEvents.upper_bound(range.getEndDate());
+		auto startIt = mTransactionTriggerEvents.lower_bound(startDate);
+		auto endIt = mTransactionTriggerEvents.upper_bound(endDate);
 		std::vector<std::shared_ptr<const data::TransactionTriggerEvent>> result;
 		result.reserve(std::distance(startIt, endIt));
 		for (auto& it = startIt; it != endIt; it++) {
@@ -90,10 +90,10 @@ namespace cache {
 		return result;
 	}
 
-	std::shared_ptr<const gradido::data::TransactionTriggerEvent> TransactionTriggerEvent::findNextTransactionTriggerEventInRange(TimepointInterval range)
+	std::shared_ptr<const gradido::data::TransactionTriggerEvent> TransactionTriggerEvent::findNextTransactionTriggerEventInRange(Timestamp startDate, Timestamp endDate)
 	{
-		auto startIt = mTransactionTriggerEvents.lower_bound(range.getStartDate());
-		if (startIt != mTransactionTriggerEvents.end() && startIt->first.getAsTimepoint() <= range.getEndDate()) {
+		auto startIt = mTransactionTriggerEvents.lower_bound(startDate);
+		if (startIt != mTransactionTriggerEvents.end() && startIt->first.getAsTimepoint() <= endDate.getAsTimepoint()) {
 			return startIt->second;
 		}
 		return nullptr;

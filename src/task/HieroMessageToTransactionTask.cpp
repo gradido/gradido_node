@@ -1,7 +1,5 @@
 #include "HieroMessageToTransactionTask.h"
 
-#include "gradido_blockchain/lib/Profiler.h"
-
 #include "../blockchain/FileBasedProvider.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "gradido_blockchain/blockchain/Filter.h"
@@ -56,7 +54,7 @@ namespace task {
 
         // deserialize
         deserialize::Context deserializer(mTransactionRaw, deserialize::Type::GRADIDO_TRANSACTION);
-        deserializer.run();
+        deserializer.run(blockchain->getCommunityIdIndex());
         if (deserializer.isGradidoTransaction()) {
             mTransaction = deserializer.getGradidoTransaction();
         }
@@ -81,11 +79,11 @@ namespace task {
         }
 
         // check if transaction already exist
-        // if this transaction doesn't belong to us, we can quit here 
+        // if this transaction doesn't belong to us, we can quit here
         // also if we already have this transaction
         auto fileBasedBlockchain = std::dynamic_pointer_cast<FileBased>(blockchain);
         assert(fileBasedBlockchain);
-        if (fileBasedBlockchain->isTransactionExist(mTransaction)) {
+        if (fileBasedBlockchain->isTransactionExist(mTransaction, mConsensusTimestamp)) {
             LOG_F(INFO, "Transaction skipped (cached): %s", mConsensusTimestamp.toString().data());
             return 0;
         }

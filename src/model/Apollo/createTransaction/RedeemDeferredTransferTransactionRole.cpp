@@ -19,18 +19,17 @@ namespace model {
 
         Transaction result(confirmedTransaction, pubkey);
         auto redeemDeferredTransfer = transactionBody->getRedeemDeferredTransfer();
-        auto transfer = redeemDeferredTransfer->getTransfer();
+        const auto& transfer = redeemDeferredTransfer->getTransfer();
         auto amount = transfer.getSender().getAmount();
 
         if (transfer.getRecipient()->isTheSame(pubkey)) {
           result.setType(TransactionType::LINK_RECEIVE);
           result.setPubkey(transfer.getSender().getPublicKey());
-        }
-				else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
-          result.setType(TransactionType::SEND);
-          result.setPubkey(transfer.getRecipient());
-					amount.negate();
-				} else {
+        } else if (transfer.getSender().getPublicKey()->isTheSame(pubkey)) {
+            result.setType(TransactionType::SEND);
+            result.setPubkey(transfer.getRecipient());
+            amount.negate();
+        } else {
           amount = calculateChange(
             redeemDeferredTransfer->getDeferredTransferTransactionNr(),
             confirmedTransaction.getConfirmedAt(),
@@ -38,22 +37,16 @@ namespace model {
           ).getBalance();
           result.setType(TransactionType::LINK_CHANGE);
           result.setPubkey(transfer.getSender().getPublicKey());
-				}
+		}
         if (data::AddressType::DEFERRED_TRANSFER == mAddressType) {
           auto change = calculateChange(
             redeemDeferredTransfer->getDeferredTransferTransactionNr(),
             confirmedTransaction.getConfirmedAt(),
             transfer.getSender()
           );
-          printf(
-            "RedeemDeferredTransferTransactionRole::createTransaction setting change amount: %s, negated: %s, pubkey: %s\n",
-            change.getBalance().toString().data(),
-            change.getBalance().negated().toString().data(),
-            change.getPublicKey()->convertToHex().data()
-          );
           result.setChange(change.getBalance().negated(), change.getPublicKey());
         }
-				result.setAmount(amount);
+        result.setAmount(amount);
         return result;
       }
 
@@ -69,7 +62,7 @@ namespace model {
         return {
           decayedAccountBalance.getPublicKey(),
           decayedAccountBalance.getBalance() - transferAmount.getAmount(),
-          decayedAccountBalance.getCommunityId()
+          decayedAccountBalance.getCoinCommunityIdIndex()
         };
       }
 
@@ -90,7 +83,7 @@ namespace model {
           targetDate
         );
 
-        return data::AccountBalance(transferAmount.getPublicKey(), decayed, transferAmount.getCommunityId());
+        return data::AccountBalance(transferAmount.getPublicKey(), decayed, transferAmount.getCoinCommunityIdIndex());
       }
     }
   }

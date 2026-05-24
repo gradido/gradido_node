@@ -46,6 +46,7 @@ namespace task {
 	class Command {
 	public:
 		virtual ~Command() = default;
+		// TODO: check if int as return is needed and can be used or better void or better enum
 		virtual int taskFinished(Task* task) = 0;
 	};
 

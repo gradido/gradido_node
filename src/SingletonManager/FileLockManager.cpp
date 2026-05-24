@@ -7,12 +7,15 @@
 
 
 FileLockManager::FileLockManager()
+	: mInitialized(true)
 {
 
 }
 
 FileLockManager::~FileLockManager()
 {
+	std::scoped_lock lock(mWorkingMutex);
+	mInitialized = false;
 	for (auto it = mFiles.begin(); it != mFiles.end(); it++) {
 		// printf("%s \n", it->first.data());
 		delete it->second;
@@ -28,6 +31,10 @@ FileLockManager* FileLockManager::getInstance()
 
 bool FileLockManager::isLock(const std::string& file)
 {
+	if (!mInitialized) {
+		printf("warning: %s was called after ~FileLockManager, will return false regardless of real state\n", __FUNCTION__);
+		return false;
+	}
 	std::scoped_lock lock(mWorkingMutex);
 	auto it = mFiles.find(file);
 	if (it != mFiles.end()) {
@@ -40,6 +47,10 @@ bool FileLockManager::isLock(const std::string& file)
 bool FileLockManager::tryLock(const std::string& file)
 {
 	std::scoped_lock lock(mWorkingMutex);
+	if (!mInitialized) {
+		printf("warning: %s was called after ~FileLockManager, will return true regardless of real state\n", __FUNCTION__);
+		return true;
+	}
 	auto it = mFiles.find(file);
 	if (it != mFiles.end()) {
 		if (!*it->second) {
@@ -54,6 +65,10 @@ bool FileLockManager::tryLock(const std::string& file)
 
 bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 {
+	if (!mInitialized) {
+		printf("warning: %s was called after ~FileLockManager, will return true regardless of real state\n", __FUNCTION__);
+		return true;
+	}
 	int timeoutRounds = tryCount;
 	bool fileLocked = false;
 	while (!fileLocked && timeoutRounds > 0) {
@@ -73,6 +88,10 @@ bool FileLockManager::tryLockTimeout(const std::string& file, int tryCount)
 void FileLockManager::unlock(const std::string& file)
 {
 	std::scoped_lock lock(mWorkingMutex);
+	if (!mInitialized) {
+		printf("warning: %s was called after ~FileLockManager\n", __FUNCTION__);
+		return;
+	}
 	auto it = mFiles.find(file);
 	assert(it != mFiles.end());
 	

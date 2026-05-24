@@ -4,32 +4,45 @@
 #include "../client/hiero/ConsensusClient.h"
 #include "../client/GraphQL.h"
 #include "../ServerGlobals.h"
-#include "../task/SyncTopicOnStartup.h"
+#include "../task/SyncTopic.h"
 
+#include "gradido_blockchain/AppContext.h"
+#include "gradido_blockchain/data/adapter/uuid.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
+#include "gradido_blockchain/lib/DictionaryExceptions.h"
 
 #include "loguru/loguru.hpp"
 
+#include <memory>
 #include <random>
+#include <shared_mutex>
+#include <string>
+#include <vector>
+
+using std::lock_guard;
+using std::shared_ptr, std::make_shared;
+using std::string;
+using std::vector;
 
 namespace gradido {
+	using data::adapter::uuidFromString;
 	namespace blockchain {
+
 		FileBasedProvider::FileBasedProvider()
-			:mGroupIndex(nullptr), mCommunityIdIndex(ServerGlobals::g_FilesPath + "/communityIdsCache"), mInitalized(false)
+			:mGroupIndex(nullptr), mInitalized(false)
 		{
 
 		}
 
 		FileBasedProvider::~FileBasedProvider()
 		{
-			std::lock_guard _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			if (mGroupIndex) {
 				delete mGroupIndex;
 				mGroupIndex = nullptr;
 			}
 		}
-
-		
 
 		FileBasedProvider* FileBasedProvider::getInstance()
 		{
@@ -37,36 +50,59 @@ namespace gradido {
 			return &one;
 		}
 
-		std::shared_ptr<Abstract> FileBasedProvider::findBlockchain(std::string_view communityId)
+		shared_ptr<Abstract> FileBasedProvider::findBlockchain(uint32_t communityIdIndex)
 		{
-			std::lock_guard _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			if (!mInitalized) {
 				throw ClassNotInitalizedException("please call init before", "blockchain::FileBasedProvider");
 			}
-			auto it = mBlockchainsPerGroup.find(communityId);
+			auto it = mBlockchainsPerGroup.find(communityIdIndex);
 			if (it != mBlockchainsPerGroup.end()) {
 				return it->second;
 			}
-			// go manual
+
+
+			return nullptr;
+		}
+
+		shared_ptr<Abstract> FileBasedProvider::findBlockchain(const string& communityId)
+		{
+			auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(uuidFromString(communityId.c_str()));
+			if (!communityIdIndex) {
+				LOG_F(WARNING, "no community id index for %s", communityId.c_str());
+			}
+			else {
+				return findBlockchain(communityIdIndex);
+			}
+			return nullptr;
+		}
+
+		shared_ptr<Abstract> FileBasedProvider::findBlockchain(hiero::TopicId& topicId)
+		{
 			try {
-				const auto& groupIndexEntry = mGroupIndex->getCommunityDetails(hiero::TopicId(std::string(communityId)));
-				auto it = mBlockchainsPerGroup.find(groupIndexEntry.communityId);
-				if (it != mBlockchainsPerGroup.end()) {
-					return it->second;
+				const auto& groupIndexEntry = mGroupIndex->getCommunityDetails(topicId);
+				auto communityIdIndex = g_appContext->getCommunityIds().getIndexForData(uuidFromString(groupIndexEntry.communityId.c_str()));
+				if (!communityIdIndex) {
+					LOG_F(WARNING, "no community id index for %s", groupIndexEntry.communityId.c_str());
+				}
+				else {
+					return findBlockchain(communityIdIndex);
 				}
 			}
 			catch (GradidoBlockchainException& ex) {
 				LOG_F(WARNING, "%s", ex.getFullString().data());
 			}
-
 			return nullptr;
 		}
+
 		bool FileBasedProvider::init(
-			const std::string& communityConfigFile,
-			std::vector<std::shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
+			std::stop_token masterStopView,
+			const string& communityConfigFile,
+			vector<shared_ptr<client::hiero::ConsensusClient>>&& hieroClients,
 			uint8_t hieroClientsPerCommunity/* = 3 */
 		) {
-			std::lock_guard _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
+			mStopToken = masterStopView;
 			mInitalized = true;
 			bool resetAllCommunityIndices = false;
 			mHieroClientsPerCommunity = hieroClientsPerCommunity;
@@ -74,10 +110,6 @@ namespace gradido {
 			if (mHieroClientsPerCommunity > mHieroClients.size()) {
 				LOG_F(ERROR, "more hiero clients per community as hiero clients");
 				return false;
-			}
-			if (!mCommunityIdIndex.init(GRADIDO_NODE_MAGIC_NUMBER_COMMUNITY_ID_INDEX_CACHE_SIZE_MBYTE * 1024 * 1024)) {
-				mCommunityIdIndex.reset();
-				resetAllCommunityIndices = true;
 			}
 			mGroupIndex = new cache::GroupIndex(communityConfigFile);
 			mGroupIndex->update();
@@ -88,14 +120,33 @@ namespace gradido {
 				// exit if at least one blockchain from config couldn't be loaded
 				// should only occure with invalid config
 				const auto& details = mGroupIndex->getCommunityDetails(communityId);
-				if (!addCommunity(communityId, hiero::TopicId(details.topicId), details.alias, resetAllCommunityIndices)) {
+				hiero::TopicId topicId;
+				if (details.topicId.size()) {
+					topicId = details.topicId;
+				}
+				if (!addCommunity(communityId, topicId, details.alias)) {
 					LOG_F(ERROR, "error adding community %s in folder: %s", details.alias.data(), details.folderName.data());
 					return false;
 				}
 			}
-			// step 2: check for new transactions in hiero network, all blockchains at the same time
+			// step 2: validate last transactions
 			for (const auto& pair : mBlockchainsPerGroup) {
-				auto task = pair.second->initOnline();
+				if (!pair.second->startValidationTransactions()) {
+					LOG_F(
+						ERROR,
+						"error validate last transactions from community: %s in folder: %s",
+						pair.second->getCommunityId().c_str(),
+						pair.second->getFolderPath().c_str()
+					);
+				}
+			}
+
+			// step 3: check for new transactions in hiero network, all blockchains at the same time
+			for (const auto& pair : mBlockchainsPerGroup) {
+				if (pair.second->getHieroTopicId().empty()) {
+					continue;
+				}
+				auto task = pair.second->getTopicSyncTask();
 				auto hieroClient = pair.second->pickHieroClient();
 				hieroClient->getTopicInfo(pair.second->getHieroTopicId(), task);
 				task->scheduleTask(task);
@@ -105,66 +156,69 @@ namespace gradido {
 		}
 		void FileBasedProvider::exit()
 		{
-			std::lock_guard _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			mInitalized = false;
 			for (auto blockchain : mBlockchainsPerGroup) {
 				blockchain.second->exit();
 			}
 			mBlockchainsPerGroup.clear();
-			mCommunityIdIndex.exit();
 		}
 
 		int FileBasedProvider::reloadConfig()
 		{
-			std::lock_guard _lock(mWorkMutex);
+			lock_guard _lock(mWorkMutex);
 			if (!mInitalized) {
 				throw ClassNotInitalizedException("please call init before", "blockchain::FileBasedProvider");
 			}
 			mGroupIndex->update();
-			auto communitiesIds = mGroupIndex->listCommunitiesIds();
 			int addedBlockchainsCount = 0;
-			for (auto& communityId : communitiesIds) {
-				const auto& details = mGroupIndex->getCommunityDetails(communityId);
-				auto it = mBlockchainsPerGroup.find(communityId);
+			mGroupIndex->iterate([&](const cache::CommunityIndexEntry& details) -> bool {
+				auto it = mBlockchainsPerGroup.find(details.communityIdIndex);
 				if (it == mBlockchainsPerGroup.end()) {
-					if(addCommunity(communityId, hiero::TopicId(details.topicId), details.alias, false)) {
+					if (addCommunity(details.communityId, hiero::TopicId(details.topicId), details.alias)) {
 						addedBlockchainsCount++;
 					}
 				}
 				else {
-					updateListenerCommunity(communityId, details.alias, it->second);
+					updateListenerCommunity(details.communityIdIndex, details.alias, it->second);
 				}
-			}
+				return true;
+			});
 			return addedBlockchainsCount;
 		}
 
-		std::shared_ptr<FileBased> FileBasedProvider::addCommunity(
-			const std::string& communityId, 
+		shared_ptr<FileBased> FileBasedProvider::addCommunity(
+			const string& communityId,
 			const hiero::TopicId& topicId,
-			const std::string& alias, 
-			bool resetIndices
+			const string& alias
 		) {
 			try {
-				auto folder = mGroupIndex->getFolder(communityId);
+				auto communityIdIndex = g_appContext->getOrAddCommunityIdIndex(communityId);
+				auto folder = mGroupIndex->getFolder(communityIdIndex);
+				std::shared_ptr<FileBased> blockchain;
+				if (topicId.empty()) {
+					blockchain = FileBased::createWithoutHieroTopic(mStopToken, communityId, alias, folder);
+				} else {
+					// with more hiero clients as per community needed, we make sure we not take always the first mHieroClientsPerCommunity from them
+					vector<shared_ptr<client::hiero::ConsensusClient>> hieroClients = mHieroClients; // copy
+					if (hieroClients.size() > mHieroClientsPerCommunity) {
+						std::shuffle(hieroClients.begin(), hieroClients.end(), std::mt19937{ std::random_device{}() });
+						hieroClients.resize(mHieroClientsPerCommunity);
+					}
 
-				// with more hiero clients as per community needed, we make sure we not take always the first mHieroClientsPerCommunity from them
-				std::vector<std::shared_ptr<client::hiero::ConsensusClient>> hieroClients = mHieroClients; // copy
-				if (hieroClients.size() > mHieroClientsPerCommunity) {
-					std::shuffle(hieroClients.begin(), hieroClients.end(), std::mt19937{ std::random_device{}() });
-					hieroClients.resize(mHieroClientsPerCommunity);
+					// with that call community will be initialized and start listening
+					blockchain = FileBased::create(mStopToken, communityId, topicId, alias, folder, std::move(hieroClients));
 				}
+				g_appContext->addBlockchain(communityIdIndex, blockchain);
+				updateListenerCommunity(communityIdIndex, alias, blockchain);
 
-				// with that call community will be initialized and start listening
-				auto blockchain = FileBased::create(communityId, topicId, alias, folder, std::move(hieroClients));
-				updateListenerCommunity(communityId, alias, blockchain);
 				// need to have blockchain in map for init able to work
-				mBlockchainsPerGroup.insert({ communityId, blockchain });
+				mBlockchainsPerGroup.insert({ communityIdIndex, blockchain });
 				if (!blockchain->init(false)) {
 					LOG_F(ERROR, "error initalizing blockchain: %s", communityId.data());
-					mBlockchainsPerGroup.erase(communityId);
+					mBlockchainsPerGroup.erase(communityIdIndex);
 					return nullptr;
 				}
-				mCommunityIdIndex.getOrAddIndexForString(communityId);
 				return blockchain;
 			}
 			catch (GradidoBlockchainException& ex) {
@@ -175,19 +229,19 @@ namespace gradido {
 				return nullptr;
 			}
 		}
-		void FileBasedProvider::updateListenerCommunity(const std::string& communityId, const std::string& alias, std::shared_ptr<FileBased> blockchain)
+		void FileBasedProvider::updateListenerCommunity(uint32_t communityIdIndex, const string& alias, shared_ptr<FileBased> blockchain)
 		{
-			const auto& communityConfig = mGroupIndex->getCommunityDetails(communityId);
+			const auto& communityConfig = mGroupIndex->getCommunityDetails(communityIdIndex);
 			// for notification of community server by new transaction
 			// deprecated, will be replaced with mqtt in future
 			if (!communityConfig.newBlockUri.empty()) {
-				std::shared_ptr<client::Base> clientBase;
-				auto uri = std::string(communityConfig.newBlockUri);
+				shared_ptr<client::Base> clientBase;
+				auto uri = string(communityConfig.newBlockUri);
 				if (communityConfig.blockUriType == "json") {
-					clientBase = std::make_shared<client::JsonRPC>(uri);
+					clientBase = make_shared<client::JsonRPC>(uri);
 				}
 				else if (communityConfig.blockUriType == "graphql") {
-					clientBase = std::make_shared<client::GraphQL>(uri);
+					clientBase = make_shared<client::GraphQL>(uri);
 				}
 				else {
 					LOG_F(ERROR, "unknown new block uri type: %s", communityConfig.blockUriType.data());

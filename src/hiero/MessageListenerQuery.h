@@ -20,10 +20,10 @@ namespace hiero {
 		void onMessageArrived(ConsensusTopicResponse&& consensusTopicResponse) override;
 
 		// will be called from grpc client if connection was closed
-		void onConnectionClosed() override;
+		void onConnectionClosed(client::hiero::ConnectionClosedReason reason) noexcept override;
 
 		inline bool isClosed() const { return mIsClosed; }
-		inline void cancelConnection() { mClientContext.TryCancel(); }
+		inline void cancelConnection() { getClientContextPtr()->TryCancel(); }
 	protected:
 		TopicId mTopicId;
 		std::string mCommunityId;
