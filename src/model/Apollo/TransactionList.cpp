@@ -2,8 +2,8 @@
 #include "createTransaction/Context.h"
 #include "gradido_blockchain/blockchain/Filter.h"
 #include "gradido_blockchain/data/Timestamp.h"
-#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/NodeTransactionEntry.h"
@@ -68,7 +68,7 @@ namespace model {
 			Filter countFilter = filter;
 			countFilter.pagination = Pagination(0, 0);
 			auto allTransactionsCount = mBlockchain->countAll(countFilter);
-			countFilter.transactionType = gradido::data::TransactionType::REGISTER_ADDRESS;
+			countFilter.transactionType = GRDT_TRANSACTION_REGISTER_ADDRESS;
 			auto registerAddressTransactionsCount = mBlockchain->countAll(countFilter);
 			if (registerAddressTransactionsCount < allTransactionsCount) {
 				countTransactions = allTransactionsCount - registerAddressTransactionsCount;

@@ -1,7 +1,7 @@
 #ifndef __GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H
 #define __GRADIDO_NODE_MODEL_FILES_BLOCK_INDEX_H
 
-#include "gradido_blockchain/data/TransactionType.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include "../../lib/VirtualFile.h"
 
@@ -28,7 +28,7 @@ namespace model {
 		{
 		public:
 			virtual bool addIndicesForTransaction(
-				gradido::data::TransactionType transactionType,
+				grdt_transaction transactionType,
 				uint32_t coinCommunityIdIndex, 
 				date::year year,
 				date::month month,
@@ -71,7 +71,7 @@ namespace model {
 			inline void addDataBlock(
 				uint64_t transactionNr,
 				int32_t fileCursor,
-				gradido::data::TransactionType transactionType,
+				grdt_transaction transactionType,
 				uint32_t coinCommunityIdIndex,
 				uint8_t isBalanceChanging,
 				const std::vector<uint32_t>& addressIndices
@@ -176,7 +176,7 @@ namespace model {
 				DataBlock(
 					uint64_t _transactionNr, 
 					int32_t _fileCursor, 
-					gradido::data::TransactionType _transactionType,
+					grdt_transaction _transactionType,
 					uint32_t _coinCommunityIdIndex,
 					uint8_t _isBalanceChanging,
 					const std::vector<uint32_t>& _addressIndices					
@@ -201,7 +201,7 @@ namespace model {
 					Block(DATA_BLOCK), 
 					transactionNr(0), 
 					fileCursor(-10), 
-					transactionType(gradido::data::TransactionType::NONE), 
+					transactionType(GRDT_TRANSACTION_NONE),
 					coinCommunityIdIndex(0),
 					isBalanceChanging(0),
 					addressIndices(nullptr), 
@@ -220,7 +220,7 @@ namespace model {
 				}
 				uint64_t transactionNr;
 				int32_t fileCursor;
-				gradido::data::TransactionType transactionType;
+				grdt_transaction transactionType;
 				uint32_t coinCommunityIdIndex;
 				uint8_t isBalanceChanging;
 				uint8_t  addressIndicesCount;
@@ -230,7 +230,7 @@ namespace model {
 						  sizeof(uint8_t)  // Block Type
 						+ sizeof(uint64_t) // transaction nr
 						+ sizeof(int32_t)  // fileCursor
-						+ sizeof(gradido::data::TransactionType) // transaction type
+						+ sizeof(grdt_transaction) // transaction type
 						+ sizeof(uint32_t) // coin community id index size
 						+ sizeof(uint8_t) // isBalanceChanging
 						+ sizeof(uint8_t) + sizeof(uint32_t) * addressIndicesCount // address index count, address indices array

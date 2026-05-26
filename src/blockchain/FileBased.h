@@ -15,6 +15,7 @@
 #include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/hiero/TopicId.h"
 #include "gradido_blockchain/lib/AccessExpireCache.h"
+#include "gradido_blockchain_core/types/address.h"
 
 //! how many transactions will be readed from disk on blockchain startup and put into cache for preventing doublettes
 //! iota stores up to 1000 transactions
@@ -159,7 +160,7 @@ namespace gradido {
 			virtual size_t countAll(const Filter& filter = Filter::ALL_TRANSACTIONS) const override;
 			virtual size_t countAll(const CompactFilter& filter) const override;
 
-			virtual data::AddressType getAddressType(const Filter& filter = Filter::LAST_TRANSACTION) const override;
+			virtual grdt_address getAddressType(const Filter& filter = Filter::LAST_TRANSACTION) const override;
 
 			virtual std::shared_ptr<const TransactionEntry> getTransactionForId(uint64_t transactionId) const override;
 			virtual data::compact::ConstConfirmedTxPtr getConfirmedTxForId(uint64_t transactionId) const override;

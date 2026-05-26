@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_CONTROLLER_CONTROLLER_EXCEPTIONS_H
 
 #include "gradido_blockchain/GradidoBlockchainException.h"
-#include "gradido_blockchain/data/TransactionType.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 namespace controller {
 
@@ -32,13 +32,13 @@ namespace controller {
 	public:
 		explicit WrongTransactionTypeException(
 			const char* what, 
-			gradido::data::TransactionType type,
+			grdt_transaction type,
 			std::string pubkeyHex
 		) noexcept;
 		std::string getFullString() const;
 
 	protected:
-		gradido::data::TransactionType mType;
+		grdt_transaction mType;
 		std::string mPubkeyHex;
 	};
 

@@ -6,8 +6,6 @@
 
 using std::string, std::to_string;
 
-using namespace gradido::data;
-
 namespace controller {
 	GroupNotFoundException::GroupNotFoundException(const char* what, const string& groupAlias) noexcept
 		: GradidoBlockchainException(what), mGroupAlias(groupAlias)
@@ -55,7 +53,7 @@ namespace controller {
 	// ************************ Wrong Transaction Type Exception **********************************
 	WrongTransactionTypeException::WrongTransactionTypeException(
 		const char* what, 
-		TransactionType type,
+		grdt_transaction type,
 		std::string pubkeyHex
 	) noexcept
 		: GradidoBlockchainException(what), mType(type), mPubkeyHex(pubkeyHex)

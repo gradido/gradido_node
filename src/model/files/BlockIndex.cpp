@@ -1,6 +1,8 @@
 #include "BlockIndex.h"
 #include "FileExceptions.h"
 
+#include "gradido_blockchain_core/types/transaction.h"
+
 #include "../../blockchain/NodeTransactionEntry.h"
 #include "../../blockchain/FileBasedProvider.h"
 #include "../../cache/BlockIndex.h"
@@ -29,7 +31,7 @@ namespace model {
 
 			vFile->write(&transactionNr, sizeof(uint64_t));
 			vFile->write(&fileCursor, sizeof(int32_t));
-			vFile->write(&transactionType, sizeof(TransactionType));
+			vFile->write(&transactionType, sizeof(grdt_transaction));
 			vFile->write(&coinCommunityIdIndex, sizeof(uint32_t));
 			vFile->write(&isBalanceChanging, sizeof(uint8_t));
 			vFile->write(&addressIndicesCount, sizeof(uint8_t));
@@ -45,8 +47,8 @@ namespace model {
 			//if (!vFile->read(this, sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint16_t))) return false;;
 			if(!vFile->read(&transactionNr, sizeof(uint64_t))) return false;
 			if(!vFile->read(&fileCursor, sizeof(int32_t))) return false;
-			if(!vFile->read(&transactionType, sizeof(TransactionType))) return false;
-			if (!enum_contains<TransactionType>(transactionType)) {
+			if(!vFile->read(&transactionType, sizeof(grdt_transaction))) return false;
+			if (!enum_contains<grdt_transaction>(transactionType)) {
 				throw GradidoUnknownEnumException(
 					"invalid transaction type readed from block index",
 					"gradido::data::TransactionType", 

@@ -2,6 +2,7 @@
 #include "gradido_blockchain/data/AccountBalance.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
 #include "gradido_blockchain/blockchain/Abstract.h"
+#include "gradido_blockchain_core/types/address.h"
 
 using namespace gradido;
 
@@ -38,7 +39,7 @@ namespace model {
           result.setType(TransactionType::LINK_CHANGE);
           result.setPubkey(transfer.getSender().getPublicKey());
 		}
-        if (data::AddressType::DEFERRED_TRANSFER == mAddressType) {
+        if (GRDT_ADDRESS_DEFERRED_TRANSFER == mAddressType) {
           auto change = calculateChange(
             redeemDeferredTransfer->getDeferredTransferTransactionNr(),
             confirmedTransaction.getConfirmedAt(),

@@ -2,6 +2,7 @@
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/blockchain/Abstract.h"
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain_core/types/memo_key.h"
 
 #include "magic_enum/magic_enum.hpp"
 #include "loguru/loguru.hpp"
@@ -24,7 +25,7 @@ namespace model {
 
 			auto& memos = transactionBody->getMemos();
 			for (auto& memo : memos) {
-				if (memo.getKeyType() == gradido::data::MemoKeyType::PLAIN) {
+				if (GRDT_MEMO_KEY_PLAIN == memo.getKeyType()) {
 					mMemo = memo.getMemo().copyAsString();
 					return;
 				}

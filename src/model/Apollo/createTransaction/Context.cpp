@@ -1,4 +1,6 @@
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain_core/types/address.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include "Context.h"
 
@@ -26,25 +28,25 @@ namespace model {
         std::unique_ptr<RedeemDeferredTransferTransactionRole> redeemRole;
         roles.reserve(2);
         switch(body->getTransactionType()) {
-          case data::TransactionType::CREATION:
+          case GRDT_TRANSACTION_CREATION:
             roles.push_back(std::make_unique<CreationTransactionRole>(mBlockchain));
             break;
-          case data::TransactionType::TRANSFER:
+          case GRDT_TRANSACTION_TRANSFER:
             roles.push_back(std::make_unique<TransferTransactionRole>(mBlockchain));
             break;
-          case data::TransactionType::DEFERRED_TRANSFER:
+          case GRDT_TRANSACTION_DEFERRED_TRANSFER:
             roles.push_back(std::make_unique<DeferredTransferTransactionRole>(mBlockchain));
             break;
-          case data::TransactionType::REDEEM_DEFERRED_TRANSFER:
+          case GRDT_TRANSACTION_REDEEM_DEFERRED_TRANSFER:
             redeemRole = std::make_unique<RedeemDeferredTransferTransactionRole>(mBlockchain);
             redeemRole->setAddressType(mAddressType);
             roles.push_back(std::move(redeemRole));
             break;
-          case data::TransactionType::TIMEOUT_DEFERRED_TRANSFER:
+          case GRDT_TRANSACTION_TIMEOUT_DEFERRED_TRANSFER:
             roles.push_back(std::make_unique<TimeoutDeferredTransferTransactionRole>(mBlockchain));
             break;
-          case data::TransactionType::COMMUNITY_ROOT:
-          case data::TransactionType::REGISTER_ADDRESS:
+          case GRDT_TRANSACTION_COMMUNITY_ROOT:
+          case GRDT_TRANSACTION_REGISTER_ADDRESS:
             return {};
           default:
             auto type = body->getTransactionType();

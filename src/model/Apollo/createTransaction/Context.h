@@ -2,7 +2,7 @@
 #define __GRADIDO_NODE_MODEL_APOLLO_CREATE_TRANSACTION_CONTEXT_H
 
 #include "AbstractTransactionRole.h"
-#include "gradido_blockchain/data/AddressType.h"
+#include "gradido_blockchain_core/types/address.h"
 
 namespace model {
   namespace Apollo {
@@ -10,7 +10,7 @@ namespace model {
       class Context
       {
       public:
-        Context(std::shared_ptr<const gradido::blockchain::Abstract> blockchain, gradido::data::AddressType addressType)
+        Context(std::shared_ptr<const gradido::blockchain::Abstract> blockchain, grdt_address addressType)
         : mBlockchain(blockchain), mAddressType(addressType) {}
 
       std::vector<Transaction> run(
@@ -20,7 +20,7 @@ namespace model {
 
       protected:
         std::shared_ptr<const gradido::blockchain::Abstract> mBlockchain;
-        gradido::data::AddressType mAddressType;
+        grdt_address mAddressType;
       };
     }
   }

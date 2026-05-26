@@ -4,16 +4,15 @@
 #include "gradido_blockchain/blockchain/PublicKeySearchType.h"
 #include "gradido_blockchain/blockchain/SearchDirection.h"
 #include "gradido_blockchain/data/compact/PublicKeyIndex.h"
-#include "gradido_blockchain/data/TransactionType.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 using gradido::AppContext;
 using gradido::blockchain::CompactFilter, gradido::blockchain::PublicKeySearchType, gradido::blockchain::SearchDirection;
 using gradido::data::compact::PublicKeyIndex;
-using gradido::data::TransactionType;
 
 namespace server::json_rpc {
   WireFilter::WireFilter()
-    : searchDirection(SearchDirection::DESC), transactionType(TransactionType::NONE),
+    : searchDirection(SearchDirection::DESC), transactionType(GRDT_TRANSACTION_NONE),
     publicKeySearchType(PublicKeySearchType::None), format(WireOutputFormat::Base64), 
     maxTransactionNr(0), minTransactionNr(0), pagination(20)
   {

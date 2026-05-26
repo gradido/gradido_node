@@ -19,7 +19,6 @@
 #include "gradido_blockchain/AppContext.h"
 #include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
-#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
@@ -34,7 +33,7 @@
 
 using gradido::AppContext;
 using namespace gradido::blockchain;
-using gradido::data::compact::ConfirmedGradidoTx, gradido::data::TransactionType;
+using gradido::data::compact::ConfirmedGradidoTx;
 using gradido::data::PublicKey;
 using namespace gradido::interaction;
 using std::shared_ptr, std::make_shared, std::lock_guard;

@@ -6,6 +6,7 @@
 #include "gradido_blockchain/data/LedgerAnchor.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/const.h"
+#include "gradido_blockchain_core/types/cross_group.h"
 
 #include "loguru/loguru.hpp"
 
@@ -85,7 +86,7 @@ namespace controller {
             auto body = gradidoTransaction->getTransactionBody();
             // on cross group transaction inbound check if we can found outbound on this gradido node
             // TODO: ask other gradido node(s) if we don't capture the otherGroup (community)
-            if (gradido::data::CrossGroupType::INBOUND == body->getType()) {
+            if (GRDT_CROSS_GROUP_INBOUND == body->getType()) {
                 auto blockchainProvider = gradido::blockchain::FileBasedProvider::getInstance();
                 auto blockchain = blockchainProvider->findBlockchain(mCommunityId);
                 Timepoint now = std::chrono::system_clock::now();

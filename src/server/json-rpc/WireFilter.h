@@ -7,8 +7,8 @@
 #include "gradido_blockchain/blockchain/PublicKeySearchType.h"
 #include "gradido_blockchain/blockchain/SearchDirection.h"
 #include "gradido_blockchain/data/ByteArray.h"
-#include "gradido_blockchain/data/TransactionType.h"
 #include "gradido_blockchain/lib/TimepointInterval.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include <optional>
 #include <string>
@@ -31,7 +31,7 @@ namespace server::json_rpc {
 		gradido::blockchain::SearchDirection searchDirection;
 
 		//! transaction type
-		gradido::data::TransactionType transactionType;
+		grdt_transaction transactionType;
 
 		//! type of data publicKey contains
 		gradido::blockchain::PublicKeySearchType publicKeySearchType;

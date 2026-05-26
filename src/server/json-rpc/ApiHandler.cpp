@@ -26,6 +26,7 @@
 #include "gradido_blockchain/lib/MonotonicTimer.h"
 #include "gradido_blockchain/memory/Block.h"
 #include "gradido_blockchain/serialization/toJson.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include "../../blockchain/FileBased.h"
 #include "../../blockchain/FileBasedProvider.h"
@@ -232,7 +233,7 @@ namespace server {
 					f.searchDirection = SearchDirection::ASC;
 				}
 				if (params.HasMember("onlyCreations") && params["onlyCreations"].IsBool() && params["onlyCreations"].GetBool()) {
-					f.transactionType = TransactionType::CREATION;
+					f.transactionType = GRDT_TRANSACTION_CREATION;
 				}
 
 				listTransactions(resultJson, blockchain, f);
@@ -517,7 +518,7 @@ namespace server {
 				error(responseJson, JSON_RPC_ERROR_ADDRESS_NOT_FOUND, "user not found");
 				return;
 			} 
-			f.transactionType = data::TransactionType::REGISTER_ADDRESS;
+			f.transactionType = GRDT_TRANSACTION_REGISTER_ADDRESS;
 			// std::function<FilterResult(const TransactionEntry&)> filterFunction;
 			f.filterFunction = [nameHashId](const TransactionEntry& entry) {
 				auto body = entry.getTransactionBody();

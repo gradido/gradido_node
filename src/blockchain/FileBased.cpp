@@ -26,6 +26,9 @@
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/serialization/toJsonString.h"
 #include "gradido_blockchain/lib/MonotonicTimer.h"
+#include "gradido_blockchain_core/types/address.h"
+#include "gradido_blockchain_core/types/cross_group.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include "loguru/loguru.hpp"
 
@@ -43,7 +46,7 @@ using serialization::toJsonString;
 
 namespace gradido {
 	using data::adapter::toPublicKey;
-	using data::AddressType, data::Timestamp, data::LedgerAnchor;
+	using data::Timestamp, data::LedgerAnchor;
 	using data::compact::ConstConfirmedTxPtr, data::compact::ConfirmedTxs, data::compact::PublicKeyIndex;
 
 	using namespace interaction;
@@ -529,7 +532,7 @@ namespace gradido {
 			return count;
 		}
 
-		AddressType FileBased::getAddressType(const Filter& filter/* = Filter::LAST_TRANSACTION*/) const
+		grdt_address FileBased::getAddressType(const Filter& filter/* = Filter::LAST_TRANSACTION*/) const
 		{
 			// return getAddressTypeSlow(filter);
 			if (!filter.involvedPublicKey || filter.involvedPublicKey->isEmpty()) {
@@ -537,26 +540,26 @@ namespace gradido {
 			}
 			auto publicKeyIndexOptional = mPublicKeysIndex.getIndexForData(toPublicKey(filter.involvedPublicKey));
 			if (!publicKeyIndexOptional) {
-				return AddressType::NONE;
+				return GRDT_ADDRESS_NONE;
 			}
 			uint32_t publicKeyUint32 = (uint32_t)publicKeyIndexOptional;
 			if (publicKeyUint32 != publicKeyIndexOptional) {
 				throw GradidoNodeInvalidDataException("public key index overflow");
 			}
 			PublicKeyIndex publicKeyIndex = { .communityIdIndex = mCommunityIdIndex, .publicKeyIndex = publicKeyUint32 };
-			data::AddressType result = data::AddressType::NONE;
+			grdt_address result = GRDT_ADDRESS_NONE;
 			iterateBlocks(filter.searchDirection, [&](const cache::Block& block) -> bool {
 				auto addressTypeStateChange = block.getBlockIndex().getAddressType(publicKeyIndex);
 				result = addressTypeStateChange.getValue();
 				if (addressTypeStateChange.getTxId()) {
 					auto tx = getTransactionForId(addressTypeStateChange.getTxId());
 					if (FilterResult::USE != (filter.matches(tx, FilterCriteria::MAX) & FilterResult::USE)) {
-						result = data::AddressType::NONE;
+						result = GRDT_ADDRESS_NONE;
 					}
 					return false; //break iterateBlocks
 				}
 				// result
-				if (data::AddressType::NONE == result) {
+				if (GRDT_ADDRESS_NONE == result) {
 					return true;
 				}
 				return false;
@@ -632,7 +635,7 @@ namespace gradido {
 			f.searchDirection = SearchDirection::ASC;
 			f.filterFunction = [this](const TransactionEntry& entry) -> FilterResult {
 				if (mStopToken.stop_requested()) return FilterResult::STOP;
-				if (entry.getTransactionType() == data::TransactionType::DEFERRED_TRANSFER) {
+				if (GRDT_TRANSACTION_DEFERRED_TRANSFER == entry.getTransactionType()) {
 					auto confirmedTransaction = entry.getConfirmedTransaction();
 					auto body = entry.getTransactionBody();
 					Timepoint targetDate = confirmedTransaction->getConfirmedAt().getAsTimepoint()
@@ -644,7 +647,7 @@ namespace gradido {
 						data::TransactionTriggerEventType::DEFERRED_TIMEOUT_REVERSAL
 					));					
 				}
-				else if (entry.getTransactionType() == data::TransactionType::REDEEM_DEFERRED_TRANSFER) {
+				else if (GRDT_TRANSACTION_REDEEM_DEFERRED_TRANSFER == entry.getTransactionType()) {
 					// remove timeout transaction trigger event
 					auto confirmedTransaction = entry.getConfirmedTransaction();
 					auto body = entry.getTransactionBody();
@@ -748,7 +751,7 @@ namespace gradido {
 					auto transactionBody = transactionEntry.getTransactionBody();
 					validate::Context validator(*transactionEntry.getConfirmedTransaction());
 					validate::Type validationLevel = validate::Type::SINGLE | validate::Type::ACCOUNT;
-					if (transactionBody->getType() != data::CrossGroupType::LOCAL) {
+					if (transactionBody->getType() != GRDT_CROSS_GROUP_LOCAL) {
 						validationLevel = validationLevel | validate::Type::PAIRED;
 					}
 					if (previousConfirmedTransaction) {

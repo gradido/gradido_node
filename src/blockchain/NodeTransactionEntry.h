@@ -3,6 +3,7 @@
 
 #include "gradido_blockchain/blockchain/TransactionEntry.h"
 #include "gradido_blockchain/data/compact/ConfirmedGradidoTx.h"
+#include "gradido_blockchain_core/types/transaction.h"
 
 #include <vector>
 
@@ -50,7 +51,7 @@ namespace gradido {
 				uint64_t transactionNr,
 				date::month month,
 				date::year year,
-				gradido::data::TransactionType transactionType,
+				grdt_transaction transactionType,
 				std::optional<uint32_t> coinCommunityIdIndex,
 				const uint32_t* addressIndices, uint8_t addressIndiceCount,
 				uint32_t blockchainCommunityIdIndex,
