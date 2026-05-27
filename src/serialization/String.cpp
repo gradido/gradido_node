@@ -5,6 +5,7 @@
 #include <memory>
 
 using memory::ConstBlockPtr, memory::Block;
+using gradido::data::ByteArray;
 using std::string;
 using std::make_shared;
 
