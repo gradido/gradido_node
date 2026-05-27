@@ -4,6 +4,7 @@
 
 #include <memory>
 
+using gradido::data::ByteArray;
 using memory::ConstBlockPtr, memory::Block;
 using gradido::data::ByteArray;
 using std::string;
