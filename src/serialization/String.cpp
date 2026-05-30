@@ -1,16 +1,18 @@
 #include "String.h"
-#include "gradido_blockchain/crypto/ByteArray.h"
+#include "gradido_blockchain/data/ByteArray.h"
 #include "gradido_blockchain/memory/Block.h"
 
 #include <memory>
 
+using gradido::data::ByteArray;
 using memory::ConstBlockPtr, memory::Block;
+using gradido::data::ByteArray;
 using std::string;
 using std::make_shared;
 
 namespace serialization {
     template<>
-    string toString<ConstBlockPtr>(const ConstBlockPtr& ptr) 
+    string toString<ConstBlockPtr>(const ConstBlockPtr& ptr)
     {
         return ptr->copyAsString();
     }
