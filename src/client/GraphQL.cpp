@@ -38,19 +38,13 @@ namespace client
 			case Base::NotificationFormat::PROTOBUF_BASE64:
 				transactionMemberName = "transactionBase64";
 				graphQLQuery = 
-"mutation NewGradidoBlock($data: ConfirmedTransactionInput!) { \
-  newGradidoBlock(data: $data) { \
+"mutation BlockchainConfirmedTx($data: ConfirmedTransactionInput!) { \
+  blockchainConfirmedTx(data: $data) { \
     error { \
       name \
       message \
       type \
     } \
-    recipe { \
-	  createdAt \
-	  id \
-	  topic \
-	  type \
-	} \
     succeed \
   } \
 }";
@@ -75,8 +69,8 @@ namespace client
 			data.AddMember("errorMessage", Value(parameterValuePairs.find("error")->second.data(), alloc), alloc);
 			data.AddMember("iotaMessageId", Value(parameterValuePairs.find("messageId")->second.data(), alloc), alloc);
 			graphQLQuery = 
-"mutation FailedGradidoBlock($data: InvalidTransactionInput!) { \
-  failedGradidoBlock(data: $data) { \
+"mutation BlockchainRejectedTx($data: InvalidTransactionInput!) { \
+  blockchainRejectedTx(data: $data) { \
     error { \
       name \
       message \
