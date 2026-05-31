@@ -16,6 +16,9 @@ namespace hiero {
 	class TopicId;
 }
 
+namespace cache {
+	struct CommunityIndexEntry;
+}
 namespace client {
 	namespace hiero {
 		class ConsensusClient;
@@ -74,7 +77,7 @@ namespace gradido {
 				const hiero::TopicId& topicId,
 				const std::string&  alias
 			);
-			void updateListenerCommunity(uint32_t communityIdIndex, const std::string& alias, std::shared_ptr<FileBased> blockchain);
+			void updateListenerCommunity(const cache::CommunityIndexEntry& communityConfig, std::shared_ptr<FileBased> blockchain);
 
 			//! master stop source view
 			std::stop_token mStopToken;

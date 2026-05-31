@@ -62,11 +62,14 @@ namespace cache {
 						LOG_F(WARNING, "community entry %s doesn't have hieroTopicId, this community won't be listened for new transactions", entry.communityId.c_str());
 					}
 					entry.folderName = communityEntry["folder"].GetString();
-					if (communityEntry.HasMember("newBlockUri")) {
-						entry.newBlockUri = communityEntry["newBlockUri"].GetString();
+					if (communityEntry.HasMember("blockchainConfirmedTxUrl")) {
+						entry.blockchainConfirmedTxUrl = communityEntry["blockchainConfirmedTxUrl"].GetString();
 					}
-					if (communityEntry.HasMember("blockUriType")) {
-						entry.blockUriType = communityEntry["blockUriType"].GetString();
+					if (communityEntry.HasMember("blockchainRejectedTxUrl")) {
+						entry.blockchainConfirmedTxUrl = communityEntry["blockchainRejectedTxUrl"].GetString();
+					}
+					if (communityEntry.HasMember("blockchainUriType")) {
+						entry.blockchainUriType = communityEntry["blockchainUriType"].GetString();
 					}
 					mCommunities.insert({ entry.communityIdIndex, entry });
 				}

@@ -22,8 +22,9 @@ namespace cache {
 		std::string communityId;
 		std::string topicId;
 		std::string folderName;
-		std::string newBlockUri;
-		std::string blockUriType;
+		std::string blockchainConfirmedTxUrl;
+		std::string blockchainRejectedTxUrl;
+		std::string blockchainUriType;
 		uint32_t    communityIdIndex;
 
 		DHASH makeHash() {

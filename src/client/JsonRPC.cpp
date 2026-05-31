@@ -9,15 +9,15 @@
 using namespace rapidjson;
 
 namespace client {
-	JsonRPC::JsonRPC(const std::string& uri, bool base64 /*= true*/)
-		: Base(uri, base64 ? Base::NotificationFormat::PROTOBUF_BASE64 : Base::NotificationFormat::JSON)
+	JsonRPC::JsonRPC(const std::string& successUrl, const std::string& failedUrl, bool base64 /*= true*/)
+		: Base(successUrl, failedUrl, base64 ? Base::NotificationFormat::PROTOBUF_BASE64 : Base::NotificationFormat::JSON)
 	{
 
 	}
 
-	bool JsonRPC::postRequest(const std::map<std::string, std::string>& parameterValuePairs)
+	bool JsonRPC::postRequest(const std::map<std::string, std::string>& parameterValuePairs, const std::string& url)
 	{
-		JsonRequest request(mUri);
+		JsonRequest request(url);
 
 		Value params(kObjectType);
 		auto alloc = request.getJsonAllocator();

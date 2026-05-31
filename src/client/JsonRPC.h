@@ -8,8 +8,8 @@ namespace client
 	class JsonRPC : public Base
 	{
 	public: 
-		JsonRPC(const std::string& uri, bool base64 = true);
-		bool postRequest(const std::map<std::string, std::string>& parameterValuePairs);
+		JsonRPC(const std::string& successUrl, const std::string& failedUrl, bool base64 = true);
+		bool postRequest(const std::map<std::string, std::string>& parameterValuePairs, const std::string& url);
 	};
 }
 

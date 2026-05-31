@@ -1,5 +1,6 @@
 #include "Base.h"
 
+#include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/GradidoBlockchainException.h"
 #include "gradido_blockchain/http/RequestExceptions.h"
 #include "gradido_blockchain/interaction/serialize/Context.h"
@@ -15,14 +16,14 @@ using namespace rapidjson;
 
 namespace client {
 
-	Base::Base(const std::string& uri)
-		: mUri(uri), mFormat(NotificationFormat::PROTOBUF_BASE64)
+	Base::Base(const std::string& successUrl, const std::string& failedUrl)
+		: mSuccessUrl(successUrl), mFailedUrl(failedUrl), mFormat(NotificationFormat::PROTOBUF_BASE64)
 	{
 
 	}
 
-	Base::Base(const std::string& uri, NotificationFormat format)
-		: mUri(uri), mFormat(format)
+	Base::Base(const std::string& successUrl, const std::string& failedUrl, NotificationFormat format)
+		: mSuccessUrl(successUrl), mFailedUrl(failedUrl), mFormat(format)
 	{
 
 	}
@@ -34,6 +35,9 @@ namespace client {
 
 	bool Base::notificateNewTransaction(const ConfirmedTransaction& confirmedTransaction)
 	{
+		if (mSuccessUrl.empty()) {
+			return true;
+		}
 		std::map<std::string, std::string> params;
 		
 		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
@@ -45,11 +49,17 @@ namespace client {
 			std::replace(transactionJson.begin(), transactionJson.end(), '"', '\'');
 			params.insert({ "transactionJson", transactionJson });
 		}
-		return notificate(params);		
+		return notificate(params, mSuccessUrl);		
 	}
 
-	bool Base::notificateFailedTransaction(const gradido::data::GradidoTransaction& gradidoTransaction, const std::string& errorMessage, const std::string& messageId)
-	{
+	bool Base::notificateFailedTransaction(
+		const gradido::data::GradidoTransaction& gradidoTransaction, 
+		const std::string& errorMessage, 
+		const hiero::TransactionId& hieroTransactionId
+	) {
+		if (mFailedUrl.empty()) {
+			return true;
+		}
 		std::map<std::string, std::string> params;
 
 		if ((mFormat & NotificationFormat::PROTOBUF_BASE64) == NotificationFormat::PROTOBUF_BASE64) {
@@ -63,14 +73,14 @@ namespace client {
 		}
 		
 		params.insert({ "error", errorMessage });
-		params.insert({ "messageId", messageId });
-		return notificate(std::move(params));
+		params.insert({ "hieroTransactionId", hieroTransactionId.toString()});
+		return notificate(std::move(params), mFailedUrl);
 	}
 
-	bool Base::notificate(const std::map<std::string, std::string>& params)
+	bool Base::notificate(const std::map<std::string, std::string>& params, const std::string& url)
 	{
 		try {
-			return postRequest(params);
+			return postRequest(params, url);
 		}
 		catch (RapidjsonParseErrorException& ex) {
 			LOG_F(ERROR, "Result Json Exception: %s", ex.getFullString().data());

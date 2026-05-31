@@ -204,7 +204,7 @@ namespace controller {
                 return PushResult::FOUND_IN_TRANSACTIONS;
             }
         }
-        auto task = std::make_shared<task::HieroMessageToTransactionTask>(consensusTimestamp, consensusTopicResponse.getMessageData(), mCommunityId);
+        auto task = std::make_shared<task::HieroMessageToTransactionTask>(consensusTopicResponse.getChunkInfo().getInitialTransactionId(), consensusTimestamp, consensusTopicResponse.getMessageData(), mCommunityId);
         mLastTransactions.add(SignatureOctet(*consensusTopicResponse.getRunningHash()), consensusTimestamp);
         mTransactions.insert({ consensusTimestamp, TopicResponseDeserializer(std::move(consensusTopicResponse), task) });
 

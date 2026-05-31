@@ -5,6 +5,10 @@
 
 #include "rapidjson/document.h"
 
+namespace hiero {
+	class TransactionId;
+}
+
 namespace client
 {
 	/*
@@ -21,30 +25,29 @@ namespace client
 	class Base
 	{
 	public:
-		Base(const std::string& uri);
+		Base(const std::string& successUrl, const std::string& failedUrl);
 		virtual ~Base();
 
 		bool notificateNewTransaction(const gradido::data::ConfirmedTransaction& confirmedTransaction);
 		bool notificateFailedTransaction(
 			const gradido::data::GradidoTransaction& gradidoTransaction,
 			const std::string& errorMessage,
-			const std::string& messageId
+			const ::hiero::TransactionId& hieroTransactionId
 		);
-		virtual bool postRequest(const std::map<std::string, std::string>& parameterValuePairs) = 0;
+		virtual bool postRequest(const std::map<std::string, std::string>& parameterValuePairs, const std::string& url) = 0;
 
-		inline void setGroupAlias(const std::string& groupAlias) {mGroupAlias = groupAlias;}
 	protected:		
-		bool notificate(const std::map<std::string, std::string>& params);
+		bool notificate(const std::map<std::string, std::string>& params, const std::string& url);
 		enum class NotificationFormat : int
 		{
 			PROTOBUF_BASE64 = 1,
 			JSON = 2
 		};
-		Base(const std::string& uri, NotificationFormat format);
+		Base(const std::string& successUrl, const std::string& failedUrl, NotificationFormat format);
 
-		const std::string mUri;
+		const std::string mSuccessUrl;
+		const std::string mFailedUrl;
 		NotificationFormat mFormat;
-		std::string mGroupAlias;
 	};
 }
 

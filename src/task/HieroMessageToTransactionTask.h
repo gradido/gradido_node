@@ -25,12 +25,17 @@ namespace gradido {
     }
 }
 
+namespace hiero {
+  class TransactionId;
+}
+
 namespace task {
    
     class HieroMessageToTransactionTask : public CPUTask
     {
     public:
         HieroMessageToTransactionTask(
+            const hiero::TransactionId& hieroTransactionId,
             const gradido::data::Timestamp& consensusTimestamp,
             std::shared_ptr<const memory::Block> transactionRaw,
             const std::string_view communityId
@@ -47,8 +52,7 @@ namespace task {
             const std::string& errorMessage
         );
     protected:
-        
-
+        hiero::TransactionId     mHieroTransactionId;
         gradido::data::Timestamp mConsensusTimestamp;
         std::shared_ptr<const memory::Block> mTransactionRaw;
         std::string mCommunityId;

@@ -7,10 +7,10 @@ namespace client {
 	class GraphQL : public Base
 	{
 	public:
-		GraphQL(const std::string& uri);
+		GraphQL(const std::string& successUrl, const std::string& failedUrl);
 		~GraphQL();
 
-		bool postRequest(const std::map<std::string, std::string>& parameterValuePairs);
+		bool postRequest(const std::map<std::string, std::string>& parameterValuePairs, const std::string& url);
 	protected:
 
 	};

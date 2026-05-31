@@ -180,7 +180,7 @@ namespace gradido {
 					}
 				}
 				else {
-					updateListenerCommunity(details.communityIdIndex, details.alias, it->second);
+					updateListenerCommunity(details, it->second);
 				}
 				return true;
 			});
@@ -210,7 +210,7 @@ namespace gradido {
 					blockchain = FileBased::create(mStopToken, communityId, topicId, alias, folder, std::move(hieroClients));
 				}
 				g_appContext->addBlockchain(communityIdIndex, blockchain);
-				updateListenerCommunity(communityIdIndex, alias, blockchain);
+				updateListenerCommunity(mGroupIndex->getCommunityDetails(communityIdIndex), blockchain);
 
 				// need to have blockchain in map for init able to work
 				mBlockchainsPerGroup.insert({ communityIdIndex, blockchain });
@@ -229,28 +229,25 @@ namespace gradido {
 				return nullptr;
 			}
 		}
-		void FileBasedProvider::updateListenerCommunity(uint32_t communityIdIndex, const string& alias, shared_ptr<FileBased> blockchain)
+		void FileBasedProvider::updateListenerCommunity(const cache::CommunityIndexEntry& communityConfig, shared_ptr<FileBased> blockchain)
 		{
-			const auto& communityConfig = mGroupIndex->getCommunityDetails(communityIdIndex);
 			// for notification of community server by new transaction
 			// deprecated, will be replaced with mqtt in future
-			if (!communityConfig.newBlockUri.empty()) {
+			if (!communityConfig.blockchainConfirmedTxUrl.empty() || !communityConfig.blockchainRejectedTxUrl.empty()) {
 				shared_ptr<client::Base> clientBase;
-				auto uri = string(communityConfig.newBlockUri);
-				if (communityConfig.blockUriType == "json") {
-					clientBase = make_shared<client::JsonRPC>(uri);
+				if (communityConfig.blockchainUriType == "json") {
+					clientBase = make_shared<client::JsonRPC>(communityConfig.blockchainConfirmedTxUrl, communityConfig.blockchainRejectedTxUrl);
 				}
-				else if (communityConfig.blockUriType == "graphql") {
-					clientBase = make_shared<client::GraphQL>(uri);
+				else if (communityConfig.blockchainUriType == "graphql") {
+					clientBase = make_shared<client::GraphQL>(communityConfig.blockchainConfirmedTxUrl, communityConfig.blockchainRejectedTxUrl);
 				}
 				else {
-					LOG_F(ERROR, "unknown new block uri type: %s", communityConfig.blockUriType.data());
+					LOG_F(ERROR, "unknown new block uri type: %s", communityConfig.blockchainUriType.data());
 					return;
 				}
 				if (clientBase) {
-					clientBase->setGroupAlias(alias);
 					blockchain->setListeningCommunityServer(clientBase);
-					LOG_F(INFO, "notification of community: %s", alias.data());
+					LOG_F(INFO, "notification of community: %s", communityConfig.communityId.data());
 				}
 			}
 		}

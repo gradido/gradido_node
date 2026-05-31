@@ -3,7 +3,7 @@
 #include "../blockchain/FileBasedProvider.h"
 #include "../controller/SimpleOrderingManager.h"
 #include "gradido_blockchain/blockchain/Filter.h"
-
+#include "gradido_blockchain/data/hiero/TransactionId.h"
 #include "gradido_blockchain/lib/DataTypeConverter.h"
 #include "gradido_blockchain/interaction/validate/Context.h"
 #include "gradido_blockchain/interaction/deserialize/Context.h"
@@ -24,10 +24,12 @@ using namespace std::chrono_literals;
 namespace task {
 
     HieroMessageToTransactionTask::HieroMessageToTransactionTask(
+        const hiero::TransactionId& hieroTransactionId,
         const gradido::data::Timestamp& consensusTimestamp,
         std::shared_ptr<const memory::Block> transactionRaw,
         const std::string_view communityId
-    ) : mConsensusTimestamp(consensusTimestamp), mTransactionRaw(transactionRaw), mCommunityId(communityId), mSuccess(false)
+    ) : mHieroTransactionId(hieroTransactionId), mConsensusTimestamp(consensusTimestamp), 
+      mTransactionRaw(transactionRaw), mCommunityId(communityId), mSuccess(false)
     {
 #ifdef _UNI_LIB_DEBUG
         setName(DataTypeConverter::timePointToString(consensusTimestamp.getAsTimepoint()).data());
@@ -124,7 +126,7 @@ namespace task {
         if (blockchain) {
             auto communityServer = std::dynamic_pointer_cast<gradido::blockchain::FileBased>(blockchain)->getListeningCommunityServer();
             if (communityServer) {
-                communityServer->notificateFailedTransaction(*mTransaction, errorMessage, mConsensusTimestamp.toString());
+                communityServer->notificateFailedTransaction(*mTransaction, errorMessage, mHieroTransactionId);
             }
         }
     }
