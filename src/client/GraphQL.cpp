@@ -45,7 +45,7 @@ namespace client
       message \
       type \
     } \
-    succeed \
+    success \
   } \
 }";
 				break;
@@ -77,7 +77,7 @@ namespace client
       message \
       type \
     } \
-    succeed \
+    success \
   } \
 }";
 		} else {
