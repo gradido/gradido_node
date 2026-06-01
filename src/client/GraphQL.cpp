@@ -37,7 +37,7 @@ namespace client
 		switch(mFormat) {
 			case Base::NotificationFormat::PROTOBUF_BASE64:
 				transactionMemberName = "transactionBase64";
-				graphQLQuery = 
+				graphQLQuery =
 "mutation BlockchainConfirmedTx($data: ConfirmedTransactionInput!) { \
   blockchainConfirmedTx(data: $data) { \
     error { \
@@ -55,7 +55,7 @@ namespace client
 				break;
 			default: throw new GradidoUnhandledEnum("unhandled Notification format", "NotificationFormat", enum_name(mFormat).data());
 		}
-		
+
 		JsonRequest request(url);
 		auto it = parameterValuePairs.find(transactionMemberName);
 		if (it == parameterValuePairs.end()) {
@@ -67,9 +67,9 @@ namespace client
 		auto& alloc = request.getJsonAllocator();
 
 		if (parameterValuePairs.find("error") != parameterValuePairs.end()) {
-			data.AddMember("errorMessage", Value(parameterValuePairs.find("error")->second.data(), alloc), alloc);			
+			data.AddMember("errorMessage", Value(parameterValuePairs.find("error")->second.data(), alloc), alloc);
 			data.AddMember("hieroTransactionId", Value(parameterValuePairs.find("hieroTransactionId")->second.data(), alloc), alloc);
-			graphQLQuery = 
+			graphQLQuery =
 "mutation BlockchainRejectedTx($data: InvalidTransactionInput!) { \
   blockchainRejectedTx(data: $data) { \
     error { \
@@ -81,8 +81,9 @@ namespace client
   } \
 }";
 		} else {
-			data.AddMember(Value(transactionMemberName.data(), alloc), Value(it->second.data(), alloc), alloc);		
+			data.AddMember(Value(transactionMemberName.data(), alloc), Value(it->second.data(), alloc), alloc);
 		}
+		data.AddMember("communityUuid", Value(mCommunityUuid.c_str(), alloc), alloc);
 		variables.AddMember("data", data, alloc);
 
 		params.AddMember("operationName", Value(Type::kNullType), alloc);
@@ -92,7 +93,7 @@ namespace client
 
 		try {
 			auto result = request.postRequest(params);
-			// default result 
+			// default result
 			/*
 			*
 			{
@@ -118,7 +119,7 @@ namespace client
 		}
 		catch (RapidjsonParseErrorException& ex) {
 			throw RequestResponseInvalidJsonException("NewGradidoBlock|FailedGradidoBlock", url, ex.getRawText());
-		}		
+		}
 		return false;
 	}
 }

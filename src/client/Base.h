@@ -2,6 +2,7 @@
 #define __GRADIDO_NODE_CLIENT_BASE_H
 
 #include "gradido_blockchain/data/ConfirmedTransaction.h"
+#include "gradido_blockchain/data/ByteArray.h"
 
 #include "rapidjson/document.h"
 
@@ -18,7 +19,7 @@ namespace client
 
 		@brief: Base Class for client used from Gradido Node if it sends proactive messages (requests) to community server
 
-		Used for different receiver formats 
+		Used for different receiver formats
 		like graphQL or Json
 	*/
 
@@ -35,8 +36,9 @@ namespace client
 			const ::hiero::TransactionId& hieroTransactionId
 		);
 		virtual bool postRequest(const std::map<std::string, std::string>& parameterValuePairs, const std::string& url) = 0;
+		inline void setCommunityUuid(const std::string& communityUuid) { mCommunityUuid = communityUuid; }
 
-	protected:		
+	protected:
 		bool notificate(const std::map<std::string, std::string>& params, const std::string& url);
 		enum class NotificationFormat : int
 		{
@@ -48,6 +50,7 @@ namespace client
 		const std::string mSuccessUrl;
 		const std::string mFailedUrl;
 		NotificationFormat mFormat;
+		std::string mCommunityUuid;
 	};
 }
 

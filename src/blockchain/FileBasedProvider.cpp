@@ -246,6 +246,7 @@ namespace gradido {
 					return;
 				}
 				if (clientBase) {
+				    clientBase->setCommunityUuid(communityConfig.communityId);
 					blockchain->setListeningCommunityServer(clientBase);
 					LOG_F(INFO, "notification of community: %s", communityConfig.communityId.data());
 				}
