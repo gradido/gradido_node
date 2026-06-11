@@ -46,6 +46,7 @@ namespace task {
         std::condition_variable mCondition;
         std::atomic<bool>       mExitCalled;
         std::string             mThreadName;
+        static std::atomic<int> mRunningThreadsCount;
     };
 }
 

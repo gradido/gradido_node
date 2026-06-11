@@ -5,6 +5,8 @@
 #include "loguru/loguru.hpp"
 
 namespace task {
+	std::atomic<int> Thread::mRunningThreadsCount = 0;
+
 	Thread::Thread(const char* threadName)
 		: mThread(nullptr), mExitCalled(false)
 	{
@@ -16,10 +18,17 @@ namespace task {
 	void Thread::init()
 	{
 		mThread = new std::thread(&Thread::run, this);
+		mRunningThreadsCount++;
 	}
 
 	void Thread::exit()
 	{
+		if (mThread) 
+		{
+			if (mThreadName.size()) {
+				printf("[shutdown] try stopping thread: %s\n", mThreadName.data());
+			}
+		}
 		{
 			std::unique_lock _lock(mMutex);
 			//Post Exit to Thread
@@ -27,11 +36,20 @@ namespace task {
 			condSignal();
 		}
 		if (mThread)
-		{
+		{			
 			mThread->join();
 			if (mThread) {
 				delete mThread;
 				mThread = nullptr;
+				mRunningThreadsCount--;
+			}
+			if (mThreadName.size()) {
+				if (!mRunningThreadsCount.load()) {
+					printf("[shutdown] last thread: %s stopped\n", mThreadName.data());
+				}
+				else {
+					printf("[shutdown] thread: %s stopped, %d left\n", mThreadName.data(), mRunningThreadsCount.load());
+				}
 			}
 		}
 	}
