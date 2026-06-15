@@ -1,0 +1,222 @@
+{
+   "openrpc":"1.2.4",
+   "info":{
+      "title":"GradidoNode JSON-RPC API",
+      "version":"0.9.0",
+      "description":"Public read-only JSON-RPC API for the Gradido blockchain node. All methods use HTTP POST with Content-Type application/json."
+   },
+   "servers":[
+      {
+         "name":"GradidoNodeApi Stage2",
+         "url":"https://stage2.gradido.net/dlt",
+         "description":"Staging instance - accepts only POST requests (no GET)."
+      }
+   ],
+   "methods":[
+      {
+         "name":"listCommunities",
+         "summary":"List all known communities",
+         "params":[
+
+         ],
+         "result":{
+            "name":"listCommunitiesResult",
+            "schema":{
+               "type":"object",
+               "properties":{
+                  "communities":{
+                     "type":"array",
+                     "items":{
+                        "type":"object",
+                        "properties":{
+                           "communityId":{
+                              "type":"string",
+                              "format":"uuid"
+                           },
+                           "alias":{
+                              "type":"string"
+                           }
+                        }
+                     }
+                  },
+                  "timeUsed":{
+                     "type":"string"
+                  }
+               },
+               "required":[
+                  "communities"
+               ]
+            }
+         },
+         "examples":[
+            {
+               "name":"example",
+               "params":[
+
+               ],
+               "result":{
+                  "name":"list1CommunityExample",
+                  "value":{
+                     "communities":[
+                        {
+                           "communityId":"e70da33e-5976-4767-bade-aa4e4fa1c01a",
+                           "alias":"Gradido Development Stage2"
+                        }
+                     ],
+                     "timeUsed":"1.6800 us"
+                  }
+               }
+            }
+         ]
+      },
+      {
+         "name":"getLastTransaction",
+         "summary":"Retrieve the most recent transaction",
+         "params":[
+            {
+               "name":"format",
+               "description":"Output format – base64 (default) or json",
+               "schema":{
+                  "type":"string",
+                  "enum":[
+                     "base64",
+                     "json"
+                  ]
+               },
+               "required":true
+            },
+            {
+               "name":"communityId",
+               "description":"Community UUID (must be a valid community)",
+               "schema":{
+                  "type":"string",
+                  "format":"uuid"
+               },
+               "required":true
+            }
+         ],
+         "result":{
+            "name":"getLastTransactionResult",
+            "schema":{
+               "type":"object",
+               "properties":{
+                  "transaction":{
+                     "description":"Transaction data in the requested format",
+                     "oneOf":[
+                        {
+                           "type":"string",
+                           "description":"Base64-encoded serialized transaction"
+                        },
+                        {
+                           "type":"object",
+                           "description":"JSON representation"
+                        }
+                     ]
+                  },
+                  "timeUsed":{
+                     "type":"string"
+                  }
+               },
+               "required":[
+                  "transaction",
+                  "timeUsed"
+               ]
+            }
+         },
+         "examples":[
+            {
+               "name":"Get last transaction as JSON",
+               "params":[
+                  {
+                     "name":"format",
+                     "value":"json"
+                  },
+                  {
+                     "name":"communityId",
+                     "value":"e70da33e-5976-4767-bade-aa4e4fa1c01a"
+                  }
+               ],
+               "result":{
+                  "name":"lastTransactionJson",
+                  "value":{
+                     "transaction":{
+                        "id":49510,
+                        "gradidoTransaction":{
+                           "signatureMap":[
+                              {
+                                 "pubkey":"333e6e72990a8e87b6321737682a7f15762d9a8b677c5bff9497373ab554d019",
+                                 "signature":"15334b67c6c55f1cb12044123deec16f3b42668e5980f413aa19bb6545532245d734371012ec464c525c1998f0be3c60a7527c86223782dc8d1dce86a3d41309"
+                              }
+                           ],
+                           "bodyBytes":{
+                              "memos":[
+                                 {
+                                    "type":"SHARED_SECRET",
+                                    "memo":"kUsV9LIjbXHnfP5tdiIk5AuT4zO4wS1KDbJLoJooLIqmPtxLz71e7U3V1fPRig=="
+                                 }
+                              ],
+                              "createdAt":"2026-05-27 11:26:27.7710Z",
+                              "type":"LOCAL",
+                              "transfer":{
+                                 "sender":{
+                                    "pubkey":"333e6e72990a8e87b6321737682a7f15762d9a8b677c5bff9497373ab554d019",
+                                    "amount":"10.0000",
+                                    "coinCommunityId":"e70da33e-5976-4767-bade-aa4e4fa1c01a"
+                                 },
+                                 "recipient":"c7e141337bcd7a4176899382b12974caa6752d2f28fc031421764d947894f05d"
+                              }
+                           },
+                           "pairingLedgerAnchor":{
+                              "type":"UNSPECIFIED",
+                              "value":null
+                           }
+                        },
+                        "confirmedAt":"2026-05-27 11:26:28.1680Z",
+                        "runningHash":"168187bf4154a5bb7d61f9adad278abfe20eea543b146bd5a0ac17a1e1b50fc3",
+                        "ledgerAnchor":{
+                           "type":"HIERO_TRANSACTION_ID",
+                           "value":"0.0.6566984@1779881182.521857423"
+                        },
+                        "accountBalances":[
+                           {
+                              "pubkey":"333e6e72990a8e87b6321737682a7f15762d9a8b677c5bff9497373ab554d019",
+                              "balance":"5323.0799",
+                              "coinCommunityId":"e70da33e-5976-4767-bade-aa4e4fa1c01a"
+                           },
+                           {
+                              "pubkey":"c7e141337bcd7a4176899382b12974caa6752d2f28fc031421764d947894f05d",
+                              "balance":"638.7424",
+                              "coinCommunityId":"e70da33e-5976-4767-bade-aa4e4fa1c01a"
+                           }
+                        ],
+                        "balanceDerivationType":"NODE"
+                     },
+                     "type":"json",
+                     "timeUsed":"2.3400 us"
+                  }
+               }
+            },
+            {
+               "name":"Get last transaction as base64",
+               "params":[
+                  {
+                     "name":"format",
+                     "value":"base64"
+                  },
+                  {
+                     "name":"communityId",
+                     "value":"e70da33e-5976-4767-bade-aa4e4fa1c01a"
+                  }
+               ],
+               "result":{
+                  "name": "lastTransactionBase64",
+                  "value": {
+                     "transaction":"COaCAxKNAgpmCmQKIDM+bnKZCo6HtjIXN2gqfxV2LZqLZ3xb/5SXNzq1VNAZEkAVM0tnxsVfHLEgRBI97sFvO0JmjlmA9BOqGbtlRVMiRdc0NxAS7EZMUlwZmPC+PGCnUnyGIjeC3I0dzoaj1BMJEqIBMlwKOAogMz5ucpkKjoe2Mhc3aCp/FXYtmotnfFv/lJc3OrVU0BkQoI0GGhDnDaM+WXZHZ7reqk5PocAaEiDH4UEze816QXaJk4KxKXTKpnUtLyj8AxQhdk2UeJTwXQowEi6RSxX0siNtced8/m12IiTkC5PjM7jBLUoNskugmigsiqY+3EvPvV7tTdXV89GKEgwI46nb0AYQwI3S7wIYiIAMGgsI5Knb0AYQpOSRUCCIgAwqIBaBh79BVKW7fWH5ra0nir/iDupUOxRr1aCsF6HhtQ/DMhkaFQoMCN6p29AGEI/T6/gBEgUYyOiQAwgCOjkKIDM+bnKZCo6HtjIXN2gqfxV2LZqLZ3xb/5SXNzq1VNAZEM/5sBkaEOcNoz5Zdkdnut6qTk+hwBo6OQogx+FBM3vNekF2iZOCsSl0yqZ1LS8o/AMUIXZNlHiU8F0Q4O2FAxoQ5w2jPll2R2e63qpOT6HAGkAB",
+                     "timeUsed":"36.7199 us"
+                  }
+               }
+            }
+         ]
+      }
+   ]
+}
