@@ -159,6 +159,8 @@ if(GRPC_FETCH_CONTENT)
 	include(FetchContent)
 
 	# gRPC
+	set(CMAKE_C_FLAGS -Wno-macro-redefined)
+	set(CMAKE_CXX_FLAGS -Wno-macro-redefined)
 	set(FETCHCONTENT_QUIET OFF)
 	set(FETCHCONTENT_UPDATES_DISCONNECTED TRUE)
 	set(gRPC_SSL_PROVIDER "package" CACHE STRING "gRPC SSL provider" FORCE)

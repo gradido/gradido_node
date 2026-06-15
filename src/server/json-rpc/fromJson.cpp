@@ -157,7 +157,7 @@ namespace server::json_rpc {
     if (result.type != JsonParseResultType::Ok) return result;
 
     string_view valueString(json[fieldName].GetString(), json[fieldName].GetStringLength());
-    if (valueString.size() != 65) {
+    if (valueString.size() != 64) {
       string errorMessage = fieldName;
       errorMessage += " hasn't expected size of 64 hex character + string end character";
       return {

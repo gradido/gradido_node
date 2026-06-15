@@ -217,6 +217,196 @@
                }
             }
          ]
-      }
+      },
+      {
+      "name": "getTransactions",
+      "summary": "Flexible transaction search with pagination and filters",
+      "params": [
+        {
+          "name": "communityId",
+          "description": "Community UUID (required)",
+          "schema": { "type": "string", "format": "uuid" },
+          "required": true
+        },
+        {
+          "name": "searchDirection",
+          "description": "Order of transactions: ASC (oldest first) or DESC (newest first)",
+          "schema": { "type": "string", "enum": ["ASC", "DESC"] },
+          "required": false
+        },
+        {
+          "name": "transactionType",
+          "description": "Filter by transaction type (optional)",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "GRDT_TRANSACTION_CREATION",
+              "GRDT_TRANSACTION_TRANSFER",
+              "GRDT_TRANSACTION_DEFERRED_TRANSFER",
+              "GRDT_TRANSACTION_REDEEM_DEFERRED_TRANSFER",
+              "GRDT_TRANSACTION_REGISTER_ADDRESS"
+            ]
+          },
+          "required": false
+        },
+        {
+          "name": "publicKeySearchType",
+          "description": "How to match the public key (e.g. EXACT, INVOLVED, etc.)",
+          "schema": {
+            "type": "string",
+            "enum": ["INVOLVED", "SENDER", "RECIPIENT", "REGISTERED"]
+          },
+          "required": false
+        },
+        {
+          "name": "format",
+          "description": "Output format: Base64 (default) or Json",
+          "schema": { "type": "string", "enum": ["Base64", "Json"] },
+          "required": false
+        },
+        {
+          "name": "coinCommunityId",
+          "description": "Filter by specific coin community (UUID)",
+          "schema": { "type": "string", "format": "uuid" },
+          "required": false
+        },
+        {
+          "name": "maxTransactionNr",
+          "description": "Upper bound for transaction number (inclusive)",
+          "schema": { "type": "integer", "minimum": 1 },
+          "required": false
+        },
+        {
+          "name": "minTransactionNr",
+          "description": "Lower bound for transaction number (inclusive)",
+          "schema": { "type": "integer", "minimum": 1 },
+          "required": false
+        },
+        {
+          "name": "publicKey",
+          "description": "Hex-encoded public key (64 characters) to filter transactions",
+          "schema": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "required": false
+        },
+        {
+          "name": "pagination",
+          "description": "Pagination settings (size, page)",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "size": { "type": "integer", "minimum": 1, "maximum": 100, "default": 25 },
+              "page": { "type": "integer", "minimum": 1, "default": 1 }
+            }
+          },
+          "required": false
+        },
+        {
+          "name": "timepointInterval",
+          "description": "Filter transactions by creation date range",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "startDate": { "type": "string", "format": "date-time" },
+              "endDate": { "type": "string", "format": "date-time" }
+            }
+          },
+          "required": false
+        }
+      ],
+      "result": {
+        "name": "getTransactionsResult",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "object",
+              "title": "Base64 Response",
+              "properties": {
+                "totalCount": { "type": "integer", "description": "Total number of matching transactions" },
+                "type": { "type": "string", "enum": ["Base64"] },
+                "transactions": {
+                  "type": "array",
+                  "items": { "type": "string", "description": "Base64-encoded serialized transaction" }
+                },
+                "gmwBalance": { "type": "string", "description": "Current GMW balance of the community" },
+                "aufBalance": { "type": "string", "description": "Current AUF balance of the community" },
+                "timeUsed": { "type": "string" }
+              },
+              "required": ["totalCount", "type", "transactions", "gmwBalance", "aufBalance", "timeUsed"]
+            },
+            {
+              "type": "object",
+              "title": "JSON Response",
+              "properties": {
+                "totalCount": { "type": "integer" },
+                "type": { "type": "string", "enum": ["json"] },
+                "transactions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "JSON representation of a transaction (see getLastTransaction example for structure)"
+                  }
+                },
+                "gmwBalance": { "type": "string" },
+                "aufBalance": { "type": "string" },
+                "timeUsed": { "type": "string" }
+              },
+              "required": ["totalCount", "type", "transactions", "gmwBalance", "aufBalance", "timeUsed"]
+            }
+          ]
+        }
+      },
+      "examples": [
+        {
+          "name": "List transactions with default pagination (JSON format)",
+          "params": [
+            { "name": "communityId", "value": "e70da33e-5976-4767-bade-aa4e4fa1c01a" },
+            { "name": "format", "value": "Json" }
+          ],
+          "result": {
+            "name": "resulttx",
+            "value": {
+              "totalCount": 1234,
+              "type": "json",
+              "transactions": [
+                {
+                  "id": 49510,
+                  "gradidoTransaction": { },
+                  "confirmedAt": "2026-05-27 11:26:28.1680Z",
+                  "runningHash": "168187bf4154a5bb7d61f9adad278abfe20eea543b146bd5a0ac17a1e1b50fc3",
+                  "ledgerAnchor": { "type": "HIERO_TRANSACTION_ID", "value": "0.0.6566984@1779881182.521857423" },
+                  "accountBalances": [],
+                  "balanceDerivationType": "NODE"
+                }
+              ],
+              "gmwBalance": "123456.7890",
+              "aufBalance": "987654.3210",
+              "timeUsed": "2.3400 us"
+            }
+          }
+        },
+        {
+          "name": "List transactions with pagination (size=2, page=2) in base64",
+          "params": [
+            { "name": "communityId", "value": "e70da33e-5976-4767-bade-aa4e4fa1c01a" },
+            { "name": "format", "value": "base64" },
+            { "name": "pagination", "value": { "size": 2, "page": 2 } }
+          ],
+          "result": {
+            "name": "short example",
+            "value": {
+              "totalCount": 500,
+              "type": "base64",
+              "transactions": [
+                "COaCAxKNAgpmCmQKIDM+bnKZCo6HtjIXN2gqfxV2LZqLZ3xb/5SXNzq1VNAZEkAVM0tnxsVfHLEgRBI97sFvO0JmjlmA9BOqGbtlRVMiRdc0NxAS7EZMUlwZmPC+PGCnUnyGIjeC3I0dzoaj1BMJEqIBMlwKOAogMz5ucpkKjoe2Mhc3aCp/FXYtmotnfFv/lJc3OrVU0BkQoI0GGhDnDaM+WXZHZ7reqk5PocAaEiDH4UEze816QXaJk4KxKXTKpnUtLyj8AxQhdk2UeJTwXQowEi6RSxX0siNtced8/m12IiTkC5PjM7jBLUoNskugmigsiqY+3EvPvV7tTdXV89GKEgwI46nb0AYQwI3S7wIYiIAMGgsI5Knb0AYQpOSRUCCIgAwqIBaBh79BVKW7fWH5ra0nir/iDupUOxRr1aCsF6HhtQ/DMhkaFQoMCN6p29AGEI/T6/gBEgUYyOiQAwgCOjkKIDM+bnKZCo6HtjIXN2gqfxV2LZqLZ3xb/5SXNzq1VNAZEM/5sBkaEOcNoz5Zdkdnut6qTk+hwBo6OQogx+FBM3vNekF2iZOCsSl0yqZ1LS8o/AMUIXZNlHiU8F0Q4O2FAxoQ5w2jPll2R2e63qpOT6HAGkAB",
+                "CPSAA...="
+              ],
+              "gmwBalance": "123456.7890",
+              "aufBalance": "987654.3210",
+              "timeUsed": "45.2130 us"
+            }
+          }
+        }
+      ]
+    }
    ]
 }
